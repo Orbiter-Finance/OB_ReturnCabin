@@ -18,6 +18,7 @@ contract YourContract {
     struct orderInfo {
         address businessAddress;
         address customerAddress;
+        address destinationAddress;
         uint256 orderID;
         uint256 orderFee;
         uint256 orderAmount;
@@ -44,7 +45,12 @@ contract YourContract {
 
     event unRegisterToBusinessman(address business);
 
-    event placeAnOrder(address business, uint256 tokenId, uint256 tokenAmount);
+    event placeAnOrder(
+        address customer,
+        address business,
+        address destinationAddress,
+        uint256 tokenAmount
+    );
 
     constructor() {
         owner = msg.sender;
@@ -62,6 +68,34 @@ contract YourContract {
             "tokenAddress can not be address(0)"
         );
         _tokenAddress = tokenAddress;
+    }
+
+    function placeAnOrder(
+        address customer,
+        address business,
+        address destinationAddress,
+        uint256 tokenAmount
+    ) public {
+        require(msg.sender == address(0x0), "1234");
+        require(customer != address(0x0), "2345");
+        require(business != address(0x0), "3456");
+        require(destinationAddress != address(0x0), "3456");
+
+        require(businessState[business] == true, "4567");
+
+        require(businessMember[business].tokenAmount > tokenAmount, "5678");
+
+        orderInfo memory newInfo =
+            orderInfo(
+                business,
+                customer,
+                destinationAddress,
+                orderID,
+                usinessMember[business].tokenFee,
+                orderAmount,
+                1
+            );
+        businessMember[business].tokenAmount -= tokenAmount;
     }
 
     // register bussinessMan
