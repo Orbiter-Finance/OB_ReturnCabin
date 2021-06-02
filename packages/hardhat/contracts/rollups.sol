@@ -24,6 +24,9 @@ contract YourContract {
         uint256 orderAmount;
         uint256 orderStatus;
     }
+
+    //orderID => orderInfo
+    mapping(uint256 => orderInfo) orderData;
     // Increment 1 to mark the number of orders
     uint256 orderID;
     // Order list Get every transaction through orderID
@@ -58,11 +61,11 @@ contract YourContract {
     }
 
     modifier onlyOwner() {
-        // require(msg.sender == owner, "NOT_OWNER");
+        require(msg.sender == owner, "NOT_OWNER");
         _;
     }
 
-    function initTokenAddress(address tokenAddress) {
+    function initTokenAddress(address tokenAddress) onlyOwner {
         require(
             tokenAddress != address(0),
             "tokenAddress can not be address(0)"
@@ -85,6 +88,7 @@ contract YourContract {
 
         require(businessMember[business].tokenAmount > tokenAmount, "5678");
 
+        // order
         orderInfo memory newInfo =
             orderInfo(
                 business,
@@ -96,6 +100,7 @@ contract YourContract {
                 1
             );
         businessMember[business].tokenAmount -= tokenAmount;
+        // map(orderID => orderInfo)  map(orderID =>??)
     }
 
     // register bussinessMan
