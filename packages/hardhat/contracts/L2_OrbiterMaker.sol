@@ -104,6 +104,9 @@ contract L2_OrbiterMaker is Ownable {
         uint256 proofID;
     }
 
+    // key(proofID)(uint256) => how to generate
+    mapping(address => mapping(uint256 => RepaymentProof)) RepaymentData;
+
     /**
      * @dev Repayment from orbiterMaker，And generate repayment proof
      * @param fromAddress
@@ -118,39 +121,73 @@ contract L2_OrbiterMaker is Ownable {
         // address TokenAddress;
         uint256 amount,
         uint256 chainID,
-        uint256 proofID
+        uint256 proofID // key?
     ) public {
-        // LoanProof is found according to the proofID, and it is determined that the LoanProof has not been processed
-        // Here to judge whether the relevant information such as the amount, address, etc. is consistent
         // Authorize the contract to process fromAddress's tokens, the contract transfers its tokens, and then generates a repayment proof
-        // Simple liquidation logic
+        // generate RepaymentData(RepaymentProof)??
+        // Whether to store more data？？？？？？？？
     }
 
+    // /**
+    //  * @dev Repayment from pushMan or otherMaker, generate repayment proof
+    //  * @param fromAddress
+    //  * @param toAddress
+    //  * @param amount
+    //  * @param chainID
+    //  * @param proofID
+    //  */
+    // function RepaymentTokenByPushMan(
+    //     address fromAddress,
+    //     address toAddress,
+    //     // address TokenAddress;
+    //     uint256 amount,
+    //     uint256 chainID,
+    //     uint256 proofID
+    // ) public {
+    //     // LoanProof is found according to the proofID, and it is determined that the LoanProof has not been processed
+    //     // Here to judge whether the relevant information such as the amount, address, etc. is consistent
+    //     // Authorize the contract to process fromAddress's tokens, the contract transfers its tokens, and then generates a repayment proof
+    //     // Complex liquidation logic
+    // }
+
     /**
-     * @dev Repayment from pushMan or otherMaker, generate repayment proof
-     * @param fromAddress
-     * @param toAddress
-     * @param amount
-     * @param chainID
-     * @param proofID
+      Liquidation
      */
-    function RepaymentTokenByPushMan(
+    /**
+     * @dev Clearing of a single loan certificate， called by pushmanServer
+     * @param fromAddress  fromLoanProof
+     * @param toAddress   fromLoanProof
+     * @param amount    fromLoanProof
+     * @param chainID   fromLoanProof
+     * @param proofID   fromLoanProof(key)
+     */
+    function singleLoanLiquidation(
         address fromAddress,
         address toAddress,
         // address TokenAddress;
         uint256 amount,
         uint256 chainID,
-        uint256 proofID
+        uint256 proofID(key)
     ) public {
-        // LoanProof is found according to the proofID, and it is determined that the LoanProof has not been processed
-        // Here to judge whether the relevant information such as the amount, address, etc. is consistent
-        // Authorize the contract to process fromAddress's tokens, the contract transfers its tokens, and then generates a repayment proof
-        // Complex liquidation logic
+        // Find RepamentProof from RepamentData according to the proofID
+        // If RepamentProof is not found, enter the liquidation process
     }
 
-    /**
-      Liquidation
-     */
 
+    /**
+     * @dev Clearing All certificate， called by withDrawCoinDealer
+     * @param account  LiquidationAddress
+     * @param liquidationTime   LiquidationTime
+     */
+    function AccountLiquidation(
+        address account,
+        uint liquidationTime
+    ) public {
+        // Because withDrawCoinDealer must be after stopCoinDealer
+        //stopCoinDealer => stop Orders
+        //liquidationTime = now + L1CTCPackingTime + pushManTime？？？
+        // withDraw amount = depositAmount - Liquidation transfer out amount
+        // update CoinDealerState = 0
+    }
     constructor() public {}
 }
