@@ -10,14 +10,15 @@ const {
 } = require("ethereum-waffle");
 
 use(solidity);
-describe("My Dapp", function () {
-  let myContract;
 
-  describe("YourContract", function () {
-    it("Should deploy YourContract", async function () {
-      const YourContract = await ethers.getContractFactory("YourContract");
+describe("L1_PushManServer Test", function () {
+  let L1_PushManServer;
 
-      myContract = await YourContract.deploy();
+  describe("deploy contract", function () {
+    it("Should deploy L1_PushManServer", async function () {
+      const L1_PushManServer = await ethers.getContractFactory("L1_PushManServer");
+
+      L1_PushManServer = await L1_PushManServer.deploy();
     });
 
     describe("setPurpose()", function () {

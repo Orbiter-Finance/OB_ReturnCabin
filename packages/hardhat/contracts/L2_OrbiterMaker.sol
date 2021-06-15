@@ -12,7 +12,8 @@ contract L2_OrbiterMaker is Ownable {
       CoinDealer
      */
     //The state of the coin dealer（0:Not Coin Dealer 1:Coin Dealer 2:stop）
-    mapping(address => uint256) CoinDealerState;
+    mapping(address => uint256) public CoinDealerState;
+    mapping(address => DepositProof) public CoinDealerInfo;
 
     /**
      * @dev register the account to be anew Coin Dealer
@@ -36,6 +37,7 @@ contract L2_OrbiterMaker is Ownable {
         // Register coinDealer, generate proof of deposit
         //（minQuota maxQuota amount） Size judgment
         // amount
+        // generate CoinDealerInfo , set CoinDealerInfo and CoinDealerState
     }
 
     /**
@@ -80,8 +82,13 @@ contract L2_OrbiterMaker is Ownable {
      */
     // proof of deposit，create by registerCoinDealer
     struct DepositProof {
-        address CoinDealer;
-        uint256 amount;
+        address CoinDealerAddress;
+        uint256 depositAmount;
+        uint256 startTimeStamp;
+        uint256[] chainID;
+        uint256 fee,
+        uint256 minQuota,
+        uint256 maxQuota
     }
     // Proof of loan，create by L1PushManServer
     struct LoanProof {
@@ -97,7 +104,7 @@ contract L2_OrbiterMaker is Ownable {
     struct RepaymentProof {
         address fromAddress;
         address toAddress;
-        // address TokenAddress;
+        address TokenAddress;
         uint256 amount;
         uint256 timestamp;
         uint256 chainID;
@@ -105,7 +112,12 @@ contract L2_OrbiterMaker is Ownable {
     }
 
     // key(proofID)(uint256) => how to generate
-    mapping(address => mapping(uint256 => RepaymentProof)) RepaymentData;
+    // error
+    // address（Repayment toAddress）
+    mapping(address => mapping(uint256 => RepaymentProof)) public RepaymentDataFromUser;
+    // address（Repayment fromAddress)
+    mapping(address => mapping(uint256 => RepaymentProof)) public RepaymentDataFromCoinDealer;
+
 
     /**
      * @dev Repayment from orbiterMaker，And generate repayment proof

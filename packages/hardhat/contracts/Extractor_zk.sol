@@ -8,4 +8,13 @@ contract Extractor_zk is iExtractor, Ownable {
     constructor(
     ) public {
     }
+    function iExtractorFunction(
+        address fromAddress,
+        address toAddress,
+        uint256 amount,
+    ) public view override return(
+      // return transfer information
+    ) {
+      // return transfer information
+    };
 }
