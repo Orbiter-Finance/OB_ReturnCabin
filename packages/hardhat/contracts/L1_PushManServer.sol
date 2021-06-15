@@ -3,6 +3,10 @@ pragma solidity 0.7.6;
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
+/// @title Obtain the transaction information of Rollup on the L1 network, and provide the functions of generating loan vouchers and initiating arbitration
+/// @author Orbiter
+/// @notice Explain to an end user what this does
+/// @dev Explain to a developer any extra details
 contract L1_PushManServer is Ownable {
     // Whether to obtain a large amount of transaction information and store it here
     // How to distinguish valid transaction information
@@ -67,7 +71,7 @@ contract L1_PushManServer is Ownable {
      * @param amount The amount being minted
      */
     function sendMessageToL2Orbiter(
-      TransferInfo info
+      LoanProof info
       // Dismantling parameters ？？？？？
     ) external {
       //Call singleLoanLiquidation of OrbiterMaker.sol on L2

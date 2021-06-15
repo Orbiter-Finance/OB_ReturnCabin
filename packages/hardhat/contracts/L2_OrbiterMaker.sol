@@ -102,7 +102,7 @@ contract L2_OrbiterMaker is Ownable {
     }
     // Proof of repayment， create by
     struct RepaymentProof {
-        address fromAddress;
+        address fromAddress; // coinDealer
         address toAddress;
         address TokenAddress;
         uint256 amount;
@@ -112,12 +112,13 @@ contract L2_OrbiterMaker is Ownable {
     }
 
     // key(proofID)(uint256) => how to generate
-    // error
-    // address（Repayment toAddress）
-    mapping(address => mapping(uint256 => RepaymentProof)) public RepaymentDataFromUser;
-    // address（Repayment fromAddress)
-    mapping(address => mapping(uint256 => RepaymentProof)) public RepaymentDataFromCoinDealer;
+    mapping(bytes32 => RepaymentProof) public RepaymentData;
 
+    // Repayer related （address = fromAddress = coinDealer）
+    mapping(address => bytes32[]) public RepaymentFrom;
+
+    // Borrower related (address = toAddress)
+    mapping(address => bytes32[]) public RepaymentTo;
 
     /**
      * @dev Repayment from orbiterMaker，And generate repayment proof
@@ -130,13 +131,13 @@ contract L2_OrbiterMaker is Ownable {
     function RepaymentTokenByCoinDealer(
         address fromAddress,
         address toAddress,
-        // address TokenAddress;
+        address TokenAddress;
         uint256 amount,
         uint256 chainID,
-        uint256 proofID // key?
+        bytes32 proofID // key?
     ) public {
         // Authorize the contract to process fromAddress's tokens, the contract transfers its tokens, and then generates a repayment proof
-        // generate RepaymentData(RepaymentProof)??
+        // generate RepaymentData(RepaymentProof) / RepaymentFrom  / RepaymentTo
         // Whether to store more data？？？？？？？？
     }
 
@@ -176,10 +177,10 @@ contract L2_OrbiterMaker is Ownable {
     function singleLoanLiquidation(
         address fromAddress,
         address toAddress,
-        // address TokenAddress;
+        address TokenAddress;
         uint256 amount,
         uint256 chainID,
-        uint256 proofID(key)
+        bytes32 proofID(key)
     ) public {
         // Find RepamentProof from RepamentData according to the proofID
         // If RepamentProof is not found, enter the liquidation process
