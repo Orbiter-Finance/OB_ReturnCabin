@@ -13,20 +13,27 @@ contract L2_OrbiterMaker is Ownable {
     /**
       CoinDealer
      */
-    //The state of the coin dealer（0:Not Coin Dealer 1:Coin Dealer 2:stop）
-    mapping(address => uint256) public CoinDealerState;
-    mapping(address => DepositProof) public CoinDealerInfo;
-
+     // proof of deposit，create by registerCoinDealer
+    struct DepositProof {
+        address CoinDealerAddress;
+        address tokenAddress;
+        uint256 depositAmount;
+        uint256 fee;
+        uint256 minQuota;
+        uint256 maxQuota;
+        uint256[] chainID;
+        uint256 startTimeStamp;
+    }
+    //The state of the coin dealer（0:Not Coin Dealer 1:Coin Dealer 2:stop  3:withDraw）
     // accountAddress =>(tokenAddress => state)
     mapping(address => mapping(address => uint256)) public CoinDealerState;
     // accountAddress =>(tokenAddress => DepositProof)
     mapping(address => mapping(address => DepositProof)) public CoinDealerInfo;
 
-    
-
     /**
      * @dev register the account to be anew Coin Dealer
      * @param account The account being Coin Dealer
+     * @param tokenAddress The token in which coinDealer started business
      * @param amount The amount being Pledge
      * @param fee Transaction Fees
      * @param minQuota Minimum transaction limit
@@ -45,22 +52,31 @@ contract L2_OrbiterMaker is Ownable {
         uint256 startTimeStamp
     ) public {
         require(account != address(0),"account can not be address(0)");
-        require(tokenAddress != address(0),"account can not be address(0)");
+        require(tokenAddress != address(0),"tokenAddress can not be address(0)");
         require(msg.sender == account,"register coinDealer account must be msg.sender");
+
+        // coinDealer transefer amount token to contranct ， balanceOf() should >= amount
         ERC20 depositToken = ERC20(tokenAddress);
         require(depositToken.balanceOf(msg.sender) >= amout,"The account must have tokens greater than the amount");
 
+        // minQuota   maxQuota   amount
         require(minQuota < maxQuota,"minQuota must be less than maxQuota");
         require(minQuota > 0,"minQuota can not be 0");
         require(maxQuota < amount,"maxQuota must be less than amount");
 
+        // if coinDealer want to add depositAmount，should use another funciton（add？？？？）
+        require(CoinDealerState[account][tokenAddress] == 0,"account & tokenAddress can not be coinDealer");
 
+        // generate DepositProof
+        DepositProof memory newProof = DepositProof(account,tokenAddress,amount,fee,minQuota,maxQuota,chainID,startTimeStamp);
 
-
-
-
-
+        // coinDealer transfer token to Contract
+        // depositToken.approve(address(this), amount) ？？？？  front
         depositToken.transferFrom(msg.sender, address(this), amount);
+
+        // transfer  success setCoinDealerInfo & setCoinDealerState
+        CoinDealerInfo[msg.sender][tokenAddress] = newProof;
+        CoinDealerState[msg.sender][tokenAddress] = 1;
 
         // Register coinDealer, generate proof of deposit
         //（minQuota maxQuota amount） Size judgment
@@ -71,55 +87,94 @@ contract L2_OrbiterMaker is Ownable {
     /**
      * @dev stop the account to be a Coin Dealer
      * @param account The account stop to be Coin Dealer
+     * @param tokenAddress The token in which coinDealer cease business
      * @param stopTimeStamp Do Coin Dealer start timestamp
      */
-    function stopCoinDealer(address account, uint256 stopTimeStamp) public {
-        // Determine whether the account is Coin Dealer
+    function stopCoinDealer(address account, address tokenAddress,uint256 stopTimeStamp) public {
+        require(account != address(0),"account can not be address(0)");
+        require(tokenAddress != address(0),"tokenAddress can not be address(0)");
+        require(msg.sender == account,"stop coinDealer account must be msg.sender");
+
+        // Determine whether the account is Coin Dealer and CoinDealerState must be 1
+        require(CoinDealerState[account][tokenAddress] == 1,"account&tokenAddress must be Coin Dealer and CoinDealerState must be 1");
         // eg.  stopTimeStamp = now + 60 second （Buffer time is 60s）？？？？？？
+        // ????????????????
         // update CoinDealerState，and the coin Dealer cannot be traded
+        CoinDealerState[account][tokenAddress] = 2;
     }
 
-    // /**
-    //  * @dev stop the account to be a Coin Dealer
-    //  * @param account The account stop to be Coin Dealer
-    //  * @param stopTimeStamp Do Coin Dealer start timestamp
-    //  */
-    // function stopCoinDealer(address account, uint256 stopTimeStamp) public {
-    //     // Determine whether the account is Coin Dealer
-    //     // stopTimeStamp = now + 60 second （Buffer time is 60s）
-    //     // update CoinDealerState = 2，and the coin Dealer cannot be traded
-    // }
-
     /**
-     * @dev Withdraw the deposit of coin Dealer
-     * @param account The account stop to be Coin Dealer
-     * @param withDrawTimeStamp Coin Dealer start timestamp
+     * @dev Flag withdrawal status
+     * @param account The account(stop) will withDraw
+     * @notice Call this method to mark the withdrawal status, and then you can call the method withDrawingCoinDealer to withdraw after withDrawTime
      */
-    function withDrawCoinDealer(address account, uint256 withDrawTimeStamp)
+
+    function withDrawCoinDealer(address account, address tokenAddress)
         public
     {
-        // Determine whether the account is Coin Dealer and CoinDealerState == 2
+        require(account != address(0),"account can not be address(0)");
+        require(tokenAddress != address(0),"tokenAddress can not be address(0)");
+        require(msg.sender == account,"withdraw coinDealer account must be msg.sender");
+
+
+        // Determine whether the account is Coin Dealer and CoinDealerState must be 2
+        require(CoinDealerState[account][tokenAddress] == 2,"account&tokenAddress must be Coin Dealer and CoinDealerState must be 2");
         // eg.  withDrawTimeStamp = now + L1CTCPackingTime + pushManTime？？？
+        uint256 L1CTCTime = 3600 seconds;
+        uint256 pushManServerTime = 3600 seconds;
+        uint256 withDrawTime = now + L1CTCTime + pushManServerTime;
+        // Where to store withDrawTime, so that it can be used when withdrawing?????
+
+        // setCoinDealerState = 3, withdrawingFunction will use it
+        CoinDealerState[account][tokenAddress] == 3;
+
+
+
         // Clearing logic to handle various vouchers(deposit,loan,Repayment)
         // withDraw amount = depositAmount - Liquidation transfer out amount
         // update CoinDealerState = 0
     }
 
+     /**
+     * @dev Withdraw the deposit of coin Dealer
+     * @param account The account stop to be Coin Dealer
+     * @notice before calling this function，must be call withDrawCoinDealer set CoinDealerState = 3 and Calculate withDrawTime
+     */
+    function withDrawingCoinDealer(address account, address tokenAddress)
+        public
+    {
+        require(account != address(0),"account can not be address(0)");
+        require(tokenAddress != address(0),"tokenAddress can not be address(0)");
+        require(msg.sender == account,"withdrawing coinDealer account must be msg.sender");
+
+
+        // Determine whether the account is Coin Dealer and CoinDealerState must be 3
+        require(CoinDealerState[account][tokenAddress] == 3,"account&tokenAddress must be Coin Dealer and CoinDealerState must be 3");
+        // where to get withDrawTime ???????????
+        uint256 withDrawTime = 12312312312312;
+
+        require(now > withDrawTime, "The current time must be after the withdrawal time");
+        DepositProof proof = CoinDealerInfo[account][tokenAddress];
+        uint withDrawAmount = proof.depositAmount;
+        //  contract transefer withDrawAmount token to coindealer ， balanceOf() should >= amount
+        ERC20 withDrawToken = ERC20(tokenAddress);
+        require(withDrawToken.balanceOf(self) >= withDrawAmount,"The contract must have tokens greater than the withDrawAmount");
+        withDrawToken.transfer(account,withDrawAmount);
+
+        // Clearing logic to handle various vouchers(deposit,loan,Repayment)
+        // withDraw amount = depositAmount - Liquidation transfer out amount
+        // ???????????????
+        // when withDraw success, Data processing
+        // update CoinDealerState = 0
+        CoinDealerState[account][tokenAddress] = 0;
+
+
+        
+    }
+
     /**
       certificate
      */
-    // proof of deposit，create by registerCoinDealer
-    struct DepositProof {
-        address CoinDealerAddress;
-        address tokenAddress;
-        uint256 depositAmount;
-        uint256 startTimeStamp;
-        uint256[] chainID;
-        uint256 fee,
-        uint256 minQuota,
-        uint256 maxQuota,
-
-    }
     // Proof of loan，create by L1PushManServer
     struct LoanProof {
         address fromAddress;
@@ -166,9 +221,24 @@ contract L2_OrbiterMaker is Ownable {
         uint256 chainID,
         bytes32 proofID // key?
     ) public {
-        // Authorize the contract to process fromAddress's tokens, the contract transfers its tokens, and then generates a repayment proof
+        require(CoinDealerState[fromAddress][tokenAddress] != 0,"fromAddress must be coinDealer");
+        require(fromAddress != address(0),"fromAddress can not be address(0)");
+        require(toAddress != address(0),"fromAddress can not be address(0)");
+        require(tokenAddress != address(0),"tokenAddress can not be address(0)");
+        require(msg.sender == fromAddress,"msg.senfer must be fromAddress");
+
+
+        ERC20 RepaymentToken = ERC20(tokenAddress);
+        require(RepaymentToken.balanceOf(fromAddress) >= amout,"The fromAddress must have tokens greater than the amount");
+        // RepaymentToken.approve(address(this), amount) ？？？？  front
+        RepaymentToken.transferFrom(fromAddress, toAddress, amount);
+
         // generate RepaymentData(RepaymentProof) / RepaymentFrom  / RepaymentTo
-        // Whether to store more data？？？？？？？？
+        RepaymentProof proof = RepaymentProof(fromAddress,toAddress,TokenAddress,amount,timestamp,chainID,proofID)
+        RepaymentData[proofID] = proof;
+        // Whether to store more data？？？？？？？？？？？
+        RepaymentFrom[fromAddress].push(proofID);
+        RepaymentTo[toAddress].push(proofID);
     }
 
     // /**
@@ -210,10 +280,23 @@ contract L2_OrbiterMaker is Ownable {
         address TokenAddress;
         uint256 amount,
         uint256 chainID,
-        bytes32 proofID(key)
+        bytes32 proofID
     ) public {
-        // Find RepamentProof from RepamentData according to the proofID
-        // If RepamentProof is not found, enter the liquidation process
+        require(CoinDealerState[toAddress][tokenAddress] != 0,"toAddress must be coinDealer");
+        require(fromAddress != address(0),"fromAddress can not be address(0)");
+        require(toAddress != address(0),"fromAddress can not be address(0)");
+        require(tokenAddress != address(0),"tokenAddress can not be address(0)");
+        // ????require(msg.sender == pushserverAddress,"msg.senfer must be pushserverAddress");
+
+        // search RepamentProof from RepaymentData according to the proofID
+        // Match to the repaymentProof，indicating that the payment has been made
+        require(RepaymentData[proofID].fromAddress == address(0) && RepaymentData[proofID].toAddress == address(0),"Match to the repaymentProof");
+        // Did not match the repaymentProof，Make a singleLoanLiquidation
+        //  ??
+        //  ??
+        //
+        //
+
     }
 
 
@@ -226,6 +309,7 @@ contract L2_OrbiterMaker is Ownable {
         address account,
         uint liquidationTime
     ) public {
+        // withDrawing() equal
         // Because withDrawCoinDealer must be after stopCoinDealer
         //stopCoinDealer => stop Orders
         //liquidationTime = now + L1CTCPackingTime + pushManTime？？？
