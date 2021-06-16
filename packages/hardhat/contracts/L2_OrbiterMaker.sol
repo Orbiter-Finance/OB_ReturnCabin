@@ -2,6 +2,8 @@ pragma solidity 0.7.6;
 
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+// import "https://github.com/OpenZeppelin/openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
+import "https://github.com/OpenZeppelin/openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 
 /// @title Responsible for Arbitrum coin dealer registration, voucher processing, and clearing related logic
 /// @author Orbiter
@@ -15,6 +17,13 @@ contract L2_OrbiterMaker is Ownable {
     mapping(address => uint256) public CoinDealerState;
     mapping(address => DepositProof) public CoinDealerInfo;
 
+    // accountAddress =>(tokenAddress => state)
+    mapping(address => mapping(address => uint256)) public CoinDealerState;
+    // accountAddress =>(tokenAddress => DepositProof)
+    mapping(address => mapping(address => DepositProof)) public CoinDealerInfo;
+
+    
+
     /**
      * @dev register the account to be anew Coin Dealer
      * @param account The account being Coin Dealer
@@ -27,6 +36,7 @@ contract L2_OrbiterMaker is Ownable {
      */
     function registerCoinDealer(
         address account,
+        address tokenAddress,
         uint256 amount,
         uint256 fee,
         uint256 minQuota,
@@ -34,6 +44,24 @@ contract L2_OrbiterMaker is Ownable {
         uint256[] chainID,
         uint256 startTimeStamp
     ) public {
+        require(account != address(0),"account can not be address(0)");
+        require(tokenAddress != address(0),"account can not be address(0)");
+        require(msg.sender == account,"register coinDealer account must be msg.sender");
+        ERC20 depositToken = ERC20(tokenAddress);
+        require(depositToken.balanceOf(msg.sender) >= amout,"The account must have tokens greater than the amount");
+
+        require(minQuota < maxQuota,"minQuota must be less than maxQuota");
+        require(minQuota > 0,"minQuota can not be 0");
+        require(maxQuota < amount,"maxQuota must be less than amount");
+
+
+
+
+
+
+
+        depositToken.transferFrom(msg.sender, address(this), amount);
+
         // Register coinDealer, generate proof of deposit
         //（minQuota maxQuota amount） Size judgment
         // amount
@@ -83,12 +111,14 @@ contract L2_OrbiterMaker is Ownable {
     // proof of deposit，create by registerCoinDealer
     struct DepositProof {
         address CoinDealerAddress;
+        address tokenAddress;
         uint256 depositAmount;
         uint256 startTimeStamp;
         uint256[] chainID;
         uint256 fee,
         uint256 minQuota,
-        uint256 maxQuota
+        uint256 maxQuota,
+
     }
     // Proof of loan，create by L1PushManServer
     struct LoanProof {
