@@ -124,15 +124,12 @@ contract L2_OrbiterMaker is Ownable {
         uint256 pushManServerTime = 3600 seconds;
         uint256 withDrawTime = now + L1CTCTime + pushManServerTime;
         // Where to store withDrawTime, so that it can be used when withdrawing?????
+        /*
+        ??????????????????????????????????
+         */
 
         // setCoinDealerState = 3, withdrawingFunction will use it
         CoinDealerState[account][tokenAddress] == 3;
-
-
-
-        // Clearing logic to handle various vouchers(deposit,loan,Repayment)
-        // withDraw amount = depositAmount - Liquidation transfer out amount
-        // update CoinDealerState = 0
     }
 
      /**
@@ -150,7 +147,9 @@ contract L2_OrbiterMaker is Ownable {
 
         // Determine whether the account is Coin Dealer and CoinDealerState must be 3
         require(CoinDealerState[account][tokenAddress] == 3,"account&tokenAddress must be Coin Dealer and CoinDealerState must be 3");
-        // where to get withDrawTime ???????????
+        /*
+          // where to get withDrawTime ???????????
+         */
         uint256 withDrawTime = 12312312312312;
 
         require(now > withDrawTime, "The current time must be after the withdrawal time");
@@ -158,18 +157,13 @@ contract L2_OrbiterMaker is Ownable {
         uint withDrawAmount = proof.depositAmount;
         //  contract transefer withDrawAmount token to coindealer ， balanceOf() should >= amount
         ERC20 withDrawToken = ERC20(tokenAddress);
-        require(withDrawToken.balanceOf(self) >= withDrawAmount,"The contract must have tokens greater than the withDrawAmount");
+        require(withDrawToken.balanceOf(address(this)) >= withDrawAmount,"The contract must have tokens greater than the withDrawAmount");
         withDrawToken.transfer(account,withDrawAmount);
-
-        // Clearing logic to handle various vouchers(deposit,loan,Repayment)
-        // withDraw amount = depositAmount - Liquidation transfer out amount
-        // ???????????????
-        // when withDraw success, Data processing
-        // update CoinDealerState = 0
+        /*
+          ？？？？？？？？？？？？？
+          Is it necessary to change the deposit certificate
+         */
         CoinDealerState[account][tokenAddress] = 0;
-
-
-        
     }
 
     /**
@@ -284,7 +278,7 @@ contract L2_OrbiterMaker is Ownable {
     ) public {
         require(CoinDealerState[toAddress][tokenAddress] != 0,"toAddress must be coinDealer");
         require(fromAddress != address(0),"fromAddress can not be address(0)");
-        require(toAddress != address(0),"fromAddress can not be address(0)");
+        require(toAddress != address(0),"toAddress can not be address(0)");
         require(tokenAddress != address(0),"tokenAddress can not be address(0)");
         // ????require(msg.sender == pushserverAddress,"msg.senfer must be pushserverAddress");
 
@@ -292,11 +286,21 @@ contract L2_OrbiterMaker is Ownable {
         // Match to the repaymentProof，indicating that the payment has been made
         require(RepaymentData[proofID].fromAddress == address(0) && RepaymentData[proofID].toAddress == address(0),"Match to the repaymentProof");
         // Did not match the repaymentProof，Make a singleLoanLiquidation
-        //  ??
-        //  ??
-        //
-        //
+        // Find the deposit certificate and get  depositAmount
+        require(CoinDealerState[toAddress][TokenAddress] != 0,"toAddress & tokenAddress must be a CoinDealer and CoinDealerState can not be 0");
+        DepositProof memory coinDealerProof = CoinDealerInfo[toAddress][TokenAddress];
+        uint256 oldAmount = coinDealerProof.depositAmount;
 
+        // The amount of pledge deposit, the amount to be repaid and the amount of contract holdings to compared
+        require(oldAmount > amount, "depositAmount must be greater than repaymentAmount");
+        ERC20 LiquidationToken = ERC20(tokenAddress);
+        require(LiquidationToken.balanceOf(address(this)) >= amount,"The contract must have tokens greater than the amount");
+
+        // Deposit funds transfer and change the deposit certificate
+        if (LiquidationToken.transfer(fromAddress, amount)) {
+            uint256 newAmount = oldAmount - amount;
+            CoinDealerInfo[toAddress][TokenAddress].depositAmount = newAmount;
+        }
     }
 
 

@@ -76,4 +76,21 @@ contract L1_PushManServer is Ownable {
     ) external {
       //Call singleLoanLiquidation of OrbiterMaker.sol on L2
     }
+
+
+    /**
+     * @dev Generate loan certificate ID（proofID）
+     * @param fromAddress  bytes32（0~20）
+     * @param param1  bytes32（21~28）
+     * @param param2  bytes32（29~32）
+     * @return bytes32
+     */
+    function generateProofID(
+      address fromAddress,
+      uint256 param1,
+      uint256 param2)
+    internal return(bytes32){
+        return (bytes32(uint256(fromAddress)) << 96) | (bytes32(param1) << 32) | bytes(param2);
+        console.logBytes32(ooo);
+    }
 }
