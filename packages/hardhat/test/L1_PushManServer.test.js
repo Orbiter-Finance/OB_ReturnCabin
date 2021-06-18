@@ -22,6 +22,7 @@ describe("L1_PushManServer Test", function () {
 
   let coinDealerAccount;
   let userAccount;
+  let tokenAddress;
 
   beforeEach(async function () {
     // Get the ContractFactory and Signers here.
@@ -29,6 +30,7 @@ describe("L1_PushManServer Test", function () {
     [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
     coinDealerAccount = addr1.address;
     userAccount = addr2.address;
+    tokenAddress = address(0x123);
 
     // To deploy our contract, we just have to call Token.deploy() and await
     // for it to be deployed(), which happens onces its transaction has been
@@ -48,6 +50,7 @@ describe("L1_PushManServer Test", function () {
         await L1_PushManServerContract.connect(addr2).getL1TransferInfo(
           userAccount,
           coinDealerAccount,
+          tokenAddress,
           amount
         );
         // expect get transfer information from L1
@@ -69,6 +72,7 @@ describe("L1_PushManServer Test", function () {
         await L1_PushManServerContract.connect(addr2).convertToLoanProof(
           userAccount,
           coinDealerAccount,
+          tokenAddress,
           amount
         );
 
@@ -82,6 +86,22 @@ describe("L1_PushManServer Test", function () {
 
         await L1_PushManServerContract.connect(addr2).sendMessageToL2Orbiter(
           //proof????
+          userAccount,
+          coinDealerAccount,
+          tokenAddress,
+          amount
+        );
+        // expect(await myContract.purpose()).to.equal(newPurpose);
+      });
+    });
+
+    describe("generateProofID()", function () {
+      it("SGenerate loan certificate ID", async function () {
+
+        await L1_PushManServerContract.generateProofID(
+          userAccount,
+          param1,
+          param2,
         );
         // expect(await myContract.purpose()).to.equal(newPurpose);
       });

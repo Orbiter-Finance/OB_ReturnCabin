@@ -17,26 +17,26 @@ contract L1_PushManServer is Ownable, iExtractor {
     mapping(uint256 => address)iExtractorAddress;
 
     // Proof of loan，create by L1PushManServer
-    struct LoanProof {
-        address fromAddress;
-        address toAddress;
-        address TokenAddress;
-        uint256 amount;
-        uint256 timestamp;
-        uint256 chainID;
-        uint256 proofID;
-    }
+    // struct LoanProof {
+    //     address fromAddress;
+    //     address toAddress;
+    //     address TokenAddress;
+    //     uint256 amount;
+    //     uint256 timestamp;
+    //     uint256 chainID;
+    //     uint256 proofID;
+    // }
 
     // transaction information，from L1CTC
-    struct TransferInfo {
-        address fromAddress;
-        address toAddress;
-        address TokenAddress;
-        uint256 amount;
-        uint256 timestamp;
-        uint256 chainID;
-        uint256 proofID;
-    }
+    // struct TransferInfo {
+    //     address fromAddress;
+    //     address toAddress;
+    //     address TokenAddress;
+    //     uint256 amount;
+    //     uint256 timestamp;
+    //     uint256 chainID;
+    //     uint256 proofID;
+    // }
 
     function initiExtractorAddress (
         address _iExtractorAddress

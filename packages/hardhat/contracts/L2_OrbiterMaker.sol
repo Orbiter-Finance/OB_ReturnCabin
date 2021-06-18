@@ -212,8 +212,8 @@ contract L2_OrbiterMaker is Ownable {
         address toAddress,
         address TokenAddress;
         uint256 amount,
-        uint256 chainID,
-        bytes32 proofID // key?
+        uint256 chainID
+        // bytes32 proofID // key?
     ) public {
         require(CoinDealerState[fromAddress][tokenAddress] != 0,"fromAddress must be coinDealer");
         require(fromAddress != address(0),"fromAddress can not be address(0)");
@@ -226,13 +226,30 @@ contract L2_OrbiterMaker is Ownable {
         require(RepaymentToken.balanceOf(fromAddress) >= amout,"The fromAddress must have tokens greater than the amount");
         // RepaymentToken.approve(address(this), amount) ？？？？  front
         RepaymentToken.transferFrom(fromAddress, toAddress, amount);
-
         // generate RepaymentData(RepaymentProof) / RepaymentFrom  / RepaymentTo
+        // ？？？？？ how to get proofID(What data is used to generate proofID)
+        bytes32 proofID = generateProofID(fromAddress,amount,chainID);
         RepaymentProof proof = RepaymentProof(fromAddress,toAddress,TokenAddress,amount,timestamp,chainID,proofID)
         RepaymentData[proofID] = proof;
         // Whether to store more data？？？？？？？？？？？
         RepaymentFrom[fromAddress].push(proofID);
         RepaymentTo[toAddress].push(proofID);
+    }
+
+    /**
+     * @dev Generate RepayMent proof ID（proofID）
+     * @param fromAddress  bytes32（0~20）
+     * @param param1  bytes32（21~28）
+     * @param param2  bytes32（29~32）
+     * @return bytes32
+     */
+    function generateProofID(
+      address fromAddress,
+      uint256 param1,
+      uint256 param2)
+    internal returns(bytes32){
+      // Need to adjust the number of bits according to the realization
+      return (bytes32(uint256(fromAddress)) << 96) | (bytes32(param1) << 32) | bytes(param2);
     }
 
     // /**
