@@ -29,6 +29,9 @@ contract L2_OrbiterMaker is Ownable {
     mapping(address => mapping(address => uint256)) public CoinDealerState;
     // accountAddress =>(tokenAddress => DepositProof)
     mapping(address => mapping(address => DepositProof)) public CoinDealerInfo;
+    // accountAddress =>(tokenAddress => withDrawTime)
+    mapping(address => mapping(address => uint256)) public WithDrawTimes;
+
 
     /**
      * @dev register the account to be anew Coin Dealer
@@ -123,6 +126,7 @@ contract L2_OrbiterMaker is Ownable {
         uint256 L1CTCTime = 3600 seconds;
         uint256 pushManServerTime = 3600 seconds;
         uint256 withDrawTime = now + L1CTCTime + pushManServerTime;
+        WithDrawTimes[account][tokenAddress] = withDrawTime;
         // Where to store withDrawTime, so that it can be used when withdrawing?????
         /*
         ??????????????????????????????????
@@ -147,10 +151,8 @@ contract L2_OrbiterMaker is Ownable {
 
         // Determine whether the account is Coin Dealer and CoinDealerState must be 3
         require(CoinDealerState[account][tokenAddress] == 3,"account&tokenAddress must be Coin Dealer and CoinDealerState must be 3");
-        /*
-          // where to get withDrawTime ???????????
-         */
-        uint256 withDrawTime = 12312312312312;
+        require(WithDrawTimes[account][tokenAddress] != 0,"WithDrawTime must not be 0");
+        uint256 withDrawTime = WithDrawTimes[account][tokenAddress];
 
         require(now > withDrawTime, "The current time must be after the withdrawal time");
         DepositProof proof = CoinDealerInfo[account][tokenAddress];
@@ -164,21 +166,22 @@ contract L2_OrbiterMaker is Ownable {
           Is it necessary to change the deposit certificate
          */
         CoinDealerState[account][tokenAddress] = 0;
+        WithDrawTimes[account][tokenAddress] = 0;
     }
 
     /**
       certificate
      */
     // Proof of loan，create by L1PushManServer
-    struct LoanProof {
-        address fromAddress;
-        address toAddress;
-        // address TokenAddress;
-        uint256 amount;
-        uint256 timestamp;
-        uint256 chainID;
-        uint256 proofID;
-    }
+    // struct LoanProof {
+    //     address fromAddress;
+    //     address toAddress;
+    //     // address TokenAddress;
+    //     uint256 amount;
+    //     uint256 timestamp;
+    //     uint256 chainID;
+    //     uint256 proofID;
+    // }
     // Proof of repayment， create by
     struct RepaymentProof {
         address fromAddress; // coinDealer
@@ -321,21 +324,21 @@ contract L2_OrbiterMaker is Ownable {
     }
 
 
-    /**
-     * @dev Clearing All certificate， called by withDrawCoinDealer
-     * @param account  LiquidationAddress
-     * @param liquidationTime   LiquidationTime
-     */
-    function AccountLiquidation(
-        address account,
-        uint liquidationTime
-    ) public {
-        // withDrawing() equal
-        // Because withDrawCoinDealer must be after stopCoinDealer
-        //stopCoinDealer => stop Orders
-        //liquidationTime = now + L1CTCPackingTime + pushManTime？？？
-        // withDraw amount = depositAmount - Liquidation transfer out amount
-        // update CoinDealerState = 0
-    }
+    // /**
+    //  * @dev Clearing All certificate， called by withDrawCoinDealer
+    //  * @param account  LiquidationAddress
+    //  * @param liquidationTime   LiquidationTime
+    //  */
+    // function AccountLiquidation(
+    //     address account,
+    //     uint liquidationTime
+    // ) public {
+    //     // withDrawing() equal
+    //     // Because withDrawCoinDealer must be after stopCoinDealer
+    //     //stopCoinDealer => stop Orders
+    //     //liquidationTime = now + L1CTCPackingTime + pushManTime？？？
+    //     // withDraw amount = depositAmount - Liquidation transfer out amount
+    //     // update CoinDealerState = 0
+    // }
     constructor() public {}
 }
