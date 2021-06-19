@@ -4,6 +4,8 @@ import "hardhat/console.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interface/iExtractor"
 
+
+// !!!importrant  ???
 contract Extractor_zk is iExtractor, Ownable {
     constructor(
     ) public {
@@ -16,5 +18,6 @@ contract Extractor_zk is iExtractor, Ownable {
         address,address,address,uint256,uint256,uint256
     ) {
       // return transfer information
+      // returns address,address,address,uint256,uint256,uint256
     };
 }

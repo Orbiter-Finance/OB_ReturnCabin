@@ -98,6 +98,8 @@ contract L1_PushManServer is Ownable, iExtractor {
       // require(Parameter verification )
       (address fromAddress,address toAddress,address TokenAddress,uint256 amount,uint256 timestamp,uint256 chainID,uint256 proofID) = convertToLoanProof(fromAddress, toAddress, chainID,amount)
       //Call singleLoanLiquidation of OrbiterMaker.sol on L2
+      // 1.tickedid（？？ retry）
+      // 2.Send directly (??)
     }
 
 

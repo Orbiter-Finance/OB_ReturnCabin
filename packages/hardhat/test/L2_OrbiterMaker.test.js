@@ -231,19 +231,19 @@ describe("L2_OrbiterMaker Test", function () {
    */
   describe("AccountLiquidation()", function () {
     it("Should be Clearing All certificate， called by withDrawCoinDealer", async function () {
-      let liquidationTime = Date.parse(new Date()) / 1000;
+      let amount = 100;
 
       // test owner or accout
-      await L2_OrbiterMakerContract.connect(addr1).AccountLiquidation(
-        coinDealerAccount,
-        liquidationTime
+      await L2_OrbiterMakerContract.AccountLiquidation(
+        account,
+        TokenAddress,
+        amount
       );
+      expect(await L2_OrbiterMakerContract.CoinDealerState[account][tokenAddress]).to.equal(0);
+      expect(await L2_OrbiterMakerContract.WithDrawTimes[account][tokenAddress]).to.equal(0);
 
       /*
-        This test requires preconditions
-          1. registerCoinDealer(coinDealerAccount)
-          2. stopCoinDealer(coinDealerAccount)
-          3. withDrawCoinDealer(coinDealerAccount)
+       f
        */
 
       // Because withDrawCoinDealer must be after stopCoinDealer

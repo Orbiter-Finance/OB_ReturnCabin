@@ -40,13 +40,18 @@ describe("L1_PushManServer Test", function () {
   describe("deploy contract", function () {
     it("Should deploy L1_PushManServer", async function () {
       L1_PushManServer = await ethers.getContractFactory("L1_PushManServer");
-
       L1_PushManServerContract = await L1_PushManServer.deploy();
+    });
+
+    describe("initiExtractorAddress()", function () {
+      it("", async function () {
+        await L1_PushManServerContract.initiExtractorAddress(tokenAddress);
+        // expect(await myContract.purpose()).to.equal(newPurpose);
+      });
     });
 
     describe("getL1TransferInfo()", function () {
       it("Should be Obtain a certain transfer information on L1 through parameters(???) from iExtractor", async function () {
-
         await L1_PushManServerContract.connect(addr2).getL1TransferInfo(
           userAccount,
           coinDealerAccount,
@@ -54,7 +59,7 @@ describe("L1_PushManServer Test", function () {
           amount
         );
         // expect get transfer information from L1
-        expect(await myContract.purpose()).to.equal(newPurpose);
+        // expect(await myContract.purpose()).to.equal(newPurpose);
       });
     });
 
@@ -83,9 +88,8 @@ describe("L1_PushManServer Test", function () {
 
     describe("sendMessageToL2Orbiter()", function () {
       it("Should be Call the singleLoanLiquidation of OrbiterMaker.sol on L2 with the loanProof", async function () {
-
         await L1_PushManServerContract.connect(addr2).sendMessageToL2Orbiter(
-          //proof????
+          // proof????
           userAccount,
           coinDealerAccount,
           tokenAddress,
@@ -96,14 +100,22 @@ describe("L1_PushManServer Test", function () {
     });
 
     describe("generateProofID()", function () {
-      it("SGenerate loan certificate ID", async function () {
-
+      it("Generate loan certificate ID", async function () {
+        const param1 = 123123123;
+        const param2 = 100;
         await L1_PushManServerContract.generateProofID(
           userAccount,
           param1,
-          param2,
+          param2
         );
-        // expect(await myContract.purpose()).to.equal(newPurpose);
+        // 0x000001203120390129309120390123902193012930123
+        expect(
+          await L1_PushManServerContract.generateProofID(
+            userAccount,
+            param1,
+            param2
+          )
+        ).to.equal("0x000001203120390129309120390123902193012930123");
       });
     });
   });

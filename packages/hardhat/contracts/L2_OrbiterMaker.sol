@@ -3,7 +3,8 @@ pragma solidity 0.7.6;
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 // import "https://github.com/OpenZeppelin/openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
-import "https://github.com/OpenZeppelin/openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
+// import "https://github.com/OpenZeppelin/openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20"
 
 /// @title Responsible for Arbitrum coin dealer registration, voucher processing, and clearing related logic
 /// @author Orbiter
@@ -156,17 +157,8 @@ contract L2_OrbiterMaker is Ownable {
 
         require(now > withDrawTime, "The current time must be after the withdrawal time");
         DepositProof proof = CoinDealerInfo[account][tokenAddress];
-        uint withDrawAmount = proof.depositAmount;
-        //  contract transefer withDrawAmount token to coindealer ， balanceOf() should >= amount
-        ERC20 withDrawToken = ERC20(tokenAddress);
-        require(withDrawToken.balanceOf(address(this)) >= withDrawAmount,"The contract must have tokens greater than the withDrawAmount");
-        withDrawToken.transfer(account,withDrawAmount);
-        /*
-          ？？？？？？？？？？？？？
-          Is it necessary to change the deposit certificate
-         */
-        CoinDealerState[account][tokenAddress] = 0;
-        WithDrawTimes[account][tokenAddress] = 0;
+        uint256 withDrawAmount = proof.depositAmount;
+        AccountLiquidation(account,tokenAddress,withDrawAmount);
     }
 
     /**
@@ -247,12 +239,13 @@ contract L2_OrbiterMaker is Ownable {
      * @return bytes32
      */
     function generateProofID(
-      address fromAddress,
-      uint256 param1,
-      uint256 param2)
+      address fromAddress,   bytes20/
+      uint256 param1, // timestap  //bytes8
+      uint256 param2) // chainID   // bytes3
     internal returns(bytes32){
       // Need to adjust the number of bits according to the realization
       return (bytes32(uint256(fromAddress)) << 96) | (bytes32(param1) << 32) | bytes(param2);
+      0x2312313131231231230000123123
     }
 
     // /**
@@ -324,21 +317,26 @@ contract L2_OrbiterMaker is Ownable {
     }
 
 
-    // /**
-    //  * @dev Clearing All certificate， called by withDrawCoinDealer
-    //  * @param account  LiquidationAddress
-    //  * @param liquidationTime   LiquidationTime
-    //  */
-    // function AccountLiquidation(
-    //     address account,
-    //     uint liquidationTime
-    // ) public {
-    //     // withDrawing() equal
-    //     // Because withDrawCoinDealer must be after stopCoinDealer
-    //     //stopCoinDealer => stop Orders
-    //     //liquidationTime = now + L1CTCPackingTime + pushManTime？？？
-    //     // withDraw amount = depositAmount - Liquidation transfer out amount
-    //     // update CoinDealerState = 0
-    // }
+    /**
+     * @dev Clearing All certificate， called by withDrawCoinDealer
+     * @param account  LiquidationAddress
+     * @param liquidationTime   LiquidationTime
+     */
+    function AccountLiquidation(
+        address account,
+        address tokenAddress,
+        uint256 withDrawAmount
+    ) public {
+        //  contract transefer withDrawAmount token to coindealer ， balanceOf() should >= amount
+        ERC20 withDrawToken = ERC20(tokenAddress);
+        require(withDrawToken.balanceOf(address(this)) >= withDrawAmount,"The contract must have tokens greater than the withDrawAmount");
+        withDrawToken.transfer(account,withDrawAmount);
+        /*
+          ？？？？？？？？？？？？？
+          Is it necessary to change the deposit certificate
+         */
+        CoinDealerState[account][tokenAddress] = 0;
+        WithDrawTimes[account][tokenAddress] = 0;
+    }
     constructor() public {}
 }
