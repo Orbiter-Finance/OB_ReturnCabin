@@ -13,11 +13,11 @@ L2_OrbiterMaker Test
 | ------ | ------ | ------ | ------ |
 | ------ | design/code/ready | public/internal | user/coinDealer/owner/pushMan |
 | registerCoinDealer | ready | public | coinDealer |
-| stopCoinDealer | code | public | coinDealer |
-| withDrawCoinDealer | code | public | coinDealer |
-| RepaymentTokenByCoinDealer | code | public | coinDealer |
+| stopCoinDealer | ready | public | coinDealer |
+| withDrawCoinDealer | ready | public | coinDealer |
+| RepaymentTokenByCoinDealer | ready | public | coinDealer |
 | singleLoanLiquidation | code | public | pushManServer |
-| AccountLiquidation | code | internal | ------ |
+| AccountLiquidation | code/ready | internal | ------ |
 
 L1_PushManServer test
 | name | state | region | Caller |

@@ -82,10 +82,10 @@ describe("L2_OrbiterMaker Test", function () {
     it("Should be register addr1 to be a CoinDealer", async function () {
       SimpleTokenContract.connect(addr1).approve(
         L2_OrbiterMakerContract.address,
-        BigNumber.from("10000000000000000000000")
+        BigNumber.from("10000000000000000000000") // 10000
       );
 
-      const amount = BigNumber.from("10000000000000000000000");
+      const amount = BigNumber.from("10000000000000000000000"); // 10000
       const fee = 100;
       const minQuota = 100;
       const maxQuota = 1000;
@@ -121,23 +121,6 @@ describe("L2_OrbiterMaker Test", function () {
 
       console.log("contract =", contractNum.toString());
 
-      // console.log("1 =", await L2_OrbiterMakerContract.CoinDealerState);
-      // console.log(
-      //   "2 =",
-      //   await L2_OrbiterMakerContract.CoinDealerState(coinDealerAccount)
-      // );
-
-      // struct DepositProof {
-      //   address CoinDealerAddress;
-      //   address tokenAddress;
-      //   uint256 depositAmount;
-      //   uint256 fee;
-      //   uint256 minQuota;
-      //   uint256 maxQuota;
-      //   uint256[] chainID;
-      //   uint256 startTimeStamp;
-      // }
-
       expect(
         await L2_OrbiterMakerContract.CoinDealerState(
           coinDealerAccount,
@@ -165,25 +148,22 @@ describe("L2_OrbiterMaker Test", function () {
    */
   // describe("stopCoinDealer()", function () {
   //   it("Should be stop addr1 to be a CoinDealer", async function () {
-  //     const stopTimeStamp = Date.parse(new Date()) / 1000;
   //     // test owner or accout
   //     await L2_OrbiterMakerContract.connect(addr1).stopCoinDealer(
   //       coinDealerAccount,
-  //       stopTimeStamp
+  //       tokenAddress
   //     );
 
   //     expect(
-  //       await L2_OrbiterMakerContract.CoinDealerState[coinDealerAccount]
-  //     ).to.equal(1);
+  //       await await L2_OrbiterMakerContract.CoinDealerState(
+  //         coinDealerAccount,
+  //         tokenAddress
+  //       )
+  //     ).to.equal(2);
 
   //     /*
   //       stopCoinDealer() need Buffer time, test Buffer time < 5s
   //      */
-  //     setTimeout(async function () {
-  //       expect(
-  //         await L2_OrbiterMakerContract.CoinDealerState[coinDealerAccount]
-  //       ).to.equal(2);
-  //     }, 5000);
   //   });
   // });
 
@@ -204,129 +184,160 @@ describe("L2_OrbiterMaker Test", function () {
   //         2. Is withDraw amount correct？ Whether the withdrawal is successful？
   //      */
 
-  //     const withDrawTimeStamp = Date.parse(new Date()) / 1000;
-  //     // test owner or accout
-  //     await L2_OrbiterMakerContract.connect(addr1).withDrawCoinDealer(
-  //       coinDealerAccount,
-  //       withDrawTimeStamp
+  //     const coinDealerNum = await SimpleTokenContract.balanceOf(
+  //       coinDealerAccount
   //     );
 
+  //     const depositNum = await SimpleTokenContract.balanceOf(
+  //       L2_OrbiterMakerContract.address
+  //     );
   //     expect(
-  //       await L2_OrbiterMakerContract.CoinDealerState[coinDealerAccount]
-  //     ).to.equal(1);
+  //       await L2_OrbiterMakerContract.CoinDealerState(
+  //         coinDealerAccount,
+  //         tokenAddress
+  //       )
+  //     ).to.equal(2);
+  //     // test owner or accout
+  //     // setTimeout(async function () {
+  //     await L2_OrbiterMakerContract.connect(addr1).withDrawCoinDealer(
+  //       coinDealerAccount,
+  //       tokenAddress
+  //     );
+  //     expect(
+  //       await L2_OrbiterMakerContract.CoinDealerState(
+  //         coinDealerAccount,
+  //         tokenAddress
+  //       )
+  //     ).to.equal(0);
+  //     // }, 10000);
+  //     expect(
+  //       await SimpleTokenContract.balanceOf(L2_OrbiterMakerContract.address)
+  //     ).to.equal(0);
+
+  //     expect(await SimpleTokenContract.balanceOf(coinDealerAccount)).to.equal(
+  //       coinDealerNum.add(depositNum)
+  //     );
+
   //     // Whether to check CoinDealerInfo
 
   //     /*
   //       withDrawTimeStamp() need Buffer time, test Buffer time < 10s
   //       withDrawTimeStamp = now + L1CTCPackingTime + pushManTime？？？
   //      */
-  //     setTimeout(async function () {
-  //       expect(
-  //         await L2_OrbiterMakerContract.CoinDealerState[coinDealerAccount]
-  //       ).to.equal(0);
-  //     }, 10000);
+  //     // setTimeout(async function () {
+  //     //   expect(
+  //     //     await L2_OrbiterMakerContract.CoinDealerState[coinDealerAccount]
+  //     //   ).to.equal(0);
+  //     // }, 10000);
   //   });
   // });
 
   /**
    * test L2_OrbiterMakerContract RepaymentTokenByCoinDealer(）function
    */
-  // describe("RepaymentTokenByCoinDealer()", function () {
-  //   it("Should be Repayment from CoinDealer, generate repayment proof", async function () {
-  //     const TokenAddress = "0x000";
-  //     const repayMentAmount = 120;
-  //     const repayMentChainID = 1;
-  //     const proofID = 101111111;
-  //     const repayMentTimeStamp = Date.parse(new Date()) / 1000;
+  describe("RepaymentTokenByCoinDealer()", function () {
+    it("Should be Repayment from CoinDealer, generate repayment proof", async function () {
+      const repayMentAmount = BigNumber.from((100 * 10 ** 18).toString());
+      const repayMentChainID = 1011;
+      const proofIDText = "test";
+      const proofID = ethers.utils.formatBytes32String(proofIDText);
 
-  //     // need use TokenAddress to get the balance of CoinDealer????
-  //     const balanceFirst = 1000; // ????
-  //     // test owner or accout
-  //     await L2_OrbiterMakerContract.connect(addr1).RepaymentTokenByCoinDealer(
-  //       coinDealerAccount,
-  //       userAccount,
-  //       TokenAddress,
-  //       repayMentAmount,
-  //       repayMentTimeStamp,
-  //       repayMentChainID,
-  //       proofID
-  //     );
+      const coinDealerNum = await SimpleTokenContract.balanceOf(
+        coinDealerAccount
+      );
 
-  //     // Verify the generation of repayment proof
-  //     expect(
-  //       await L2_OrbiterMakerContract.RepaymentData[proofID].fromAddress
-  //     ).to.equal(coinDealerAccount);
-  //     expect(
-  //       await L2_OrbiterMakerContract.RepaymentData[proofID].toAddress
-  //     ).to.equal(userAccount);
-  //     expect(
-  //       await L2_OrbiterMakerContract.RepaymentData[proofID].TokenAddress
-  //     ).to.equal(TokenAddress);
-  //     expect(
-  //       await L2_OrbiterMakerContract.RepaymentData[proofID].amount
-  //     ).to.equal(repayMentAmount);
-  //     expect(
-  //       await L2_OrbiterMakerContract.RepaymentData[proofID].timestamp
-  //     ).to.equal(repayMentTimeStamp);
-  //     expect(
-  //       await L2_OrbiterMakerContract.RepaymentData[proofID].chainID
-  //     ).to.equal(repayMentChainID);
-  //     expect(
-  //       await L2_OrbiterMakerContract.RepaymentData[proofID].proofID
-  //     ).to.equal(proofID);
+      console.log("coinDealerNum =", coinDealerNum.toString());
 
-  //     // Verify the RepaymentFrom / RepaymentTo
-  //     expect(
-  //       await L2_OrbiterMakerContract.RepaymentFrom[coinDealerAccount][0]
-  //     ).to.equal(proofID);
-  //     expect(
-  //       await L2_OrbiterMakerContract.RepaymentTo[userAccount][0]
-  //     ).to.equal(proofID);
+      const userAccountNum = await SimpleTokenContract.balanceOf(userAccount);
 
-  //     // Verify the approvel and transfer
-  //     // expert let balanceNow = balanceFirst - repayMentAmount;
-  //   });
-  // });
+      console.log("userAccountNum =", userAccountNum.toString());
+
+      SimpleTokenContract.connect(addr1).approve(
+        L2_OrbiterMakerContract.address,
+        repayMentAmount // 100
+      );
+
+      // test owner or accout
+      await L2_OrbiterMakerContract.connect(addr1).RepaymentTokenByCoinDealer(
+        coinDealerAccount,
+        userAccount,
+        tokenAddress,
+        repayMentAmount,
+        repayMentChainID,
+        proofID
+      );
+
+      expect(await SimpleTokenContract.balanceOf(coinDealerAccount)).to.equal(
+        coinDealerNum.sub(repayMentAmount)
+      );
+
+      expect(await SimpleTokenContract.balanceOf(userAccount)).to.equal(
+        userAccountNum.add(repayMentAmount)
+      );
+
+      // Verify the generation of repayment proof
+      const repayMentProof = await L2_OrbiterMakerContract.RepaymentData(
+        proofID
+      );
+      console.log("repayMentProof =", repayMentProof);
+      expect(repayMentProof.fromAddress).to.equal(coinDealerAccount);
+      expect(repayMentProof.toAddress).to.equal(userAccount);
+      expect(repayMentProof.tokenAddress).to.equal(tokenAddress);
+      expect(repayMentProof.amount).to.equal(repayMentAmount);
+      expect(repayMentProof.chainID).to.equal(repayMentChainID);
+      expect(repayMentProof.proofID).to.equal(proofID);
+      // Verify the RepaymentFrom / RepaymentTo
+      // expect(
+      //   await L2_OrbiterMakerContract.RepaymentFrom[coinDealerAccount][0]
+      // ).to.equal(proofID);
+      // expect(
+      //   await L2_OrbiterMakerContract.RepaymentTo[userAccount][0]
+      // ).to.equal(proofID);
+
+      // Verify the approvel and transfer
+      // expert let balanceNow = balanceFirst - repayMentAmount;
+    });
+  });
 
   /**
    * test L2_OrbiterMakerContract singleLoanLiquidation(）function
    */
-  // describe("singleLoanLiquidation()", function () {
-  //   it("Should be Clearing of a single loan certificate, called by pushmanServer", async function () {
-  //     const TokenAddress = "0x000";
-  //     const loanAmount = 120;
-  //     const loanChainID = 1;
-  //     const proofID = 101111111;
-  //     const loanTimeStamp = Date.parse(new Date()) / 1000;
+  describe("singleLoanLiquidation()", function () {
+    it("Should be Clearing of a single loan certificate, called by pushmanServer", async function () {
+      const TokenAddress = "0x000";
+      const loanAmount = 120;
+      const loanChainID = 1;
+      const proofID = 101111111;
+      const loanTimeStamp = Date.parse(new Date()) / 1000;
 
-  //     // test owner or accout
-  //     await L2_OrbiterMakerContract.connect(addr2).singleLoanLiquidation(
-  //       userAccount,
-  //       coinDealerAccount,
-  //       TokenAddress,
-  //       loanAmount,
-  //       loanTimeStamp,
-  //       loanChainID,
-  //       proofID
-  //     );
+      // test owner or accout
+      await L2_OrbiterMakerContract.connect(addr2).singleLoanLiquidation(
+        userAccount,
+        coinDealerAccount,
+        TokenAddress,
+        loanAmount,
+        loanTimeStamp,
+        loanChainID,
+        proofID
+      );
 
-  //     // Verify the generation of repayment proof
-  //     // expect(await L2_OrbiterMakerContract.RepaymentData[proofID].fromAddress).to.equal(coinDealerAccount);
-  //     // expect(await L2_OrbiterMakerContract.RepaymentData[proofID].toAddress).to.equal(userAccount);
-  //     // expect(await L2_OrbiterMakerContract.RepaymentData[proofID].TokenAddress).to.equal(TokenAddress);
-  //     // expect(await L2_OrbiterMakerContract.RepaymentData[proofID].amount).to.equal(repayMentAmount);
-  //     // expect(await L2_OrbiterMakerContract.RepaymentData[proofID].timestamp).to.equal(repayMentTimeStamp);
-  //     // expect(await L2_OrbiterMakerContract.RepaymentData[proofID].chainID).to.equal(repayMentChainID);
-  //     // expect(await L2_OrbiterMakerContract.RepaymentData[proofID].proofID).to.equal(proofID);
+      // Verify the generation of repayment proof
+      // expect(await L2_OrbiterMakerContract.RepaymentData[proofID].fromAddress).to.equal(coinDealerAccount);
+      // expect(await L2_OrbiterMakerContract.RepaymentData[proofID].toAddress).to.equal(userAccount);
+      // expect(await L2_OrbiterMakerContract.RepaymentData[proofID].TokenAddress).to.equal(TokenAddress);
+      // expect(await L2_OrbiterMakerContract.RepaymentData[proofID].amount).to.equal(repayMentAmount);
+      // expect(await L2_OrbiterMakerContract.RepaymentData[proofID].timestamp).to.equal(repayMentTimeStamp);
+      // expect(await L2_OrbiterMakerContract.RepaymentData[proofID].chainID).to.equal(repayMentChainID);
+      // expect(await L2_OrbiterMakerContract.RepaymentData[proofID].proofID).to.equal(proofID);
 
-  //     // Verify the RepaymentFrom / RepaymentTo
-  //     // expect(await L2_OrbiterMakerContract.RepaymentFrom[coinDealerAccount][0]).to.equal(proofID);
-  //     // expect(await L2_OrbiterMakerContract.RepaymentTo[userAccount][0]).to.equal(proofID);
+      // Verify the RepaymentFrom / RepaymentTo
+      // expect(await L2_OrbiterMakerContract.RepaymentFrom[coinDealerAccount][0]).to.equal(proofID);
+      // expect(await L2_OrbiterMakerContract.RepaymentTo[userAccount][0]).to.equal(proofID);
 
-  //     // Verify the approvel and transfer
-  //     // expert let balanceNow = balanceFirst - repayMentAmount;
-  //   });
-  // });
+      // Verify the approvel and transfer
+      // expert let balanceNow = balanceFirst - repayMentAmount;
+    });
+  });
 
   /**
    * test L2_OrbiterMakerContract AccountLiquidation(）function

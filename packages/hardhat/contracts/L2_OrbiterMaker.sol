@@ -101,10 +101,6 @@ contract L2_OrbiterMaker is Ownable {
         CoinDealerInfo[msg.sender][tokenAddress] = newProof;
         CoinDealerState[msg.sender][tokenAddress] = 1;
         console.log("test =", CoinDealerState[msg.sender][tokenAddress]);
-        // Register coinDealer, generate proof of deposit
-        //（minQuota maxQuota amount） Size judgment
-        // amount
-        // generate CoinDealerInfo , set CoinDealerInfo and CoinDealerState
     }
 
     /**
@@ -128,9 +124,11 @@ contract L2_OrbiterMaker is Ownable {
             "account&tokenAddress must be Coin Dealer and CoinDealerState must be 1"
         );
         // eg.  stopTimeStamp = now + 60 second （Buffer time is 60s）？？？？？？???
-        uint256 L1CTCTime = 3600 seconds;
-        uint256 pushManServerTime = 3600 seconds;
+        uint256 L1CTCTime = 0 seconds;
+        uint256 pushManServerTime = 0 seconds;
         uint256 withDrawTime = block.timestamp + L1CTCTime + pushManServerTime;
+        console.log("stopTime =", block.timestamp);
+        console.log("withDrawTime =", withDrawTime);
         // update CoinDealerState，and the coin Dealer cannot be traded
         CoinDealerState[account][tokenAddress] = 2;
         // setWithDrawTime
@@ -163,12 +161,15 @@ contract L2_OrbiterMaker is Ownable {
             "WithDrawTime can not be 0"
         );
         uint256 withDrawTime = WithDrawTimes[account][tokenAddress];
+        console.log("now =", block.timestamp);
+        console.log("withDrawTime =", withDrawTime);
         require(
             block.timestamp > withDrawTime,
             "The current time must be after the withdrawal time"
         );
         DepositProof memory proof = CoinDealerInfo[account][tokenAddress];
         uint256 withDrawAmount = proof.depositAmount;
+        console.log("withDrawAmount =", withDrawAmount);
         AccountLiquidation(account, tokenAddress, withDrawAmount);
     }
 
@@ -179,7 +180,7 @@ contract L2_OrbiterMaker is Ownable {
     struct RepaymentProof {
         address fromAddress; // coinDealer
         address toAddress;
-        address TokenAddress;
+        address tokenAddress;
         uint256 amount;
         uint256 timestamp;
         uint256 chainID;
@@ -228,7 +229,10 @@ contract L2_OrbiterMaker is Ownable {
             RepaymentToken.balanceOf(fromAddress) >= amount,
             "The fromAddress must have tokens greater than the amount"
         );
-        // RepaymentToken.approve(address(this), amount) ？？？？  front
+        uint256 approveAmount =
+            RepaymentToken.allowance(msg.sender, address(this));
+        console.log("approveAmount =", approveAmount, "amount =", amount);
+        require(approveAmount == amount, "approveAmount must equal to amount");
         RepaymentToken.transferFrom(fromAddress, toAddress, amount);
         // generate RepaymentData(RepaymentProof) / RepaymentFrom  / RepaymentTo
         RepaymentProof memory proof =
