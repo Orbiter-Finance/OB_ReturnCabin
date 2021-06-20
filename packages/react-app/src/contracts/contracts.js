@@ -1,1 +1,1 @@
-module.exports = ["YourContract"];
+module.exports = ["L2_OrbiterMaker","YourContract"];

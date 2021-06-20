@@ -12,7 +12,7 @@ L2_OrbiterMaker Test
 | name | state | region | Caller |
 | ------ | ------ | ------ | ------ |
 | ------ | design/code/ready | public/internal | user/coinDealer/owner/pushMan |
-| registerCoinDealer | code | public | coinDealer |
+| registerCoinDealer | ready | public | coinDealer |
 | stopCoinDealer | code | public | coinDealer |
 | withDrawCoinDealer | code | public | coinDealer |
 | RepaymentTokenByCoinDealer | code | public | coinDealer |

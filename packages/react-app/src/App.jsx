@@ -360,6 +360,14 @@ function App(props) {
               blockExplorer={blockExplorer}
             />
 
+            <Contract
+              name="L2_OrbiterMaker"
+              signer={userProvider.getSigner()}
+              provider={localProvider}
+              address={address}
+              blockExplorer={blockExplorer}
+            />
+
             {/* uncomment for a second contract:
             <Contract
               name="SecondContract"
