@@ -14,6 +14,8 @@ const main = async () => {
 
   const L1_PushManServer = await deploy("L1_PushManServer"); // <-- add in constructor args like line 19 vvvv
 
+  const Extractor_zk = await deploy("Extractor_zk"); // <-- add in constructor args like line 19 vvvv
+
   // const yourContract = await ethers.getContractAt('YourContract', "0xaAC799eC2d00C013f1F11c37E654e59B0429DF6A") //<-- if you want to instantiate a version of a contract at a specific address!
   // const secondContract = await deploy("SecondContract")
 

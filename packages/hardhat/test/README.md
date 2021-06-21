@@ -16,18 +16,24 @@ L2_OrbiterMaker Test
 | stopCoinDealer | ready | public | coinDealer |
 | withDrawCoinDealer | ready | public | coinDealer |
 | RepaymentTokenByCoinDealer | ready | public | coinDealer |
-| singleLoanLiquidation | code | public | pushManServer |
-| AccountLiquidation | code/ready | internal | ------ |
+| singleLoanLiquidation | ready | public | pushManServer |
+| AccountLiquidation | ready | internal | ------ |
 
 L1_PushManServer test
 | name | state | region | Caller |
 | ------ | ------ | ------ | ------ |
 | ------ | design/code/ready | public/internal | user/coinDealer/owner/pushMan |
-| initiExtractorAddress | code | public | owner |
-| getL1TransferInfo | code | internal | ------ |
-| convertToLoanProof | code | internal | ------ |
+| initiExtractorAddress | ready | public | owner |
+| getL1TransferInfo | ready | internal | ------ |
+| convertToLoanProof | ready | internal | ------ |
 | sendMessageToL2Orbiter | code | public | user |
-| generateProofID | code | internal | ------ |
+| generateProofID | ready | internal | ------ |
+
+Extractor_zk test
+| name | state | region | Caller |
+| ------ | ------ | ------ | ------ |
+| ------ | design/code/ready | public/internal | user/coinDealer/owner/pushMan |
+| getTransactionInfo | code | public | pushManServer |
 
 ### tests
 
