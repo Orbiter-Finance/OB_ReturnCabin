@@ -309,7 +309,7 @@ contract L2_OrbiterMaker is Ownable {
         require(
             RepaymentData[proofID].fromAddress == address(0) &&
                 RepaymentData[proofID].toAddress == address(0),
-            "Match to the repaymentProof"
+            "Match to the repaymentProof,The loan has been repaid"
         );
         // Did not match the repaymentProof，Make a singleLoanLiquidation
         // Find the deposit certificate and get  depositAmount
@@ -320,10 +320,11 @@ contract L2_OrbiterMaker is Ownable {
         DepositProof memory coinDealerProof =
             CoinDealerInfo[toAddress][tokenAddress];
         uint256 oldAmount = coinDealerProof.depositAmount;
+
         // The amount of pledge deposit, the amount to be repaid and the amount of contract holdings to compared
         require(
-            oldAmount > amount,
-            "depositAmount must be greater than repaymentAmount"
+            oldAmount >= amount,
+            "depositAmount must be greater than loanAmount"
         );
         IERC20 LiquidationToken = IERC20(tokenAddress);
         require(
