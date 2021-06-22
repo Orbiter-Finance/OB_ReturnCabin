@@ -27,7 +27,7 @@ contract Extractor_zk is iExtractor {
             uint256 TransferChainID
         )
     {
-        console.log("Extractor_zk______Function");
+        console.log("come in Extractor_zk______Function");
         return (address(0x1), address(0x2), address(0x3), 1, 2, 1011);
     }
 }

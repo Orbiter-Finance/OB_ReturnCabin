@@ -31,6 +31,9 @@ contract L2_OrbiterMaker is Ownable {
     mapping(address => mapping(address => DepositProof)) public CoinDealerInfo;
     // accountAddress =>(tokenAddress => withDrawTime)
     mapping(address => mapping(address => uint256)) public WithDrawTimes;
+    // accountAddress =>(tokenAddress => stopButtferTime)
+    // The time when the coinDealer actually stops trading
+    mapping(address => mapping(address => uint256)) public stopTimes;
 
     /**
      * @dev register the account to be anew Coin Dealer
@@ -91,8 +94,8 @@ contract L2_OrbiterMaker is Ownable {
             );
         // coinDealer transfer token to Contract ??????
         // depositToken.approve(address(this), amount) ？？？？  front
-        console.log("coinDealer =", depositToken.balanceOf(msg.sender));
-        console.log("contract =", depositToken.balanceOf(address(this)));
+        console.log("coinDealerBalance =", depositToken.balanceOf(msg.sender));
+        console.log("contractBalance =", depositToken.balanceOf(address(this)));
         uint256 approveAmount =
             depositToken.allowance(msg.sender, address(this));
         console.log("approveAmount =", approveAmount, "amount =", amount);
@@ -101,7 +104,6 @@ contract L2_OrbiterMaker is Ownable {
         // transfer  success setCoinDealerInfo & setCoinDealerState
         CoinDealerInfo[msg.sender][tokenAddress] = newProof;
         CoinDealerState[msg.sender][tokenAddress] = 1;
-        console.log("test =", CoinDealerState[msg.sender][tokenAddress]);
     }
 
     /**
@@ -127,13 +129,19 @@ contract L2_OrbiterMaker is Ownable {
         // eg.  stopTimeStamp = now + 60 second （Buffer time is 60s）？？？？？？???
         uint256 L1CTCTime = 0 seconds;
         uint256 pushManServerTime = 0 seconds;
+        uint256 stopBufferTime = 0 seconds;
+        uint256 stopTime = block.timestamp + stopBufferTime;
         uint256 withDrawTime = block.timestamp + L1CTCTime + pushManServerTime;
-        console.log("stopTime =", block.timestamp);
+        console.log("stopTime =", stopTime);
         console.log("withDrawTime =", withDrawTime);
         // update CoinDealerState，and the coin Dealer cannot be traded
         CoinDealerState[account][tokenAddress] = 2;
         // setWithDrawTime
         WithDrawTimes[account][tokenAddress] = withDrawTime;
+        // setStopTime
+        stopTimes[account][tokenAddress] = stopTime;
+        console.log("stopTime =", stopTimes[account][tokenAddress]);
+        console.log("withDrawTime =", WithDrawTimes[account][tokenAddress]);
     }
 
     /**
