@@ -135,6 +135,19 @@ describe("L2_OrbiterMaker Test", function () {
   });
 
   /**
+   * test L2_OrbiterMakerContract initParamTime()function
+   * _L1CTCTime,
+   * _pushManServerTime,
+   * _stopBufferTime
+   */
+  describe("initParamTime()", function () {
+    it("initParamTime", async function () {
+      // test owner or accout
+      await L2_OrbiterMakerContract.initParamTime(0, 0, 10);
+    });
+  });
+
+  /**
    * test L2_OrbiterMakerContract stopCoinDealer()function
    */
   describe("stopCoinDealer()", function () {
@@ -151,7 +164,6 @@ describe("L2_OrbiterMaker Test", function () {
           tokenAddress
         )
       ).to.equal(2);
-
 
       /*
         stopCoinDealer() need Buffer time, test Buffer time < 5s
@@ -441,5 +453,4 @@ describe("L2_OrbiterMaker Test", function () {
   //     // update CoinDealerState = 0
   //   });
   // });
-
 });

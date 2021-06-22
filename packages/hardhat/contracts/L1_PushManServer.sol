@@ -78,12 +78,12 @@ contract L1_PushManServer is Ownable {
             uint256 TransferChainID
         )
     {
-        console.log(
-            "iExtractorAddress[",
-            chainID,
-            "] =",
-            iExtractorAddress[chainID]
-        );
+        // console.log(
+        //     "iExtractorAddress[",
+        //     chainID,
+        //     "] =",
+        //     iExtractorAddress[chainID]
+        // );
         require(
             iExtractorAddress[chainID] != address(0),
             "iExtractorAddress must be init"
@@ -191,11 +191,11 @@ contract L1_PushManServer is Ownable {
         uint256 chainID,
         uint256 amount
     ) public {
-        // // require(Parameter verification )
+        // require(Parameter verification )
         // (address fromAddress,address toAddress,address TokenAddress,uint256 amount,uint256 timestamp,uint256 chainID,uint256 proofID) = convertToLoanProof(fromAddress, toAddress, chainID,amount)
-        // //Call singleLoanLiquidation of OrbiterMaker.sol on L2
-        // // 1.tickedid（？？ retry）
-        // // 2.Send directly (??)
+        //Call singleLoanLiquidation of OrbiterMaker.sol on L2
+        // 1.tickedid（？？ retry）
+        // 2.Send directly (??)
     }
 
     /**

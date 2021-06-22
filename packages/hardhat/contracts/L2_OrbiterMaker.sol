@@ -35,6 +35,20 @@ contract L2_OrbiterMaker is Ownable {
     // The time when the coinDealer actually stops trading
     mapping(address => mapping(address => uint256)) public stopTimes;
 
+    uint256 L1CTCTime;
+    uint256 pushManServerTime;
+    uint256 stopBufferTime;
+
+    function initParamTime(
+        uint256 _L1CTCTime,
+        uint256 _pushManServerTime,
+        uint256 _stopBufferTime
+    ) public onlyOwner {
+        L1CTCTime = _L1CTCTime;
+        pushManServerTime = _pushManServerTime;
+        stopBufferTime = _stopBufferTime;
+    }
+
     /**
      * @dev register the account to be anew Coin Dealer
      * @param account The account being Coin Dealer
@@ -94,11 +108,11 @@ contract L2_OrbiterMaker is Ownable {
             );
         // coinDealer transfer token to Contract ??????
         // depositToken.approve(address(this), amount) ？？？？  front
-        console.log("coinDealerBalance =", depositToken.balanceOf(msg.sender));
-        console.log("contractBalance =", depositToken.balanceOf(address(this)));
+        // console.log("coinDealerBalance =", depositToken.balanceOf(msg.sender));
+        // console.log("contractBalance =", depositToken.balanceOf(address(this)));
         uint256 approveAmount =
             depositToken.allowance(msg.sender, address(this));
-        console.log("approveAmount =", approveAmount, "amount =", amount);
+        // console.log("approveAmount =", approveAmount, "amount =", amount);
         require(approveAmount == amount, "approveAmount must equal to amount");
         depositToken.transferFrom(msg.sender, address(this), amount);
         // transfer  success setCoinDealerInfo & setCoinDealerState
@@ -126,22 +140,24 @@ contract L2_OrbiterMaker is Ownable {
             CoinDealerState[account][tokenAddress] == 1,
             "account&tokenAddress must be Coin Dealer and CoinDealerState must be 1"
         );
+        // ????????????????  || => &&
+        require(
+            L1CTCTime != 0 || pushManServerTime != 0 || stopBufferTime != 0,
+            "L1CTCTime&pushManServerTime&stopBufferTime can not be false"
+        );
         // eg.  stopTimeStamp = now + 60 second （Buffer time is 60s）？？？？？？???
-        uint256 L1CTCTime = 0 seconds;
-        uint256 pushManServerTime = 0 seconds;
-        uint256 stopBufferTime = 0 seconds;
         uint256 stopTime = block.timestamp + stopBufferTime;
         uint256 withDrawTime = block.timestamp + L1CTCTime + pushManServerTime;
-        console.log("stopTime =", stopTime);
-        console.log("withDrawTime =", withDrawTime);
+        // console.log("stopTime =", stopTime);
+        // console.log("withDrawTime =", withDrawTime);
         // update CoinDealerState，and the coin Dealer cannot be traded
         CoinDealerState[account][tokenAddress] = 2;
         // setWithDrawTime
         WithDrawTimes[account][tokenAddress] = withDrawTime;
         // setStopTime
         stopTimes[account][tokenAddress] = stopTime;
-        console.log("stopTime =", stopTimes[account][tokenAddress]);
-        console.log("withDrawTime =", WithDrawTimes[account][tokenAddress]);
+        // console.log("stopTime =", stopTimes[account][tokenAddress]);
+        // console.log("withDrawTime =", WithDrawTimes[account][tokenAddress]);
     }
 
     /**
@@ -170,15 +186,15 @@ contract L2_OrbiterMaker is Ownable {
             "WithDrawTime can not be 0"
         );
         uint256 withDrawTime = WithDrawTimes[account][tokenAddress];
-        console.log("now =", block.timestamp);
-        console.log("withDrawTime =", withDrawTime);
+        // console.log("now =", block.timestamp);
+        // console.log("withDrawTime =", withDrawTime);
         require(
             block.timestamp > withDrawTime,
             "The current time must be after the withdrawal time"
         );
         DepositProof memory proof = CoinDealerInfo[account][tokenAddress];
         uint256 withDrawAmount = proof.depositAmount;
-        console.log("withDrawAmount =", withDrawAmount);
+        // console.log("withDrawAmount =", withDrawAmount);
         AccountLiquidation(account, tokenAddress, withDrawAmount);
     }
 
@@ -240,7 +256,7 @@ contract L2_OrbiterMaker is Ownable {
         );
         uint256 approveAmount =
             RepaymentToken.allowance(msg.sender, address(this));
-        console.log("approveAmount =", approveAmount, "amount =", amount);
+        // console.log("approveAmount =", approveAmount, "amount =", amount);
         require(approveAmount == amount, "approveAmount must equal to amount");
         RepaymentToken.transferFrom(fromAddress, toAddress, amount);
         // generate RepaymentData(RepaymentProof) / RepaymentFrom  / RepaymentTo
