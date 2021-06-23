@@ -24,6 +24,7 @@ L1_PushManServer test
 | ------ | ------ | ------ | ------ |
 | ------ | design/code/ready | public/internal | user/coinDealer/owner/pushMan |
 | initiExtractorAddress | ready | public | owner |
+| loanTokenInL1 | code | public | user |
 | getL1TransferInfo | ready | internal | ------ |
 | convertToLoanProof | ready | internal | ------ |
 | sendMessageToL2Orbiter | code | public | user |
@@ -34,6 +35,13 @@ Extractor_zk test
 | ------ | ------ | ------ | ------ |
 | ------ | design/code/ready | public/internal | user/coinDealer/owner/pushMan |
 | getTransactionInfo | code | public | pushManServer |
+
+Extractor_l1 test
+| name | state | region | Caller |
+| ------ | ------ | ------ | ------ |
+| ------ | design/code/ready | public/internal | user/coinDealer/owner/pushMan |
+| getTransactionInfo | code | public | pushManServer |
+| setTransactionInfoInL1 | code | public | pushManServer |
 
 ### tests
 

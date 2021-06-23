@@ -24,7 +24,7 @@ contract L2_OrbiterMaker is Ownable {
         uint256 chainID;
         uint256 startTimeStamp;
     }
-    //The state of the coin dealer（0:Not Coin Dealer 1:Coin Dealer 2:stop  3:withDraw）
+    //The state of the coin dealer（0:Not Coin Dealer 1:Coin Dealer 2:stop
     // accountAddress =>(tokenAddress => state)
     mapping(address => mapping(address => uint256)) public CoinDealerState;
     // accountAddress =>(tokenAddress => DepositProof)
@@ -39,7 +39,7 @@ contract L2_OrbiterMaker is Ownable {
     uint256 pushManServerTime;
     uint256 stopBufferTime;
 
-    function initParamTime(
+    function setParamTime(
         uint256 _L1CTCTime,
         uint256 _pushManServerTime,
         uint256 _stopBufferTime
@@ -91,9 +91,19 @@ contract L2_OrbiterMaker is Ownable {
         require(maxQuota < amount, "maxQuota must be less than amount");
         // if coinDealer want to add depositAmount，should use another funciton（add？？？？）
         require(
+            // ??????
             CoinDealerState[account][tokenAddress] == 0,
             "account & tokenAddress can not be coinDealer"
         );
+        // coinDealer transfer token to Contract ??????
+        // depositToken.approve(address(this), amount) ？？？？  front
+        // console.log("coinDealerBalance =", depositToken.balanceOf(msg.sender));
+        // console.log("contractBalance =", depositToken.balanceOf(address(this)));
+        uint256 approveAmount =
+            depositToken.allowance(msg.sender, address(this));
+        // console.log("approveAmount =", approveAmount, "amount =", amount);
+        require(approveAmount == amount, "approveAmount must equal to amount");
+        depositToken.transferFrom(msg.sender, address(this), amount);
         // generate DepositProof
         DepositProof memory newProof =
             DepositProof(
@@ -106,15 +116,6 @@ contract L2_OrbiterMaker is Ownable {
                 chainID,
                 startTimeStamp
             );
-        // coinDealer transfer token to Contract ??????
-        // depositToken.approve(address(this), amount) ？？？？  front
-        // console.log("coinDealerBalance =", depositToken.balanceOf(msg.sender));
-        // console.log("contractBalance =", depositToken.balanceOf(address(this)));
-        uint256 approveAmount =
-            depositToken.allowance(msg.sender, address(this));
-        // console.log("approveAmount =", approveAmount, "amount =", amount);
-        require(approveAmount == amount, "approveAmount must equal to amount");
-        depositToken.transferFrom(msg.sender, address(this), amount);
         // transfer  success setCoinDealerInfo & setCoinDealerState
         CoinDealerInfo[msg.sender][tokenAddress] = newProof;
         CoinDealerState[msg.sender][tokenAddress] = 1;
@@ -141,23 +142,23 @@ contract L2_OrbiterMaker is Ownable {
             "account&tokenAddress must be Coin Dealer and CoinDealerState must be 1"
         );
         // ????????????????  || => &&
-        require(
-            L1CTCTime != 0 || pushManServerTime != 0 || stopBufferTime != 0,
-            "L1CTCTime&pushManServerTime&stopBufferTime can not be false"
-        );
+        // require(
+        //     (L1CTCTime != 0 && pushManServerTime != 0) || stopBufferTime != 0,
+        //     "L1CTCTime&pushManServerTime&stopBufferTime can not be false"
+        // );
         // eg.  stopTimeStamp = now + 60 second （Buffer time is 60s）？？？？？？???
         uint256 stopTime = block.timestamp + stopBufferTime;
         uint256 withDrawTime = block.timestamp + L1CTCTime + pushManServerTime;
-        // console.log("stopTime =", stopTime);
-        // console.log("withDrawTime =", withDrawTime);
+        console.log("stopTime =", stopTime);
+        console.log("withDrawTime =", withDrawTime);
         // update CoinDealerState，and the coin Dealer cannot be traded
         CoinDealerState[account][tokenAddress] = 2;
         // setWithDrawTime
         WithDrawTimes[account][tokenAddress] = withDrawTime;
         // setStopTime
         stopTimes[account][tokenAddress] = stopTime;
-        // console.log("stopTime =", stopTimes[account][tokenAddress]);
-        // console.log("withDrawTime =", WithDrawTimes[account][tokenAddress]);
+        console.log("stopTime =", stopTimes[account][tokenAddress]);
+        console.log("withDrawTime =", WithDrawTimes[account][tokenAddress]);
     }
 
     /**
@@ -250,10 +251,10 @@ contract L2_OrbiterMaker is Ownable {
         );
         require(msg.sender == fromAddress, "msg.senfer must be fromAddress");
         IERC20 RepaymentToken = IERC20(tokenAddress);
-        require(
-            RepaymentToken.balanceOf(fromAddress) >= amount,
-            "The fromAddress must have tokens greater than the amount"
-        );
+        // require(
+        //     RepaymentToken.balanceOf(fromAddress) >= amount,
+        //     "The fromAddress must have tokens greater than the amount"
+        // );
         uint256 approveAmount =
             RepaymentToken.allowance(msg.sender, address(this));
         // console.log("approveAmount =", approveAmount, "amount =", amount);
@@ -317,10 +318,13 @@ contract L2_OrbiterMaker is Ownable {
         uint256 amount,
         uint256 chainID,
         bytes32 proofID
-    ) public {
+    )
+        public
+    // error ?????? uint256 timeStap // L1 userAccount transferTime (timestap must less than stopTimes[account][tokenAddress])
+    {
         require(
             CoinDealerState[toAddress][tokenAddress] != 0,
-            "toAddress must be coinDealer"
+            "toAddress & tokenAddress must be a CoinDealer and CoinDealerState can not be 0"
         );
         require(fromAddress != address(0), "fromAddress can not be address(0)");
         require(toAddress != address(0), "toAddress can not be address(0)");
@@ -338,10 +342,6 @@ contract L2_OrbiterMaker is Ownable {
         );
         // Did not match the repaymentProof，Make a singleLoanLiquidation
         // Find the deposit certificate and get  depositAmount
-        require(
-            CoinDealerState[toAddress][tokenAddress] != 0,
-            "toAddress & tokenAddress must be a CoinDealer and CoinDealerState can not be 0"
-        );
         DepositProof memory coinDealerProof =
             CoinDealerInfo[toAddress][tokenAddress];
         uint256 oldAmount = coinDealerProof.depositAmount;
@@ -389,5 +389,12 @@ contract L2_OrbiterMaker is Ownable {
         WithDrawTimes[account][tokenAddress] = 0;
     }
 
-    constructor() public {}
+    constructor() public // _L1CTCTime,
+    // _pushManServerTime,
+    // _stopBufferTime,
+    {
+        // L1CTCTime = _L1CTCTime;
+        // pushManServerTime = _pushManServerTime;
+        // stopBufferTime = _stopBufferTime;
+    }
 }

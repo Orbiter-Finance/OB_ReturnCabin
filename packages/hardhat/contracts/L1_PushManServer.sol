@@ -3,6 +3,7 @@ pragma solidity 0.7.6;
 
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interface/iExtractor.sol";
 
 /// @title Obtain the transaction information of Rollup on the L1 network, and provide the functions of generating loan vouchers and initiating arbitration
@@ -24,7 +25,6 @@ contract L1_PushManServer is Ownable {
     //     uint256 amount;
     //     uint256 timestamp;
     //     uint256 chainID;
-    //     uint256 proofID;
     // }
 
     // transaction information，from L1CTC
@@ -55,6 +55,44 @@ contract L1_PushManServer is Ownable {
     }
 
     /**
+     * @dev Convert the transfer information into a loanProof
+     * @param fromAddress fromAddress
+     * @param toAddress toAddress
+     * @param tokenAddress tokenAddress
+     * @param loanAmount loanAmount
+     */
+    function loanTokenInL1(
+        address fromAddress,
+        address toAddress,
+        address tokenAddress,
+        uint256 loanAmount
+    ) public {
+        require(fromAddress != address(0), "fromAddress can not be address(0)");
+        require(toAddress != address(0), "fromAddress can not be address(0)");
+        require(
+            tokenAddress != address(0),
+            "tokenAddress can not be address(0)"
+        );
+        require(msg.sender == fromAddress, "msg.senfer must be fromAddress");
+        IERC20 loanToken = IERC20(tokenAddress);
+        uint256 approveAmount = loanToken.allowance(msg.sender, address(this));
+        require(
+            approveAmount == loanAmount,
+            "approveAmount must equal to loanAmount"
+        );
+        loanToken.transferFrom(fromAddress, toAddress, loanAmount);
+        uint256 chainID = 1; // mainNet
+        iExtractor(iExtractorAddress[chainID]).setTransactionInfoInL1(
+            fromAddress,
+            toAddress,
+            tokenAddress,
+            block.timestamp,
+            loanAmount,
+            chainID
+        );
+    }
+
+    /**
      * @dev Obtain a certain transfer information on L1 through parameters(???) from iExtractor
      * @param fromAddress The account being minted for
      * @param toAddress The amount being minted
@@ -78,12 +116,8 @@ contract L1_PushManServer is Ownable {
             uint256 TransferChainID
         )
     {
-        // console.log(
-        //     "iExtractorAddress[",
-        //     chainID,
-        //     "] =",
-        //     iExtractorAddress[chainID]
-        // );
+        console.log("111 =", chainID);
+        console.log("222 =", iExtractorAddress[chainID]);
         require(
             iExtractorAddress[chainID] != address(0),
             "iExtractorAddress must be init"
@@ -161,12 +195,11 @@ contract L1_PushManServer is Ownable {
             chainID,
             amount
         );
-        bytes32 proofID =
-            generateProofID(
-                transferInfo.TransferFromAddress,
-                transferInfo.TransferTimestamp,
-                transferInfo.TransferChainID
-            );
+        bytes32 proofID = generateProofID(
+            transferInfo.TransferFromAddress,
+            transferInfo.TransferTimestamp,
+            transferInfo.TransferChainID
+        );
         return (
             transferInfo.TransferFromAddress,
             transferInfo.TransferToAddress,
@@ -188,6 +221,7 @@ contract L1_PushManServer is Ownable {
     function sendMessageToL2Orbiter(
         address fromAddress,
         address toAddress,
+        address tokenAddress,
         uint256 chainID,
         uint256 amount
     ) public {

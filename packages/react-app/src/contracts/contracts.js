@@ -1,1 +1,1 @@
-module.exports = ["Extractor_zk","L1_PushManServer","L2_OrbiterMaker","YourContract"];
+module.exports = ["Extractor_l1","Extractor_zk","L1_PushManServer","L2_OrbiterMaker","YourContract"];

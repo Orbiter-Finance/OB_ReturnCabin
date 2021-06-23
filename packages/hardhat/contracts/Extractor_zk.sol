@@ -30,4 +30,13 @@ contract Extractor_zk is iExtractor {
         console.log("come in Extractor_zk______Function");
         return (address(0x1), address(0x2), address(0x3), 1, 2, 1011);
     }
+
+    function setTransactionInfoInL1(
+        address fromAddress,
+        address toAddress,
+        address tokenAddress,
+        uint256 timestamp,
+        uint256 chainID,
+        uint256 amount
+    ) external override {}
 }

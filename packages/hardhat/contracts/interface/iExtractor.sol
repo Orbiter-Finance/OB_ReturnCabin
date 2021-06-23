@@ -24,4 +24,13 @@ interface iExtractor {
             uint256 TransferTimestamp,
             uint256 TransferChainID
         );
+
+    function setTransactionInfoInL1(
+        address fromAddress,
+        address toAddress,
+        address tokenAddress,
+        uint256 timestamp,
+        uint256 chainID,
+        uint256 amount
+    ) external;
 }
