@@ -2,50 +2,71 @@ pragma solidity 0.7.6;
 
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./interface/iExtractor.sol";
+import "./L1_PushManServer.sol";
 
-contract Extractor_l1 is iExtractor, Ownable {
-    struct L1TransactionInfo {
-        address TransferFromAddress;
-        address TransferToAddress;
-        address TransferTokenAddress;
-        uint256 TransferAmount;
-        uint256 TransferTimestamp;
-        uint256 TransferChainID;
+contract Extractor_l1 is Ownable {
+    struct L1LoanInfo {
+        address LoanFromAddress;
+        address LoanToAddress;
+        address LoanTokenAddress;
+        uint256 LoanAmount;
+        uint256 LoanTimestamp;
+        uint256 LoanChainID;
+        bytes32 proofID;
     }
-    mapping(bytes32 => L1TransactionInfo) public transferInfos;
 
-    constructor() public {}
+    event setLoanInfoInL1Event(
+        address from,
+        address to,
+        uint256 chainID,
+        uint256 timestamp
+    );
+    mapping(bytes32 => L1LoanInfo) public LoanInfos;
+    address PushManServerAddress;
 
-    function getTransactionInfo(
+    constructor(address _pushManServerAddress) public {
+        PushManServerAddress = _pushManServerAddress;
+    }
+
+    /**
+     * @dev Obtain the loanProof on the L1 chain
+     * @param fromAddress fromAddress
+     * @param timestamp timestamp
+     * @param chainID chainID
+     */
+    function getTransactionLoanProof(
         address fromAddress,
-        address toAddress,
-        address tokenAddress,
-        uint256 amount
+        uint256 timestamp,
+        uint256 chainID
     )
-        external
+        public
         view
-        override
         returns (
             address TransferFromAddress,
             address TransferToAddress,
             address TransferTokenAddress,
             uint256 TransferAmount,
             uint256 TransferTimestamp,
-            uint256 TransferChainID
+            uint256 TransferChainID,
+            bytes32 proofID
         )
     {
-        uint256 chainID = 1;
-        bytes32 proofID = "test";
-        // bytes32 proofID = generateProofID(fromAddress, chainID, chainID);
-        L1TransactionInfo memory transferInfo = transferInfos[proofID];
+        console.log(
+            "come in Extractor_l1___getTransactionLoanProof___Function"
+        );
+        require(chainID == 1, "l1_chainID must be 1");
+        require(msg.sender == fromAddress, "msg.sender must be the loaner");
+        bytes32 proofID = generateProofID(fromAddress, timestamp, chainID);
+        console.logBytes32(proofID);
+        L1LoanInfo memory loinInfo = LoanInfos[proofID];
         return (
-            transferInfo.TransferFromAddress,
-            transferInfo.TransferToAddress,
-            transferInfo.TransferTokenAddress,
-            transferInfo.TransferAmount,
-            transferInfo.TransferTimestamp,
-            transferInfo.TransferChainID
+            loinInfo.LoanFromAddress,
+            loinInfo.LoanToAddress,
+            loinInfo.LoanTokenAddress,
+            loinInfo.LoanAmount,
+            loinInfo.LoanTimestamp,
+            loinInfo.LoanChainID,
+            loinInfo.proofID
         );
     }
 
@@ -53,25 +74,71 @@ contract Extractor_l1 is iExtractor, Ownable {
         address fromAddress,
         address toAddress,
         address tokenAddress,
-        uint256 timestamp,
         uint256 amount,
+        uint256 timestamp,
         uint256 chainID
-    ) external override {
-        L1TransactionInfo memory transferInfo = L1TransactionInfo(
+    ) external {
+        bytes32 proofID = generateProofID(fromAddress, timestamp, chainID);
+        L1LoanInfo memory loaninfo = L1LoanInfo(
             fromAddress,
             toAddress,
             tokenAddress,
             amount,
             timestamp,
+            chainID,
+            proofID
+        );
+        LoanInfos[proofID] = loaninfo;
+        emit setLoanInfoInL1Event(fromAddress, toAddress, chainID, timestamp);
+    }
+
+    function appeal(
+        address fromAddress,
+        // address toAddress,
+        // address tokenAddress,
+        uint256 timestamp,
+        // uint256 amount,
+        uint256 chainID
+    ) external {
+        console.log("come in Extractor_l1___appeal___Function");
+        require(chainID == 1, "l1_chainID must be 1011");
+        require(fromAddress != address(0), "fromAddress can not be address(0)");
+        require(
+            fromAddress == msg.sender,
+            "fromAddress must equal to msg.sender"
+        );
+        // require(toAddress != address(0), "toAddress can not be address(0)");
+        // require(
+        //     tokenAddress != address(0),
+        //     "tokenAddress can not be address(0)"
+        // );
+        require(timestamp != 0, "timestamp can not 0");
+        L1LoanInfo memory loanInfo;
+        (
+            loanInfo.LoanFromAddress,
+            loanInfo.LoanToAddress,
+            loanInfo.LoanTokenAddress,
+            loanInfo.LoanAmount,
+            loanInfo.LoanTimestamp,
+            loanInfo.LoanChainID,
+            loanInfo.proofID
+        ) = getTransactionLoanProof(
+            fromAddress,
+            // toAddress,
+            // tokenAddress,
+            timestamp,
+            // amount,
             chainID
         );
-        // bytes32 proofID = generateProofID(
-        //     transferInfo.TransferFromAddress,
-        //     transferInfo.TransferTimestamp,
-        //     transferInfo.TransferChainID
-        // );
-        bytes32 proofID = "test";
-        transferInfos[proofID] = transferInfo;
+        L1_PushManServer(PushManServerAddress).sendMessageToL2Orbiter(
+            loanInfo.LoanFromAddress,
+            loanInfo.LoanToAddress,
+            loanInfo.LoanTokenAddress,
+            loanInfo.LoanAmount,
+            loanInfo.LoanTimestamp,
+            loanInfo.LoanChainID,
+            loanInfo.proofID
+        );
     }
 
     function generateProofID(

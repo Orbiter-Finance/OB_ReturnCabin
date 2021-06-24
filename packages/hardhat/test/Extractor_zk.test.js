@@ -9,8 +9,8 @@ describe("L1_PushManServer Test", function () {
   let L1_PushManServer;
   let L1_PushManServerContract;
 
-  let L1_Extractor;
-  let L1_ExtractorContract;
+  let ZK_Extractor;
+  let ZK_ExtractorContract;
 
   let owner;
   let addr1;
@@ -22,8 +22,8 @@ describe("L1_PushManServer Test", function () {
   let tokenAddress;
 
   // test
-  const L1_chainID = 1;
-  const timeStamp = 123123123;
+  const ZK_chainID = 1011;
+  const timeStamp = 321321321;
   const amountNum = 100 * 10 ** 18;
   const amount = "0x" + amountNum.toString(16);
 
@@ -45,13 +45,13 @@ describe("L1_PushManServer Test", function () {
       L1_PushManServerContract = await L1_PushManServer.deploy();
     });
     it("Should deploy L1_Extractor", async function () {
-      L1_Extractor = await ethers.getContractFactory("Extractor_l1");
-      L1_ExtractorContract = await L1_Extractor.deploy(
+      ZK_Extractor = await ethers.getContractFactory("Extractor_zk");
+      ZK_ExtractorContract = await ZK_Extractor.deploy(
         L1_PushManServerContract.address
       );
       L1_PushManServerContract.initiExtractorAddress(
-        L1_ExtractorContract.address,
-        L1_chainID
+        ZK_ExtractorContract.address,
+        ZK_chainID
       );
     });
     it("Should deploy SimpleToken", async function () {
@@ -60,24 +60,18 @@ describe("L1_PushManServer Test", function () {
       tokenAddress = SimpleTokenContract.address;
     });
   });
-
-  describe("setTransactionInfoInL1()", function () {
-    it("setTransactionInfoInL1", async function () {
-      await L1_ExtractorContract.setTransactionInfoInL1(
+  describe("getTransactionLoanProof()", function () {
+    it("Should be Obtain a certain transfer information on L1 from iExtractor_l1", async function () {
+      const transferInfo = await ZK_ExtractorContract.connect(
+        addr2
+      ).getTransactionLoanProof(
         userAccount,
         coinDealerAccount,
         tokenAddress,
-        amount,
         timeStamp,
-        L1_chainID
+        amount,
+        ZK_chainID
       );
-    });
-  });
-  describe("getTransactionLoanProof()", function () {
-    it("Should be Obtain a certain transfer information on L1 from iExtractor_l1", async function () {
-      const transferInfo = await L1_ExtractorContract.connect(
-        addr2
-      ).getTransactionLoanProof(userAccount, timeStamp, L1_chainID);
       // function need set view to get returns
       // await L1_PushManServerContract.test(amount);
       console.log("transferInfo = ", transferInfo);
@@ -85,14 +79,29 @@ describe("L1_PushManServer Test", function () {
       expect(transferInfo.TransferToAddress).to.equal(coinDealerAccount);
       expect(transferInfo.TransferAmount).to.equal(amount);
       expect(transferInfo.TransferTimestamp).to.equal(timeStamp);
-      expect(transferInfo.TransferChainID).to.equal(L1_chainID);
+      expect(transferInfo.TransferChainID).to.equal(ZK_chainID);
       expect(transferInfo.proofID).to.equal(
-        await L1_ExtractorContract.generateProofID(
+        await ZK_ExtractorContract.generateProofID(
           userAccount,
           timeStamp,
-          L1_chainID
+          ZK_chainID
         )
       );
+    });
+  });
+
+  describe("appeal()", function () {
+    it("appeal from iExtractor_zk", async function () {
+      await ZK_ExtractorContract.connect(addr2).appeal(
+        userAccount,
+        coinDealerAccount,
+        tokenAddress,
+        timeStamp,
+        amount,
+        ZK_chainID
+      );
+      // function need set view to get returns
+      // await L1_PushManServerContract.test(amount);
     });
   });
 });
