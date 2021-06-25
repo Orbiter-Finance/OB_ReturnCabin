@@ -33,6 +33,49 @@ contract L1_PushManServer is Ownable {
     }
 
     /**
+     * @dev Convert the transfer information into a loanProof
+     * @param fromAddress fromAddress
+     * @param toAddress toAddress
+     * @param tokenAddress tokenAddress
+     * @param loanAmount loanAmount
+     */
+    function loanTokenInL1(
+        address fromAddress,
+        address toAddress,
+        address tokenAddress,
+        uint256 loanAmount,
+        uint256 chainID
+    ) public {
+        require(chainID == 1, "chainID must be equal to 1");
+        require(
+            iExtractorAddress[chainID] != address(0),
+            "iExtractorAddress[chainID] must be init"
+        );
+        require(fromAddress != address(0), "fromAddress can not be address(0)");
+        require(toAddress != address(0), "fromAddress can not be address(0)");
+        require(
+            tokenAddress != address(0),
+            "tokenAddress can not be address(0)"
+        );
+        require(msg.sender == fromAddress, "msg.senfer must be fromAddress");
+        IERC20 loanToken = IERC20(tokenAddress);
+        uint256 approveAmount = loanToken.allowance(msg.sender, address(this));
+        require(
+            approveAmount == loanAmount,
+            "approveAmount must equal to loanAmount"
+        );
+        loanToken.transferFrom(fromAddress, toAddress, loanAmount);
+        Extractor_l1(iExtractorAddress[chainID]).setTransactionInfoInL1(
+            fromAddress,
+            toAddress,
+            tokenAddress,
+            loanAmount,
+            block.timestamp,
+            chainID
+        );
+    }
+
+    /**
      * @dev Call the singleLoanLiquidation of OrbiterMaker.sol on L2 with the loanProof
      * @param fromAddress fromAddress
      * @param toAddress toAddress
@@ -70,6 +113,11 @@ contract L1_PushManServer is Ownable {
             iExtractorAddress[chainID] != address(0),
             "iExtractorAddress[chainID] must be init"
         );
+        require(
+            iExtractorAddress[chainID] == msg.sender,
+            "iExtractorAddress[chainID] must be equal to msg.sender"
+        );
+        console.log("=======================", msg.sender);
         console.log("fromAddress =", fromAddress);
         console.log("toAddress =", toAddress);
         console.log("tokenAddress =", tokenAddress);
