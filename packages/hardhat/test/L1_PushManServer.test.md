@@ -128,21 +128,23 @@ describe("L1_PushManServer Test", function () {
         timestamp,
         ZK_chainID
       );
-      await L1_PushManServerContract.sendMessageToL2Orbiter(
-        userAccount,
-        coinDealerAccount,
-        tokenAddress,
-        amount,
-        timestamp,
-        ZK_chainID,
-        zk_proof
-      );
+      // ？？？？ how to send message from Extractor_zkContract
+      // await L1_PushManServerContract.sendMessageToL2Orbiter(
+      //   userAccount,
+      //   coinDealerAccount,
+      //   tokenAddress,
+      //   amount,
+      //   timestamp,
+      //   ZK_chainID,
+      //   zk_proof
+      // );
 
       const l1_proof = await L1_PushManServerContract.generateProofID(
         userAccount,
         timestamp,
         L1_chainID
       );
+      // ？？？？ how to send message from Extractor_l1Contract
       await L1_PushManServerContract.connect(
         Extractor_l1Contract
       ).sendMessageToL2Orbiter(

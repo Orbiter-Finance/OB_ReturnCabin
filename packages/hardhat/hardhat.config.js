@@ -1,6 +1,4 @@
-const {
-  utils
-} = require("ethers");
+const { utils } = require("ethers");
 const fs = require("fs");
 const chalk = require("chalk");
 
@@ -9,12 +7,7 @@ require("@tenderly/hardhat-tenderly");
 
 require("@nomiclabs/hardhat-etherscan");
 
-const {
-  isAddress,
-  getAddress,
-  formatUnits,
-  parseUnits
-} = utils;
+const { isAddress, getAddress, formatUnits, parseUnits } = utils;
 
 /*
       📡 This is where you configure your deploy configuration for 🏗 scaffold-eth
@@ -28,7 +21,7 @@ const {
 //
 // Select the network you want to deploy to here:
 //
-const defaultNetwork = "localhost";
+const defaultNetwork = "kovan";
 
 function mnemonic() {
   try {
@@ -112,7 +105,8 @@ module.exports = {
     },
   },
   solidity: {
-    compilers: [{
+    compilers: [
+      {
         version: "0.7.6",
         settings: {
           optimizer: {
@@ -147,9 +141,7 @@ function debug(text) {
   }
 }
 
-task("wallet", "Create a wallet (pk) link", async (_, {
-  ethers
-}) => {
+task("wallet", "Create a wallet (pk) link", async (_, { ethers }) => {
   const randomWallet = ethers.Wallet.createRandom();
   const privateKey = randomWallet._signingKey().privateKey;
   console.log("🔐 WALLET Generated as " + randomWallet.address + "");
@@ -162,10 +154,7 @@ task("fundedwallet", "Create a wallet (pk) link and fund it with deployer?")
     "Amount of ETH to send to wallet after generating"
   )
   .addOptionalParam("url", "URL to add pk to")
-  .setAction(async (taskArgs, {
-    network,
-    ethers
-  }) => {
+  .setAction(async (taskArgs, { network, ethers }) => {
     const randomWallet = ethers.Wallet.createRandom();
     const privateKey = randomWallet._signingKey().privateKey;
     console.log("🔐 WALLET Generated as " + randomWallet.address + "");
@@ -194,20 +183,20 @@ task("fundedwallet", "Create a wallet (pk) link and fund it with deployer?")
       deployerWallet = deployerWallet.connect(ethers.provider);
       console.log(
         "💵 Sending " +
-        amount +
-        " ETH to " +
-        randomWallet.address +
-        " using deployer account"
+          amount +
+          " ETH to " +
+          randomWallet.address +
+          " using deployer account"
       );
       const sendresult = await deployerWallet.sendTransaction(tx);
       console.log("\n" + url + "/pk#" + privateKey + "\n");
     } else {
       console.log(
         "💵 Sending " +
-        amount +
-        " ETH to " +
-        randomWallet.address +
-        " using local node"
+          amount +
+          " ETH to " +
+          randomWallet.address +
+          " using local node"
       );
       console.log("\n" + url + "/pk#" + privateKey + "\n");
       return send(ethers.provider.getSigner(), tx);
@@ -217,9 +206,7 @@ task("fundedwallet", "Create a wallet (pk) link and fund it with deployer?")
 task(
   "generate",
   "Create a mnemonic for builder deploys",
-  async (_, {
-    ethers
-  }) => {
+  async (_, { ethers }) => {
     const bip39 = require("bip39");
     const hdkey = require("ethereumjs-wallet/hdkey");
     const mnemonic = bip39.generateMnemonic();
@@ -239,8 +226,8 @@ task(
       "0x" + EthUtil.privateToAddress(wallet._privKey).toString("hex");
     console.log(
       "🔐 Account Generated as " +
-      address +
-      " and set as mnemonic in packages/hardhat"
+        address +
+        " and set as mnemonic in packages/hardhat"
     );
     console.log(
       "💬 Use 'yarn run account' to get more information about the deployment account."
@@ -252,14 +239,11 @@ task(
 );
 
 task(
-    "mineContractAddress",
-    "Looks for a deployer account that will give leading zeros"
-  )
+  "mineContractAddress",
+  "Looks for a deployer account that will give leading zeros"
+)
   .addParam("searchFor", "String to search for")
-  .setAction(async (taskArgs, {
-    network,
-    ethers
-  }) => {
+  .setAction(async (taskArgs, { network, ethers }) => {
     let contract_address = "";
     let address;
 
@@ -302,12 +286,12 @@ task(
 
     console.log(
       "⛏  Account Mined as " +
-      address +
-      " and set as mnemonic in packages/hardhat"
+        address +
+        " and set as mnemonic in packages/hardhat"
     );
     console.log(
       "📜 This will create the first contract: " +
-      chalk.magenta("0x" + contract_address)
+        chalk.magenta("0x" + contract_address)
     );
     console.log(
       "💬 Use 'yarn run account' to get more information about the deployment account."
@@ -323,9 +307,7 @@ task(
 task(
   "account",
   "Get balance informations for the deployment account.",
-  async (_, {
-    ethers
-  }) => {
+  async (_, { ethers }) => {
     const hdkey = require("ethereumjs-wallet/hdkey");
     const bip39 = require("bip39");
     const mnemonic = fs.readFileSync("./mnemonic.txt").toString().trim();
@@ -379,25 +361,19 @@ async function addr(ethers, addr) {
   throw `Could not normalize address: ${addr}`;
 }
 
-task("accounts", "Prints the list of accounts", async (_, {
-  ethers
-}) => {
+task("accounts", "Prints the list of accounts", async (_, { ethers }) => {
   const accounts = await ethers.provider.listAccounts();
   accounts.forEach((account) => console.log(account));
 });
 
-task("blockNumber", "Prints the block number", async (_, {
-  ethers
-}) => {
+task("blockNumber", "Prints the block number", async (_, { ethers }) => {
   const blockNumber = await ethers.provider.getBlockNumber();
   console.log(blockNumber);
 });
 
 task("balance", "Prints an account's balance")
   .addPositionalParam("account", "The account's address")
-  .setAction(async (taskArgs, {
-    ethers
-  }) => {
+  .setAction(async (taskArgs, { ethers }) => {
     const balance = await ethers.provider.getBalance(
       await addr(ethers, taskArgs.account)
     );
@@ -422,10 +398,7 @@ task("send", "Send ETH")
   .addOptionalParam("gasPrice", "Price you are willing to pay in gwei")
   .addOptionalParam("gasLimit", "Limit of how much gas to spend")
 
-  .setAction(async (taskArgs, {
-    network,
-    ethers
-  }) => {
+  .setAction(async (taskArgs, { network, ethers }) => {
     const from = await addr(ethers, taskArgs.from);
     debug(`Normalized from address: ${from}`);
     const fromSigner = await ethers.provider.getSigner(from);

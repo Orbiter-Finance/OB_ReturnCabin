@@ -99,23 +99,24 @@ contract L2_OrbiterMaker is Ownable {
         // depositToken.approve(address(this), amount) ？？？？  front
         // console.log("coinDealerBalance =", depositToken.balanceOf(msg.sender));
         // console.log("contractBalance =", depositToken.balanceOf(address(this)));
-        uint256 approveAmount =
-            depositToken.allowance(msg.sender, address(this));
+        uint256 approveAmount = depositToken.allowance(
+            msg.sender,
+            address(this)
+        );
         // console.log("approveAmount =", approveAmount, "amount =", amount);
         require(approveAmount == amount, "approveAmount must equal to amount");
         depositToken.transferFrom(msg.sender, address(this), amount);
         // generate DepositProof
-        DepositProof memory newProof =
-            DepositProof(
-                account,
-                tokenAddress,
-                amount,
-                fee,
-                minQuota,
-                maxQuota,
-                chainID,
-                startTimeStamp
-            );
+        DepositProof memory newProof = DepositProof(
+            account,
+            tokenAddress,
+            amount,
+            fee,
+            minQuota,
+            maxQuota,
+            chainID,
+            startTimeStamp
+        );
         // transfer  success setCoinDealerInfo & setCoinDealerState
         CoinDealerInfo[msg.sender][tokenAddress] = newProof;
         CoinDealerState[msg.sender][tokenAddress] = 1;
@@ -255,22 +256,23 @@ contract L2_OrbiterMaker is Ownable {
         //     RepaymentToken.balanceOf(fromAddress) >= amount,
         //     "The fromAddress must have tokens greater than the amount"
         // );
-        uint256 approveAmount =
-            RepaymentToken.allowance(msg.sender, address(this));
+        uint256 approveAmount = RepaymentToken.allowance(
+            msg.sender,
+            address(this)
+        );
         // console.log("approveAmount =", approveAmount, "amount =", amount);
         require(approveAmount == amount, "approveAmount must equal to amount");
         RepaymentToken.transferFrom(fromAddress, toAddress, amount);
         // generate RepaymentData(RepaymentProof) / RepaymentFrom  / RepaymentTo
-        RepaymentProof memory proof =
-            RepaymentProof(
-                fromAddress,
-                toAddress,
-                tokenAddress,
-                amount,
-                block.timestamp,
-                chainID,
-                proofID
-            );
+        RepaymentProof memory proof = RepaymentProof(
+            fromAddress,
+            toAddress,
+            tokenAddress,
+            amount,
+            block.timestamp,
+            chainID,
+            proofID
+        );
         RepaymentData[proofID] = proof;
         // Whether to store more data？？？？？？？？？？？
         RepaymentFrom[fromAddress].push(proofID);
@@ -342,8 +344,9 @@ contract L2_OrbiterMaker is Ownable {
         );
         // Did not match the repaymentProof，Make a singleLoanLiquidation
         // Find the deposit certificate and get  depositAmount
-        DepositProof memory coinDealerProof =
-            CoinDealerInfo[toAddress][tokenAddress];
+        DepositProof memory coinDealerProof = CoinDealerInfo[toAddress][
+            tokenAddress
+        ];
         uint256 oldAmount = coinDealerProof.depositAmount;
 
         // The amount of pledge deposit, the amount to be repaid and the amount of contract holdings to compared

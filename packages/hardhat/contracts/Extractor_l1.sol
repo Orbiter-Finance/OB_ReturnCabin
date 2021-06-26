@@ -88,6 +88,7 @@ contract Extractor_l1 is Ownable {
             chainID,
             proofID
         );
+        console.log("-----------------------testlog----------------------");
         console.log("loaninfo.fromAddress =", loaninfo.LoanFromAddress);
         console.log("loaninfo.toAddress =", loaninfo.LoanToAddress);
         console.log("loaninfo.tokenAddress =", loaninfo.LoanTokenAddress);
@@ -95,6 +96,7 @@ contract Extractor_l1 is Ownable {
         console.log("loaninfo.timestamp =", loaninfo.LoanTimestamp);
         console.log("loaninfo.chainID =", loaninfo.LoanChainID);
         console.logBytes32(loaninfo.proofID);
+        console.log("-----------------------testlog----------------------");
 
         LoanInfos[proofID] = loaninfo;
         emit setLoanInfoInL1Event(fromAddress, toAddress, chainID, timestamp);
