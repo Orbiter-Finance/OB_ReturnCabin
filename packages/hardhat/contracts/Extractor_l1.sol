@@ -37,7 +37,8 @@ contract Extractor_l1 is Ownable {
     function getTransactionLoanProof(
         address fromAddress,
         uint256 timestamp,
-        uint256 chainID
+        uint256 chainID,
+        uint256 nonce
     )
         public
         view
@@ -56,7 +57,12 @@ contract Extractor_l1 is Ownable {
         );
         require(chainID == 1, "l1_chainID must be 1");
         require(msg.sender == fromAddress, "msg.sender must be the loaner");
-        bytes32 proofID = generateProofID(fromAddress, timestamp, chainID);
+        bytes32 proofID = generateProofID(
+            fromAddress,
+            timestamp,
+            chainID,
+            nonce
+        );
         console.logBytes32(proofID);
         L1LoanInfo memory loinInfo = LoanInfos[proofID];
         return (
@@ -76,9 +82,15 @@ contract Extractor_l1 is Ownable {
         address tokenAddress,
         uint256 amount,
         uint256 timestamp,
-        uint256 chainID
+        uint256 chainID,
+        uint256 nonce
     ) external {
-        bytes32 proofID = generateProofID(fromAddress, timestamp, chainID);
+        bytes32 proofID = generateProofID(
+            fromAddress,
+            timestamp,
+            chainID,
+            nonce
+        );
         L1LoanInfo memory loaninfo = L1LoanInfo(
             fromAddress,
             toAddress,
@@ -108,7 +120,8 @@ contract Extractor_l1 is Ownable {
         // address tokenAddress,
         uint256 timestamp,
         // uint256 amount,
-        uint256 chainID
+        uint256 chainID,
+        uint256 nonce
     ) external {
         console.log("come in Extractor_l1___appeal___Function");
         require(chainID == 1, "l1_chainID must be 1011");
@@ -138,7 +151,8 @@ contract Extractor_l1 is Ownable {
             // tokenAddress,
             timestamp,
             // amount,
-            chainID
+            chainID,
+            nonce
         );
         L1_PushManServer(PushManServerAddress).sendMessageToL2Orbiter(
             loanInfo.LoanFromAddress,
@@ -153,13 +167,15 @@ contract Extractor_l1 is Ownable {
 
     function generateProofID(
         address fromAddress,
-        uint256 param1,
-        uint256 param2
+        uint256 timestamp,
+        uint256 chainID,
+        uint256 nonce
     ) public view returns (bytes32) {
         // Need to adjust the number of bits according to the realization
         return
             (bytes32(uint256(fromAddress)) << 96) |
-            (bytes32(param1) << 32) |
-            bytes32(param2);
+            (bytes32(timestamp) << 48) |
+            (bytes32(chainID) << 24) |
+            bytes32(nonce);
     }
 }

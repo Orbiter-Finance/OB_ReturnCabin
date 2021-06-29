@@ -34,6 +34,8 @@ describe("L1_PushManServer Test", function () {
   const amount = "0x" + amountNum.toString(16);
   const timestamp = 123456789;
 
+  const nonce = 321;
+
   beforeEach(async function () {
     // Get the ContractFactory and Signers here.
     // Token = await ethers.getContractFactory("Token");
@@ -115,34 +117,37 @@ describe("L1_PushManServer Test", function () {
         coinDealerAccount,
         tokenAddress,
         amount,
-        L1_chainID
+        L1_chainID,
+        nonce
       );
     });
   });
 
   describe("sendMessageToL2Orbiter()", function () {
     it("Should be Call the singleLoanLiquidation of OrbiterMaker.sol on L2 with the loanProof", async function () {
-      // ??? error  how to call sendMessageToL2Orbiter from Extractor_l1Contract & Extractor_zkContract
+      // ??? error how to call sendMessageToL2Orbiter from Extractor_l1Contract & Extractor_zkContract
       const zk_proof = await L1_PushManServerContract.generateProofID(
         userAccount,
         timestamp,
-        ZK_chainID
+        ZK_chainID,
+        nonce
       );
       // ？？？？ how to send message from Extractor_zkContract
       // await L1_PushManServerContract.sendMessageToL2Orbiter(
-      //   userAccount,
-      //   coinDealerAccount,
-      //   tokenAddress,
-      //   amount,
-      //   timestamp,
-      //   ZK_chainID,
-      //   zk_proof
+      // userAccount,
+      // coinDealerAccount,
+      // tokenAddress,
+      // amount,
+      // timestamp,
+      // ZK_chainID,
+      // zk_proof
       // );
 
       const l1_proof = await L1_PushManServerContract.generateProofID(
         userAccount,
         timestamp,
-        L1_chainID
+        L1_chainID,
+        nonce
       );
       // ？？？？ how to send message from Extractor_l1Contract
       await L1_PushManServerContract.connect(
@@ -164,7 +169,8 @@ describe("L1_PushManServer Test", function () {
       const proofID = await L1_PushManServerContract.generateProofID(
         tokenAddress,
         11111,
-        2222
+        2222,
+        321
       );
       console.log("proofID =", proofID);
 
@@ -172,7 +178,8 @@ describe("L1_PushManServer Test", function () {
         await L1_PushManServerContract.generateProofID(
           tokenAddress,
           11111,
-          2222
+          2222,
+          nonce
         )
       ).to.equal(proofID);
     });

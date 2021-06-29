@@ -27,6 +27,8 @@ describe("Extractor_zk Test", function () {
   const amountNum = 100 * 10 ** 18;
   const amount = "0x" + amountNum.toString(16);
 
+  const nonce = 321;
+
   beforeEach(async function () {
     // Get the ContractFactory and Signers here.
     // Token = await ethers.getContractFactory("Token");
@@ -70,7 +72,8 @@ describe("Extractor_zk Test", function () {
         tokenAddress,
         timeStamp,
         amount,
-        ZK_chainID
+        ZK_chainID,
+        nonce
       );
       // function need set view to get returns
       // await L1_PushManServerContract.test(amount);
@@ -84,7 +87,8 @@ describe("Extractor_zk Test", function () {
         await ZK_ExtractorContract.generateProofID(
           userAccount,
           timeStamp,
-          ZK_chainID
+          ZK_chainID,
+          nonce
         )
       );
     });
@@ -98,7 +102,8 @@ describe("Extractor_zk Test", function () {
         tokenAddress,
         timeStamp,
         amount,
-        ZK_chainID
+        ZK_chainID,
+        nonce
       );
       await ZK_ExtractorContract.connect(addr2).appeal(
         userAccount,
@@ -106,7 +111,8 @@ describe("Extractor_zk Test", function () {
         tokenAddress,
         timeStamp,
         amount,
-        ZK_chainID
+        ZK_chainID,
+        nonce
       );
       // function need set view to get returns
       // await L1_PushManServerContract.test(amount);

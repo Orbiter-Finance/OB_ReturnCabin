@@ -38,7 +38,8 @@ contract Extractor_zk {
         address tokenAddress,
         uint256 timestamp,
         uint256 amount,
-        uint256 chainID
+        uint256 chainID,
+        uint256 nonce
     )
         public
         view
@@ -56,7 +57,12 @@ contract Extractor_zk {
             "come in Extractor_zk___getTransactionLoanProof___Function"
         );
         require(chainID == 1011, "zk_chainID must be 1011");
-        bytes32 proofID = generateProofID(fromAddress, timestamp, chainID);
+        bytes32 proofID = generateProofID(
+            fromAddress,
+            timestamp,
+            chainID,
+            nonce
+        );
         return (
             fromAddress,
             toAddress,
@@ -75,7 +81,8 @@ contract Extractor_zk {
         address tokenAddress,
         uint256 timestamp,
         uint256 amount,
-        uint256 chainID
+        uint256 chainID,
+        uint256 nonce
     ) external {
         console.log("come in Extractor_zk___appeal___Function");
         require(chainID == 1011, "zk_chainID must be 1011");
@@ -105,7 +112,8 @@ contract Extractor_zk {
             tokenAddress,
             timestamp,
             amount,
-            chainID
+            chainID,
+            nonce
         );
         L1_PushManServer(PushManServerAddress).sendMessageToL2Orbiter(
             loanInfo.LoanFromAddress,
@@ -120,13 +128,15 @@ contract Extractor_zk {
 
     function generateProofID(
         address fromAddress,
-        uint256 param1,
-        uint256 param2
+        uint256 timestamp,
+        uint256 chainID,
+        uint256 nonce
     ) public view returns (bytes32) {
         // Need to adjust the number of bits according to the realization
         return
             (bytes32(uint256(fromAddress)) << 96) |
-            (bytes32(param1) << 32) |
-            bytes32(param2);
+            (bytes32(timestamp) << 48) |
+            (bytes32(chainID) << 24) |
+            bytes32(nonce);
     }
 }

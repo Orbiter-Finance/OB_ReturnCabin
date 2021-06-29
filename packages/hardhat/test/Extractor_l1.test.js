@@ -26,6 +26,7 @@ describe("Extractor_l1 Test", function () {
   const timeStamp = 123123123;
   const amountNum = 100 * 10 ** 18;
   const amount = "0x" + amountNum.toString(16);
+  const nonce = 321;
 
   beforeEach(async function () {
     // Get the ContractFactory and Signers here.
@@ -69,7 +70,8 @@ describe("Extractor_l1 Test", function () {
         tokenAddress,
         amount,
         timeStamp,
-        L1_chainID
+        L1_chainID,
+        nonce
       );
     });
   });
@@ -77,7 +79,7 @@ describe("Extractor_l1 Test", function () {
     it("Should be Obtain a certain transfer information on L1 from iExtractor_l1", async function () {
       const transferInfo = await L1_ExtractorContract.connect(
         addr2
-      ).getTransactionLoanProof(userAccount, timeStamp, L1_chainID);
+      ).getTransactionLoanProof(userAccount, timeStamp, L1_chainID, nonce);
       // function need set view to get returns
       // await L1_PushManServerContract.test(amount);
       console.log("transferInfo = ", transferInfo);
@@ -90,7 +92,8 @@ describe("Extractor_l1 Test", function () {
         await L1_ExtractorContract.generateProofID(
           userAccount,
           timeStamp,
-          L1_chainID
+          L1_chainID,
+          nonce
         )
       );
     });
@@ -101,7 +104,8 @@ describe("Extractor_l1 Test", function () {
       await L1_ExtractorContract.connect(addr2).appeal(
         userAccount,
         timeStamp,
-        L1_chainID
+        L1_chainID,
+        nonce
       );
       // function need set view to get returns
       // await L1_PushManServerContract.test(amount);

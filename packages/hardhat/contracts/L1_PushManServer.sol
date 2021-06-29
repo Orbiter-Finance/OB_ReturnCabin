@@ -44,7 +44,8 @@ contract L1_PushManServer is Ownable {
         address toAddress,
         address tokenAddress,
         uint256 loanAmount,
-        uint256 chainID
+        uint256 chainID,
+        uint256 nonce
     ) public {
         require(chainID == 1, "chainID must be equal to 1");
         require(
@@ -71,7 +72,8 @@ contract L1_PushManServer is Ownable {
             tokenAddress,
             loanAmount,
             block.timestamp,
-            chainID
+            chainID,
+            nonce
         );
     }
 
@@ -130,20 +132,23 @@ contract L1_PushManServer is Ownable {
     /**
      * @dev Generate loan certificate ID（proofID）
      * @param fromAddress  bytes32（0~20）
-     * @param param1  bytes32（21~28）
-     * @param param2  bytes32（29~32）
+     * @param timestamp  bytes32（21~26）
+     * @param chainID  bytes32（27~29）
+     * @param nonce  bytes32（30~32）
      * @return bytes32
      */
     function generateProofID(
         address fromAddress,
-        uint256 param1,
-        uint256 param2
+        uint256 timestamp,
+        uint256 chainID,
+        uint256 nonce
     ) public view returns (bytes32) {
         // Need to adjust the number of bits according to the realization
         return
             (bytes32(uint256(fromAddress)) << 96) |
-            (bytes32(param1) << 32) |
-            bytes32(param2);
+            (bytes32(timestamp) << 48) |
+            (bytes32(chainID) << 24) |
+            bytes32(nonce);
     }
 
     constructor() public {}
