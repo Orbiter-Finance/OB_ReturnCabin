@@ -135,8 +135,8 @@ contract Extractor_zk {
         // Need to adjust the number of bits according to the realization
         return
             (bytes32(uint256(fromAddress)) << 96) |
-            (bytes32(timestamp) << 48) |
-            (bytes32(chainID) << 24) |
+            (bytes32(timestamp) << 56) |
+            (bytes32(chainID) << 32) |
             bytes32(nonce);
     }
 }

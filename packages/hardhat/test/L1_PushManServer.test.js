@@ -112,7 +112,7 @@ describe("L1_PushManServer Test", function () {
         L1_PushManServerContract.address,
         amount
       );
-      await L1_PushManServerContract.connect(addr2).loanTokenInL1(
+      const ts = await L1_PushManServerContract.connect(addr2).loanTokenInL1(
         userAccount,
         coinDealerAccount,
         tokenAddress,
@@ -120,49 +120,50 @@ describe("L1_PushManServer Test", function () {
         L1_chainID,
         nonce
       );
+      console.log("ts =", ts);
     });
   });
 
-  describe("sendMessageToL2Orbiter()", function () {
-    it("Should be Call the singleLoanLiquidation of OrbiterMaker.sol on L2 with the loanProof", async function () {
-      // ??? error how to call sendMessageToL2Orbiter from Extractor_l1Contract & Extractor_zkContract
-      const zk_proof = await L1_PushManServerContract.generateProofID(
-        userAccount,
-        timestamp,
-        ZK_chainID,
-        nonce
-      );
-      // ？？？？ how to send message from Extractor_zkContract
-      // await L1_PushManServerContract.sendMessageToL2Orbiter(
-      // userAccount,
-      // coinDealerAccount,
-      // tokenAddress,
-      // amount,
-      // timestamp,
-      // ZK_chainID,
-      // zk_proof
-      // );
+  // describe("sendMessageToL2Orbiter()", function () {
+  //   it("Should be Call the singleLoanLiquidation of OrbiterMaker.sol on L2 with the loanProof", async function () {
+  //     // ??? error how to call sendMessageToL2Orbiter from Extractor_l1Contract & Extractor_zkContract
+  //     const zk_proof = await L1_PushManServerContract.generateProofID(
+  //       userAccount,
+  //       timestamp,
+  //       ZK_chainID,
+  //       nonce
+  //     );
+  //     // ？？？？ how to send message from Extractor_zkContract
+  //     // await L1_PushManServerContract.sendMessageToL2Orbiter(
+  //     // userAccount,
+  //     // coinDealerAccount,
+  //     // tokenAddress,
+  //     // amount,
+  //     // timestamp,
+  //     // ZK_chainID,
+  //     // zk_proof
+  //     // );
 
-      const l1_proof = await L1_PushManServerContract.generateProofID(
-        userAccount,
-        timestamp,
-        L1_chainID,
-        nonce
-      );
-      // ？？？？ how to send message from Extractor_l1Contract
-      await L1_PushManServerContract.connect(
-        Extractor_l1Contract
-      ).sendMessageToL2Orbiter(
-        userAccount,
-        coinDealerAccount,
-        tokenAddress,
-        amount,
-        timestamp,
-        L1_chainID,
-        l1_proof
-      );
-    });
-  });
+  //     const l1_proof = await L1_PushManServerContract.generateProofID(
+  //       userAccount,
+  //       timestamp,
+  //       L1_chainID,
+  //       nonce
+  //     );
+  //     // ？？？？ how to send message from Extractor_l1Contract
+  //     await L1_PushManServerContract.connect(
+  //       Extractor_l1Contract
+  //     ).sendMessageToL2Orbiter(
+  //       userAccount,
+  //       coinDealerAccount,
+  //       tokenAddress,
+  //       amount,
+  //       timestamp,
+  //       L1_chainID,
+  //       l1_proof
+  //     );
+  //   });
+  // });
 
   describe("generateProofID()", function () {
     it("Generate loan certificate ID", async function () {

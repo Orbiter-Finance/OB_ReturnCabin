@@ -16,12 +16,20 @@ contract Extractor_l1 is Ownable {
     }
 
     event setLoanInfoInL1Event(
-        address from,
-        address to,
-        uint256 chainID,
-        uint256 timestamp
+        address _from,
+        address _to,
+        address _tokenAddress,
+        uint256 _timestamp,
+        uint256 _amount,
+        uint256 _chainID,
+        uint256 _nonce,
+        uint256 _loanID
     );
+
     mapping(bytes32 => L1LoanInfo) public LoanInfos;
+
+    mapping(uint256 => bytes32) public LoanIDToKey;
+    mapping(bytes32 => uint256) public KeyToLoanID;
     address PushManServerAddress;
 
     constructor(address _pushManServerAddress) public {
@@ -38,7 +46,8 @@ contract Extractor_l1 is Ownable {
         address fromAddress,
         uint256 timestamp,
         uint256 chainID,
-        uint256 nonce
+        uint256 nonce,
+        uint256 loanID
     )
         public
         view
@@ -57,22 +66,36 @@ contract Extractor_l1 is Ownable {
         );
         require(chainID == 1, "l1_chainID must be 1");
         require(msg.sender == fromAddress, "msg.sender must be the loaner");
-        bytes32 proofID = generateProofID(
+        bytes32 L1SaveKey = generateProofID(
             fromAddress,
             timestamp,
             chainID,
             nonce
         );
-        console.logBytes32(proofID);
-        L1LoanInfo memory loinInfo = LoanInfos[proofID];
+        console.logBytes32(L1SaveKey);
+        console.log("loanID =", loanID);
+        L1LoanInfo memory loanInfo = LoanInfos[L1SaveKey];
+        require(
+            loanInfo.LoanFromAddress != address(0) &&
+                loanInfo.LoanToAddress != address(0),
+            "loanInfo can not be nil"
+        );
+        require(
+            LoanIDToKey[loanID] == L1SaveKey,
+            "LoanIDToKey[loanID] must equal to L1SaveKey"
+        );
+        require(
+            KeyToLoanID[L1SaveKey] == loanID,
+            "KeyToLoanID[L1SaveKey] must equal to loanID"
+        );
         return (
-            loinInfo.LoanFromAddress,
-            loinInfo.LoanToAddress,
-            loinInfo.LoanTokenAddress,
-            loinInfo.LoanAmount,
-            loinInfo.LoanTimestamp,
-            loinInfo.LoanChainID,
-            loinInfo.proofID
+            loanInfo.LoanFromAddress,
+            loanInfo.LoanToAddress,
+            loanInfo.LoanTokenAddress,
+            loanInfo.LoanAmount,
+            loanInfo.LoanTimestamp,
+            loanInfo.LoanChainID,
+            L1SaveKey
         );
     }
 
@@ -83,9 +106,10 @@ contract Extractor_l1 is Ownable {
         uint256 amount,
         uint256 timestamp,
         uint256 chainID,
-        uint256 nonce
+        uint256 nonce,
+        uint256 loanID
     ) external {
-        bytes32 proofID = generateProofID(
+        bytes32 L1SaveKey = generateProofID(
             fromAddress,
             timestamp,
             chainID,
@@ -98,7 +122,7 @@ contract Extractor_l1 is Ownable {
             amount,
             timestamp,
             chainID,
-            proofID
+            L1SaveKey
         );
         console.log("-----------------------testlog----------------------");
         console.log("loaninfo.fromAddress =", loaninfo.LoanFromAddress);
@@ -110,18 +134,31 @@ contract Extractor_l1 is Ownable {
         console.logBytes32(loaninfo.proofID);
         console.log("-----------------------testlog----------------------");
 
-        LoanInfos[proofID] = loaninfo;
-        emit setLoanInfoInL1Event(fromAddress, toAddress, chainID, timestamp);
+        LoanInfos[L1SaveKey] = loaninfo;
+        LoanIDToKey[loanID] = L1SaveKey;
+        KeyToLoanID[L1SaveKey] = loanID;
+
+        emit setLoanInfoInL1Event(
+            fromAddress,
+            toAddress,
+            tokenAddress,
+            timestamp,
+            amount,
+            chainID,
+            nonce,
+            loanID
+        );
     }
 
     function appeal(
         address fromAddress,
-        // address toAddress,
-        // address tokenAddress,
+        address toAddress,
+        address tokenAddress,
         uint256 timestamp,
-        // uint256 amount,
+        uint256 amount,
         uint256 chainID,
-        uint256 nonce
+        uint256 nonce,
+        uint256 loanID // ????? is necessary
     ) external {
         console.log("come in Extractor_l1___appeal___Function");
         require(chainID == 1, "l1_chainID must be 1011");
@@ -130,11 +167,11 @@ contract Extractor_l1 is Ownable {
             fromAddress == msg.sender,
             "fromAddress must equal to msg.sender"
         );
-        // require(toAddress != address(0), "toAddress can not be address(0)");
-        // require(
-        //     tokenAddress != address(0),
-        //     "tokenAddress can not be address(0)"
-        // );
+        require(toAddress != address(0), "toAddress can not be address(0)");
+        require(
+            tokenAddress != address(0),
+            "tokenAddress can not be address(0)"
+        );
         require(timestamp != 0, "timestamp can not 0");
         L1LoanInfo memory loanInfo;
         (
@@ -147,12 +184,10 @@ contract Extractor_l1 is Ownable {
             loanInfo.proofID
         ) = getTransactionLoanProof(
             fromAddress,
-            // toAddress,
-            // tokenAddress,
             timestamp,
-            // amount,
             chainID,
-            nonce
+            nonce,
+            loanID
         );
         L1_PushManServer(PushManServerAddress).sendMessageToL2Orbiter(
             loanInfo.LoanFromAddress,
@@ -174,8 +209,8 @@ contract Extractor_l1 is Ownable {
         // Need to adjust the number of bits according to the realization
         return
             (bytes32(uint256(fromAddress)) << 96) |
-            (bytes32(timestamp) << 48) |
-            (bytes32(chainID) << 24) |
+            (bytes32(timestamp) << 56) |
+            (bytes32(chainID) << 32) |
             bytes32(nonce);
     }
 }

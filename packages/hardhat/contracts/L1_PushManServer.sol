@@ -16,6 +16,7 @@ contract L1_PushManServer is Ownable {
 
     // chainID => iExtractorContractAddress
     mapping(uint256 => address) public iExtractorAddress;
+    uint256 loanID;
     struct TransferInfo {
         address TransferFromAddress;
         address TransferToAddress;
@@ -45,7 +46,7 @@ contract L1_PushManServer is Ownable {
         address tokenAddress,
         uint256 loanAmount,
         uint256 chainID,
-        uint256 nonce
+        uint256 nonce //returns (address, uint256)
     ) public {
         require(chainID == 1, "chainID must be equal to 1");
         require(
@@ -73,8 +74,11 @@ contract L1_PushManServer is Ownable {
             loanAmount,
             block.timestamp,
             chainID,
-            nonce
+            nonce,
+            loanID
         );
+        loanID++;
+        // return (toAddress, loanID - 1);
     }
 
     /**
@@ -146,10 +150,12 @@ contract L1_PushManServer is Ownable {
         // Need to adjust the number of bits according to the realization
         return
             (bytes32(uint256(fromAddress)) << 96) |
-            (bytes32(timestamp) << 48) |
-            (bytes32(chainID) << 24) |
+            (bytes32(timestamp) << 56) |
+            (bytes32(chainID) << 32) |
             bytes32(nonce);
     }
 
-    constructor() public {}
+    constructor() public {
+        loanID = 1;
+    }
 }
