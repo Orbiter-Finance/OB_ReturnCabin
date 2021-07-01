@@ -16,14 +16,14 @@ contract Extractor_l1 is Ownable {
     }
 
     event setLoanInfoInL1Event(
-        address _from,
-        address _to,
-        address _tokenAddress,
+        address indexed _from,
+        address indexed _to,
+        address indexed _tokenAddress,
         uint256 _timestamp,
         uint256 _amount,
         uint256 _chainID,
-        uint256 _nonce,
-        uint256 _loanID
+        uint256 _loanID,
+        bytes32 _proofID
     );
 
     mapping(bytes32 => L1LoanInfo) public LoanInfos;
@@ -46,7 +46,6 @@ contract Extractor_l1 is Ownable {
         address fromAddress,
         uint256 timestamp,
         uint256 chainID,
-        uint256 nonce,
         uint256 loanID
     )
         public
@@ -70,7 +69,7 @@ contract Extractor_l1 is Ownable {
             fromAddress,
             timestamp,
             chainID,
-            nonce
+            loanID
         );
         console.logBytes32(L1SaveKey);
         console.log("loanID =", loanID);
@@ -106,14 +105,13 @@ contract Extractor_l1 is Ownable {
         uint256 amount,
         uint256 timestamp,
         uint256 chainID,
-        uint256 nonce,
         uint256 loanID
     ) external {
         bytes32 L1SaveKey = generateProofID(
             fromAddress,
             timestamp,
             chainID,
-            nonce
+            loanID
         );
         L1LoanInfo memory loaninfo = L1LoanInfo(
             fromAddress,
@@ -145,8 +143,8 @@ contract Extractor_l1 is Ownable {
             timestamp,
             amount,
             chainID,
-            nonce,
-            loanID
+            loanID,
+            L1SaveKey
         );
     }
 
@@ -157,7 +155,6 @@ contract Extractor_l1 is Ownable {
         uint256 timestamp,
         uint256 amount,
         uint256 chainID,
-        uint256 nonce,
         uint256 loanID // ????? is necessary
     ) external {
         console.log("come in Extractor_l1___appeal___Function");
@@ -182,13 +179,7 @@ contract Extractor_l1 is Ownable {
             loanInfo.LoanTimestamp,
             loanInfo.LoanChainID,
             loanInfo.proofID
-        ) = getTransactionLoanProof(
-            fromAddress,
-            timestamp,
-            chainID,
-            nonce,
-            loanID
-        );
+        ) = getTransactionLoanProof(fromAddress, timestamp, chainID, loanID);
         L1_PushManServer(PushManServerAddress).sendMessageToL2Orbiter(
             loanInfo.LoanFromAddress,
             loanInfo.LoanToAddress,
@@ -204,13 +195,13 @@ contract Extractor_l1 is Ownable {
         address fromAddress,
         uint256 timestamp,
         uint256 chainID,
-        uint256 nonce
+        uint256 loanID
     ) public view returns (bytes32) {
         // Need to adjust the number of bits according to the realization
         return
             (bytes32(uint256(fromAddress)) << 96) |
             (bytes32(timestamp) << 56) |
             (bytes32(chainID) << 32) |
-            bytes32(nonce);
+            bytes32(loanID);
     }
 }

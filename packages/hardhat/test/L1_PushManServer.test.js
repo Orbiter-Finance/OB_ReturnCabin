@@ -34,8 +34,6 @@ describe("L1_PushManServer Test", function () {
   const amount = "0x" + amountNum.toString(16);
   const timestamp = 123456789;
 
-  const nonce = 321;
-
   beforeEach(async function () {
     // Get the ContractFactory and Signers here.
     // Token = await ethers.getContractFactory("Token");
@@ -117,8 +115,7 @@ describe("L1_PushManServer Test", function () {
         coinDealerAccount,
         tokenAddress,
         amount,
-        L1_chainID,
-        nonce
+        L1_chainID
       );
       console.log("ts =", ts);
     });
@@ -175,12 +172,14 @@ describe("L1_PushManServer Test", function () {
       );
       console.log("proofID =", proofID);
 
+      const loanID = 321;
+
       expect(
         await L1_PushManServerContract.generateProofID(
           tokenAddress,
           11111,
           2222,
-          nonce
+          loanID
         )
       ).to.equal(proofID);
     });

@@ -39,14 +39,14 @@ contract L1_PushManServer is Ownable {
      * @param toAddress toAddress
      * @param tokenAddress tokenAddress
      * @param loanAmount loanAmount
+     * @param chainID chainID
      */
     function loanTokenInL1(
         address fromAddress,
         address toAddress,
         address tokenAddress,
         uint256 loanAmount,
-        uint256 chainID,
-        uint256 nonce //returns (address, uint256)
+        uint256 chainID //returns (address, uint256)
     ) public {
         require(chainID == 1, "chainID must be equal to 1");
         require(
@@ -74,7 +74,6 @@ contract L1_PushManServer is Ownable {
             loanAmount,
             block.timestamp,
             chainID,
-            nonce,
             loanID
         );
         loanID++;
