@@ -88,6 +88,7 @@ describe("Extractor_l1 Test", function () {
       expect(transferInfo.TransferAmount).to.equal(amount);
       expect(transferInfo.TransferTimestamp).to.equal(timeStamp);
       expect(transferInfo.TransferChainID).to.equal(L1_chainID);
+      expect(transferInfo.TransferLoanID).to.equal(loanID);
       expect(transferInfo.proofID).to.equal(
         await L1_ExtractorContract.generateProofID(
           userAccount,

@@ -13,6 +13,7 @@ contract YourContract is Context, ERC20 {
     string public purpose = "Building Unstoppable Apps";
 
     constructor() public ERC20("SimpleToken", "SIM") {
+        console.log(_msgSender());
         _mint(_msgSender(), 100000000 * (10**uint256(decimals())));
     }
 

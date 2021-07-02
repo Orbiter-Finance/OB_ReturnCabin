@@ -12,6 +12,7 @@ contract Extractor_l1 is Ownable {
         uint256 LoanAmount;
         uint256 LoanTimestamp;
         uint256 LoanChainID;
+        uint256 LoanLoanID;
         bytes32 proofID;
     }
 
@@ -30,7 +31,7 @@ contract Extractor_l1 is Ownable {
 
     mapping(uint256 => bytes32) public LoanIDToKey;
     mapping(bytes32 => uint256) public KeyToLoanID;
-    address PushManServerAddress;
+    address public PushManServerAddress;
 
     constructor(address _pushManServerAddress) public {
         PushManServerAddress = _pushManServerAddress;
@@ -57,6 +58,7 @@ contract Extractor_l1 is Ownable {
             uint256 TransferAmount,
             uint256 TransferTimestamp,
             uint256 TransferChainID,
+            uint256 TransferLoanID,
             bytes32 proofID
         )
     {
@@ -71,8 +73,6 @@ contract Extractor_l1 is Ownable {
             chainID,
             loanID
         );
-        console.logBytes32(L1SaveKey);
-        console.log("loanID =", loanID);
         L1LoanInfo memory loanInfo = LoanInfos[L1SaveKey];
         require(
             loanInfo.LoanFromAddress != address(0) &&
@@ -94,6 +94,7 @@ contract Extractor_l1 is Ownable {
             loanInfo.LoanAmount,
             loanInfo.LoanTimestamp,
             loanInfo.LoanChainID,
+            loanInfo.LoanLoanID,
             L1SaveKey
         );
     }
@@ -120,6 +121,7 @@ contract Extractor_l1 is Ownable {
             amount,
             timestamp,
             chainID,
+            loanID,
             L1SaveKey
         );
         console.log("-----------------------testlog----------------------");
@@ -178,6 +180,7 @@ contract Extractor_l1 is Ownable {
             loanInfo.LoanAmount,
             loanInfo.LoanTimestamp,
             loanInfo.LoanChainID,
+            loanInfo.LoanLoanID,
             loanInfo.proofID
         ) = getTransactionLoanProof(fromAddress, timestamp, chainID, loanID);
         L1_PushManServer(PushManServerAddress).sendMessageToL2Orbiter(
