@@ -18,6 +18,7 @@ contract L2_OrbiterMaker is Ownable {
         address CoinDealerAddress;
         address tokenAddress;
         uint256 depositAmount;
+        uint256 availableDepositAmount;
         uint256 fee;
         uint256 minQuota;
         uint256 maxQuota;
@@ -111,6 +112,7 @@ contract L2_OrbiterMaker is Ownable {
             account,
             tokenAddress,
             amount,
+            amount,
             fee,
             minQuota,
             maxQuota,
@@ -120,6 +122,94 @@ contract L2_OrbiterMaker is Ownable {
         // transfer  success setCoinDealerInfo & setCoinDealerState
         CoinDealerInfo[msg.sender][tokenAddress] = newProof;
         CoinDealerState[msg.sender][tokenAddress] = 1;
+    }
+
+    /**
+     * @dev Freeze the account availableDepositAmount
+     * @param account The account to freeze availableDepositAmount
+     * @param tokenAddress The token in which coinDealer cease business
+     * @param amount The amount account shoule be freeze
+     */
+    function FreezeCoinDealerDepositAmount(
+        address account,
+        address tokenAddress,
+        uint256 amount
+    ) public {
+        require(account != address(0), "account can not be address(0)");
+        require(
+            tokenAddress != address(0),
+            "tokenAddress can not be address(0)"
+        );
+        require(msg.sender == account, "account must be msg.sender");
+        require(
+            CoinDealerState[account][tokenAddress] == 1,
+            "account & tokenAddress must be coinDealer and CoinDealerState[account][tokenAddress] must be 1"
+        );
+        DepositProof memory proof = CoinDealerInfo[account][tokenAddress];
+        uint256 oldAvailableAmount = proof.availableDepositAmount;
+        require(
+            amount < oldAvailableAmount,
+            "freezeAmount must be less than availableDepositAmount"
+        );
+        uint256 newAvailableAmount = oldAvailableAmount - amount;
+        CoinDealerInfo[account][tokenAddress]
+        .availableDepositAmount = newAvailableAmount;
+    }
+
+    /**
+     * @dev UnFreeze the account availableDepositAmount
+     * @param account The account to unfreeze availableDepositAmount
+     * @param tokenAddress The token in which coinDealer cease business
+     * @param amount The amount account shoule be unfreeze
+     */
+    function UnFreezeCoinDealerDepositAmount(
+        address account,
+        address tokenAddress,
+        uint256 amount
+    ) public {
+        require(account != address(0), "account can not be address(0)");
+        require(
+            tokenAddress != address(0),
+            "tokenAddress can not be address(0)"
+        );
+        require(msg.sender == account, "account must be msg.sender");
+        require(
+            CoinDealerState[account][tokenAddress] != 0,
+            "account & tokenAddress must be coinDealer"
+        );
+        DepositProof memory proof = CoinDealerInfo[account][tokenAddress];
+        // uint256 oldAvailableAmount = proof.availableDepositAmount;
+        // require(
+        //     amount < oldAvailableAmount,
+        //     "freezeAmount must be less than availableDepositAmount"
+        // );
+        // uint256 newAvailableAmount = oldAvailableAmount - amount;
+        // CoinDealerInfo[account][tokenAddress]
+        // .availableDepositAmount = newAvailableAmount;
+    }
+
+    /**
+     * @dev get the account availableDepositAmount from Coin Dealer
+     * @param account The account to get availableDepositAmount
+     * @param tokenAddress The token in which coinDealer cease business
+     */
+    function getCoinDealeravailableDepositAmount(
+        address account,
+        address tokenAddress
+    ) public returns (uint256) {
+        require(account != address(0), "account can not be address(0)");
+        require(
+            tokenAddress != address(0),
+            "tokenAddress can not be address(0)"
+        );
+        require(msg.sender == account, "account must be msg.sender");
+        require(
+            CoinDealerState[account][tokenAddress] != 0,
+            "account & tokenAddress must be coinDealer"
+        );
+        DepositProof memory proof = CoinDealerInfo[account][tokenAddress];
+        uint256 availableDepositAmount = proof.availableDepositAmount;
+        return availableDepositAmount;
     }
 
     /**
