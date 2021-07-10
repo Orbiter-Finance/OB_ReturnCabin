@@ -25,16 +25,48 @@ contract L2_OrbiterMaker is Ownable {
         uint256 chainID;
         uint256 startTimeStamp;
     }
+    /**
+      certificate
+     */
+    // Proof of repayment， create by
+    struct RepaymentProof {
+        address fromAddress; // coinDealer
+        address toAddress;
+        address tokenAddress;
+        uint256 amount;
+        uint256 timestamp;
+        uint256 chainID;
+        bytes32 proofID;
+    }
+
+    // Proof of FreezeDeposit
+    struct FreezeDepositProof {
+        uint256 freezeAmount;
+        bool isFreeze;
+    }
     //The state of the coin dealer（0:Not Coin Dealer 1:Coin Dealer 2:stop
     // accountAddress =>(tokenAddress => state)
     mapping(address => mapping(address => uint256)) public CoinDealerState;
     // accountAddress =>(tokenAddress => DepositProof)
     mapping(address => mapping(address => DepositProof)) public CoinDealerInfo;
+    // coinDealer => proofID => FreezeDepositProof
+    mapping(address => mapping(bytes32 => FreezeDepositProof))
+        public CoinDealerFreezeDepositInfo;
+
     // accountAddress =>(tokenAddress => withDrawTime)
     mapping(address => mapping(address => uint256)) public WithDrawTimes;
     // accountAddress =>(tokenAddress => stopButtferTime)
     // The time when the coinDealer actually stops trading
     mapping(address => mapping(address => uint256)) public stopTimes;
+
+    // key(proofID)(uint256) => how to generate
+    mapping(bytes32 => RepaymentProof) public RepaymentData;
+
+    // Repayer related （address = fromAddress = coinDealer）
+    mapping(address => bytes32[]) public RepaymentFrom;
+
+    // Borrower related (address = toAddress)
+    mapping(address => bytes32[]) public RepaymentTo;
 
     uint256 L1CTCTime;
     uint256 pushManServerTime;
@@ -126,24 +158,32 @@ contract L2_OrbiterMaker is Ownable {
 
     /**
      * @dev Freeze the account availableDepositAmount
-     * @param account The account to freeze availableDepositAmount
+     * @param account The account to freeze availableDepositAmount  => coindealer
      * @param tokenAddress The token in which coinDealer cease business
      * @param amount The amount account shoule be freeze
+     * @param proofID The proofID that shoule be freeze
      */
     function FreezeCoinDealerDepositAmount(
         address account,
         address tokenAddress,
-        uint256 amount
+        uint256 amount,
+        bytes32 proofID
     ) public {
         require(account != address(0), "account can not be address(0)");
         require(
             tokenAddress != address(0),
             "tokenAddress can not be address(0)"
         );
-        require(msg.sender == account, "account must be msg.sender");
+        // msg.sender ==> ownalbe??
+        // require(msg.sender == account, "account must be msg.sender");
         require(
             CoinDealerState[account][tokenAddress] == 1,
             "account & tokenAddress must be coinDealer and CoinDealerState[account][tokenAddress] must be 1"
+        );
+        require(
+            CoinDealerFreezeDepositInfo[account][proofID].isFreeze == false &&
+                CoinDealerFreezeDepositInfo[account][proofID].freezeAmount == 0,
+            "This set of data has not been used"
         );
         DepositProof memory proof = CoinDealerInfo[account][tokenAddress];
         uint256 oldAvailableAmount = proof.availableDepositAmount;
@@ -154,38 +194,62 @@ contract L2_OrbiterMaker is Ownable {
         uint256 newAvailableAmount = oldAvailableAmount - amount;
         CoinDealerInfo[account][tokenAddress]
         .availableDepositAmount = newAvailableAmount;
+        CoinDealerFreezeDepositInfo[account][proofID].isFreeze = true;
+        CoinDealerFreezeDepositInfo[account][proofID].freezeAmount = amount;
     }
 
     /**
      * @dev UnFreeze the account availableDepositAmount
-     * @param account The account to unfreeze availableDepositAmount
+     * @param account The account to unfreeze availableDepositAmount  => coindealer
      * @param tokenAddress The token in which coinDealer cease business
-     * @param amount The amount account shoule be unfreeze
+     * @param unFreezeAmount The amount account shoule be unfreeze
+     * @param proofID The proofID that shoule be freeze
      */
     function UnFreezeCoinDealerDepositAmount(
         address account,
         address tokenAddress,
-        uint256 amount
+        uint256 unFreezeAmount,
+        bytes32 proofID
     ) public {
         require(account != address(0), "account can not be address(0)");
         require(
             tokenAddress != address(0),
             "tokenAddress can not be address(0)"
         );
-        require(msg.sender == account, "account must be msg.sender");
+        // msg.sender ==> ownalbe??
+        // require(msg.sender == account, "account must be msg.sender");
         require(
             CoinDealerState[account][tokenAddress] != 0,
             "account & tokenAddress must be coinDealer"
         );
-        DepositProof memory proof = CoinDealerInfo[account][tokenAddress];
-        // uint256 oldAvailableAmount = proof.availableDepositAmount;
-        // require(
-        //     amount < oldAvailableAmount,
-        //     "freezeAmount must be less than availableDepositAmount"
-        // );
-        // uint256 newAvailableAmount = oldAvailableAmount - amount;
-        // CoinDealerInfo[account][tokenAddress]
-        // .availableDepositAmount = newAvailableAmount;
+        DepositProof memory depositProof = CoinDealerInfo[account][
+            tokenAddress
+        ];
+
+        FreezeDepositProof memory freezeProof = CoinDealerFreezeDepositInfo[
+            account
+        ][proofID];
+        uint256 depositAmount = depositProof.depositAmount;
+        uint256 oldAvailableAmount = depositProof.availableDepositAmount;
+        uint256 FreezeDepositAmount = freezeProof.freezeAmount;
+        require(
+            freezeProof.isFreeze == true,
+            "This set of data must has been used"
+        );
+        require(
+            FreezeDepositAmount == unFreezeAmount,
+            "unFreezeAmount must be equal to Stored frozen amount"
+        );
+
+        require(
+            oldAvailableAmount + unFreezeAmount < depositAmount,
+            "depositAmount must be less than oldAvailableAmount plus unFreezeAmount"
+        );
+        uint256 newAvailableAmount = oldAvailableAmount + unFreezeAmount;
+        CoinDealerInfo[account][tokenAddress]
+        .availableDepositAmount = newAvailableAmount;
+        CoinDealerFreezeDepositInfo[account][proofID].isFreeze = false;
+        CoinDealerFreezeDepositInfo[account][proofID].freezeAmount = 0;
     }
 
     /**
@@ -289,29 +353,6 @@ contract L2_OrbiterMaker is Ownable {
         // console.log("withDrawAmount =", withDrawAmount);
         AccountLiquidation(account, tokenAddress, withDrawAmount);
     }
-
-    /**
-      certificate
-     */
-    // Proof of repayment， create by
-    struct RepaymentProof {
-        address fromAddress; // coinDealer
-        address toAddress;
-        address tokenAddress;
-        uint256 amount;
-        uint256 timestamp;
-        uint256 chainID;
-        bytes32 proofID;
-    }
-
-    // key(proofID)(uint256) => how to generate
-    mapping(bytes32 => RepaymentProof) public RepaymentData;
-
-    // Repayer related （address = fromAddress = coinDealer）
-    mapping(address => bytes32[]) public RepaymentFrom;
-
-    // Borrower related (address = toAddress)
-    mapping(address => bytes32[]) public RepaymentTo;
 
     /**
      * @dev Repayment from orbiterMaker，And generate repayment proof

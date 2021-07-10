@@ -134,6 +134,36 @@ describe("L2_OrbiterMaker Test", function () {
     });
   });
 
+
+  describe("FreezeCoinDealerDepositAmount()", function () {
+    it("Should be FreezeCoinDealerDepositAmount to be a CoinDealer", async function () {
+      const proofIDText = 'testproofid'
+      const proofID = ethers.utils.formatBytes32String(proofIDText);
+      const FreezeAmountNum = 100 * 10 ** 18;
+      const FreezeAmount = "0x" + FreezeAmountNum.toString(16);
+      await L2_OrbiterMakerContract.FreezeCoinDealerDepositAmount(
+        coinDealerAccount,
+        tokenAddress,
+        FreezeAmount,
+        proofID
+      );
+  });
+
+  describe("UnFreezeCoinDealerDepositAmount()", function () {
+    it("Should be UnFreezeCoinDealerDepositAmount to be a CoinDealer", async function () {
+      const proofIDText = 'testproofid'
+      const proofID = ethers.utils.formatBytes32String(proofIDText);
+      const FreezeAmountNum = 100 * 10 ** 18;
+      const FreezeAmount = "0x" + FreezeAmountNum.toString(16);
+      await L2_OrbiterMakerContract.UnFreezeCoinDealerDepositAmount(
+        coinDealerAccount,
+        tokenAddress,
+        FreezeAmount,
+        proofID
+      );
+    });
+  }
+
   /**
    * test L2_OrbiterMakerContract initParamTime()function
    * _L1CTCTime,
