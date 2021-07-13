@@ -242,8 +242,8 @@ contract L2_OrbiterMaker is Ownable {
         );
 
         require(
-            oldAvailableAmount + unFreezeAmount < depositAmount,
-            "depositAmount must be less than oldAvailableAmount plus unFreezeAmount"
+            oldAvailableAmount + unFreezeAmount <= depositAmount,
+            "depositAmount must be greater than oldAvailableAmount plus unFreezeAmount"
         );
         uint256 newAvailableAmount = oldAvailableAmount + unFreezeAmount;
         CoinDealerInfo[account][tokenAddress]
@@ -260,13 +260,14 @@ contract L2_OrbiterMaker is Ownable {
     function getCoinDealeravailableDepositAmount(
         address account,
         address tokenAddress
-    ) public returns (uint256) {
+    ) public view returns (uint256) {
         require(account != address(0), "account can not be address(0)");
         require(
             tokenAddress != address(0),
             "tokenAddress can not be address(0)"
         );
-        require(msg.sender == account, "account must be msg.sender");
+        // msg.sender ==> ownalbe??
+        // require(msg.sender == account, "account must be msg.sender");
         require(
             CoinDealerState[account][tokenAddress] != 0,
             "account & tokenAddress must be coinDealer"

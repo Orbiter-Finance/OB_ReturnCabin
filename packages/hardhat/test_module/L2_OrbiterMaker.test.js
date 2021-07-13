@@ -105,12 +105,12 @@ describe("L2_OrbiterMaker Test", function () {
         coinDealerAccount
       );
 
-      console.log("coinDealer =", coinDealerNum.toString());
+      console.log("coinDealer =", ethers.utils.formatUnits(coinDealerNum));
       const contractNum = await SimpleTokenContract.balanceOf(
         L2_OrbiterMakerContract.address
       );
 
-      console.log("contract =", contractNum.toString());
+      console.log("contract =", ethers.utils.formatUnits(contractNum));
 
       expect(
         await L2_OrbiterMakerContract.CoinDealerState(
@@ -134,35 +134,163 @@ describe("L2_OrbiterMaker Test", function () {
     });
   });
 
-
   describe("FreezeCoinDealerDepositAmount()", function () {
-    it("Should be FreezeCoinDealerDepositAmount to be a CoinDealer", async function () {
-      const proofIDText = 'testproofid'
+    it("Should be FreezeCoinDealerDepositAmount", async function () {
+      const proofIDText = "testproofid";
       const proofID = ethers.utils.formatBytes32String(proofIDText);
       const FreezeAmountNum = 100 * 10 ** 18;
       const FreezeAmount = "0x" + FreezeAmountNum.toString(16);
+      const oldCoinDealerFreezeDepositInfo = await L2_OrbiterMakerContract.CoinDealerFreezeDepositInfo(
+        coinDealerAccount,
+        proofID
+      );
+      expect(await oldCoinDealerFreezeDepositInfo.freezeAmount).to.equal(0);
+      expect(await oldCoinDealerFreezeDepositInfo.isFreeze).to.equal(false);
+
+      const oldCoinDealerProof = await L2_OrbiterMakerContract.CoinDealerInfo(
+        coinDealerAccount,
+        tokenAddress
+      );
+      const oldDepositAmount = oldCoinDealerProof.depositAmount;
+      const oldAvailableDepositAmount =
+        oldCoinDealerProof.availableDepositAmount;
+      console.log(
+        "freeze_oldDepositAmount =",
+        ethers.utils.formatUnits(oldDepositAmount)
+      );
+
+      console.log(
+        "freeze_oldAvailableDepositAmount =",
+        ethers.utils.formatUnits(oldAvailableDepositAmount)
+      );
+      expect(oldDepositAmount).to.equal(oldAvailableDepositAmount);
+
       await L2_OrbiterMakerContract.FreezeCoinDealerDepositAmount(
         coinDealerAccount,
         tokenAddress,
         FreezeAmount,
         proofID
       );
+
+      const newCoinDealerFreezeDepositInfo = await L2_OrbiterMakerContract.CoinDealerFreezeDepositInfo(
+        coinDealerAccount,
+        proofID
+      );
+      expect(await newCoinDealerFreezeDepositInfo.freezeAmount).to.equal(
+        FreezeAmount
+      );
+      expect(await newCoinDealerFreezeDepositInfo.isFreeze).to.equal(true);
+      const newCoinDealerProof = await L2_OrbiterMakerContract.CoinDealerInfo(
+        coinDealerAccount,
+        tokenAddress
+      );
+      const newDepositAmount = newCoinDealerProof.depositAmount;
+      const newAvailableDepositAmount =
+        newCoinDealerProof.availableDepositAmount;
+      console.log(
+        "freeze_newDepositAmount =",
+        ethers.utils.formatUnits(newDepositAmount)
+      );
+      console.log(
+        "freeze_newAvailableDepositAmount =",
+        ethers.utils.formatUnits(newAvailableDepositAmount)
+      );
+
+      expect(newAvailableDepositAmount).to.equal(
+        newDepositAmount.sub(FreezeAmount)
+      );
+    });
+  });
+
+  describe("getCoinDealeravailableDepositAmount()", function () {
+    it("Should be getCoinDealeravailableDepositAmount", async function () {
+      const FreezeAmountNum = 100 * 10 ** 18;
+      const FreezeAmount = "0x" + FreezeAmountNum.toString(16);
+
+      const coinDealerProof = await L2_OrbiterMakerContract.CoinDealerInfo(
+        coinDealerAccount,
+        tokenAddress
+      );
+      const availableDepositAmount = coinDealerProof.availableDepositAmount;
+      const coinDealeravailableDepositAmount = await L2_OrbiterMakerContract.getCoinDealeravailableDepositAmount(
+        coinDealerAccount,
+        tokenAddress
+      );
+      console.log(
+        "get_AvailableDepositAmount =",
+        ethers.utils.formatUnits(availableDepositAmount)
+      );
+      console.log(
+        "coinDealeravailableDepositAmount =",
+        ethers.utils.formatUnits(coinDealeravailableDepositAmount)
+      );
+      expect(availableDepositAmount).to.equal(coinDealeravailableDepositAmount);
+    });
   });
 
   describe("UnFreezeCoinDealerDepositAmount()", function () {
     it("Should be UnFreezeCoinDealerDepositAmount to be a CoinDealer", async function () {
-      const proofIDText = 'testproofid'
+      const proofIDText = "testproofid";
       const proofID = ethers.utils.formatBytes32String(proofIDText);
-      const FreezeAmountNum = 100 * 10 ** 18;
-      const FreezeAmount = "0x" + FreezeAmountNum.toString(16);
+      const unFreezeAmountNum = 100 * 10 ** 18;
+      const unFreezeAmount = "0x" + unFreezeAmountNum.toString(16);
+      const oldCoinDealerFreezeDepositInfo = await L2_OrbiterMakerContract.CoinDealerFreezeDepositInfo(
+        coinDealerAccount,
+        proofID
+      );
+      expect(await oldCoinDealerFreezeDepositInfo.freezeAmount).to.equal(
+        unFreezeAmount
+      );
+      expect(await oldCoinDealerFreezeDepositInfo.isFreeze).to.equal(true);
+
+      const oldCoinDealerProof = await L2_OrbiterMakerContract.CoinDealerInfo(
+        coinDealerAccount,
+        tokenAddress
+      );
+      const oldDepositAmount = oldCoinDealerProof.depositAmount;
+      const oldAvailableDepositAmount =
+        oldCoinDealerProof.availableDepositAmount;
+      console.log(
+        "unfreeze_oldDepositAmount =",
+        ethers.utils.formatUnits(oldDepositAmount)
+      );
+      console.log(
+        "unfreeze_oldAvailableDepositAmount =",
+        ethers.utils.formatUnits(oldAvailableDepositAmount)
+      );
+      expect(oldDepositAmount.sub(unFreezeAmount)).to.equal(
+        oldAvailableDepositAmount
+      );
       await L2_OrbiterMakerContract.UnFreezeCoinDealerDepositAmount(
         coinDealerAccount,
         tokenAddress,
-        FreezeAmount,
+        unFreezeAmount,
         proofID
       );
+      const newCoinDealerFreezeDepositInfo = await L2_OrbiterMakerContract.CoinDealerFreezeDepositInfo(
+        coinDealerAccount,
+        proofID
+      );
+      expect(await newCoinDealerFreezeDepositInfo.freezeAmount).to.equal(0);
+      expect(await newCoinDealerFreezeDepositInfo.isFreeze).to.equal(false);
+      const newCoinDealerProof = await L2_OrbiterMakerContract.CoinDealerInfo(
+        coinDealerAccount,
+        tokenAddress
+      );
+      const newDepositAmount = newCoinDealerProof.depositAmount;
+      const newAvailableDepositAmount =
+        newCoinDealerProof.availableDepositAmount;
+      console.log(
+        "unfreeze_newDepositAmount =",
+        ethers.utils.formatUnits(newDepositAmount)
+      );
+      console.log(
+        "unfreeze_newAvailableDepositAmount =",
+        ethers.utils.formatUnits(newAvailableDepositAmount)
+      );
+      expect(newAvailableDepositAmount).to.equal(newDepositAmount);
     });
-  }
+  });
 
   /**
    * test L2_OrbiterMakerContract initParamTime()function
