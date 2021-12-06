@@ -1,32 +1,26 @@
-# `contracts`
+The contract has not been developed yet.
 
-1. The smart contracts that power the Orbiter.
-2. This project uses scaffold-eth, please refer to https://github.com/austintgriffith/scaffold-eth for basic usage
+todoList
 
-## Protocol Design
+- Add more necessary screws
+- Clean code, Complete README
+- Development of SPV module
+- Tested in rinkeby
 
-_For a detailed description of the protocol, please see the [whitepaper](https://docs.orbiter.finance/whitepaper_en)._
+---
 
-### Overview
+Orbiter's world consists of two events, the user initiates the event in the initiating network, and the maker responds to the event in the target network. This model is an abstraction of many real needs, such as: cross-chain swap of the same token, cross-chain swap of different tokens, and cross-chain swap of NFT. In order to allow users to initiate events with confidence, the maker pledges sufficient margin in the on-chain contract to make a promise to respond to the event: if the maker fails to respond to the initiation event in the promised way, the promise contract will compensate the user. The compensation must meet the following conditions. The user needs to prove that the initiating event has occurred, and the maker cannot prove that the corresponding response event has occurred.
 
-### Contracts
+**OrbiterMakerDeposit.sol (MDC contract):**
 
-**[L2_OrbiterMaker.sol](https://github.com/OrbiterCross/V2-contracts/blob/develop/packages/hardhat/contracts/L2_OrbiterMaker.sol)** - Responsible for Arbitrum coin dealer registration, voucher processing, and clearing related logic
+MDC is a storage contract for margin, and the general arbitration process logic is stipulated in the contract. In order to ensure that the user can get compensation in the event of a bad situation, the maker will deposit the margin in the MDC contract in advance, and at the same time lock a sufficient margin, so as to make a certain cross-Rollup transfer (binding contract, environment and currency) at MDC promise.
 
-**[L1_PushManServer.sol](https://github.com/OrbiterCross/V2-contracts/blob/develop/packages/hardhat/contracts/L1_PushManServer.sol)** - Obtain the transaction information of Rollup on the L1 network, and provide the functions of generating loan vouchers and initiating arbitration
+**IOrbiterExtrator.sol (SPV_extrater contract):**
 
-**[Extractor_zk.sol](https://github.com/OrbiterCross/V2-contracts/blob/develop/packages/hardhat/contracts/Extractor_zk.sol)** - Implementation of obtaining transaction information from zksync-rollups
+Short for Simplified Payment Verification, SPV is a lightweight client to verify blockchain transactions, downloading only block headers and requesting proof of inclusion to the blockchain in the Merkle Tree.
 
-**[Extractor_l1.sol](https://github.com/OrbiterCross/V2-contracts/blob/develop/packages/hardhat/contracts/Extractor_l1.sol)** - Implementation of obtaining transaction information from l1
+The security model includes: 1. The SPV certification process can be trusted. 2. Trust in the state root provided. In rollup, L1 will store the state root data of L2, and the trust of the state root is guaranteed by the consensus mechanism of L1, which means that as long as the SPV certification process can be trusted, the proof of the occurrence of L2 events is credible . If there is a side chain in the event chain, then it is necessary to ensure that there is a mechanism to transmit the root hash of the side chain to the network where the MDC is located. An off-chain approach is supported. Although the security assumption of the side chain is lower than rollup, it will not affect other chains because of one side chain.
 
-### [Test](https://github.com/OrbiterCross/V2-contracts/tree/main/packages/hardhat/test)
+**IOrbiterProtocal.sol (event binding contract):**
 
-**[L1_PushManServer.test.js](https://github.com/OrbiterCross/V2-contracts/blob/develop/packages/hardhat/test/L1_PushManServer.test.js)** - Test file of L1_PushManServer.sol
-
-**[L2_OrbiterMaker.test.js](https://github.com/OrbiterCross/V2-contracts/blob/develop/packages/hardhat/test/L2_OrbiterMaker.test.js)** - Test file of L2_OrbiterMaker.sol
-
-**[Extractor_l1.test.js](https://github.com/OrbiterCross/V2-contracts/blob/develop/packages/hardhat/test/Extractor_l1.test.js)** - Test file of L2_OrbiterMaker.sol
-
-**[Extractor_zk.test.js](https://github.com/OrbiterCross/V2-contracts/blob/develop/packages/hardhat/test/Extractor_zk.test.js)** - Test file of L2_OrbiterMaker.sol
-
-### Definitions
+The event binding contract stipulates that when the initiating event is A, the response event is equal to P(A), and there is a corresponding relationship between A and P(A). In the normal process, when the sender submits A that conforms to the specification, the maker will calculate P(A) under the chain according to the event binding contract, and send P(A) to the response environment. If the maker generates F(A) with a specification that does not conform to the binding contract, for example, the transaction amount is only half of A, and uses this as a response to the event. In the appeal process, even if the maker can prove that he responded to the event with P(A) A, but it cannot make F(A)=P(A), so it also fails.
