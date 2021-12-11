@@ -32,6 +32,7 @@ library Operations {
         address contractTokenAddress;
         uint256 avalibleETH;
         uint256 changExtKey;
+        uint256 precision;
         bool canStart;
         uint256[] avalibleTimes;
     }

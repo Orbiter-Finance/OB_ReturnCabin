@@ -8,9 +8,13 @@ import "./interfaces/IOrbiterMakerDeposit.sol";
 import "./interfaces/IOrbiterProtocal.sol";
 import "./Operations.sol";
 import "./interfaces/IOrbiterFactory.sol";
+import "./Strings.sol";
+import "./SafeMath.sol";
+import "./Extrator/OrbiterExtrator_L1.sol";
+
 
 contract OrbiterProtocalV1 is IOrbiterProtocal {
-
+    using SafeMath for uint;
     address managerAddress;
     mapping (uint256 => address) extractorAddressMap;
 
@@ -115,54 +119,143 @@ contract OrbiterProtocalV1 is IOrbiterProtocal {
       return delayTime;
     }
 
-    function checkUserChallenge(uint256 fromChainID,uint256 TxIndex,uint256 extIndex,uint256 toChainID, Operations.LPInfo memory lpinfo, Operations.PoolExt memory ext) override public returns(bool isSuccess) {
+    function checkUserChallenge(address sender, uint256 fromChainID,uint256 TxIndex,uint256 extIndex,uint256 toChainID, Operations.LPInfo memory lpinfo, Operations.PoolExt memory ext) override public returns(bool isSuccess) {
       Operations.TxInfo memory txinfo = getTxInfo(fromChainID,TxIndex);
-      require(txinfo.from == msg.sender, 'owner user');
+      require(txinfo.from == sender, 'owner user');
       // require(txinfo.to == makerAddress, 'makerAddress');
       require(extIndex <= lpinfo.avalibleTimes.length / 2, 'extIndex must be legitimate');
 
       uint256 pText = 9000 + toChainID;
+      string memory pTextStr = Strings.toString(pText);
+      console.log('pText =',pText);
+      console.log('pTextStr =',pTextStr);
+
+
+      uint256 amount = txinfo.amount;
+      string memory amountStr = Strings.toString(amount);
+      console.log('amount =',amount);
+      console.log('amountStr =',amountStr);
+
+      uint256 amountLength = bytes(amountStr).length;
+      string memory amountPText = Strings.getSlice(amountLength - 3, amountLength, amountStr);
+      console.log('amountLength =',amountLength);
+      console.log('amountPText =',amountPText);
+
+      // ========
+      console.log(Strings.compare(pTextStr,amountPText));
+      if (!Strings.compare(pTextStr,amountPText)) {
+        return false;
+      }
       // ========
       uint256 txTimeStamp = txinfo.timestamp;
       uint256 startTime = lpinfo.avalibleTimes[2 * extIndex];
-      uint256 endTime = lpinfo.avalibleTimes[2 * extIndex + 1];
-      if (txTimeStamp >= startTime && txTimeStamp <= endTime) {
-        return true;
-      } else {
+      uint256 endTime = 2 * extIndex + 1 < lpinfo.avalibleTimes.length ? lpinfo.avalibleTimes[2 * extIndex + 1] : 9999999999999;
+      console.log('txTimeStamp =',txTimeStamp);
+      console.log('startTime =',startTime);
+      console.log('endTime =',endTime);
+
+      if (txTimeStamp < startTime || txTimeStamp > endTime) {
         return false;
       }
-      if (txinfo.amount > ext.onemin && txinfo.amount <= ext.onemax) {
-        return true;
-      } else {
+      console.log('amount =',txinfo.amount);
+      console.log('onemin =',ext.onemin);
+      console.log('onemax =',ext.onemax);
+      if (txinfo.amount < ext.onemin || txinfo.amount > ext.onemax) {
         return false;
       }
-    }
-
-    function checkMakerChallenge(uint256 fromChainID,uint256 fromTxIndex,uint256 extIndex,uint256 toChainID,uint256 toTxIndex,Operations.LPInfo memory lpinfo) override public returns(bool isSuccess) {
-      Operations.TxInfo memory userTxinfo = getTxInfo(fromChainID,fromTxIndex);
-      Operations.TxInfo memory makerTxinfo = getTxInfo(toChainID,toTxIndex);
-
-      require(userTxinfo.from == makerTxinfo.to, '1');
-      require(userTxinfo.to == makerTxinfo.from, '2');
-      require(extIndex <= lpinfo.avalibleTimes.length / 2, 'extIndex must be legitimate');
-      uint256 pText = 9000 + toChainID;
-
-      //
       return true;
     }
 
-    function userChanllengeWithDraw(uint256 fromChainID,uint256 TxIndex,uint256 extIndex,uint256 toChainID, Operations.LPInfo memory lpinfo) override public returns(bool isSuccess){
+    function checkMakerChallenge(uint256 fromChainID,uint256 fromTxIndex,uint256 extIndex,uint256 toChainID,uint256 toTxIndex,Operations.LPInfo memory lpinfo,Operations.PoolExt memory ext) override public returns(bool isSuccess) {
+      Operations.TxInfo memory userTxinfo = getTxInfo(fromChainID,fromTxIndex);
+      Operations.TxInfo memory makerTxinfo = getTxInfo(toChainID,toTxIndex);
+
+      require(userTxinfo.from == makerTxinfo.to, 'address match1');
+      require(userTxinfo.to == makerTxinfo.from, 'address match2');
+      require(extIndex <= lpinfo.avalibleTimes.length / 2, 'extIndex must be legitimate');
+
+      uint256 userPText = 9000 + toChainID;
+      require(userTxinfo.nonce >=0 && userTxinfo.nonce < 9000,'nonceInvalid');
+      string memory userNonceStr = Strings.toString(userTxinfo.nonce);
+
+      require(bytes(userNonceStr).length > 0 && bytes(userNonceStr).length < 5,'nonceInvalid');
+
+      string memory zeroStr = '';
+      if (bytes(userNonceStr).length < 4) {
+        for (uint256 index = 0; index < 4 - bytes(userNonceStr).length; index++) {
+          zeroStr = Strings.concatenate(zeroStr, '0');
+        }
+      }
+      string memory makerPtext = Strings.concatenate(zeroStr, userNonceStr);
+
+      string memory makerAmountStr = Strings.toString(makerTxinfo.amount);
+
+      string memory makerAmountPText = Strings.getSlice(bytes(makerAmountStr).length - 3, bytes(makerAmountStr).length, makerAmountStr);
+
+      console.log('makerPtext =',makerPtext);
+      console.log('makerAmountPText =',makerAmountPText);
+
+      if (Strings.compare(makerPtext,makerAmountPText) == false) {
+        return false;
+      }
+
+      console.log('makerTxinfo.timestamp',makerTxinfo.timestamp);
+      console.log('userTxinfo.timestamp',userTxinfo.timestamp);
+
+      if (makerTxinfo.timestamp - userTxinfo.timestamp > 1200) {
+        return false;
+      }
+      string memory toAmountStr = getToAmountStr(userTxinfo.amount.sub(userPText),lpinfo, ext);
+      string memory realToAmount = Strings.concatenate(Strings.getSlice(1,bytes(toAmountStr).length - bytes(userNonceStr).length, toAmountStr), userNonceStr);
+
+      console.log('toAmountStr =',toAmountStr);
+      console.log('realToAmount =',realToAmount);
+      console.log('makerAmountStr =',makerAmountStr);
+      if (Strings.compare(realToAmount,makerAmountStr) == false) {
+        return false;
+      }
+      return true;
+    }
+
+    function getGasFeeFix(uint gasFee, uint digit, uint precision) private returns(uint){
+      require(digit < precision, "digit must be less than precision");
+      uint fixNum = gasFee % (10 ** (precision - digit));
+      uint m_amount = fixNum > 0 ? gasFee.sub(fixNum).add(10 ** (precision - digit)) : gasFee;
+      return m_amount;
+    }
+
+    function getToAmountStr(uint userAmount,Operations.LPInfo memory lpinfo,Operations.PoolExt memory ext) private returns(string memory toAmount_fee) {
+      console.log('userRealAmount =',userAmount);
+      uint toAmount_tradingFee = userAmount.sub(ext.tradingFee.mul(10 ** lpinfo.precision));
+      console.log('toAmount_tradingFee =', toAmount_tradingFee);
+      uint gasFee = toAmount_tradingFee.mul(ext.gasFee) / 1000;
+      console.log('gasFee =', gasFee);
+      uint digit = lpinfo.precision == 18 ? 5 : 2;
+      console.log('digit =', digit);
+      uint gasFee_fix = getGasFeeFix(gasFee,digit,lpinfo.precision);
+      console.log('gasFee_fix =', gasFee_fix);
+      uint toAmount_fee = toAmount_tradingFee.sub(gasFee_fix);
+      console.log('toAmount_fee =', toAmount_fee);
+      string memory toAmountStr = Strings.toString(toAmount_fee);
+      return toAmountStr;
+    }
+
+
+
+    function userChanllengeWithDraw(address sender, uint256 fromChainID,uint256 TxIndex,uint256 extIndex,uint256 toChainID, Operations.LPInfo memory lpinfo) override public returns(bool isSuccess,uint eAmount,uint tAmount){
       Operations.TxInfo memory txinfo = getTxInfo(fromChainID,TxIndex);
-      require(txinfo.from == msg.sender, 'owner user');
+      require(txinfo.from == sender, 'owner user');
       // require(txinfo.to == makerAddress, 'makerAddress');
       require(extIndex <= lpinfo.avalibleTimes.length / 2, 'extIndex must be legitimate');
 
       uint256 punish = getTokenPunish(txinfo.amount);
-      uint256 needBackTokenAmount = txinfo.amount * (1 + punish);
+      console.log('tokenAmount =',txinfo.amount);
+      console.log('punish =',punish);
+      uint256 needBackTokenAmount = txinfo.amount.add(punish);
 
       uint256 needBackEthAmount = getETHGas(fromChainID,toChainID);
-      // stack-eth
-      // transfer eth & transfer token
+
+      return (true,needBackEthAmount,needBackTokenAmount);
     }
 
     function getETHGas(uint256 fromChainID, uint256 toChainID) override public returns(uint256 amount){
@@ -190,5 +283,12 @@ contract OrbiterProtocalV1 is IOrbiterProtocal {
         uint256 fee
     ) public returns (uint256 amount) {
         amount = 1;
+    }
+
+    function createExtractorContract(uint256 chainID,address tokenAddress) external{
+        require(extractorAddressMap[chainID] == address(0),"extractorAddressMap have no chainID");
+        address depositContract = address(new OrbiterExtrator_L1{salt: keccak256(abi.encode(msg.sender,chainID))}(tokenAddress));
+        extractorAddressMap[chainID] = depositContract;
+        console.log('extractorAddress =',extractorAddressMap[chainID]);
     }
 }

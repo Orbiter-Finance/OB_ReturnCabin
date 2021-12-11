@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-pragma solidity >=0.5.0;
+pragma solidity 0.7.6;
 pragma abicoder v2;
 
 import './../Operations.sol';
@@ -21,11 +21,11 @@ interface IOrbiterProtocal {
 
     function getStopDealyTime(uint256 chainID) external view returns (uint256);
 
-    function checkUserChallenge(uint256 fromChainID,uint256 TxIndex,uint256 extIndex,uint256 toChainID, Operations.LPInfo memory lpinfo, Operations.PoolExt memory ext) external returns(bool);
+    function checkUserChallenge(address sender, uint256 fromChainID,uint256 TxIndex,uint256 extIndex,uint256 toChainID, Operations.LPInfo memory lpinfo, Operations.PoolExt memory ext) external returns(bool);
 
-    function checkMakerChallenge(uint256 fromChainID,uint256 fromTxIndex,uint256 extIndex,uint256 toChainID,uint256 toTxIndex,Operations.LPInfo memory lpinfo) external returns(bool);
+    function checkMakerChallenge(uint256 fromChainID,uint256 fromTxIndex,uint256 extIndex,uint256 toChainID,uint256 toTxIndex,Operations.LPInfo memory lpinfo,Operations.PoolExt memory ext) external returns(bool);
 
-    function userChanllengeWithDraw(uint256 fromChainID,uint256 TxIndex,uint256 extIndex,uint256 toChainID, Operations.LPInfo memory lpinfo) external returns(bool);
+    function userChanllengeWithDraw(address sender, uint256 fromChainID,uint256 TxIndex,uint256 extIndex,uint256 toChainID, Operations.LPInfo memory lpinfo) external returns(bool,uint,uint);
 
     function getETHGas(uint256 fromChainID, uint256 toChainID) external returns(uint256);
 

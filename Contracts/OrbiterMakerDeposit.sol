@@ -20,11 +20,13 @@ contract OrbiterMakerDeposit is IOrbiterMakerDeposit {
         public pools;
     mapping (uint256 => mapping(uint256 => userChallengeState)) userChallenge;
     mapping (address=>uint256) usedTokenAmount;
-    mapping (uint256 => mapping (uint256=>Operations.PoolExt)) changeExt;
+    mapping (uint256 => mapping (uint256=>Operations.PoolExt)) public changeExt;
 
     uint256 currentExtKey;
     uint256 usedETHAmount;
     uint256 userChallengeBalance;
+
+    address _owner;
 
     constructor() {
         currentExtKey = 0;
@@ -32,6 +34,7 @@ contract OrbiterMakerDeposit is IOrbiterMakerDeposit {
         // protocal = IOrbiterFactory(msg.sender).protocal;
     }
 
+    fallback() external payable {}
     function createLPInfo(
         uint256 fromChainID,
         uint256 toChainID,
@@ -43,7 +46,8 @@ contract OrbiterMakerDeposit is IOrbiterMakerDeposit {
         uint256 oneMin,
         uint256 tradingFee,
         uint256 gasFee,
-        address protocal
+        address protocal,
+        uint256 precision
     ) override public {
         // owner
         require(protocal != address(0), "protocal can not be address(0)");
@@ -65,7 +69,8 @@ contract OrbiterMakerDeposit is IOrbiterMakerDeposit {
               toTokenAddress,
               contractTokenAddress,
               avalibleETH,
-              times
+              times,
+              precision
         );
     }
 
@@ -75,7 +80,8 @@ contract OrbiterMakerDeposit is IOrbiterMakerDeposit {
                       address toTokenAddress,
                       address contractTokenAddress,
                       uint256 avalibleETH,
-                      uint256[] memory times) 
+                      uint256[] memory times,
+                      uint256 precision) 
             private {
         Operations.LPInfo memory newLp = Operations.LPInfo(
               msg.sender,
@@ -86,6 +92,7 @@ contract OrbiterMakerDeposit is IOrbiterMakerDeposit {
               contractTokenAddress,
               avalibleETH,
               currentExtKey,
+              precision,
               true,
               times
         );
@@ -117,7 +124,7 @@ contract OrbiterMakerDeposit is IOrbiterMakerDeposit {
 
     function LPType(Operations.LPInfo memory readyLPInfo) override public returns(uint256 stateType){
       uint256 currentTime = block.timestamp;
-      uint256 changeExtIndex = (readyLPInfo.avalibleTimes.length - 1) / 2;
+      uint256 changeExtIndex = readyLPInfo.avalibleTimes.length % 2 == 1 ? (readyLPInfo.avalibleTimes.length - 1) / 2 : readyLPInfo.avalibleTimes.length / 2;
       uint256 withDrawTime = IOrbiterProtocal(changeExt[readyLPInfo.changExtKey][changeExtIndex].protocal).maxWithdrawTime();
       if (readyLPInfo.avalibleTimes.length == 0) {
         return 0;
@@ -151,25 +158,45 @@ contract OrbiterMakerDeposit is IOrbiterMakerDeposit {
 
       require(readyLPInfo.canStart == true, "LPInfo must be stop state");
 
+      console.log('zz =',LPType(readyLPInfo));
+
       require(LPType(readyLPInfo) == 0 || LPType(readyLPInfo) == 5 || LPType(readyLPInfo) == 6, 'LPType must be 0,5,6');
 
       IERC20 liquidityToken = IERC20(readyLPInfo.contractTokenAddress);
       uint256 liquidityTokenAmount = liquidityToken.balanceOf(address(this));
-
+      console.log('liquidityTokenAmount =',liquidityTokenAmount);
       uint256 liquidityETHAmount = address(this).balance;
+      console.log('liquidityETHAmount =',liquidityETHAmount);
 
       //=============//
-      uint256 changeExtIndex = (readyLPInfo.avalibleTimes.length - 1) / 2;
+      uint256 changeExtIndex = readyLPInfo.avalibleTimes.length % 2 == 1 ? (readyLPInfo.avalibleTimes.length - 1) / 2 : readyLPInfo.avalibleTimes.length / 2;
       if (changeExt[readyLPInfo.changExtKey][changeExtIndex].protocal == address(0)) {
         changeExt[readyLPInfo.changExtKey][changeExtIndex] = changeExt[readyLPInfo.changExtKey][changeExtIndex - 1];
       }
-      require(changeExt[readyLPInfo.changExtKey][changeExtIndex].avalibleDeposit < liquidityTokenAmount - usedTokenAmount[fromTokenAddress]);
-      require(readyLPInfo.avalibleETH  < liquidityETHAmount - usedETHAmount - userChallengeBalance);
+      console.log('protocal =',changeExt[readyLPInfo.changExtKey][changeExtIndex].protocal);
+      console.log('avalibleDeposit =',changeExt[readyLPInfo.changExtKey][changeExtIndex].avalibleDeposit);
+      console.log('usedTokenAmount =',usedTokenAmount[fromTokenAddress]);
+      console.log('address =',address(this));
+
+
+      console.log('avalibleETH =',readyLPInfo.avalibleETH);
+      console.log('liquidityETHAmount =',liquidityETHAmount);
+      console.log('usedETHAmount =',usedETHAmount);
+      console.log('userChallengeBalance =',userChallengeBalance);
+
+      // console.log('111 =',address(this).balance);
+      // console.log('222 =',msg.sender.balance);
+      // msg.sender.transfer(1000000);
+
+      require(changeExt[readyLPInfo.changExtKey][changeExtIndex].avalibleDeposit < liquidityTokenAmount - usedTokenAmount[fromTokenAddress],'token not enough');
+      // require(readyLPInfo.avalibleETH  < liquidityETHAmount - usedETHAmount - userChallengeBalance, 'ETH not enough');
 
       readyLPInfo.avalibleTimes.push(block.timestamp + IOrbiterProtocal(changeExt[readyLPInfo.changExtKey][changeExtIndex].protocal).getStartDealyTime(fromChainID));
       readyLPInfo.canStart = false;
       usedTokenAmount[contractTokenAddress] += changeExt[readyLPInfo.changExtKey][changeExtIndex].avalibleDeposit;
       usedETHAmount += readyLPInfo.avalibleETH;
+      console.log('usedTokenAmount =',usedTokenAmount[contractTokenAddress]);
+      console.log('usedETHAmount =',usedETHAmount);
       return true;
     }
 
@@ -277,8 +304,10 @@ contract OrbiterMakerDeposit is IOrbiterMakerDeposit {
       require(userChallenge[fromChainID][TxIndex].challengeState == 0, 'challenge is new');
 
       Operations.LPInfo memory readyLPInfo = pools[fromChainID][toChainID][fromTokenAddress][toTokenAddress];
+      console.log('000000000000000 =',readyLPInfo.avalibleTimes.length);
+      console.log('000000000000000 =',readyLPInfo.avalibleTimes[0]);
       require(readyLPInfo.avalibleTimes.length != 0, "readyLPInfo.avalibleTimes.length must be greater than 0");
-      bool userChallengeSituation = IOrbiterProtocal(changeExt[readyLPInfo.changExtKey][changeExtIndex].protocal).checkUserChallenge(fromChainID,TxIndex,changeExtIndex,toChainID,readyLPInfo,changeExt[readyLPInfo.changExtKey][changeExtIndex]);
+      bool userChallengeSituation = IOrbiterProtocal(changeExt[readyLPInfo.changExtKey][changeExtIndex].protocal).checkUserChallenge(msg.sender,fromChainID,TxIndex,changeExtIndex,toChainID,readyLPInfo,changeExt[readyLPInfo.changExtKey][changeExtIndex]);
       require(userChallengeSituation == true, 'userChallenge must be true');
       userChallengeState memory challengeInfo = userChallengeState(
         changeExt[readyLPInfo.changExtKey][changeExtIndex].protocal,
@@ -298,8 +327,8 @@ contract OrbiterMakerDeposit is IOrbiterMakerDeposit {
 
       Operations.LPInfo memory readyLPInfo = pools[fromChainID][toChainID][fromTokenAddress][toTokenAddress];
       require(readyLPInfo.avalibleTimes.length != 0, "have LPinfo");
-      bool makerChallenge = IOrbiterProtocal(changeExt[readyLPInfo.changExtKey][changeExtIndex].protocal).checkMakerChallenge(fromChainID,fromTxIndex,changeExtIndex,toChainID,toTxIndex,readyLPInfo);
-      require(makerChallenge == true, 'readyLPInfo.avalibleTimes.length must be greater than 0');
+      bool makerChallenge = IOrbiterProtocal(changeExt[readyLPInfo.changExtKey][changeExtIndex].protocal).checkMakerChallenge(fromChainID,fromTxIndex,changeExtIndex,toChainID,toTxIndex,readyLPInfo,changeExt[readyLPInfo.changExtKey][changeExtIndex]);
+      require(makerChallenge == true, 'makerChanllenge must be true');
       userChallenge[fromChainID][fromTxIndex].challengeState = 2;
       return true;
     }
@@ -317,23 +346,27 @@ contract OrbiterMakerDeposit is IOrbiterMakerDeposit {
       require(toTokenAddress != address(0), "toTokenAddress can not be address(0)");
       require(contractTokenAddress != address(0), "contractTokenAddress can not be address(0)");
 
-      userChallengeState memory challengeInfo = userChallenge[fromChainID][TxIndex];
-      require(challengeInfo.challengeState == 1, 'have challengeInfo and state is 1');
-      require(block.timestamp > challengeInfo.challengeTime, 'nowTime must greater than challengeTime');
+      require(userChallenge[fromChainID][TxIndex].challengeState == 1, 'have challengeInfo and state is not 1');
 
       Operations.LPInfo memory readyLPInfo = pools[fromChainID][toChainID][fromTokenAddress][toTokenAddress];
-
-      bool userWithDraw = IOrbiterProtocal(changeExt[readyLPInfo.changExtKey][changeExtIndex].protocal).userChanllengeWithDraw(fromChainID,TxIndex,changeExtIndex,toChainID,readyLPInfo);
+      console.log('nowTime =',block.timestamp);
+      console.log('challengeTime =',userChallenge[fromChainID][TxIndex].challengeTime);
+      console.log('disputeTime =',IOrbiterProtocal(changeExt[readyLPInfo.changExtKey][changeExtIndex].protocal).getDisputeTimeTime(fromChainID));
+      require(block.timestamp > userChallenge[fromChainID][TxIndex].challengeTime + IOrbiterProtocal(changeExt[readyLPInfo.changExtKey][changeExtIndex].protocal).getDisputeTimeTime(fromChainID), 'nowTime must greater than challengeTime');
+      (bool userWithDraw, uint eAmount, uint tAmount) = IOrbiterProtocal(changeExt[readyLPInfo.changExtKey][changeExtIndex].protocal).userChanllengeWithDraw(msg.sender, fromChainID,TxIndex,changeExtIndex,toChainID,readyLPInfo);
       require(userWithDraw ==  true, 'userWithDraw must be true');
-      challengeInfo.challengeState = 3;
+
+      console.log('liquidityTokenAmount =',IERC20(contractTokenAddress).balanceOf(address(this)));
+      console.log('liquidityETHAmount =',address(this).balance);
+      console.log('userWithDraw =',userWithDraw);
+      console.log('eAmount =',eAmount);
+      console.log('tAmount =',tAmount);
+
+      // require(address(this).balance > eAmount, "liquidityETHAmount must greater than eAmount");
+      require(IERC20(contractTokenAddress).balanceOf(address(this)) > tAmount, "liquidityTokenAmount must greater than tAmount");
+
+      IERC20(contractTokenAddress).transfer(msg.sender, tAmount);
+      // msg.sender.transfer(eAmount);
+      userChallenge[fromChainID][TxIndex].challengeState = 3;
     }
 }
-
-
-
-
-
-// modifier owner () {
-//     require(address(this) == keccak256(abi.encode(msg.sender)));
-//     _;
-// }

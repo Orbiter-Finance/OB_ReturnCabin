@@ -6,6 +6,7 @@ import "hardhat/console.sol";
 import './interfaces/IOrbiterFactory.sol';
 // import './interfaces/IOrbiterMakerDeposit.sol';
 import './Operations.sol';
+import './OrbiterMakerDeposit.sol';
 
 /// @title Canonical Orbiter factory
 /// @notice Deploys a Orbiter deposit contract controlled by maker
@@ -75,7 +76,7 @@ contract OrbiterManager is IOrbiterFactory{
 
     /// @inheritdoc IOrbiterFactory
     function createDepositContract() external override returns (address depositContract){
-        // depositContract = address(new Greeter{salt: keccak256(abi.encode(msg.sender))}("ss"));
-        // emit MakerCreated(msg.sender,depositContract);
+        depositContract = address(new OrbiterMakerDeposit{salt: keccak256(abi.encode(msg.sender))}());
+        emit MakerCreated(msg.sender,depositContract);
     }
 }

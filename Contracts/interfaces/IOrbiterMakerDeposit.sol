@@ -16,7 +16,8 @@ interface IOrbiterMakerDeposit {
         uint256 oneMin,
         uint256 tradingFee,
         uint256 gasFee,
-        address protocal
+        address protocal,
+        uint256 precision
     ) external;
 
     function LPType(Operations.LPInfo memory readyLPInfo) external returns(uint256);
