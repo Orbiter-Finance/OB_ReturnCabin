@@ -1,26 +1,24 @@
-The contract has not been developed yet.
+The contract has not yet been developed.
 
-todoList
+ to-do list.
 
 - Add more necessary screws
-- Clean code, Complete README
-- Development of SPV module
+- Clean code,  unified naming rules, clear README
+- Develop SPV module
 - Tested in rinkeby
 
 ---
 
-Orbiter's world consists of two events, the user initiates the event in the initiating network, and the maker responds to the event in the target network. This model is an abstraction of many real needs, such as: cross-chain swap of the same token, cross-chain swap of different tokens, and cross-chain swap of NFT. In order to allow users to initiate events with confidence, the maker pledges sufficient margin in the on-chain contract to make a promise to respond to the event: if the maker fails to respond to the initiation event in the promised way, the promise contract will compensate the user. The compensation must meet the following conditions. The user needs to prove that the initiating event has occurred, and the maker cannot prove that the corresponding response event has occurred.
+Orbiter's world comprises Sender initiating events in the initiating network and Maker responding events in the target network. This model abstracts many complex things, such as cross-chain swap of the same tokens, different tokens, and NFT. To make Senders feel safe to initiate events, Makers pledges sufficient margin in the on-chain contract to respond to the event, and it's like making a promise: If Makers fails to respond to the Sender's initiated event as promised, the promise contract will compensate the Sender. The compensation must meet the following conditions. The Sender needs to prove that the initiating event has occurred, and the Maker cannot prove that a corresponding responding event has occurred.
 
 **OrbiterMakerDeposit.sol (MDC contract):**
-
-MDC is a storage contract for margin, and the general arbitration process logic is stipulated in the contract. In order to ensure that the user can get compensation in the event of a bad situation, the maker will deposit the margin in the MDC contract in advance, and at the same time lock a sufficient margin, so as to make a certain cross-Rollup transfer (binding contract, environment and currency) at MDC promise.
+MDC is a storage contract for margin, which specifies a common arbitration process logic. Maker will pre-deposit the margin into the MDC contract and lock a sufficient margin to make a specific cross-rollup transfer (binding-event contract, environment, and currency) to ensure that the Sender can be compensated in an adverse case.
 
 **IOrbiterExtrator.sol (SPV_extrater contract):**
+Short for **Simplified Payment Verification**, SPV is a lightweight client to verify blockchain transactions, downloading only block headers and requesting proof of inclusion to the blockchain in the Merkle Tree.
+The security model includes two parts: 1. Be trusted proof process of SPV. 2. Trust in the state root provided. 
+In rollup, Layer 1 will store the state root data of Layer 2. L1's consensus mechanism ensures that the state root is trusted. It means if the proof process of SPV is trusted, the proof of the occurrence of the L2 event is also credible. Although the security of the sidechains may be lower than rollups, one sidechain does not affect the others. If there are sidechains in the chain of events, then there needs to be a trusted mechanism to pass the hash of the sidechain root to the MDC network, such as Rainbow, XDAI, BNB, and Matic, all of which can be supported by some off-chain way in the future.
 
-Short for Simplified Payment Verification, SPV is a lightweight client to verify blockchain transactions, downloading only block headers and requesting proof of inclusion to the blockchain in the Merkle Tree.
-
-The security model includes: 1. The SPV certification process can be trusted. 2. Trust in the state root provided. In rollup, L1 will store the state root data of L2, and the trust of the state root is guaranteed by the consensus mechanism of L1, which means that as long as the SPV certification process can be trusted, the proof of the occurrence of L2 events is credible . If there is a side chain in the event chain, then it is necessary to ensure that there is a mechanism to transmit the root hash of the side chain to the network where the MDC is located. An off-chain approach is supported. Although the security assumption of the side chain is lower than rollup, it will not affect other chains because of one side chain.
-
-**IOrbiterProtocal.sol (event binding contract):**
-
-The event binding contract stipulates that when the initiating event is A, the response event is equal to P(A), and there is a corresponding relationship between A and P(A). In the normal process, when the sender submits A that conforms to the specification, the maker will calculate P(A) under the chain according to the event binding contract, and send P(A) to the response environment. If the maker generates F(A) with a specification that does not conform to the binding contract, for example, the transaction amount is only half of A, and uses this as a response to the event. In the appeal process, even if the maker can prove that he responded to the event with P(A) A, but it cannot make F(A)=P(A), so it also fails.
+**IOrbiterProtocal.sol (binding-event contract):**
+The binding-event contract  stipulates that when the initiating event is A, the responding event is  P(A), and a corresponding relationship between A and P(A).
+In the normal process, when the Sender submits the A that meets the specification, the Maker will calculate P(A) off-chain according to the binding-event contract  and send P(A) to the responding environment. Suppose Maker generates F(A) with a specification that does not comply with the binding-event contract . In that case, the transaction amount is only half that of A and uses it as A responding event, even if Maker can prove that it responded to event A with P(A), it cannot make F(A)=P(A) and therefore fails in the appeal process.
