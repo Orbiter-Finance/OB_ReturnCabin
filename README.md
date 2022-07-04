@@ -1,26 +1,91 @@
-The contract has not been developed yet.
+## Contract System Design
 
-todoList
 
-- Add more necessary screws
-- Clean code, Complete README
-- Development of SPV module
-- Tested in rinkeby
+For the scheme to become infrastructure, it is essential to abstract a general business model from actual requirements, including cross-chain transfer requirements of the same token,  different tokens, and NFT.
 
----
+Orbiter's world comprises two parts: Sender initiating events in the initiating network and Maker responding events in the target network. 
 
-Orbiter's world consists of two events, the user initiates the event in the initiating network, and the maker responds to the event in the target network. This model is an abstraction of many real needs, such as: cross-chain swap of the same token, cross-chain swap of different tokens, and cross-chain swap of NFT. In order to allow users to initiate events with confidence, the maker pledges sufficient margin in the on-chain contract to make a promise to respond to the event: if the maker fails to respond to the initiation event in the promised way, the promise contract will compensate the user. The compensation must meet the following conditions. The user needs to prove that the initiating event has occurred, and the maker cannot prove that the corresponding response event has occurred.
+Orbiter's mission is to ensure that these two events happen in unison. 
 
-**OrbiterMakerDeposit.sol (MDC contract):**
+How does Orbiter complete the process? 
 
-MDC is a storage contract for margin, and the general arbitration process logic is stipulated in the contract. In order to ensure that the user can get compensation in the event of a bad situation, the maker will deposit the margin in the MDC contract in advance, and at the same time lock a sufficient margin, so as to make a certain cross-Rollup transfer (binding contract, environment and currency) at MDC promise.
+A. To make Senders feel safe to initiate events, Makers pledges sufficient margin in the MDC contract on-chain to respond to the event. 
 
-**IOrbiterExtrator.sol (SPV_extrater contract):**
+B. If Maker fails to respond to the Sender's initiated event promised, Sender should send an arbitration request to MDC contract and provide proof of initiating event. 
 
-Short for Simplified Payment Verification, SPV is a lightweight client to verify blockchain transactions, downloading only block headers and requesting proof of inclusion to the blockchain in the Merkle Tree.
+C. If Maker fails to provide MDC contract with proof of responding event within the specified time, MDC contract will compensate Sender with Maker's margin.
 
-The security model includes: 1. The SPV certification process can be trusted. 2. Trust in the state root provided. In rollup, L1 will store the state root data of L2, and the trust of the state root is guaranteed by the consensus mechanism of L1, which means that as long as the SPV certification process can be trusted, the proof of the occurrence of L2 events is credible . If there is a side chain in the event chain, then it is necessary to ensure that there is a mechanism to transmit the root hash of the side chain to the network where the MDC is located. An off-chain approach is supported. Although the security assumption of the side chain is lower than rollup, it will not affect other chains because of one side chain.
+![orbiter_ mechanism](https://raw.githubusercontent.com/houhou139/Orbiter/main/orbiter_%20mechanism.jpg)
 
-**IOrbiterProtocal.sol (event binding contract):**
 
-The event binding contract stipulates that when the initiating event is A, the response event is equal to P(A), and there is a corresponding relationship between A and P(A). In the normal process, when the sender submits A that conforms to the specification, the maker will calculate P(A) under the chain according to the event binding contract, and send P(A) to the response environment. If the maker generates F(A) with a specification that does not conform to the binding contract, for example, the transaction amount is only half of A, and uses this as a response to the event. In the appeal process, even if the maker can prove that he responded to the event with P(A) A, but it cannot make F(A)=P(A), so it also fails.
+
+Orbiter’s system contains three contracts and modules:
+
+* **MDC（Maker Deposit Contract）**
+
+  MDC has two core functions: keeping Maker’s margin, dispute resolution, and handling return assets and compensation. 
+
+* **EBC (Event Binding Contracts)** 
+
+  EBC is used to calculate the corresponding valid Target Tx based on the Source Tx.
+
+* **SPV Light Client.** 
+
+  SPV proves that Source Tx has occurred in the Source Network.
+
+These three contracts and modules run on Chain X, which can be any smart contract supporting environment in the Ethereum system, the Ethereum mainnet, any Rollups, or even Source Network or Target Network as long as the chain keeps smart contracts. 
+
+The three contract modules work together like this:
+
+* Maker can support Sender's cross-rollup transfer requirements after depositing a margin in the MDC contract.
+
+* In the normal correct transfer process, after a Source Tx is generated in the Source network, the EBC calculates the Target Tx that meets the requirements according to the Source Tx. Maker sends Target Tx to Target Network to complete a cross-rollup transfer.
+
+* But when Maker does not send Target Tx in time, Sender should provide proof of Source Tx to SPV on Chain X and applies for arbitration to the MDC contract. The MDC obtains the Source Tx occurrence proof through SPV, gets the Source Tx validity proof through EBC, sets the arbitration request as an unprocessed event, and waits for Maker to submit the Target Tx proof. Suppose Maker fails to provide Target Tx proof promptly. In that case, MDC will initiate the compensation process, return assets and send compensation to Sender on Chain X with Maker's margin.
+
+
+
+## MDC
+
+**What is the MDC?**
+
+MDC(Maker Deposit Contract) is a storage contract for margin, which specifies a common arbitration process logic. Maker will pre-deposit the margin into the MDC contract and lock a sufficient margin to make a specific cross-rollup transfer (Event binding contract, environment, and currency) to ensure that the Sender can be compensated in an adverse case.
+
+**How does the MDC deal with the  arbitration？**
+
+Arbitration proceedings will be initiated when all of the following conditions happen.
+
+* Source Tx occurred, but the responding event did not happen.
+* Maker does not complete the transfer during the arbitration wait time. (Arbitration wait time is the larger value of Source Network withdrawal time and Target Network withdrawal time).
+* Sender or anyone else has filed an arbitration request.
+* Maker was unable to submit proof of occurrence for Target Tx in time.
+
+After the whole arbitration process has been completed, the Sender will get assets back and compensation.
+
+Orbiter reads the valid hash value recorded by two networks in the mainnet as a basis for arbitration.
+
+**The following conditions should make Sender's decision:**
+
+* MDC margin condition 
+* Maker's historical behavior
+
+Before Sender decides to transfer, it only needs to know the operation condition of Maker's address corresponding to other transfers off-chain to see the Maker's ability and choose whether to transfer.
+
+## SPV
+
+We are developing an SPV module, and it will be open-sourced when we complete it. Currently, the state is:
+
+- [x] The SPV of L1, which support EIP-1559, has been completed.
+- [ ] The SPV of zkSync is being developed. About the proof process of zkSync,, [See this article for design](zksync_spv.md)
+- [ ] We have researched the SPV of Arbitrum.
+- [ ] And we just started research about the SPV of StarkNet.
+- [x] The SPV of Polygon and the SPV of L1 are in the same logic.
+
+They will be deployed in about two month.
+
+## Milestone
+
+![](https://user-images.githubusercontent.com/81635969/151336307-609eb79c-5740-4d8e-8cdf-e4ef253cc9fb.jpg)
+
+
+
