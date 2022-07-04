@@ -7,7 +7,7 @@ import "./../Operations.sol";
 interface IOrbiterExtrator {
     function getVerifiedTx (
         uint txid
-    ) external returns (Operations.TxInfo memory abc);
+    ) external returns (Operations.TxInfo memory txinfo);
     // function getVerifiedNoHappenTx (
     //     uint txid
     // ) external returns (Operations.TxInfo calldata abc, uint t1, uint t2);

@@ -35,7 +35,7 @@ contract OrbiterExtrator_L1 is  IOrbiterExtrator{
         USER_ADDRESS,
         MAKER_ADDRESS,
         tokenAddress,
-        block.timestamp + 11000,
+        block.timestamp + 12000,
         3980013,
         1
       );
@@ -45,7 +45,8 @@ contract OrbiterExtrator_L1 is  IOrbiterExtrator{
 
     function getVerifiedTx (
         uint txid
-    ) external override returns (Operations.TxInfo memory abc){
-        abc = verifyMap[txid];
+    ) external override returns (Operations.TxInfo memory txinfo){
+        txinfo = verifyMap[txid];
+        return txinfo;
     }
 }
