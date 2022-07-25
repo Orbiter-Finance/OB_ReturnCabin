@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import { HardhatUserConfig } from 'hardhat/config'
 import '@nomicfoundation/hardhat-toolbox'
 const INFURA_API_KEY = process.env.INFURA_API_KEY
