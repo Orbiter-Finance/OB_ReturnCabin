@@ -1,3 +1,15 @@
 node_modules/
 hardhat.config.js
 
+
+node_modules
+.env
+coverage
+coverage.json
+typechain
+typechain-types
+
+#Hardhat files
+cache
+artifacts
+
