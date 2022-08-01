@@ -13,11 +13,12 @@ module.exports = {
       "@typescript-eslint",
       "eslint-plugin-import",
       "simple-import-sort",
+      "prettier"
     ],
     extends: [
       "plugin:@typescript-eslint/recommended",
       "plugin:@typescript-eslint/recommended-requiring-type-checking",
-      "prettier",
+      "plugin:prettier/recommended"
     ],
     rules: {},
   };

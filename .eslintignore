@@ -1,1 +1,8 @@
 artifacts
+node_modules
+typechain-types
+coverage
+artifacts
+.husky
+hardhat.config.ts
+.eslintrc.js
