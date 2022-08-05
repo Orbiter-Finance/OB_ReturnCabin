@@ -19,7 +19,6 @@ describe('Lock', function () {
 
     const Lock = await ethers.getContractFactory('Lock');
     const lock = await Lock.deploy(unlockTime, { value: lockedAmount });
-    const _lock2 = '2';
     return { lock, unlockTime, lockedAmount, owner, otherAccount };
   }
 
