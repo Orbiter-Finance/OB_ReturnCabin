@@ -6,7 +6,7 @@ import "../library/Operation.sol";
 interface IORManagerFactory {
     event AddPariChain(address indexed tokenAddress, Operations.pairChainInfo pairChain);
     event AddPariChains(address indexed tokenAddress, Operations.pairChainInfo[] pairChains);
-    event MakerMap(address indexed makerAddress,address indexed contractAddress);
+    event MakerMap(address indexed makerAddress, address indexed contractAddress);
 
     function setPariChainInfo(address tokenAddress, Operations.pairChainInfo[] memory pairChain)
         external

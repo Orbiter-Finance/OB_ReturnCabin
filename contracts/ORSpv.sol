@@ -12,9 +12,18 @@ contract ORSpv {
         emit ChangeTxTree(chain, root);
     }
 
-    
     function verifyProof(SpvLib.Transaction memory _txInfo, bytes32[] calldata _proofs) external view returns (bool) {
-        bytes32 _leaf = keccak256(abi.encodePacked(_txInfo.chain, _txInfo.id, _txInfo.from, _txInfo.to, _txInfo.nonce, _txInfo.value, _txInfo.token));
+        bytes32 _leaf = keccak256(
+            abi.encodePacked(
+                _txInfo.chain,
+                _txInfo.id,
+                _txInfo.from,
+                _txInfo.to,
+                _txInfo.nonce,
+                _txInfo.value,
+                _txInfo.token
+            )
+        );
         bool _verify = SpvLib.verify(txTree[_txInfo.chain], _leaf, _proofs);
         return _verify;
     }
