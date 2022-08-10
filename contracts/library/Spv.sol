@@ -12,7 +12,7 @@ library SpvLib {
         uint256 nonce;
     }
 
-    function calculationTxId(SpvLib.Transaction memory _txInfo) internal pure returns(bytes32 txid){
+    function calculationTxId(SpvLib.Transaction memory _txInfo) internal pure returns (bytes32 txid) {
         txid = keccak256(
             abi.encodePacked(
                 _txInfo.chain,
