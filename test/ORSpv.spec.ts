@@ -137,4 +137,27 @@ describe('SPV Test', function () {
     const result = await spv.verifyProof(leaf, proof);
     expect(result).false;
   });
+
+  it('Set validation record', async () => {
+    const { hex: leafHash }: any = getLeaf(txList[0]);
+    const tx = await spv.setVerifyRecordsee(leafHash);
+    expect(tx.blockNumber).gt(0);
+  });
+  it('Set validation record:(Txid Verified)', async () => {
+    const { hex: leafHash }: any = getLeaf(txList[0]);
+    await expect(spv.setVerifyRecordsee(leafHash)).to.be.rejectedWith(
+      'Txid Verified',
+    );
+  });
+
+  it('Verified records', async () => {
+    const { hex: leafHash }: any = getLeaf(txList[0]);
+    const result = await spv.isVerify(leafHash);
+    expect(result).true;
+  });
+  it('Unverified records', async () => {
+    const { hex: leafHash }: any = getLeaf(txList[1]);
+    const result = await spv.isVerify(leafHash);
+    expect(result).false;
+  });
 });

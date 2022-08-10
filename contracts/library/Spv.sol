@@ -12,6 +12,25 @@ library SpvLib {
         uint256 nonce;
     }
 
+    function calculationTxId(SpvLib.Transaction memory _txInfo) internal pure returns(bytes32 txid){
+        txid = keccak256(
+            abi.encodePacked(
+                _txInfo.chain,
+                _txInfo.id,
+                _txInfo.from,
+                _txInfo.to,
+                _txInfo.nonce,
+                _txInfo.value,
+                _txInfo.token
+            )
+        );
+    }
+
+    /// @notice Validation exists in the merkle tree
+    /// @param root This root will be compared to the calculated root
+    /// @param leaf Leaf nodes that need proof
+    /// @param proof Provide proof path
+    /// @return true or false
     function verify(
         bytes32 root,
         bytes32 leaf,
