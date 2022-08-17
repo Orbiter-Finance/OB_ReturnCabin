@@ -2,31 +2,37 @@
 pragma solidity ^0.8.9;
 
 import "./interface/IORManagerFactory.sol";
-import "./interface/IORMakerDeposit.sol";
+import "./ORMakerDeposit.sol";
 import "./library/Operation.sol";
 import "hardhat/console.sol";
 
 contract ORManagerFactory is IORManagerFactory {
     mapping(address => Operations.pairChainInfo[]) pairChain;
     mapping(uint256 => address) ebcPair;
-
+    mapping(uint256 => Operations.chainInfo) chainInfo;
     address _owner;
 
     // event AddPariChain(address indexed tokenAddress, Operations.pairChainInfo pairChain);
     // event AddPariChains(address indexed tokenAddress, Operations.pairChainInfo[] pairChains);
 
-    constructor(address owner) payable {
-        _owner = owner;
+    constructor() payable {
+        _owner = msg.sender;
+    }
+
+    modifier isOwner() {
+        require(msg.sender == _owner, "NOT_OWNER");
+        _;
     }
 
     function setPariChainInfo(address tokenAddress, Operations.pairChainInfo[] memory pairChain)
         external
+        isOwner
         returns (bool)
     {
         return true;
     }
 
-    function setEBC(address ebcAddress) external returns (bool) {
+    function setEBC(address ebcAddress) external isOwner returns (bool) {
         return true;
     }
 
@@ -48,25 +54,29 @@ contract ORManagerFactory is IORManagerFactory {
     }
 
     function getPariChainInfo(address tokenAddress) external view returns (Operations.pairChainInfo[] memory) {
-        console.log("getPariChainInfo");
+        // console.log("getPariChainInfo__");
     }
 
     function getEBC(uint256 ebcid) external returns (address) {
-        console.log("getEBC");
+        require(ebcPair[ebcid] != address(0), "EBC_UNINSTALL");
+        address ebcAddress = ebcPair[ebcid];
+        return ebcAddress;
     }
 
-    function getChainInfoByChainID(uint256 chainID, bytes memory chainName)
-        external
-        view
-        returns (Operations.chainInfo memory)
-    {
-        Operations.chainInfo memory info1 = Operations.chainInfo(1, "zksync", 100, 200);
-        return info1;
+    function setChainInfoByChainID(
+        uint256 chainID,
+        bytes memory chainName,
+        uint256 batchLimit,
+        uint256 maxDisputeTime
+    ) external isOwner {
+        Operations.chainInfo memory info = Operations.chainInfo(chainID, chainName, batchLimit, maxDisputeTime, true);
+        chainInfo[chainID] = info;
     }
 
-    function getChainInfoByChainName(bytes memory chainName) external view returns (Operations.chainInfo memory) {
-        Operations.chainInfo memory info1 = Operations.chainInfo(1, "zksync", 100, 200);
-        return info1;
+    function getChainInfoByChainID(uint256 chainID) external returns (Operations.chainInfo memory) {
+        require(chainInfo[chainID].isUsed == true, "MANAGER_CHAININFO_UNINSTALL");
+        Operations.chainInfo memory info = chainInfo[chainID];
+        return info;
     }
 
     function getTokenInfoByTokenAddress(address tokenAddress) external returns (Operations.tokenInfo memory) {
@@ -79,16 +89,14 @@ contract ORManagerFactory is IORManagerFactory {
         return info1;
     }
 
-    function setOwner(address newOwner) external {
-        require(_owner == address(0) || _owner == msg.sender);
+    function setOwner(address newOwner) public isOwner {
         _owner = newOwner;
     }
 
-    function createMaker(address makerAddress) external returns (address) {
-        // makerContract = address(new IORMakerDeposit{salt: keccak256(abi.encode(msg.sender))}());
-        emit MakerMap(msg.sender, makerAddress);
-        return makerAddress;
+    function createMaker() external returns (address) {
+        bytes32 salt = keccak256(abi.encodePacked(msg.sender));
+        ORMakerDeposit makerContract = new ORMakerDeposit{salt: salt}(address(this));
+        emit MakerMap(msg.sender, address(makerContract));
+        return address(makerContract);
     }
 }
-
-// pool = address(new UniswapV3Pool{salt: keccak256(abi.encode(token0, token1, fee))}());

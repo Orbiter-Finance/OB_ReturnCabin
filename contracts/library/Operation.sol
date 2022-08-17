@@ -14,6 +14,7 @@ library Operations {
         bytes chainName;
         uint256 batchLimit;
         uint256 maxDisputeTime;
+        bool isUsed;
     }
 
     struct tokenInfo {
@@ -43,6 +44,28 @@ library Operations {
         uint256 gasFee;
         uint256 tradingFee;
         bytes tokenName;
+    }
+
+    struct lpPairInfo {
+        bytes32 LPRootHash;
+        uint256 stopTime;
+        uint256 startTime;
+        uint256 ebcid;
+        uint256 shouldUseAmount;
+        bool isUsed;
+    }
+
+    struct chainDeposit {
+        address tokenAddress;
+        uint256 depositAmount;
+        uint256 useLimit;
+    }
+
+    struct chanllengeInfo {
+        uint256 chanllengeState; // 0:unused   1:watting for maker  2.maker success   3.maker failed   4.ma
+        bytes32 responseTxinfo;
+        uint256 startTime;
+        uint256 endTime;
     }
 
     // function addressToDepostContract(address maker)

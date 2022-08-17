@@ -31,12 +31,14 @@ interface IORManagerFactory {
 
     function getEBC(uint256 ebcid) external returns (address);
 
-    function getChainInfoByChainID(uint256 chainID, bytes memory chainName)
-        external
-        view
-        returns (Operations.chainInfo memory);
+    function setChainInfoByChainID(
+        uint256,
+        bytes memory,
+        uint256,
+        uint256
+    ) external;
 
-    function getChainInfoByChainName(bytes memory chainName) external view returns (Operations.chainInfo memory);
+    function getChainInfoByChainID(uint256 chainID) external returns (Operations.chainInfo memory);
 
     function getTokenInfoByTokenAddress(address tokenAddress) external returns (Operations.tokenInfo memory);
 
@@ -44,5 +46,5 @@ interface IORManagerFactory {
 
     function setOwner(address) external;
 
-    function createMaker(address) external returns (address);
+    function createMaker() external returns (address);
 }

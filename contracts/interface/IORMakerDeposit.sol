@@ -4,23 +4,44 @@ pragma solidity ^0.8.9;
 import "../library/Operation.sol";
 
 interface IORMakerDeposit {
+    enum lpState {
+        CREAT,
+        ACTION,
+        PAUSE,
+        STOP
+    }
     event AddPariChain(address indexed tokenAddress, Operations.pairChainInfo pairChain);
     event AddPariChains(address indexed tokenAddress, Operations.pairChainInfo[] pairChains);
+    event LogLpState(bytes32 indexed lpid, uint256 time, lpState indexed state);
+    event LogLpInfo(
+        bytes32 indexed lpid,
+        uint256 sourceChain,
+        uint256 destChain,
+        address sourceTAddress,
+        address destTAddress,
+        uint256 tokenPresion,
+        uint256 ebcid,
+        uint256 minPrice,
+        uint256 maxPrice,
+        uint256 gasFee,
+        uint256 tradingFee,
+        bytes tokenName
+    );
 
     function LPCreate(Operations.lpInfo memory) external returns (bool);
 
     // LPAction
-    function LPAction(uint256 lpid) external returns (bool);
+    function LPAction(bytes32) external returns (bool);
 
     // LPPause
-    function LPPause(uint256 lpid) external returns (bool);
+    function LPPause(bytes32) external returns (bool);
 
     // LPStop
-    function LPStop(uint256 lpid) external returns (bool);
+    function LPStop(bytes32) external returns (bool);
 
     // LPUpdate
     function LPUpdate(
-        uint256 lpid,
+        bytes32 lpid,
         uint256 minPrice,
         uint256 maxPrice,
         uint256 gasFee,
