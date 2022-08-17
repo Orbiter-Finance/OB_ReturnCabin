@@ -15,17 +15,9 @@ interface IORMakerDeposit {
     event LogLpState(bytes32 indexed lpid, uint256 time, lpState indexed state);
     event LogLpInfo(
         bytes32 indexed lpid,
-        uint256 sourceChain,
-        uint256 destChain,
-        address sourceTAddress,
-        address destTAddress,
-        uint256 tokenPresion,
-        uint256 ebcid,
-        uint256 minPrice,
-        uint256 maxPrice,
-        uint256 gasFee,
-        uint256 tradingFee,
-        bytes tokenName
+        uint256 indexed sourceChain,
+        uint256 indexed destChain,
+        Operations.lpInfo lpinfo
     );
 
     function LPCreate(Operations.lpInfo memory) external returns (bool);

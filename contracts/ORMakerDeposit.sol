@@ -62,21 +62,8 @@ contract ORMakerDeposit is IORMakerDeposit {
         uint256 depositAmount = souceChainInfo.batchLimit * _lpinfo.maxPrice;
         lpInfo[lpid].shouldUseAmount = depositAmount;
 
-        // emit LogLpState(lpid, lpInfo[lpid].startTime, lpState.CREAT);
-        // emit LogLpInfo(
-        //     lpid,
-        //     _lpinfo.sourceChain,
-        //     _lpinfo.destChain,
-        //     _lpinfo.sourceTAddress,
-        //     _lpinfo.destTAddress,
-        //     _lpinfo.tokenPresion,
-        //     _lpinfo.ebcid,
-        //     _lpinfo.minPrice,
-        //     _lpinfo.maxPrice,
-        //     _lpinfo.gasFee,
-        //     _lpinfo.tradingFee,
-        //     _lpinfo.tokenName
-        // );
+        emit LogLpState(lpid, lpInfo[lpid].startTime, lpState.CREAT);
+        emit LogLpInfo(lpid, _lpinfo.sourceChain, _lpinfo.destChain, _lpinfo);
     }
 
     // LPAction
