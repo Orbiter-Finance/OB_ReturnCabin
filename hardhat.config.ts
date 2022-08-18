@@ -4,9 +4,13 @@ import { HardhatUserConfig } from 'hardhat/config';
 const { INFURA_API_KEY, ETHERSCAN_API_KEY } = process.env;
 const config: HardhatUserConfig = {
   solidity: '0.8.9',
+  // defaultNetwork: "ganache",
   networks: {
     hardhat: {
       allowUnlimitedContractSize: false,
+    },
+    ganache: {
+      url: "http://127.0.0.1:7545"
     },
     mainnet: {
       url: `https://mainnet.infura.io/v3/${INFURA_API_KEY}`,
