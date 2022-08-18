@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
-import "hardhat/console.sol";
-import "./library/Spv.sol";
+// import "./library/Spv.sol";
+import "./interface/IORSpv.sol";
 
 /// @title Simplified payment verification
 /// @notice SPV proves that Source Tx has occurred in the Source Network.
-contract ORSpv {
+contract ORSpv is IORSpv {
     address private owner;
     mapping(uint256 => bytes32) public makerTxTree;
     mapping(uint256 => bytes32) public userTxTree;

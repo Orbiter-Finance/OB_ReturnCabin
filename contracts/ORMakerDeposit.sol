@@ -6,10 +6,12 @@ import "./interface/IORMakerDeposit.sol";
 import "./library/Operation.sol";
 import "./interface/IORManagerFactory.sol";
 import "./interface/IORProtocal.sol";
+import "./interface/IORSpv.sol";
 
 contract ORMakerDeposit is IORMakerDeposit {
     address _owner;
     address _managerAddress;
+    IORSpv _spv;
     // lpid->lpPairInfo
     mapping(bytes32 => Operations.lpPairInfo) public lpInfo;
 
@@ -117,6 +119,7 @@ contract ORMakerDeposit is IORMakerDeposit {
     ) external returns (bool) {
         //TODO
         //1. txinfo is already spv
+
         //2. txinfo unChanllenge
         bytes32 chanllengeID = keccak256(
             abi.encodePacked(
