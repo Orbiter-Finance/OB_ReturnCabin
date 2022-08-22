@@ -5,8 +5,9 @@ import "./interface/IORManagerFactory.sol";
 import "./ORMakerDeposit.sol";
 import "./library/Operation.sol";
 import "hardhat/console.sol";
+import "./PairManager.sol";
 
-contract ORManagerFactory is IORManagerFactory {
+contract ORManagerFactory is IORManagerFactory, PairManager {
     mapping(address => Operations.pairChainInfo[]) pairChain;
     mapping(uint256 => address) ebcPair;
     mapping(uint256 => Operations.chainInfo) chainInfo;

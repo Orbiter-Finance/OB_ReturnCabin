@@ -1,27 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
-// import "./library/Spv.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interface/IORSpv.sol";
 
 /// @title Simplified payment verification
 /// @notice SPV proves that Source Tx has occurred in the Source Network.
-contract ORSpv is IORSpv {
-    address private owner;
+contract ORSpv is IORSpv, Ownable {
     mapping(uint256 => bytes32) public makerTxTree;
     mapping(uint256 => bytes32) public userTxTree;
     mapping(bytes32 => bool) public verifyRecordsee;
 
     // event ChangeTxTree(uint256 indexed chain, bytes32 root);
-
-    constructor() {
-        owner = msg.sender;
-    }
-
-    modifier onlyOwner() {
-        require(msg.sender == owner);
-        _;
-    }
-
     /// @notice Set new transaction tree root hash
     /// @param chain Public chain ID
     /// @param root New root hash
