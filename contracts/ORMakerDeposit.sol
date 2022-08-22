@@ -44,12 +44,7 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
     }
 
     function getDepositTokenInfo(Operations.lpInfo memory _lpinfo) internal returns (Operations.tokenInfo memory) {
-        return
-            IORManagerFactory(_managerAddress).getTokenInfo(
-                _lpinfo.sourceChain,
-                _lpinfo.sourceTAddress,
-                _lpinfo.tokenName
-            );
+        return IORManagerFactory(_managerAddress).getTokenInfo(_lpinfo.sourceChain, _lpinfo.sourceTAddress);
     }
 
     function getChainDepositInfo(Operations.lpInfo memory _lpinfo) internal returns (Operations.chainDeposit memory) {
