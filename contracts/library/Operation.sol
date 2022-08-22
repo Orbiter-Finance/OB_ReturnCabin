@@ -28,7 +28,7 @@ library Operations {
         bytes chainName;
         uint256 batchLimit;
         uint256 maxDisputeTime;
-        Operations.tokenInfo[] tokenList;
+        address[] tokenList;
         bool isUsed;
     }
 
