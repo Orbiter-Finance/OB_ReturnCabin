@@ -2,6 +2,7 @@
 pragma solidity ^0.8.9;
 
 import "../library/Operation.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 interface IORManagerFactory {
     event AddPariChain(address indexed tokenAddress, Operations.pairChainInfo pairChain);
@@ -56,8 +57,6 @@ interface IORManagerFactory {
     function updateEBC(uint256 ebcid, address ebcAddress) external;
 
     function getChainInfoByChainID(uint256 chainID) external returns (Operations.chainInfo memory);
-
-    function setOwner(address) external;
 
     function createMaker() external returns (address);
 }

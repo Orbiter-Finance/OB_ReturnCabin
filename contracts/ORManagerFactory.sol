@@ -5,27 +5,20 @@ import "./interface/IORManagerFactory.sol";
 import "./ORMakerDeposit.sol";
 import "./library/Operation.sol";
 import "hardhat/console.sol";
+import "./PairManager.sol";
 
-contract ORManagerFactory is IORManagerFactory {
-    bytes32 pairChainRootHash;
+contract ORManagerFactory is IORManagerFactory, PairManager, Ownable {
+    mapping(address => Operations.pairChainInfo[]) pairChain;
     mapping(uint256 => address) ebcPair;
     mapping(uint256 => Operations.chainInfo) chainList;
     uint256 ebcids;
-    address _owner;
 
     // event AddPariChain(address indexed tokenAddress, Operations.pairChainInfo pairChain);
     // event AddPariChains(address indexed tokenAddress, Operations.pairChainInfo[] pairChains);
 
-    constructor() payable {
-        _owner = msg.sender;
-    }
+    constructor() payable {}
 
-    modifier isOwner() {
-        require(msg.sender == _owner, "NOT_OWNER");
-        _;
-    }
-
-    function initPariChainInfo(Operations.pairChainInfo[] memory pairChain) external isOwner returns (bool) {
+    function initPariChainInfo(Operations.pairChainInfo[] memory pairChain) external onlyOwner returns (bool) {
         require(pairChainRootHash.length == 0, "PAIRCHAININFO_INSTALL_ALREADY");
         // TODO
         // init pairChainRootHash
@@ -36,7 +29,7 @@ contract ORManagerFactory is IORManagerFactory {
         Operations.pairChainInfo[] memory pairChain,
         bytes32 proof,
         bool[] memory proofFlag
-    ) external isOwner returns (bool) {
+    ) external onlyOwner returns (bool) {
         // TODO
         // init pairChainRootHash
         return true;
@@ -47,7 +40,7 @@ contract ORManagerFactory is IORManagerFactory {
         Operations.pairChainInfo[] memory newPairChain,
         bytes32 proof,
         bool[] memory proofFlag
-    ) external isOwner returns (bool) {
+    ) external onlyOwner returns (bool) {
         // TODO
         // init pairChainRootHash
         return true;
@@ -57,17 +50,17 @@ contract ORManagerFactory is IORManagerFactory {
         Operations.pairChainInfo[] memory pairChain,
         bytes32 proof,
         bool[] memory proofFlag
-    ) external isOwner returns (bool) {
+    ) external onlyOwner returns (bool) {
         // TODO
         // init pairChainRootHash
         return true;
     }
 
-    function setEBC(address ebcAddress) external isOwner returns (bool) {
+    function setEBC(address ebcAddress) external onlyOwner returns (bool) {
         ebcPair[ebcids++] = ebcAddress;
     }
 
-    function updateEBC(uint256 ebcid, address ebcAddress) external isOwner {
+    function updateEBC(uint256 ebcid, address ebcAddress) external onlyOwner {
         require(ebcPair[ebcid] != address(0), "UPDATEEBC_ERROR");
         ebcPair[ebcid] = ebcAddress;
     }
@@ -128,10 +121,6 @@ contract ORManagerFactory is IORManagerFactory {
         require(chainList[chainID].isUsed == true, "MANAGER_CHAININFO_UNINSTALL");
         Operations.chainInfo memory info = chainList[chainID];
         return info;
-    }
-
-    function setOwner(address newOwner) public isOwner {
-        _owner = newOwner;
     }
 
     function createMaker() external returns (address) {

@@ -2,6 +2,7 @@
 pragma solidity ^0.8.9;
 
 import "../library/Operation.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 interface IORMakerDeposit {
     enum lpState {

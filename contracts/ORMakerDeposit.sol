@@ -7,10 +7,12 @@ import "./library/Operation.sol";
 import "./interface/IORManagerFactory.sol";
 import "./interface/IORProtocal.sol";
 import "./interface/IERC20.sol";
+import "./interface/IORSpv.sol";
 
-contract ORMakerDeposit is IORMakerDeposit {
+contract ORMakerDeposit is IORMakerDeposit, Ownable {
     address _owner;
     address _managerAddress;
+    IORSpv _spv;
     // lpid->lpPairInfo
     mapping(bytes32 => Operations.lpPairInfo) public lpInfo;
 
@@ -24,14 +26,8 @@ contract ORMakerDeposit is IORMakerDeposit {
     mapping(address => uint256) usedDeposit;
 
     constructor(address managerAddress) payable {
-        _owner = msg.sender;
         _managerAddress = managerAddress;
         emit MakerContract(_owner, address(this));
-    }
-
-    modifier isOwner() {
-        require(msg.sender == _owner, "NOT_OWNER");
-        _;
     }
 
     function getLpID(Operations.lpInfo memory _lpinfo) internal pure returns (bytes32) {
@@ -177,7 +173,7 @@ contract ORMakerDeposit is IORMakerDeposit {
     }
 
     // withDrawAssert()
-    function withDrawAssert(uint256 amount, address tokenAddress) external isOwner {
+    function withDrawAssert(uint256 amount, address tokenAddress) external onlyOwner {
         require(amount != 0, "WITHDRAW_ILLEGALAMOUNT");
         uint256 balance = 0;
         if (tokenAddress != address(0)) {
@@ -205,6 +201,7 @@ contract ORMakerDeposit is IORMakerDeposit {
     ) external returns (bool) {
         //TODO
         //1. txinfo is already spv
+
         //2. txinfo unChanllenge
         bytes32 chanllengeID = keccak256(
             abi.encodePacked(
