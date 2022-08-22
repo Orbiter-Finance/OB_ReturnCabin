@@ -8,53 +8,11 @@ import "hardhat/console.sol";
 import "./PairManager.sol";
 
 contract ORManagerFactory is IORManagerFactory, PairManager, Ownable {
-    mapping(address => Operations.pairChainInfo[]) pairChain;
     mapping(uint256 => address) ebcPair;
     mapping(uint256 => Operations.chainInfo) chainList;
     uint256 ebcids;
 
-    // event AddPariChain(address indexed tokenAddress, Operations.pairChainInfo pairChain);
-    // event AddPariChains(address indexed tokenAddress, Operations.pairChainInfo[] pairChains);
-
     constructor() payable {}
-
-    function initPariChainInfo(Operations.pairChainInfo[] memory pairChain) external onlyOwner returns (bool) {
-        require(pairChainRootHash.length == 0, "PAIRCHAININFO_INSTALL_ALREADY");
-        // TODO
-        // init pairChainRootHash
-        return true;
-    }
-
-    function addPariChainInfo(
-        Operations.pairChainInfo[] memory pairChain,
-        bytes32 proof,
-        bool[] memory proofFlag
-    ) external onlyOwner returns (bool) {
-        // TODO
-        // init pairChainRootHash
-        return true;
-    }
-
-    function updatePariChainInfo(
-        Operations.pairChainInfo[] memory oldPairChain,
-        Operations.pairChainInfo[] memory newPairChain,
-        bytes32 proof,
-        bool[] memory proofFlag
-    ) external onlyOwner returns (bool) {
-        // TODO
-        // init pairChainRootHash
-        return true;
-    }
-
-    function deletePariChainInfo(
-        Operations.pairChainInfo[] memory pairChain,
-        bytes32 proof,
-        bool[] memory proofFlag
-    ) external onlyOwner returns (bool) {
-        // TODO
-        // init pairChainRootHash
-        return true;
-    }
 
     function setEBC(address ebcAddress) external onlyOwner returns (bool) {
         ebcPair[ebcids++] = ebcAddress;
@@ -73,7 +31,7 @@ contract ORManagerFactory is IORManagerFactory, PairManager, Ownable {
         Operations.tokenInfo[] memory tokenList
     ) external {
         require(chainList[chainID].isUsed == false, "CHAININFO_INSTALL_ALREADY");
-        chainList[chainID] = Operations.chainInfo(chainID, chainName, batchLimit, maxDisputeTime, tokenList, true);
+        // chainList[chainID] = Operations.chainInfo(chainID, chainName, batchLimit, maxDisputeTime, tokenList, true);
     }
 
     function getTokenInfo(

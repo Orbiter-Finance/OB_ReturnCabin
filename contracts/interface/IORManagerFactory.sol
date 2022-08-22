@@ -5,30 +5,7 @@ import "../library/Operation.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 interface IORManagerFactory {
-    event AddPariChain(address indexed tokenAddress, Operations.pairChainInfo pairChain);
-    event AddPariChains(address indexed tokenAddress, Operations.pairChainInfo[] pairChains);
     event MakerMap(address indexed makerAddress, address indexed contractAddress);
-
-    function initPariChainInfo(Operations.pairChainInfo[] memory) external returns (bool);
-
-    function addPariChainInfo(
-        Operations.pairChainInfo[] memory,
-        bytes32,
-        bool[] memory
-    ) external returns (bool);
-
-    function updatePariChainInfo(
-        Operations.pairChainInfo[] memory,
-        Operations.pairChainInfo[] memory,
-        bytes32,
-        bool[] memory
-    ) external returns (bool);
-
-    function deletePariChainInfo(
-        Operations.pairChainInfo[] memory,
-        bytes32,
-        bool[] memory
-    ) external returns (bool);
 
     function setEBC(address ebcAddress) external returns (bool);
 
