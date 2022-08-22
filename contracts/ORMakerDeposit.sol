@@ -6,6 +6,7 @@ import "./interface/IORMakerDeposit.sol";
 import "./library/Operation.sol";
 import "./interface/IORManagerFactory.sol";
 import "./interface/IORProtocal.sol";
+import "./interface/IERC20.sol";
 
 contract ORMakerDeposit is IORMakerDeposit {
     address _owner;
@@ -13,100 +14,187 @@ contract ORMakerDeposit is IORMakerDeposit {
     // lpid->lpPairInfo
     mapping(bytes32 => Operations.lpPairInfo) public lpInfo;
 
-    // supportChain->chainDepost
-    mapping(uint256 => Operations.chainDeposit[]) public chainDeposit;
+    // supportChain->supportToken->chainDepost
+    mapping(uint256 => mapping(address => Operations.chainDeposit)) public chainDeposit;
 
     // chanllengeInfos
     mapping(bytes32 => Operations.chanllengeInfo) chanllengeInfos;
 
     //usedDeposit
-    Operations.chainDeposit[] lpDeposit;
+    mapping(address => uint256) usedDeposit;
 
     constructor(address managerAddress) payable {
         _owner = msg.sender;
         _managerAddress = managerAddress;
+        emit MakerContract(_owner, address(this));
     }
 
-    function LPCreate(Operations.lpInfo memory _lpinfo) external returns (bool) {
-        bytes32 lpid = keccak256(
-            abi.encodePacked(
+    modifier isOwner() {
+        require(msg.sender == _owner, "NOT_OWNER");
+        _;
+    }
+
+    function getLpID(Operations.lpInfo memory _lpinfo) internal pure returns (bytes32) {
+        return
+            keccak256(
+                abi.encodePacked(
+                    _lpinfo.sourceChain,
+                    _lpinfo.destChain,
+                    _lpinfo.sourceTAddress,
+                    _lpinfo.destTAddress,
+                    _lpinfo.ebcid
+                )
+            );
+    }
+
+    function getDepositTokenInfo(Operations.lpInfo memory _lpinfo) internal returns (Operations.tokenInfo memory) {
+        return
+            IORManagerFactory(_managerAddress).getTokenInfo(
                 _lpinfo.sourceChain,
-                _lpinfo.destChain,
                 _lpinfo.sourceTAddress,
-                _lpinfo.destTAddress,
-                _lpinfo.ebcid
-            )
-        );
-        require(lpInfo[lpid].isUsed == false, "LPCREATE_LPID_USED");
-        bytes32 rootHash = keccak256(
-            abi.encodePacked(
-                _lpinfo.sourceChain,
-                _lpinfo.destChain,
-                _lpinfo.sourceTAddress,
-                _lpinfo.destTAddress,
-                _lpinfo.tokenName,
-                _lpinfo.tokenPresion,
-                _lpinfo.ebcid,
-                _lpinfo.minPrice,
-                _lpinfo.maxPrice,
-                _lpinfo.gasFee,
-                _lpinfo.tradingFee
-            )
-        );
-        lpInfo[lpid].LPRootHash = rootHash;
-        lpInfo[lpid].isUsed = true;
+                _lpinfo.tokenName
+            );
+    }
+
+    function getChainDepositInfo(Operations.lpInfo memory _lpinfo) internal returns (Operations.chainDeposit memory) {
+        Operations.tokenInfo memory depositToken = getDepositTokenInfo(_lpinfo);
+        return chainDeposit[_lpinfo.sourceChain][depositToken.mainTokenAddress];
+    }
+
+    function LPAction(Operations.lpInfo memory _lpinfo) external payable {
+        bytes32 lpid = getLpID(_lpinfo);
+        // first init lpPair
+        if (lpInfo[lpid].isUsed == false) {
+            bytes32 rootHash = keccak256(
+                abi.encodePacked(
+                    _lpinfo.sourceChain,
+                    _lpinfo.destChain,
+                    _lpinfo.sourceTAddress,
+                    _lpinfo.destTAddress,
+                    _lpinfo.tokenName,
+                    _lpinfo.tokenPresion,
+                    _lpinfo.ebcid,
+                    _lpinfo.minPrice,
+                    _lpinfo.maxPrice,
+                    _lpinfo.gasFee,
+                    _lpinfo.tradingFee
+                )
+            );
+            lpInfo[lpid].LPRootHash = rootHash;
+            lpInfo[lpid].isUsed = true;
+        }
+
+        require(lpInfo[lpid].startTime == 0 && lpInfo[lpid].stopTime == 0, "LPACTION_LPID_UNSTOP");
 
         Operations.chainInfo memory souceChainInfo = IORManagerFactory(_managerAddress).getChainInfoByChainID(
             _lpinfo.sourceChain
         );
-        uint256 depositAmount = souceChainInfo.batchLimit * _lpinfo.maxPrice;
-        lpInfo[lpid].shouldUseAmount = depositAmount;
+        uint256 needDepositAmount = souceChainInfo.batchLimit * _lpinfo.maxPrice;
 
-        emit LogLpState(lpid, lpInfo[lpid].startTime, lpState.CREAT);
+        Operations.tokenInfo memory depositToken = getDepositTokenInfo(_lpinfo);
+
+        Operations.chainDeposit memory depositInfo = getChainDepositInfo(_lpinfo);
+
+        lpInfo[lpid].startTime = block.timestamp;
+
+        if (needDepositAmount > depositInfo.depositAmount) {
+            uint256 balance = 0;
+            if (depositToken.mainTokenAddress != address(0)) {
+                IERC20 liquidityToken = IERC20(depositToken.mainTokenAddress);
+                balance = liquidityToken.balanceOf(address(this));
+            } else {
+                balance = address(this).balance;
+            }
+            uint256 unUsedAmount = balance - usedDeposit[depositToken.mainTokenAddress];
+
+            require(unUsedAmount > needDepositAmount - depositInfo.depositAmount, "LPACTION_INSUFFICIENT_AMOUNT");
+            depositInfo.depositAmount = needDepositAmount;
+        }
+        depositInfo.useLimit++;
+        emit LogLpState(lpid, lpInfo[lpid].startTime, lpState.ACTION);
         emit LogLpInfo(lpid, _lpinfo.sourceChain, _lpinfo.destChain, _lpinfo);
     }
 
-    // LPAction
-    function LPAction(bytes32 lpid) external returns (bool) {
-        require(lpInfo[lpid].isUsed == true, "LPACTION_LPID_UNUSED");
-        require(lpInfo[lpid].startTime == 0, "LPACTION_LPID_UNSTOPED");
-
-        lpInfo[lpid].startTime == block.timestamp;
-
-        //TODO
-
-        emit LogLpState(lpid, lpInfo[lpid].startTime, lpState.ACTION);
-        return true;
-    }
-
     // LPPause
-    function LPPause(bytes32 lpid) external returns (bool) {
-        // console.log(lpid);
-        return true;
+    function LPPause(Operations.lpInfo memory _lpinfo) external {
+        bytes32 lpid = getLpID(_lpinfo);
+
+        require(lpInfo[lpid].isUsed == true, "LPPAUSE_LPID_UNUSED");
+        require(lpInfo[lpid].startTime != 0 && lpInfo[lpid].stopTime == 0, "LPPAUSE_LPID_UNACTION");
+
+        address ebcAddress = IORManagerFactory(_managerAddress).getEBC(_lpinfo.ebcid);
+        require(ebcAddress != address(0), "LPPAUSE_EBCADDRESS_0");
+
+        uint256 stopDelayTime = IORProtocal(ebcAddress).getStopDealyTime(_lpinfo.sourceChain);
+        lpInfo[lpid].stopTime = block.timestamp + stopDelayTime;
+        lpInfo[lpid].startTime = 0;
+
+        emit LogLpState(lpid, lpInfo[lpid].stopTime, lpState.PAUSE);
     }
 
     // LPStop
-    function LPStop(bytes32 lpid) external returns (bool) {
-        // console.log(lpid);
-        return true;
+    function LPStop(Operations.lpInfo memory _lpinfo) external {
+        bytes32 lpid = getLpID(_lpinfo);
+
+        require(lpInfo[lpid].isUsed == true, "LPSTOP_LPID_UNUSED");
+        require(lpInfo[lpid].startTime == 0 && lpInfo[lpid].stopTime != 0, "LPSTOP_LPID_UNPAUSE");
+        require(block.timestamp > lpInfo[lpid].stopTime, "LPSTOP_LPID_TIMEUNABLE");
+
+        Operations.tokenInfo memory depositToken = getDepositTokenInfo(_lpinfo);
+
+        Operations.chainDeposit memory depositInfo = getChainDepositInfo(_lpinfo);
+
+        depositInfo.useLimit--;
+
+        // free up funds
+        if (depositInfo.useLimit == 0) {
+            usedDeposit[depositToken.mainTokenAddress] -= depositInfo.depositAmount;
+            depositInfo.depositAmount = 0;
+        }
+
+        emit LogLpState(lpid, 0, lpState.STOP);
     }
 
     // LPUpdate
     function LPUpdate(
-        bytes32 lpid,
-        uint256 minPrice,
-        uint256 maxPrice,
-        uint256 gasFee,
-        uint256 tradingFee
-    ) external returns (bool) {
-        // console.log(lpid, minPrice, maxPrice, gasFee + tradingFee);
-        return true;
+        Operations.lpInfo memory _lpinfo,
+        bytes32 proof,
+        bool[] memory flag
+    ) external {
+        bytes32 lpid = getLpID(_lpinfo);
+
+        require(lpInfo[lpid].isUsed == true, "LPUPDATE_LPID_UNUSED");
+        require(lpInfo[lpid].startTime == 0 && lpInfo[lpid].stopTime == 0, "LPUPDATE_LPID_UNSTOP");
+
+        // TODO
+        // proof and generate a new Roothash
+        console.logBytes32(proof);
+        console.log(flag[0]);
+        lpInfo[lpid].LPRootHash = "xxxxxxxxx";
+
+        emit LogLpState(lpid, block.timestamp, lpState.UPDATE);
+        emit LogLpInfo(lpid, _lpinfo.sourceChain, _lpinfo.destChain, _lpinfo);
     }
 
     // withDrawAssert()
-    function withDrawAssert(uint256 amount, bytes memory token) external returns (bool) {
-        console.log(amount);
-        return true;
+    function withDrawAssert(uint256 amount, address tokenAddress) external isOwner {
+        require(amount != 0, "WITHDRAW_ILLEGALAMOUNT");
+        uint256 balance = 0;
+        if (tokenAddress != address(0)) {
+            IERC20 Token = IERC20(tokenAddress);
+            balance = Token.balanceOf(address(this));
+        } else {
+            balance = address(this).balance;
+        }
+
+        uint256 unUsedAmount = balance - usedDeposit[tokenAddress];
+        require(amount < unUsedAmount, "WITHDRAW_INSUFFICIENT_AMOUNT");
+
+        if (tokenAddress != address(0)) {
+            IERC20(tokenAddress).transfer(msg.sender, amount);
+        } else {
+            payable(_owner).transfer(amount);
+        }
     }
 
     // userChanllenge
@@ -167,5 +255,3 @@ contract ORMakerDeposit is IORMakerDeposit {
         return true;
     }
 }
-
-// pool = address(new UniswapV3Pool{salt: keccak256(abi.encode(token0, token1, fee))}());

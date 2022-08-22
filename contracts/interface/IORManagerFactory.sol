@@ -8,9 +8,26 @@ interface IORManagerFactory {
     event AddPariChains(address indexed tokenAddress, Operations.pairChainInfo[] pairChains);
     event MakerMap(address indexed makerAddress, address indexed contractAddress);
 
-    function setPariChainInfo(address tokenAddress, Operations.pairChainInfo[] memory pairChain)
-        external
-        returns (bool);
+    function initPariChainInfo(Operations.pairChainInfo[] memory) external returns (bool);
+
+    function addPariChainInfo(
+        Operations.pairChainInfo[] memory,
+        bytes32,
+        bool[] memory
+    ) external returns (bool);
+
+    function updatePariChainInfo(
+        Operations.pairChainInfo[] memory,
+        Operations.pairChainInfo[] memory,
+        bytes32,
+        bool[] memory
+    ) external returns (bool);
+
+    function deletePariChainInfo(
+        Operations.pairChainInfo[] memory,
+        bytes32,
+        bool[] memory
+    ) external returns (bool);
 
     function setEBC(address ebcAddress) external returns (bool);
 
@@ -18,31 +35,27 @@ interface IORManagerFactory {
         uint256 chainID,
         bytes memory chainName,
         uint256 batchLimit,
-        uint256 maxDisputeTime
-    ) external returns (bool);
+        uint256 maxDisputeTime,
+        Operations.tokenInfo[] memory tokenList
+    ) external;
 
     function setTokenInfo(
-        address tokenAddress,
-        bytes memory tokenName,
-        uint256 tokenPresion
+        uint256,
+        address,
+        uint256
     ) external returns (bool);
 
-    function getPariChainInfo(address tokenAddress) external view returns (Operations.pairChainInfo[] memory);
+    function getTokenInfo(
+        uint256,
+        address,
+        bytes8
+    ) external view returns (Operations.tokenInfo memory);
 
     function getEBC(uint256 ebcid) external returns (address);
 
-    function setChainInfoByChainID(
-        uint256,
-        bytes memory,
-        uint256,
-        uint256
-    ) external;
+    function updateEBC(uint256 ebcid, address ebcAddress) external;
 
     function getChainInfoByChainID(uint256 chainID) external returns (Operations.chainInfo memory);
-
-    function getTokenInfoByTokenAddress(address tokenAddress) external returns (Operations.tokenInfo memory);
-
-    function getTokenInfoByTokenName(bytes memory tokenName) external view returns (Operations.tokenInfo memory);
 
     function setOwner(address) external;
 

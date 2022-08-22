@@ -7,9 +7,10 @@ import "./library/Operation.sol";
 import "hardhat/console.sol";
 
 contract ORManagerFactory is IORManagerFactory {
-    mapping(address => Operations.pairChainInfo[]) pairChain;
+    bytes32 pairChainRootHash;
     mapping(uint256 => address) ebcPair;
-    mapping(uint256 => Operations.chainInfo) chainInfo;
+    mapping(uint256 => Operations.chainInfo) chainList;
+    uint256 ebcids;
     address _owner;
 
     // event AddPariChain(address indexed tokenAddress, Operations.pairChainInfo pairChain);
@@ -24,69 +25,109 @@ contract ORManagerFactory is IORManagerFactory {
         _;
     }
 
-    function setPariChainInfo(address tokenAddress, Operations.pairChainInfo[] memory pairChain)
-        external
-        isOwner
-        returns (bool)
-    {
+    function initPariChainInfo(Operations.pairChainInfo[] memory pairChain) external isOwner returns (bool) {
+        require(pairChainRootHash.length == 0, "PAIRCHAININFO_INSTALL_ALREADY");
+        // TODO
+        // init pairChainRootHash
+        return true;
+    }
+
+    function addPariChainInfo(
+        Operations.pairChainInfo[] memory pairChain,
+        bytes32 proof,
+        bool[] memory proofFlag
+    ) external isOwner returns (bool) {
+        // TODO
+        // init pairChainRootHash
+        return true;
+    }
+
+    function updatePariChainInfo(
+        Operations.pairChainInfo[] memory oldPairChain,
+        Operations.pairChainInfo[] memory newPairChain,
+        bytes32 proof,
+        bool[] memory proofFlag
+    ) external isOwner returns (bool) {
+        // TODO
+        // init pairChainRootHash
+        return true;
+    }
+
+    function deletePariChainInfo(
+        Operations.pairChainInfo[] memory pairChain,
+        bytes32 proof,
+        bool[] memory proofFlag
+    ) external isOwner returns (bool) {
+        // TODO
+        // init pairChainRootHash
         return true;
     }
 
     function setEBC(address ebcAddress) external isOwner returns (bool) {
-        return true;
+        ebcPair[ebcids++] = ebcAddress;
+    }
+
+    function updateEBC(uint256 ebcid, address ebcAddress) external isOwner {
+        require(ebcPair[ebcid] != address(0), "UPDATEEBC_ERROR");
+        ebcPair[ebcid] = ebcAddress;
     }
 
     function setChainInfo(
         uint256 chainID,
         bytes memory chainName,
         uint256 batchLimit,
-        uint256 maxDisputeTime
-    ) external returns (bool) {
-        return true;
+        uint256 maxDisputeTime,
+        Operations.tokenInfo[] memory tokenList
+    ) external {
+        require(chainList[chainID].isUsed == false, "CHAININFO_INSTALL_ALREADY");
+        chainList[chainID] = Operations.chainInfo(chainID, chainName, batchLimit, maxDisputeTime, tokenList, true);
     }
 
-    function setTokenInfo(
+    function getTokenInfo(
+        uint256 chainID,
         address tokenAddress,
-        bytes memory tokenName,
+        bytes8 tokenName
+    ) external view returns (Operations.tokenInfo memory) {
+        require(tokenAddress != address(0) || tokenName.length != 0, "GETTOKENINFO_ERROR");
+        require(chainList[chainID].isUsed == true, "CHAINID_NOTINSTALL");
+        Operations.tokenInfo[] memory tokenList = chainList[chainID].tokenList;
+        require(tokenList.length != 0, "CHAINID_UNSUPPORTTOKEN");
+        for (uint256 i = 0; i <= tokenList.length; i++) {
+            Operations.tokenInfo memory tInfo = tokenList[i];
+            if (tInfo.tokenAddress == tokenAddress || tInfo.tokenName == tokenName) {
+                return tInfo;
+            }
+        }
+        // TODO  error
+    }
+
+    // TODO
+    function setTokenInfo(
+        uint256 chainID,
+        address tokenAddress,
         uint256 tokenPresion
     ) external returns (bool) {
-        return true;
+        require(chainList[chainID].tokenList.length != 0, "SETTOKENINFO_UNSUPPORTTOKEN");
+        for (uint256 i = 0; i <= chainList[chainID].tokenList.length; i++) {
+            Operations.tokenInfo memory tInfo = chainList[chainID].tokenList[i];
+            if (tInfo.tokenAddress == tokenAddress) {
+                tInfo.tokenPresion = tokenPresion;
+                return true;
+            }
+        }
+        return false;
     }
 
-    function getPariChainInfo(address tokenAddress) external view returns (Operations.pairChainInfo[] memory) {
-        // console.log("getPariChainInfo__");
-    }
-
-    function getEBC(uint256 ebcid) external returns (address) {
+    function getEBC(uint256 ebcid) external view returns (address) {
         require(ebcPair[ebcid] != address(0), "EBC_UNINSTALL");
         address ebcAddress = ebcPair[ebcid];
         return ebcAddress;
     }
 
-    function setChainInfoByChainID(
-        uint256 chainID,
-        bytes memory chainName,
-        uint256 batchLimit,
-        uint256 maxDisputeTime
-    ) external isOwner {
-        Operations.chainInfo memory info = Operations.chainInfo(chainID, chainName, batchLimit, maxDisputeTime, true);
-        chainInfo[chainID] = info;
-    }
-
-    function getChainInfoByChainID(uint256 chainID) external returns (Operations.chainInfo memory) {
-        require(chainInfo[chainID].isUsed == true, "MANAGER_CHAININFO_UNINSTALL");
-        Operations.chainInfo memory info = chainInfo[chainID];
+    function getChainInfoByChainID(uint256 chainID) public view returns (Operations.chainInfo memory) {
+        require(chainList[chainID].isUsed == true, "MANAGER_CHAININFO_UNINSTALL");
+        Operations.chainInfo memory info = chainList[chainID];
         return info;
-    }
-
-    function getTokenInfoByTokenAddress(address tokenAddress) external returns (Operations.tokenInfo memory) {
-        Operations.tokenInfo memory info1 = Operations.tokenInfo(address(0), 18, "eth");
-        return info1;
-    }
-
-    function getTokenInfoByTokenName(bytes memory tokenName) external view returns (Operations.tokenInfo memory) {
-        Operations.tokenInfo memory info1 = Operations.tokenInfo(address(0), 18, "eth");
-        return info1;
     }
 
     function setOwner(address newOwner) public isOwner {

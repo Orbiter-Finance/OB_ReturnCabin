@@ -4,9 +4,17 @@ pragma solidity ^0.8.9;
 library Operations {
     /// pairChainInfo
     struct pairChainInfo {
-        uint256 supportChain;
-        bool isSupportDest;
-        //uint256 ebcid;
+        uint256 sourceChain;
+        uint256 destChain;
+        address sourceToken;
+        address destToken;
+    }
+
+    struct tokenInfo {
+        address tokenAddress;
+        bytes8 tokenName;
+        uint256 tokenPresion;
+        address mainTokenAddress;
     }
 
     struct chainInfo {
@@ -14,13 +22,8 @@ library Operations {
         bytes chainName;
         uint256 batchLimit;
         uint256 maxDisputeTime;
+        Operations.tokenInfo[] tokenList;
         bool isUsed;
-    }
-
-    struct tokenInfo {
-        address tokenAddress;
-        uint256 tokenPresion;
-        bytes tokenName;
     }
 
     struct txInfo {
@@ -43,22 +46,20 @@ library Operations {
         uint256 maxPrice;
         uint256 gasFee;
         uint256 tradingFee;
-        bytes tokenName;
+        bytes8 tokenName;
     }
 
     struct lpPairInfo {
         bytes32 LPRootHash;
         uint256 stopTime;
         uint256 startTime;
-        uint256 ebcid;
-        uint256 shouldUseAmount;
         bool isUsed;
     }
 
     struct chainDeposit {
-        address tokenAddress;
+        address tokenAddress; // mainNetTokenAddress
         uint256 depositAmount;
-        uint256 useLimit;
+        uint256 useLimit; //
     }
 
     struct chanllengeInfo {

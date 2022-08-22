@@ -5,11 +5,12 @@ import "../library/Operation.sol";
 
 interface IORMakerDeposit {
     enum lpState {
-        CREAT,
         ACTION,
+        UPDATE,
         PAUSE,
         STOP
     }
+    event MakerContract(address indexed maker, address indexed mdc);
     event AddPariChain(address indexed tokenAddress, Operations.pairChainInfo pairChain);
     event AddPariChains(address indexed tokenAddress, Operations.pairChainInfo[] pairChains);
     event LogLpState(bytes32 indexed lpid, uint256 time, lpState indexed state);
@@ -20,28 +21,23 @@ interface IORMakerDeposit {
         Operations.lpInfo lpinfo
     );
 
-    function LPCreate(Operations.lpInfo memory) external returns (bool);
-
-    // LPAction
-    function LPAction(bytes32) external returns (bool);
+    function LPAction(Operations.lpInfo memory) external payable;
 
     // LPPause
-    function LPPause(bytes32) external returns (bool);
+    function LPPause(Operations.lpInfo memory) external;
 
     // LPStop
-    function LPStop(bytes32) external returns (bool);
+    function LPStop(Operations.lpInfo memory) external;
 
     // LPUpdate
     function LPUpdate(
-        bytes32 lpid,
-        uint256 minPrice,
-        uint256 maxPrice,
-        uint256 gasFee,
-        uint256 tradingFee
-    ) external returns (bool);
+        Operations.lpInfo memory,
+        bytes32 proof,
+        bool[] memory
+    ) external;
 
     // withDrawAssert()
-    function withDrawAssert(uint256 amount, bytes memory token) external returns (bool);
+    function withDrawAssert(uint256, address) external;
 
     // userChanllenge
     function userChanllenge(
