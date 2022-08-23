@@ -4,6 +4,7 @@ import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import * as _ from 'lodash';
 import { expect } from 'chai';
 import { ORPairManager } from '../typechain-types/contracts/ORPairManager';
+import { getLpID } from './lib/PairManager';
 const { keccak256 } = ethers.utils;
 describe('PairManager.spec', () => {
   let pairManagerContrct: ORPairManager;
@@ -39,18 +40,6 @@ describe('PairManager.spec', () => {
     sort: true,
   });
   before(deployPairManagerFixture);
-  function getLpID(pair: typeof pairList[0]) {
-    return ethers.utils.solidityKeccak256(
-      ['uint256', 'uint256', 'address', 'address', 'uint256'],
-      [
-        pair.sourceChain,
-        pair.destChain,
-        pair.sourceToken,
-        pair.destToken,
-        pair.ebcid,
-      ],
-    );
-  }
   it('initialize Pair', async () => {
     const tx = await pairManagerContrct.initializePair(
       tree.getHexRoot(),
