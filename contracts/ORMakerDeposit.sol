@@ -30,19 +30,6 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
         emit MakerContract(_owner, address(this));
     }
 
-    function getLpID(Operations.lpInfo memory _lpinfo) internal pure returns (bytes32) {
-        return
-            keccak256(
-                abi.encodePacked(
-                    _lpinfo.sourceChain,
-                    _lpinfo.destChain,
-                    _lpinfo.sourceTAddress,
-                    _lpinfo.destTAddress,
-                    _lpinfo.ebcid
-                )
-            );
-    }
-
     function getDepositTokenInfo(Operations.lpInfo memory _lpinfo) internal returns (Operations.tokenInfo memory) {
         return IORManagerFactory(_managerAddress).getTokenInfo(_lpinfo.sourceChain, _lpinfo.sourceTAddress);
     }
@@ -53,7 +40,7 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
     }
 
     function LPAction(Operations.lpInfo memory _lpinfo) external payable {
-        bytes32 lpid = getLpID(_lpinfo);
+        bytes32 lpid = Operations.getLpID(_lpinfo);
         // first init lpPair
         if (lpInfo[lpid].isUsed == false) {
             bytes32 rootHash = keccak256(
@@ -108,7 +95,7 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
 
     // LPPause
     function LPPause(Operations.lpInfo memory _lpinfo) external {
-        bytes32 lpid = getLpID(_lpinfo);
+        bytes32 lpid = Operations.getLpID(_lpinfo);
 
         require(lpInfo[lpid].isUsed == true, "LPPAUSE_LPID_UNUSED");
         require(lpInfo[lpid].startTime != 0 && lpInfo[lpid].stopTime == 0, "LPPAUSE_LPID_UNACTION");
@@ -125,7 +112,7 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
 
     // LPStop
     function LPStop(Operations.lpInfo memory _lpinfo) external {
-        bytes32 lpid = getLpID(_lpinfo);
+        bytes32 lpid = Operations.getLpID(_lpinfo);
 
         require(lpInfo[lpid].isUsed == true, "LPSTOP_LPID_UNUSED");
         require(lpInfo[lpid].startTime == 0 && lpInfo[lpid].stopTime != 0, "LPSTOP_LPID_UNPAUSE");
@@ -152,7 +139,7 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
         bytes32 proof,
         bool[] memory flag
     ) external {
-        bytes32 lpid = getLpID(_lpinfo);
+        bytes32 lpid = Operations.getLpID(_lpinfo);
 
         require(lpInfo[lpid].isUsed == true, "LPUPDATE_LPID_UNUSED");
         require(lpInfo[lpid].startTime == 0 && lpInfo[lpid].stopTime == 0, "LPUPDATE_LPID_UNSTOP");

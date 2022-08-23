@@ -8,9 +8,6 @@ import "hardhat/console.sol";
 contract ORProtocalV1 is IORProtocal {
     address _owner;
 
-    // event AddPariChain(address indexed tokenAddress, Operations.pairChainInfo pairChain);
-    // event AddPariChains(address indexed tokenAddress, Operations.pairChainInfo[] pairChains);
-
     constructor(address owner) payable {
         _owner = owner;
     }

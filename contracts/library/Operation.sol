@@ -2,18 +2,13 @@
 pragma solidity ^0.8.9;
 
 library Operations {
-    struct Pair {
-        uint256 sourceChain;
-        uint256 destChain;
-        address sourceToken;
-        address destToken;
-    }
     /// pairChainInfo
     struct pairChainInfo {
         uint256 sourceChain;
         uint256 destChain;
         address sourceToken;
         address destToken;
+        uint256 ebcid;
     }
 
     struct tokenInfo {
@@ -75,8 +70,30 @@ library Operations {
         uint256 endTime;
     }
 
-    function pairToHash(Pair calldata _pair) public pure returns (bytes32 hash) {
-        hash = keccak256(abi.encodePacked(_pair.sourceChain, _pair.destChain, _pair.sourceToken, _pair.destToken));
+    function getLpID(pairChainInfo memory _lpinfo) internal pure returns (bytes32) {
+        return
+            keccak256(
+                abi.encodePacked(
+                    _lpinfo.sourceChain,
+                    _lpinfo.destChain,
+                    _lpinfo.sourceToken,
+                    _lpinfo.destToken,
+                    _lpinfo.ebcid
+                )
+            );
+    }
+
+    function getLpID(lpInfo memory _lpinfo) internal pure returns (bytes32) {
+        return
+            keccak256(
+                abi.encodePacked(
+                    _lpinfo.sourceChain,
+                    _lpinfo.destChain,
+                    _lpinfo.sourceTAddress,
+                    _lpinfo.destTAddress,
+                    _lpinfo.ebcid
+                )
+            );
     }
     // function addressToDepostContract(address maker)
     //     public
