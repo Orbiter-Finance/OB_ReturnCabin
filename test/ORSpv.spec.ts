@@ -69,7 +69,7 @@ const MakerTxList = [
   },
 ];
 
-describe('SPV Test', () => {
+describe('ORSpv.spec.ts', () => {
   let spv: ORSpv;
   const chainId = '1';
   let userTxTree: MerkleTree;

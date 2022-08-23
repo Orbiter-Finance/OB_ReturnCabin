@@ -1,29 +1,16 @@
 import { ethers } from 'hardhat';
 import { MerkleTree } from 'merkletreejs';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
-const { keccak256 } = ethers.utils;
 import * as _ from 'lodash';
 import { expect } from 'chai';
 import { ORPairManager } from '../typechain-types/contracts/ORPairManager';
+const { keccak256 } = ethers.utils;
 describe('PairManager.spec', () => {
   let pairManagerContrct: ORPairManager;
   async function deployPairManagerFixture() {
-    // const Operations = await ethers.getContractFactory('Operations');
-    // const MerkleMultiProof = await ethers.getContractFactory(
-    //   'MerkleMultiProof',
-    // );
-    // const merkleMultiProof = await MerkleMultiProof.deploy();
-    // const operationsLib = await Operations.deploy();
-    const PairManager = await ethers.getContractFactory('ORPairManager', {
-      libraries: {
-        // Operations: operationsLib.address,
-        // MerkleMultiProof: merkleMultiProof.address,
-      },
-    });
-
+    const PairManager = await ethers.getContractFactory('ORPairManager');
     pairManagerContrct = await PairManager.deploy();
   }
-  before(deployPairManagerFixture);
   const pairList = [
     {
       sourceChain: 1,
@@ -51,7 +38,7 @@ describe('PairManager.spec', () => {
   const tree = new MerkleTree(leafs, keccak256, {
     sort: true,
   });
-  console.log(`tree：\n`, tree.toString(), '\n');
+  before(deployPairManagerFixture);
   function getLpID(pair: typeof pairList[0]) {
     return ethers.utils.solidityKeccak256(
       ['uint256', 'uint256', 'address', 'address', 'uint256'],
