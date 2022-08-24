@@ -99,7 +99,6 @@ contract ORManagerFactory is IORManagerFactory, ORPairManager, Ownable {
         ORMakerDeposit makerContract = new ORMakerDeposit{salt: salt}(address(this));
         emit MakerMap(msg.sender, address(makerContract));
         console.log("111 =", address(makerContract));
-        console.log("222 =", address(this));
         return address(makerContract);
     }
 }

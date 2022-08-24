@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
 import { MerkleTree } from 'merkletreejs';
-import { ORSpv } from '../typechain-types';
+import { ORSpv } from '../typechain-types/contracts/ORSpv';
 const { keccak256 } = ethers.utils;
 const UserTxList = [
   {

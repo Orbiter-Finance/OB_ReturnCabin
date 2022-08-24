@@ -295,7 +295,13 @@ describe('Factory.spec.ts', () => {
 
   describe('Factory_CREATE_MDC', () => {
     it('CREATE_MDC', async () => {
-      await userFactory.createMaker();
+      const response = await userFactory.createMaker();
+      const tx = await response.wait();
+      const makerMapEvent = tx.events?.find((row) => row.event == 'MakerMap');
+      if (makerMapEvent && makerMapEvent.args) {
+        process.env['MDC'] = makerMapEvent.args[1];
+      }
+      //
     });
   });
 });
