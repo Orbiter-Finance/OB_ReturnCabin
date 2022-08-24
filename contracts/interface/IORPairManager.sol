@@ -17,10 +17,9 @@ interface IORPairManager {
     function createPair(bytes32 _pairsHash, OperationsLib.pairChainInfo[] memory pairs) external;
 
     function updatePair(
-        bytes32[] memory leafs,
+        bytes32 leaf,
         bytes32[] memory proof,
-        bool[] memory proofFlag,
-        OperationsLib.pairChainInfo[] memory newPairs
+        OperationsLib.pairChainInfo memory newPairs
     ) external returns (bytes32);
 
     function deletePair(bytes32 _pairsHash, OperationsLib.pairChainInfo[] memory pairs) external;

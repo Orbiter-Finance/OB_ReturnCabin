@@ -5,6 +5,7 @@ import * as _ from 'lodash';
 import { expect } from 'chai';
 import { ORPairManager } from '../typechain-types/contracts/ORPairManager';
 import { getLpID } from './lib/PairManager';
+import { pairList } from './lib/Config';
 const { keccak256 } = ethers.utils;
 describe('PairManager.spec', () => {
   let pairManagerContrct: ORPairManager;
@@ -12,29 +13,6 @@ describe('PairManager.spec', () => {
     const PairManager = await ethers.getContractFactory('ORPairManager');
     pairManagerContrct = await PairManager.deploy();
   }
-  const pairList = [
-    {
-      sourceChain: 1,
-      destChain: 7,
-      sourceToken: '0xdac17f958d2ee523a2206206994597c13d831ec7',
-      destToken: '0xdac17f958d2ee523a2206206994597c13d831ec7',
-      ebcid: '0x0000000000000000000000000000000000000000',
-    },
-    {
-      sourceChain: 2,
-      destChain: 7,
-      sourceToken: '0xdac17f958d2ee523a2206206994597c13d831ec7',
-      destToken: '0xdac17f958d2ee523a2206206994597c13d831ec7',
-      ebcid: '0x0000000000000000000000000000000000000000',
-    },
-    {
-      sourceChain: 3,
-      destChain: 7,
-      sourceToken: '0xdac17f958d2ee523a2206206994597c13d831ec7',
-      destToken: '0xdac17f958d2ee523a2206206994597c13d831ec7',
-      ebcid: '0x0000000000000000000000000000000000000000',
-    },
-  ];
   const leafs = pairList.map(getLpID);
   const tree = new MerkleTree(leafs, keccak256, {
     sort: true,
@@ -50,51 +28,45 @@ describe('PairManager.spec', () => {
       .withArgs(0, anyValue);
   });
   it('Verify root hash', async () => {
-    expect(await pairManagerContrct.pairsHash()).to.equal(tree.getHexRoot());
+    expect(await pairManagerContrct.pairsRoot()).to.equal(tree.getHexRoot());
   });
 
-  it('Update root hash', async () => {
+  it('Update Pair', async () => {
     const leafs = [getLpID(pairList[0])];
-    const allLeaves = tree.getLeaves();
-    const leaves = leafs.map((row) => {
-      return allLeaves[tree.getLeafIndex(<any>row)];
-    });
-    const proof = tree.getMultiProof(leaves);
-    const proofFlags = tree.getProofFlags(leaves, proof);
+    // const allLeaves = tree.getLeaves();
+    // const leaves = leafs.map((row) => {
+    //   return allLeaves[tree.getLeafIndex(<any>row)];
+    // });
+    // console.log(tree.getHexLayers(), '===leaves');
+    const proof = tree.getHexProof(leafs[0]);
+    // console.log('proof:', proof);
+    // const proofFlags = tree.getProofFlags(leaves, proof);
     const newPair = [
       {
         sourceChain: 1,
-        destChain: 6,
-        sourceToken: '0xdac17f958d2ee523a2206206994597c13d831ec7',
-        destToken: '0xdac17f958d2ee523a2206206994597c13d831ec7',
-        ebcid: '0x0000000000000000000000000000000000000000',
+        destChain: 13,
+        sourceToken: '0x0000000000000000000000000000000000000000',
+        destToken: '0x0000000000000000000000000000000000000000',
+        ebcid: '0x0000000000000000000000000000000000000001',
       },
     ];
     const result = await pairManagerContrct.updatePair(
-      leafs,
+      leafs[0],
       proof,
-      proofFlags,
-      <any>newPair,
+      newPair[0],
     );
     await expect(result)
       .to.emit(pairManagerContrct, 'PairLogEvent')
       .withArgs(2, anyValue);
-  });
-  it('Update After Verify RootHash', async () => {
-    // new pair
     const newPairList = _.clone(pairList);
-    newPairList[0] = {
-      sourceChain: 1,
-      destChain: 6,
-      sourceToken: '0xdac17f958d2ee523a2206206994597c13d831ec7',
-      destToken: '0xdac17f958d2ee523a2206206994597c13d831ec7',
-      ebcid: '0x0000000000000000000000000000000000000000',
-    };
+    newPairList[0] = newPair[0];
     const newTree = new MerkleTree(newPairList.map(getLpID), keccak256, {
       sort: true,
     });
-    expect(await pairManagerContrct.pairsHash()).to.equal(newTree.getHexRoot());
+
+    expect(await pairManagerContrct.pairsRoot()).to.equal(newTree.getHexRoot());
   });
+
   it('Create New Pair', async () => {
     // new pair
     const newPairList = _.clone(pairList);
@@ -102,9 +74,9 @@ describe('PairManager.spec', () => {
       {
         sourceChain: 1,
         destChain: 13,
-        sourceToken: '0xdac17f958d2ee523a2206206994597c13d831ec7',
-        destToken: '0xdac17f958d2ee523a2206206994597c13d831ec7',
-        ebcid: '0x0000000000000000000000000000000000000000',
+        sourceToken: '0x0000000000000000000000000000000000000000',
+        destToken: '0x0000000000000000000000000000000000000000',
+        ebcid: '0x0000000000000000000000000000000000000001',
       },
     ];
     const newTree = new MerkleTree(newPairList.map(getLpID), keccak256);
@@ -117,7 +89,7 @@ describe('PairManager.spec', () => {
     await expect(result)
       .to.emit(pairManagerContrct, 'PairLogEvent')
       .withArgs(1, anyValue);
-    expect(await pairManagerContrct.pairsHash()).to.equal(localNewRoot);
+    expect(await pairManagerContrct.pairsRoot()).to.equal(localNewRoot);
   });
   it('isSupportPair(True)', async () => {
     const lpId = getLpID(pairList[0]);
@@ -129,8 +101,8 @@ describe('PairManager.spec', () => {
     const lpId = getLpID({
       sourceChain: 99,
       destChain: 99,
-      sourceToken: '0xdac17f958d2ee523a2206206994597c13d831ec7',
-      destToken: '0xdac17f958d2ee523a2206206994597c13d831ec7',
+      sourceToken: '0x0000000000000000000000000000000000000000',
+      destToken: '0x0000000000000000000000000000000000000000',
       ebcid: '0x0000000000000000000000000000000000000000',
     });
     const proof = tree.getHexProof(lpId);
