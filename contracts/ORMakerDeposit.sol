@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
-
+import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "hardhat/console.sol";
 import "./interface/IORMakerDeposit.sol";
 import "./library/Operation.sol";
 import "./interface/IORManagerFactory.sol";
+import "./interface/IORPairManager.sol";
 import "./interface/IORProtocal.sol";
 import "./interface/IERC20.sol";
 import "./interface/IORSpv.sol";
@@ -12,7 +13,7 @@ import "./interface/IORSpv.sol";
 contract ORMakerDeposit is IORMakerDeposit, Ownable {
     address _owner;
     address _managerAddress;
-    IORSpv _spv;
+    IORSpv public _spv;
     // lpid->lpPairInfo
     mapping(bytes32 => Operations.lpPairInfo) public lpInfo;
 
@@ -39,29 +40,17 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
         return chainDeposit[_lpinfo.sourceChain][depositToken.mainTokenAddress];
     }
 
-    function LPAction(Operations.lpInfo memory _lpinfo) external payable {
+    function LPAction(
+        Operations.lpInfo memory _lpinfo,
+        bytes32[] memory proof,
+        bytes32 rootHash
+    ) external payable {
         bytes32 lpid = Operations.getLpID(_lpinfo);
         // first init lpPair
-        if (lpInfo[lpid].isUsed == false) {
-            bytes32 rootHash = keccak256(
-                abi.encodePacked(
-                    _lpinfo.sourceChain,
-                    _lpinfo.destChain,
-                    _lpinfo.sourceTAddress,
-                    _lpinfo.destTAddress,
-                    _lpinfo.tokenName,
-                    _lpinfo.tokenPresion,
-                    _lpinfo.ebcid,
-                    _lpinfo.minPrice,
-                    _lpinfo.maxPrice,
-                    _lpinfo.gasFee,
-                    _lpinfo.tradingFee
-                )
-            );
+        require(IORPairManager(_managerAddress).isSupportPair(lpid, proof), "PairNotSupported");
+        if (lpInfo[lpid].LPRootHash == "") {
             lpInfo[lpid].LPRootHash = rootHash;
-            lpInfo[lpid].isUsed = true;
         }
-
         require(lpInfo[lpid].startTime == 0 && lpInfo[lpid].stopTime == 0, "LPACTION_LPID_UNSTOP");
 
         Operations.chainInfo memory souceChainInfo = IORManagerFactory(_managerAddress).getChainInfoByChainID(
@@ -84,20 +73,20 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
                 balance = address(this).balance;
             }
             uint256 unUsedAmount = balance - usedDeposit[depositToken.mainTokenAddress];
-
+            // TODO
             require(unUsedAmount > needDepositAmount - depositInfo.depositAmount, "LPACTION_INSUFFICIENT_AMOUNT");
             depositInfo.depositAmount = needDepositAmount;
         }
         depositInfo.useLimit++;
-        emit LogLpState(lpid, lpInfo[lpid].startTime, lpState.ACTION);
+        emit LogLpState(lpid, lpState.ACTION, lpInfo[lpid].startTime);
         emit LogLpInfo(lpid, _lpinfo.sourceChain, _lpinfo.destChain, _lpinfo);
     }
 
     // LPPause
-    function LPPause(Operations.lpInfo memory _lpinfo) external {
+    function LPPause(Operations.lpInfo memory _lpinfo, bytes32 rootHash) external {
         bytes32 lpid = Operations.getLpID(_lpinfo);
 
-        require(lpInfo[lpid].isUsed == true, "LPPAUSE_LPID_UNUSED");
+        require(lpInfo[lpid].LPRootHash != "", "LPPAUSE_LPID_UNUSED");
         require(lpInfo[lpid].startTime != 0 && lpInfo[lpid].stopTime == 0, "LPPAUSE_LPID_UNACTION");
 
         address ebcAddress = IORManagerFactory(_managerAddress).getEBC(_lpinfo.ebcid);
@@ -106,15 +95,16 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
         uint256 stopDelayTime = IORProtocal(ebcAddress).getStopDealyTime(_lpinfo.sourceChain);
         lpInfo[lpid].stopTime = block.timestamp + stopDelayTime;
         lpInfo[lpid].startTime = 0;
+        lpInfo[lpid].LPRootHash = rootHash;
 
-        emit LogLpState(lpid, lpInfo[lpid].stopTime, lpState.PAUSE);
+        emit LogLpState(lpid, lpState.PAUSE, lpInfo[lpid].stopTime);
     }
 
     // LPStop
     function LPStop(Operations.lpInfo memory _lpinfo) external {
         bytes32 lpid = Operations.getLpID(_lpinfo);
 
-        require(lpInfo[lpid].isUsed == true, "LPSTOP_LPID_UNUSED");
+        require(lpInfo[lpid].LPRootHash != "", "LPSTOP_LPID_UNUSED");
         require(lpInfo[lpid].startTime == 0 && lpInfo[lpid].stopTime != 0, "LPSTOP_LPID_UNPAUSE");
         require(block.timestamp > lpInfo[lpid].stopTime, "LPSTOP_LPID_TIMEUNABLE");
 
@@ -123,34 +113,36 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
         Operations.chainDeposit memory depositInfo = getChainDepositInfo(_lpinfo);
 
         depositInfo.useLimit--;
-
         // free up funds
         if (depositInfo.useLimit == 0) {
             usedDeposit[depositToken.mainTokenAddress] -= depositInfo.depositAmount;
             depositInfo.depositAmount = 0;
         }
 
-        emit LogLpState(lpid, 0, lpState.STOP);
+        emit LogLpState(lpid, lpState.STOP, 0);
     }
 
     // LPUpdate
     function LPUpdate(
-        Operations.lpInfo memory _lpinfo,
-        bytes32 proof,
-        bool[] memory flag
+        bytes32 leaf,
+        bytes32[] calldata proof,
+        bool[] calldata proofFlag,
+        Operations.lpInfo calldata _lpinfo
     ) external {
         bytes32 lpid = Operations.getLpID(_lpinfo);
 
-        require(lpInfo[lpid].isUsed == true, "LPUPDATE_LPID_UNUSED");
+        require(lpInfo[lpid].LPRootHash != "", "LPUPDATE_LPID_UNUSED");
         require(lpInfo[lpid].startTime == 0 && lpInfo[lpid].stopTime == 0, "LPUPDATE_LPID_UNSTOP");
 
-        // TODO
         // proof and generate a new Roothash
-        console.logBytes32(proof);
-        console.log(flag[0]);
-        lpInfo[lpid].LPRootHash = "xxxxxxxxx";
+        bool isVerify = MerkleProof.verifyCalldata(proof, lpInfo[lpid].LPRootHash, leaf);
+        require(isVerify, "VerifyFailed");
 
-        emit LogLpState(lpid, block.timestamp, lpState.UPDATE);
+        // new hash
+        bytes32 newLpHash = Operations.getLpFullHash(_lpinfo);
+        bytes32 newRootHash = MerkleProof.processProofCalldata(proof, newLpHash);
+        lpInfo[lpid].LPRootHash = newRootHash;
+        emit LogLpState(lpid, lpState.UPDATE, block.timestamp);
         emit LogLpInfo(lpid, _lpinfo.sourceChain, _lpinfo.destChain, _lpinfo);
     }
 
@@ -183,7 +175,6 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
     ) external returns (bool) {
         //TODO
         //1. txinfo is already spv
-
         //2. txinfo unChanllenge
         bytes32 chanllengeID = keccak256(
             abi.encodePacked(

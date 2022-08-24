@@ -14,7 +14,7 @@ interface IORMakerDeposit {
     event MakerContract(address indexed maker, address indexed mdc);
     event AddPariChain(address indexed tokenAddress, Operations.pairChainInfo pairChain);
     event AddPariChains(address indexed tokenAddress, Operations.pairChainInfo[] pairChains);
-    event LogLpState(bytes32 indexed lpid, uint256 time, lpState indexed state);
+    event LogLpState(bytes32 indexed lpid, lpState indexed state, uint256 time);
     event LogLpInfo(
         bytes32 indexed lpid,
         uint256 indexed sourceChain,
@@ -22,19 +22,24 @@ interface IORMakerDeposit {
         Operations.lpInfo lpinfo
     );
 
-    function LPAction(Operations.lpInfo memory) external payable;
+    function LPAction(
+        Operations.lpInfo memory _lpinfo,
+        bytes32[] memory proof,
+        bytes32 rootHash
+    ) external payable;
 
     // LPPause
-    function LPPause(Operations.lpInfo memory) external;
+    function LPPause(Operations.lpInfo memory _lpinfo, bytes32 rootHash) external;
 
     // LPStop
     function LPStop(Operations.lpInfo memory) external;
 
     // LPUpdate
     function LPUpdate(
-        Operations.lpInfo memory,
-        bytes32 proof,
-        bool[] memory
+        bytes32 leaf,
+        bytes32[] calldata proof,
+        bool[] calldata proofFlag,
+        Operations.lpInfo calldata _lpinfo
     ) external;
 
     // withDrawAssert()

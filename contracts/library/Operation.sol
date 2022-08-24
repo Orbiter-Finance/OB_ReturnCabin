@@ -54,7 +54,6 @@ library Operations {
         bytes32 LPRootHash;
         uint256 stopTime;
         uint256 startTime;
-        bool isUsed;
     }
 
     struct chainDeposit {
@@ -81,6 +80,23 @@ library Operations {
                     _lpinfo.ebcid
                 )
             );
+    }
+
+    function getLpFullHash(Operations.lpInfo memory _lpinfo) internal pure returns (bytes32) {
+        bytes32 lpId = getLpID(_lpinfo);
+        bytes32 rootHash = keccak256(
+            abi.encodePacked(
+                lpId,
+                _lpinfo.tokenName,
+                _lpinfo.tokenPresion,
+                _lpinfo.ebcid,
+                _lpinfo.minPrice,
+                _lpinfo.maxPrice,
+                _lpinfo.gasFee,
+                _lpinfo.tradingFee
+            )
+        );
+        return rootHash;
     }
 
     function getLpID(lpInfo memory _lpinfo) internal pure returns (bytes32) {

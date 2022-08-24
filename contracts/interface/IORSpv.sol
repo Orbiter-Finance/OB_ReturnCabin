@@ -7,12 +7,12 @@ interface IORSpv {
 
     function setMakerTxTreeRoot(uint256 chain, bytes32 root) external;
 
-    function verifyUserTxProof(SpvLib.Transaction memory _txInfo, bytes32[] calldata _proofs)
+    function verifyUserTxProof(SpvLib.Transaction memory _txInfo, bytes32[] calldata _proof)
         external
         view
         returns (bool);
 
-    function verifyMakerTxProof(SpvLib.Transaction memory _txInfo, bytes32[] calldata _proofs)
+    function verifyMakerTxProof(SpvLib.Transaction memory _txInfo, bytes32[] calldata _proof)
         external
         view
         returns (bool);

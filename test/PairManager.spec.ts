@@ -46,8 +46,8 @@ describe('PairManager.spec', () => {
       pairList,
     );
     await expect(tx)
-      .to.emit(pairManagerContrct, 'InitializePair')
-      .withArgs(anyValue);
+      .to.emit(pairManagerContrct, 'PairLogEvent')
+      .withArgs(0, anyValue);
   });
   it('Verify root hash', async () => {
     expect(await pairManagerContrct.pairsHash()).to.equal(tree.getHexRoot());
@@ -77,8 +77,8 @@ describe('PairManager.spec', () => {
       <any>newPair,
     );
     await expect(result)
-      .to.emit(pairManagerContrct, 'ChangePair')
-      .withArgs('Update', anyValue);
+      .to.emit(pairManagerContrct, 'PairLogEvent')
+      .withArgs(2, anyValue);
   });
   it('Update After Verify RootHash', async () => {
     // new pair
@@ -95,7 +95,7 @@ describe('PairManager.spec', () => {
     });
     expect(await pairManagerContrct.pairsHash()).to.equal(newTree.getHexRoot());
   });
-  it('Add New Pair', async () => {
+  it('Create New Pair', async () => {
     // new pair
     const newPairList = _.clone(pairList);
     const newPair = [
@@ -115,9 +115,27 @@ describe('PairManager.spec', () => {
       <any>newPair,
     );
     await expect(result)
-      .to.emit(pairManagerContrct, 'ChangePair')
-      .withArgs('Create', anyValue);
+      .to.emit(pairManagerContrct, 'PairLogEvent')
+      .withArgs(1, anyValue);
     expect(await pairManagerContrct.pairsHash()).to.equal(localNewRoot);
+  });
+  it('isSupportPair(True)', async () => {
+    const lpId = getLpID(pairList[0]);
+    const proof = tree.getHexProof(lpId);
+    const isSupport = await pairManagerContrct.isSupportPair(lpId, proof);
+    expect(isSupport).true;
+  });
+  it('isSupportPair(False)', async () => {
+    const lpId = getLpID({
+      sourceChain: 99,
+      destChain: 99,
+      sourceToken: '0xdac17f958d2ee523a2206206994597c13d831ec7',
+      destToken: '0xdac17f958d2ee523a2206206994597c13d831ec7',
+      ebcid: '0x0000000000000000000000000000000000000000',
+    });
+    const proof = tree.getHexProof(lpId);
+    const isSupport = await pairManagerContrct.isSupportPair(lpId, proof);
+    expect(isSupport).false;
   });
 });
 //

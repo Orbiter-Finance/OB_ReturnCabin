@@ -8,7 +8,8 @@ import "./interface/IORSpv.sol";
 contract ORSpv is IORSpv, Ownable {
     mapping(uint256 => bytes32) public makerTxTree;
     mapping(uint256 => bytes32) public userTxTree;
-    mapping(bytes32 => bool) public verifyRecordsee;
+
+    // mapping(bytes32 => bool) public verifyRecordsee;
 
     // event ChangeTxTree(uint256 indexed chain, bytes32 root);
     /// @notice Set new transaction tree root hash
@@ -25,21 +26,21 @@ contract ORSpv is IORSpv, Ownable {
         makerTxTree[chain] = root;
     }
 
-    function setVerifyRecordsee(bytes32 txid) public onlyOwner {
-        require(verifyRecordsee[txid] != true, "Txid Verified");
-        verifyRecordsee[txid] = true;
-    }
+    // function setVerifyRecordsee(bytes32 txid) public onlyOwner {
+    //     require(verifyRecordsee[txid] != true, "TxidVerified");
+    //     verifyRecordsee[txid] = true;
+    // }
 
-    function isVerify(bytes32 txid) public view returns (bool) {
-        // bytes32 txid = SpvLib.calculationTxId(_txInfo);
-        return verifyRecordsee[txid];
-    }
+    // function isVerify(bytes32 txid) public view returns (bool) {
+    //     // bytes32 txid = SpvLib.calculationTxId(_txInfo);
+    //     return verifyRecordsee[txid];
+    // }
 
     /// @notice Transaction list of unpaid users
     /// @param _txInfo User transaction object
-    /// @param _proofs Transaction proof path
+    /// @param _proof Transaction proof path
     /// @return Exist or fail to verify
-    function verifyUserTxProof(SpvLib.Transaction memory _txInfo, bytes32[] calldata _proofs)
+    function verifyUserTxProof(SpvLib.Transaction memory _txInfo, bytes32[] calldata _proof)
         public
         view
         returns (bool)
@@ -55,15 +56,14 @@ contract ORSpv is IORSpv, Ownable {
                 _txInfo.token
             )
         );
-        bool _verify = SpvLib.verify(userTxTree[_txInfo.chain], _leaf, _proofs);
-        return _verify;
+        return SpvLib.verify(userTxTree[_txInfo.chain], _leaf, _proof);
     }
 
     /// @notice List of merchant transactions with delayed payment
     /// @param _txInfo User transaction object
-    /// @param _proofs Transaction proof path
+    /// @param _proof Transaction proof path
     /// @return Exist or fail to verify
-    function verifyMakerTxProof(SpvLib.Transaction memory _txInfo, bytes32[] calldata _proofs)
+    function verifyMakerTxProof(SpvLib.Transaction memory _txInfo, bytes32[] calldata _proof)
         public
         view
         returns (bool)
@@ -79,7 +79,6 @@ contract ORSpv is IORSpv, Ownable {
                 _txInfo.token
             )
         );
-        bool _verify = SpvLib.verify(makerTxTree[_txInfo.chain], _leaf, _proofs);
-        return _verify;
+        return SpvLib.verify(makerTxTree[_txInfo.chain], _leaf, _proof);
     }
 }
