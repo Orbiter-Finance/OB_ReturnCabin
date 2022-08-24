@@ -47,6 +47,7 @@ library OperationsLib {
         uint256 gasFee;
         uint256 tradingFee;
         bytes tokenName;
+        uint256 startTime;
     }
 
     struct lpPairInfo {
@@ -66,6 +67,7 @@ library OperationsLib {
         bytes32 responseTxinfo;
         uint256 startTime;
         uint256 endTime;
+        uint256 pledgeAmount;
     }
 
     function getLpID(pairChainInfo memory _lpinfo) internal pure returns (bytes32) {
