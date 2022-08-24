@@ -40,7 +40,7 @@ contract ORSpv is IORSpv, Ownable {
     /// @param _txInfo User transaction object
     /// @param _proof Transaction proof path
     /// @return Exist or fail to verify
-    function verifyUserTxProof(SpvLib.Transaction memory _txInfo, bytes32[] calldata _proof)
+    function verifyUserTxProof(SpvLib.Transaction calldata _txInfo, bytes32[] calldata _proof)
         public
         view
         returns (bool)
@@ -63,7 +63,7 @@ contract ORSpv is IORSpv, Ownable {
     /// @param _txInfo User transaction object
     /// @param _proof Transaction proof path
     /// @return Exist or fail to verify
-    function verifyMakerTxProof(SpvLib.Transaction memory _txInfo, bytes32[] calldata _proof)
+    function verifyMakerTxProof(SpvLib.Transaction calldata _txInfo, bytes32[] calldata _proof)
         public
         view
         returns (bool)
