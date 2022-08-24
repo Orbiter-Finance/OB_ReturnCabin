@@ -14,14 +14,12 @@ library OperationsLib {
     struct tokenInfo {
         uint256 chainID;
         address tokenAddress;
-        bytes tokenName;
         uint256 tokenPresion;
         address mainTokenAddress;
     }
 
     struct chainInfo {
         uint256 chainid;
-        bytes chainName;
         uint256 batchLimit;
         uint256 maxDisputeTime;
         address[] tokenList;

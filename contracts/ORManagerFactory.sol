@@ -11,9 +11,16 @@ contract ORManagerFactory is IORManagerFactory, ORPairManager, Ownable {
     mapping(uint256 => OperationsLib.chainInfo) public chainList;
     mapping(uint256 => mapping(address => OperationsLib.tokenInfo)) public tokenInfos;
     uint256 ebcids;
+    address public spv;
 
     function getEBCids() external view returns (uint256) {
         return ebcids;
+    }
+
+    function setSPV(address spvAddress) external onlyOwner returns (bool) {
+        require(spvAddress != address(0) && Address.isContract(spvAddress) == true, "SPV_INVALIDATE");
+        spv = spvAddress;
+        return true;
     }
 
     function setEBC(address ebcAddress) external onlyOwner returns (bool) {
@@ -35,13 +42,12 @@ contract ORManagerFactory is IORManagerFactory, ORPairManager, Ownable {
 
     function setChainInfo(
         uint256 chainID,
-        bytes memory chainName,
         uint256 batchLimit,
         uint256 maxDisputeTime,
         address[] memory tokenList
     ) external {
         require(chainList[chainID].isUsed == false, "CHAININFO_INSTALL_ALREADY");
-        chainList[chainID] = OperationsLib.chainInfo(chainID, chainName, batchLimit, maxDisputeTime, tokenList, true);
+        chainList[chainID] = OperationsLib.chainInfo(chainID, batchLimit, maxDisputeTime, tokenList, true);
     }
 
     function getChainInfoByChainID(uint256 chainID) public view returns (OperationsLib.chainInfo memory) {
@@ -55,7 +61,6 @@ contract ORManagerFactory is IORManagerFactory, ORPairManager, Ownable {
         uint256 chainID,
         address tokenAddress,
         uint256 tokenPresion,
-        bytes memory tokenName,
         address mainAddress
     ) external returns (bool) {
         require(chainList[chainID].tokenList.length != 0, "SETTOKENINFO_UNSUPPORTTOKEN");
@@ -65,7 +70,6 @@ contract ORManagerFactory is IORManagerFactory, ORPairManager, Ownable {
                 tokenInfos[chainID][tokenAddress] = OperationsLib.tokenInfo(
                     chainID,
                     tokenAddress,
-                    tokenName,
                     tokenPresion,
                     mainAddress
                 );
@@ -94,6 +98,8 @@ contract ORManagerFactory is IORManagerFactory, ORPairManager, Ownable {
         bytes32 salt = keccak256(abi.encodePacked(msg.sender));
         ORMakerDeposit makerContract = new ORMakerDeposit{salt: salt}(address(this));
         emit MakerMap(msg.sender, address(makerContract));
+        console.log("111 =", address(makerContract));
+        console.log("222 =", address(this));
         return address(makerContract);
     }
 }

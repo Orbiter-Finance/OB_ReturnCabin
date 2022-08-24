@@ -8,7 +8,6 @@ let factory: ORManagerFactory;
 
 const chainInfo_main = {
   chainID: 1,
-  chainName: ethers.utils.defaultAbiCoder.encode(['string'], ['mainNet']),
   batchLimit: 100,
   maxDisputeTime: 3600 * 24,
   tokenList: [
@@ -20,7 +19,6 @@ const chainInfo_main = {
 
 const chainInfo_arbitrum = {
   chainID: 2,
-  chainName: ethers.utils.defaultAbiCoder.encode(['string'], ['arbitrum']),
   batchLimit: 100,
   maxDisputeTime: 3600 * 24,
   tokenList: [
@@ -34,42 +32,36 @@ const tokeninfo_eth_main = {
   chainID: 1,
   tokenAddress: '0x0000000000000000000000000000000000000000',
   tokenPresion: 18,
-  tokenName: ethers.utils.defaultAbiCoder.encode(['string'], ['ETH']),
   mainAddress: '0x0000000000000000000000000000000000000000',
 };
 const tokeninfo_usdc_main = {
   chainID: 1,
   tokenAddress: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
   tokenPresion: 6,
-  tokenName: ethers.utils.defaultAbiCoder.encode(['string'], ['USDC']),
   mainAddress: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
 };
 const tokeninfo_usdt_main = {
   chainID: 1,
   tokenAddress: '0xdac17f958d2ee523a2206206994597c13d831ec7',
   tokenPresion: 6,
-  tokenName: ethers.utils.defaultAbiCoder.encode(['string'], ['USDT']),
   mainAddress: '0xdac17f958d2ee523a2206206994597c13d831ec7',
 };
 const tokeninfo_eth_arb = {
   chainID: 2,
   tokenAddress: '0x0000000000000000000000000000000000000000',
   tokenPresion: 18,
-  tokenName: ethers.utils.defaultAbiCoder.encode(['string'], ['ETH']),
   mainAddress: '0x0000000000000000000000000000000000000000',
 };
 const tokeninfo_usdc_arb = {
   chainID: 2,
   tokenAddress: '0xff970a61a04b1ca14834a43f5de4533ebddb5cc8',
   tokenPresion: 6,
-  tokenName: ethers.utils.defaultAbiCoder.encode(['string'], ['USDC']),
   mainAddress: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
 };
 const tokeninfo_usdt_arb = {
   chainID: 2,
   tokenAddress: '0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9',
   tokenPresion: 6,
-  tokenName: ethers.utils.defaultAbiCoder.encode(['string'], ['USDT']),
   mainAddress: '0xdac17f958d2ee523a2206206994597c13d831ec7',
 };
 
@@ -120,7 +112,6 @@ describe('Factory.spec.ts', () => {
     it('SET CHAININFO', async () => {
       await userFactory.setChainInfo(
         chainInfo_main.chainID,
-        chainInfo_main.chainName,
         chainInfo_main.batchLimit,
         chainInfo_main.maxDisputeTime,
         chainInfo_main.tokenList,
@@ -128,7 +119,6 @@ describe('Factory.spec.ts', () => {
 
       await userFactory.setChainInfo(
         chainInfo_arbitrum.chainID,
-        chainInfo_arbitrum.chainName,
         chainInfo_arbitrum.batchLimit,
         chainInfo_arbitrum.maxDisputeTime,
         chainInfo_arbitrum.tokenList,
@@ -138,9 +128,6 @@ describe('Factory.spec.ts', () => {
 
       expect(await (await userFactory.chainList(1)).isUsed).true;
       expect(await (await userFactory.chainList(1)).chainid).equal(1);
-      expect(await (await userFactory.chainList(1)).chainName).equal(
-        ethers.utils.defaultAbiCoder.encode(['string'], ['mainNet']),
-      );
       expect(await (await userFactory.chainList(1)).batchLimit).equal(100);
       expect(await (await userFactory.chainList(1)).maxDisputeTime).equal(
         24 * 3600,
@@ -148,9 +135,6 @@ describe('Factory.spec.ts', () => {
 
       expect(await (await userFactory.chainList(2)).isUsed).true;
       expect(await (await userFactory.chainList(2)).chainid).equal(2);
-      expect(await (await userFactory.chainList(2)).chainName).equal(
-        ethers.utils.defaultAbiCoder.encode(['string'], ['arbitrum']),
-      );
       expect(await (await userFactory.chainList(2)).batchLimit).equal(100);
       expect(await (await userFactory.chainList(2)).maxDisputeTime).equal(
         24 * 3600,
@@ -166,17 +150,11 @@ describe('Factory.spec.ts', () => {
 
       expect(ethInfo.isUsed).true;
       expect(ethInfo.chainid).equal(1);
-      expect(ethInfo.chainName).equal(
-        ethers.utils.defaultAbiCoder.encode(['string'], ['mainNet']),
-      );
       expect(ethInfo.batchLimit).equal(100);
       expect(ethInfo.maxDisputeTime).equal(24 * 3600);
 
       expect(arInfo.isUsed).true;
       expect(arInfo.chainid).equal(2);
-      expect(arInfo.chainName).equal(
-        ethers.utils.defaultAbiCoder.encode(['string'], ['arbitrum']),
-      );
       expect(arInfo.batchLimit).equal(100);
       expect(arInfo.maxDisputeTime).equal(24 * 3600);
     });
@@ -188,7 +166,6 @@ describe('Factory.spec.ts', () => {
         tokeninfo_eth_main.chainID,
         tokeninfo_eth_main.tokenAddress,
         tokeninfo_eth_main.tokenPresion,
-        tokeninfo_eth_main.tokenName,
         tokeninfo_eth_main.mainAddress,
       );
 
@@ -196,7 +173,6 @@ describe('Factory.spec.ts', () => {
         tokeninfo_usdc_main.chainID,
         tokeninfo_usdc_main.tokenAddress,
         tokeninfo_usdc_main.tokenPresion,
-        tokeninfo_usdc_main.tokenName,
         tokeninfo_usdc_main.mainAddress,
       );
 
@@ -204,7 +180,6 @@ describe('Factory.spec.ts', () => {
         tokeninfo_usdt_main.chainID,
         tokeninfo_usdt_main.tokenAddress,
         tokeninfo_usdt_main.tokenPresion,
-        tokeninfo_usdt_main.tokenName,
         tokeninfo_usdt_main.mainAddress,
       );
 
@@ -212,7 +187,6 @@ describe('Factory.spec.ts', () => {
         tokeninfo_eth_arb.chainID,
         tokeninfo_eth_arb.tokenAddress,
         tokeninfo_eth_arb.tokenPresion,
-        tokeninfo_eth_arb.tokenName,
         tokeninfo_eth_arb.mainAddress,
       );
 
@@ -220,7 +194,6 @@ describe('Factory.spec.ts', () => {
         tokeninfo_usdc_arb.chainID,
         tokeninfo_usdc_arb.tokenAddress,
         tokeninfo_usdc_arb.tokenPresion,
-        tokeninfo_usdc_arb.tokenName,
         tokeninfo_usdc_arb.mainAddress,
       );
 
@@ -228,7 +201,6 @@ describe('Factory.spec.ts', () => {
         tokeninfo_usdt_arb.chainID,
         tokeninfo_usdt_arb.tokenAddress,
         tokeninfo_usdt_arb.tokenPresion,
-        tokeninfo_usdt_arb.tokenName,
         tokeninfo_usdt_arb.mainAddress,
       );
     });
@@ -243,9 +215,6 @@ describe('Factory.spec.ts', () => {
           '0x0000000000000000000000000000000000000000',
         );
         expect(main_eth.tokenPresion).equal('18');
-        expect(main_eth.tokenName).equal(
-          ethers.utils.defaultAbiCoder.encode(['string'], ['ETH']),
-        );
         expect(main_eth.mainTokenAddress).equal(
           '0x0000000000000000000000000000000000000000',
         );
@@ -260,9 +229,6 @@ describe('Factory.spec.ts', () => {
           '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
         );
         expect(main_usdc.tokenPresion).equal('6');
-        expect(main_usdc.tokenName).equal(
-          ethers.utils.defaultAbiCoder.encode(['string'], ['USDC']),
-        );
         expect(main_usdc.mainTokenAddress.toLowerCase()).equal(
           '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
         );
@@ -277,9 +243,6 @@ describe('Factory.spec.ts', () => {
           '0xdac17f958d2ee523a2206206994597c13d831ec7',
         );
         expect(main_usdt.tokenPresion).equal('6');
-        expect(main_usdt.tokenName.toLowerCase()).equal(
-          ethers.utils.defaultAbiCoder.encode(['string'], ['USDT']),
-        );
         expect(main_usdt.mainTokenAddress.toLowerCase()).equal(
           '0xdac17f958d2ee523a2206206994597c13d831ec7',
         );
@@ -294,9 +257,6 @@ describe('Factory.spec.ts', () => {
           '0x0000000000000000000000000000000000000000',
         );
         expect(ar_eth.tokenPresion).equal('18');
-        expect(ar_eth.tokenName).equal(
-          ethers.utils.defaultAbiCoder.encode(['string'], ['ETH']),
-        );
         expect(ar_eth.mainTokenAddress).equal(
           '0x0000000000000000000000000000000000000000',
         );
@@ -311,9 +271,6 @@ describe('Factory.spec.ts', () => {
           '0xff970a61a04b1ca14834a43f5de4533ebddb5cc8',
         );
         expect(ar_usdc.tokenPresion).equal('6');
-        expect(ar_usdc.tokenName).equal(
-          ethers.utils.defaultAbiCoder.encode(['string'], ['USDC']),
-        );
         expect(ar_usdc.mainTokenAddress.toLowerCase()).equal(
           '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
         );
@@ -329,9 +286,6 @@ describe('Factory.spec.ts', () => {
           '0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9',
         );
         expect(ar_usdt.tokenPresion).equal('6');
-        expect(ar_usdt.tokenName).equal(
-          ethers.utils.defaultAbiCoder.encode(['string'], ['USDT']),
-        );
         expect(ar_usdt.mainTokenAddress.toLowerCase()).equal(
           '0xdac17f958d2ee523a2206206994597c13d831ec7',
         );
@@ -341,8 +295,7 @@ describe('Factory.spec.ts', () => {
 
   describe('Factory_CREATE_MDC', () => {
     it('CREATE_MDC', async () => {
-      const mdcAddress = await userFactory.createMaker();
-      console.log('mdcAddress =', mdcAddress);
+      await userFactory.createMaker();
     });
   });
 });
