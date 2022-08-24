@@ -27,12 +27,15 @@ library OperationsLib {
     }
 
     struct txInfo {
+        uint256 chainID;
+        bytes32 txHash;
+        bytes32 lpid;
         address sourceAddress;
         address destAddress;
-        address tokenName;
-        address tokenAmount;
-        address nonce;
-        address gas;
+        address tokenAddress;
+        uint256 amount;
+        uint256 nonce;
+        uint256 timestamp;
     }
 
     struct lpInfo {
@@ -112,6 +115,20 @@ library OperationsLib {
                 )
             );
     }
+
+    function getChanllengeID(txInfo memory _txinfo) internal pure returns (bytes32) {
+        return
+            keccak256(
+                abi.encodePacked(
+                    _txinfo.lpid,
+                    _txinfo.sourceAddress,
+                    _txinfo.destAddress,
+                    _txinfo.amount,
+                    _txinfo.nonce
+                )
+            );
+    }
+
     // function addressToDepostContract(address maker)
     //     public
     //     returns (address depostContract)

@@ -23,6 +23,11 @@ contract ORManagerFactory is IORManagerFactory, ORPairManager, Ownable {
         return true;
     }
 
+    function getSPV() external view returns (address) {
+        require(spv != address(0), "SPV_NOT_INSTALL");
+        return spv;
+    }
+
     function setEBC(address ebcAddress) external onlyOwner returns (bool) {
         // require(Address.isContract(ebcAddress) == true, "SETEBC_INVALIDATEADDRESS");
         ebcPair[ebcids++] = ebcAddress;

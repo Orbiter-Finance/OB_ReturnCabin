@@ -40,45 +40,49 @@ contract ORSpv is IORSpv, Ownable {
     /// @param _txInfo User transaction object
     /// @param _proof Transaction proof path
     /// @return Exist or fail to verify
-    function verifyUserTxProof(SpvLib.Transaction calldata _txInfo, bytes32[] calldata _proof)
+    function verifyUserTxProof(OperationsLib.txInfo calldata _txInfo, bytes32[] calldata _proof)
         public
         view
         returns (bool)
     {
         bytes32 _leaf = keccak256(
             abi.encodePacked(
-                _txInfo.chain,
-                _txInfo.id,
-                _txInfo.from,
-                _txInfo.to,
+                _txInfo.lpid,
+                _txInfo.chainID,
+                _txInfo.txHash,
+                _txInfo.sourceAddress,
+                _txInfo.destAddress,
                 _txInfo.nonce,
-                _txInfo.value,
-                _txInfo.token
+                _txInfo.amount,
+                _txInfo.tokenAddress,
+                _txInfo.timestamp
             )
         );
-        return SpvLib.verify(userTxTree[_txInfo.chain], _leaf, _proof);
+        return SpvLib.verify(userTxTree[_txInfo.chainID], _leaf, _proof);
     }
 
     /// @notice List of merchant transactions with delayed payment
     /// @param _txInfo User transaction object
     /// @param _proof Transaction proof path
     /// @return Exist or fail to verify
-    function verifyMakerTxProof(SpvLib.Transaction calldata _txInfo, bytes32[] calldata _proof)
+    function verifyMakerTxProof(OperationsLib.txInfo calldata _txInfo, bytes32[] calldata _proof)
         public
         view
         returns (bool)
     {
         bytes32 _leaf = keccak256(
             abi.encodePacked(
-                _txInfo.chain,
-                _txInfo.id,
-                _txInfo.from,
-                _txInfo.to,
+                _txInfo.lpid,
+                _txInfo.chainID,
+                _txInfo.txHash,
+                _txInfo.sourceAddress,
+                _txInfo.destAddress,
                 _txInfo.nonce,
-                _txInfo.value,
-                _txInfo.token
+                _txInfo.amount,
+                _txInfo.tokenAddress,
+                _txInfo.timestamp
             )
         );
-        return SpvLib.verify(makerTxTree[_txInfo.chain], _leaf, _proof);
+        return SpvLib.verify(makerTxTree[_txInfo.chainID], _leaf, _proof);
     }
 }

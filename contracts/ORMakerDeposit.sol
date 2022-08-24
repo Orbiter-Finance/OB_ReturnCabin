@@ -13,7 +13,7 @@ import "./interface/IORSpv.sol";
 contract ORMakerDeposit is IORMakerDeposit, Ownable {
     address _owner;
     address _managerAddress;
-    IORSpv public _spv;
+
     // lpid->lpPairInfo
     mapping(bytes32 => OperationsLib.lpPairInfo) public lpInfo;
 
@@ -61,6 +61,12 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
     {
         OperationsLib.tokenInfo memory depositToken = getDepositTokenInfo(_lpinfo);
         return chainDeposit[_lpinfo.sourceChain][depositToken.mainTokenAddress];
+    }
+
+    function getSpvAddress() internal view returns (address) {
+        address spvAddress = IORManagerFactory(_managerAddress).getSPV();
+        require(spvAddress != address(0), "SPV_NOT_INSTALL");
+        return spvAddress;
     }
 
     function LPAction(
@@ -186,23 +192,31 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
         OperationsLib.lpInfo memory _lpinfo,
         uint256 stopTime,
         OperationsLib.txInfo memory _txinfo,
-        bytes memory _lpProof,
-        bytes memory midProof,
-        bytes memory _proof
+        bytes32[] memory _lpProof,
+        bytes32[] memory _midProof,
+        bytes32[] memory _txproof
     ) external returns (bool) {
+        address spvAddress = getSpvAddress();
+        bytes32 lpid = OperationsLib.getLpID(_lpinfo);
         //1. txinfo is already spv
-
-        //2. txinfo unChanllenge
-        bytes32 chanllengeID = keccak256(
-            abi.encodePacked(
-                _txinfo.sourceAddress,
-                _txinfo.destAddress,
-                _txinfo.tokenName,
-                _txinfo.tokenAmount,
-                _txinfo.nonce,
-                _txinfo.gas
-            )
-        );
+        bool txVerify = IORSpv(spvAddress).verifyUserTxProof(_txinfo, _txproof);
+        require(txVerify, "UCE_1");
+        require(_lpinfo.sourceChain == _txinfo.chainID, "UCE_2");
+        require(_lpinfo.sourceTAddress == _txinfo.tokenAddress, "UCE_3");
+        require(_txinfo.destAddress == _owner, "UCE_4");
+        require(_txinfo.sourceAddress == msg.sender, "UCE_5");
+        require(_txinfo.timestamp > _lpinfo.startTime && _txinfo.timestamp < stopTime, "UCE_6");
+        require(lpid == _txinfo.lpid, "UCE_7");
+        //2. lpinfo is already proof
+        bytes32 lp_leaf = OperationsLib.getLpFullHash(_lpinfo);
+        bool lpVerify = SpvLib.verify(lpInfo[lpid].LPRootHash, lp_leaf, _lpProof);
+        require(lpVerify, "UCE_8");
+        //3. stoptime & mid is already proof
+        bytes32 mid_leaf = keccak256(abi.encodePacked(lp_leaf, keccak256(abi.encodePacked(stopTime))));
+        bool midVerify = SpvLib.verify(lpInfo[lpid].LPRootHash, mid_leaf, _midProof);
+        require(midVerify, "UCE_9");
+        //3. txinfo unChanllenge
+        bytes32 chanllengeID = OperationsLib.getChanllengeID(_txinfo);
         require(chanllengeInfos[chanllengeID].chanllengeState == 0, "USERCHANLLENGE_USED");
         //3. get response changellengeinfo
         bytes32 responseInfoHash = "000000000";
@@ -224,16 +238,7 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
         OperationsLib.txInfo memory _makerTx,
         bytes memory proof
     ) external returns (bool) {
-        bytes32 chanllengeID = keccak256(
-            abi.encodePacked(
-                _userTx.sourceAddress,
-                _userTx.destAddress,
-                _userTx.tokenName,
-                _userTx.tokenAmount,
-                _userTx.nonce,
-                _userTx.gas
-            )
-        );
+        bytes32 chanllengeID = OperationsLib.getChanllengeID(_userTx);
         require(chanllengeInfos[chanllengeID].chanllengeState == 1, "MAKERCHANLLENGE_WATTINGFORANSWER");
         bytes32 makerResponse = "000000000";
         require(chanllengeInfos[chanllengeID].responseTxinfo == makerResponse, "MAKERCHANLLENGE_UNMATCH");

@@ -9,6 +9,8 @@ interface IORManagerFactory {
 
     function setSPV(address spvAddress) external returns (bool);
 
+    function getSPV() external view returns (address);
+
     function setEBC(address ebcAddress) external returns (bool);
 
     function getEBC(uint256 ebcid) external returns (address);
