@@ -22,6 +22,8 @@ interface IORMakerDeposit {
         OperationsLib.lpInfo lpinfo
     );
 
+    function idleAmount(address tokenAddress) external view returns (uint256);
+
     function LPAction(
         OperationsLib.lpInfo memory _lpinfo,
         bytes32[] memory proof,

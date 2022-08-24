@@ -26,13 +26,29 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
     //usedDeposit
     mapping(address => uint256) usedDeposit;
 
+    // chanllenge pleged eth amount
+    uint256 chanllengePleged;
+
     constructor(address managerAddress) payable {
         _managerAddress = managerAddress;
         emit MakerContract(_owner, address(this));
     }
 
+    function idleAmount(address tokenAddress) public view returns (uint256) {
+        uint256 balance = 0;
+        if (tokenAddress != address(0)) {
+            IERC20 liquidityToken = IERC20(tokenAddress);
+            balance = liquidityToken.balanceOf(address(this));
+        } else {
+            balance = address(this).balance;
+        }
+        uint256 idleamount = balance - usedDeposit[tokenAddress] - chanllengePleged;
+        return idleamount;
+    }
+
     function getDepositTokenInfo(OperationsLib.lpInfo memory _lpinfo)
         internal
+        view
         returns (OperationsLib.tokenInfo memory)
     {
         return IORManagerFactory(_managerAddress).getTokenInfo(_lpinfo.sourceChain, _lpinfo.sourceTAddress);
@@ -40,6 +56,7 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
 
     function getChainDepositInfo(OperationsLib.lpInfo memory _lpinfo)
         internal
+        view
         returns (OperationsLib.chainDeposit memory)
     {
         OperationsLib.tokenInfo memory depositToken = getDepositTokenInfo(_lpinfo);
@@ -71,16 +88,13 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
         lpInfo[lpid].startTime = block.timestamp;
 
         if (needDepositAmount > depositInfo.depositAmount) {
-            uint256 balance = 0;
-            if (depositToken.mainTokenAddress != address(0)) {
-                IERC20 liquidityToken = IERC20(depositToken.mainTokenAddress);
-                balance = liquidityToken.balanceOf(address(this));
-            } else {
-                balance = address(this).balance;
+            uint256 unUsedAmount = idleAmount(depositToken.mainTokenAddress);
+            if (unUsedAmount < needDepositAmount - depositInfo.depositAmount) {
+                require(
+                    unUsedAmount + msg.value > needDepositAmount - depositInfo.depositAmount,
+                    "LPACTION_INSUFFICIENT_AMOUNT"
+                );
             }
-            uint256 unUsedAmount = balance - usedDeposit[depositToken.mainTokenAddress];
-            // TODO
-            require(unUsedAmount > needDepositAmount - depositInfo.depositAmount, "LPACTION_INSUFFICIENT_AMOUNT");
             depositInfo.depositAmount = needDepositAmount;
         }
         depositInfo.useLimit++;
@@ -155,21 +169,12 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
     // withDrawAssert()
     function withDrawAssert(uint256 amount, address tokenAddress) external onlyOwner {
         require(amount != 0, "WITHDRAW_ILLEGALAMOUNT");
-        uint256 balance = 0;
-        if (tokenAddress != address(0)) {
-            IERC20 Token = IERC20(tokenAddress);
-            balance = Token.balanceOf(address(this));
-        } else {
-            balance = address(this).balance;
-        }
-
-        uint256 unUsedAmount = balance - usedDeposit[tokenAddress];
+        uint256 unUsedAmount = idleAmount(tokenAddress);
         require(amount < unUsedAmount, "WITHDRAW_INSUFFICIENT_AMOUNT");
-
         if (tokenAddress != address(0)) {
             IERC20(tokenAddress).transfer(msg.sender, amount);
         } else {
-            payable(_owner).transfer(amount);
+            payable(msg.sender).transfer(amount);
         }
     }
 
