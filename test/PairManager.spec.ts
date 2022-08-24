@@ -6,6 +6,7 @@ import { expect } from 'chai';
 import { ORPairManager } from '../typechain-types/contracts/ORPairManager';
 import { getLpID } from './lib/PairManager';
 import { pairList } from './lib/Config';
+import { clone } from 'lodash';
 const { keccak256 } = ethers.utils;
 describe('PairManager.spec', () => {
   let pairManagerContrct: ORPairManager;
@@ -41,25 +42,18 @@ describe('PairManager.spec', () => {
     const proof = tree.getHexProof(leafs[0]);
     // console.log('proof:', proof);
     // const proofFlags = tree.getProofFlags(leaves, proof);
-    const newPair = [
-      {
-        sourceChain: 1,
-        destChain: 13,
-        sourceToken: '0x0000000000000000000000000000000000000000',
-        destToken: '0x0000000000000000000000000000000000000000',
-        ebcid: '0x0000000000000000000000000000000000000001',
-      },
-    ];
+    const newPair = clone(pairList[0]);
+    newPair.ebcid = '0x0000000000000000000000000000000000000001';
     const result = await pairManagerContrct.updatePair(
       leafs[0],
       proof,
-      newPair[0],
+      newPair,
     );
     await expect(result)
       .to.emit(pairManagerContrct, 'PairLogEvent')
       .withArgs(2, anyValue);
     const newPairList = _.clone(pairList);
-    newPairList[0] = newPair[0];
+    newPairList[0] = newPair;
     const newTree = new MerkleTree(newPairList.map(getLpID), keccak256, {
       sort: true,
     });
@@ -74,8 +68,8 @@ describe('PairManager.spec', () => {
       {
         sourceChain: 1,
         destChain: 13,
-        sourceToken: '0x0000000000000000000000000000000000000000',
-        destToken: '0x0000000000000000000000000000000000000000',
+        sourceTAddress: '0x0000000000000000000000000000000000000000',
+        destTAddress: '0x0000000000000000000000000000000000000000',
         ebcid: '0x0000000000000000000000000000000000000001',
       },
     ];
@@ -101,8 +95,8 @@ describe('PairManager.spec', () => {
     const lpId = getLpID({
       sourceChain: 99,
       destChain: 99,
-      sourceToken: '0x0000000000000000000000000000000000000000',
-      destToken: '0x0000000000000000000000000000000000000000',
+      sourceTAddress: '0x0000000000000000000000000000000000000000',
+      destTAddress: '0x0000000000000000000000000000000000000000',
       ebcid: '0x0000000000000000000000000000000000000000',
     });
     const proof = tree.getHexProof(lpId);

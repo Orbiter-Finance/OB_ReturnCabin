@@ -16,7 +16,8 @@ describe('MakerDeposit.test.ts', () => {
 
   before(getFactoryInfo);
 
-  it('Factory_EBC_TEST', () => {
+  it('LPAction', () => {
     console.log('test', mdc.address);
+    // mdc.LPAction({});
   });
 });

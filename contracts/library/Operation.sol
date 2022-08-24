@@ -6,8 +6,8 @@ library OperationsLib {
     struct pairChainInfo {
         uint256 sourceChain;
         uint256 destChain;
-        address sourceToken;
-        address destToken;
+        address sourceTAddress;
+        address destTAddress;
         uint256 ebcid;
     }
 
@@ -76,8 +76,8 @@ library OperationsLib {
                 abi.encodePacked(
                     _lpinfo.sourceChain,
                     _lpinfo.destChain,
-                    _lpinfo.sourceToken,
-                    _lpinfo.destToken,
+                    _lpinfo.sourceTAddress,
+                    _lpinfo.destTAddress,
                     _lpinfo.ebcid
                 )
             );
