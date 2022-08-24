@@ -41,22 +41,22 @@ contract ORProtocalV1 is IORProtocal {
     }
 
     function checkUserChallenge(
-        Operations.lpInfo memory,
-        Operations.txInfo memory,
+        OperationsLib.lpInfo memory,
+        OperationsLib.txInfo memory,
         bytes memory proof
     ) external returns (bool) {
         return true;
     }
 
     function checkMakerChallenge(
-        Operations.txInfo memory,
-        Operations.txInfo memory,
+        OperationsLib.txInfo memory,
+        OperationsLib.txInfo memory,
         bytes memory proof
     ) external returns (bool) {
         return true;
     }
 
-    function userChanllengeWithDraw(Operations.txInfo memory userInfo)
+    function userChanllengeWithDraw(OperationsLib.txInfo memory userInfo)
         external
         returns (
             bool,

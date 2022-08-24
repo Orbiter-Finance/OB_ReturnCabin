@@ -19,18 +19,18 @@ interface IORProtocal {
     function getStopDealyTime(uint256 chainID) external view returns (uint256);
 
     function checkUserChallenge(
-        Operations.lpInfo memory,
-        Operations.txInfo memory,
+        OperationsLib.lpInfo memory,
+        OperationsLib.txInfo memory,
         bytes memory proof
     ) external returns (bool);
 
     function checkMakerChallenge(
-        Operations.txInfo memory,
-        Operations.txInfo memory,
+        OperationsLib.txInfo memory,
+        OperationsLib.txInfo memory,
         bytes memory proof
     ) external returns (bool);
 
-    function userChanllengeWithDraw(Operations.txInfo memory userInfo)
+    function userChanllengeWithDraw(OperationsLib.txInfo memory userInfo)
         external
         returns (
             bool,

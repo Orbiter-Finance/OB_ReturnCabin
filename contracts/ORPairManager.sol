@@ -7,7 +7,7 @@ import "./interface/IORPairManager.sol";
 contract ORPairManager is IORPairManager {
     bytes32 public pairsHash;
 
-    function initializePair(bytes32 _pairsHash, Operations.pairChainInfo[] memory pairs) external {
+    function initializePair(bytes32 _pairsHash, OperationsLib.pairChainInfo[] memory pairs) external {
         pairsHash = _pairsHash;
         emit PairLogEvent(PairEventType.INIT, pairs);
     }
@@ -16,14 +16,14 @@ contract ORPairManager is IORPairManager {
         bytes32[] memory leafs,
         bytes32[] memory proof,
         bool[] memory proofFlag,
-        Operations.pairChainInfo[] memory newPairs
+        OperationsLib.pairChainInfo[] memory newPairs
     ) external returns (bytes32) {
         require(leafs.length == newPairs.length, "ArrayLengthInconsistent");
         bool isVerify = MerkleProof.multiProofVerify(proof, proofFlag, pairsHash, leafs);
         require(isVerify, "VerifyFailed");
         bytes32[] memory newLeafs = new bytes32[](leafs.length);
         for (uint256 i = 0; i < newPairs.length; i++) {
-            bytes32 pairHash = Operations.getLpID(newPairs[i]);
+            bytes32 pairHash = OperationsLib.getLpID(newPairs[i]);
             newLeafs[i] = pairHash;
         }
         bytes32 newRoot = MerkleProof.processMultiProof(proof, proofFlag, newLeafs);
@@ -32,12 +32,12 @@ contract ORPairManager is IORPairManager {
         return pairsHash;
     }
 
-    function deletePair(bytes32 _pairsHash, Operations.pairChainInfo[] memory pairs) external {
+    function deletePair(bytes32 _pairsHash, OperationsLib.pairChainInfo[] memory pairs) external {
         pairsHash = _pairsHash;
         emit PairLogEvent(PairEventType.DELETE, pairs);
     }
 
-    function createPair(bytes32 _pairsHash, Operations.pairChainInfo[] memory pairs) external {
+    function createPair(bytes32 _pairsHash, OperationsLib.pairChainInfo[] memory pairs) external {
         pairsHash = _pairsHash;
         emit PairLogEvent(PairEventType.CREATE, pairs);
     }

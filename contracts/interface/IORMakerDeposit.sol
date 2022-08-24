@@ -12,34 +12,34 @@ interface IORMakerDeposit {
         STOP
     }
     event MakerContract(address indexed maker, address indexed mdc);
-    event AddPariChain(address indexed tokenAddress, Operations.pairChainInfo pairChain);
-    event AddPariChains(address indexed tokenAddress, Operations.pairChainInfo[] pairChains);
+    event AddPariChain(address indexed tokenAddress, OperationsLib.pairChainInfo pairChain);
+    event AddPariChains(address indexed tokenAddress, OperationsLib.pairChainInfo[] pairChains);
     event LogLpState(bytes32 indexed lpid, lpState indexed state, uint256 time);
     event LogLpInfo(
         bytes32 indexed lpid,
         uint256 indexed sourceChain,
         uint256 indexed destChain,
-        Operations.lpInfo lpinfo
+        OperationsLib.lpInfo lpinfo
     );
 
     function LPAction(
-        Operations.lpInfo memory _lpinfo,
+        OperationsLib.lpInfo memory _lpinfo,
         bytes32[] memory proof,
         bytes32 rootHash
     ) external payable;
 
     // LPPause
-    function LPPause(Operations.lpInfo memory _lpinfo, bytes32 rootHash) external;
+    function LPPause(OperationsLib.lpInfo memory _lpinfo, bytes32 rootHash) external;
 
     // LPStop
-    function LPStop(Operations.lpInfo memory) external;
+    function LPStop(OperationsLib.lpInfo memory) external;
 
     // LPUpdate
     function LPUpdate(
         bytes32 leaf,
         bytes32[] calldata proof,
         bool[] calldata proofFlag,
-        Operations.lpInfo calldata _lpinfo
+        OperationsLib.lpInfo calldata _lpinfo
     ) external;
 
     // withDrawAssert()
@@ -47,18 +47,18 @@ interface IORMakerDeposit {
 
     // userChanllenge
     function userChanllenge(
-        Operations.lpInfo memory,
-        Operations.txInfo memory,
+        OperationsLib.lpInfo memory,
+        OperationsLib.txInfo memory,
         bytes memory proof
     ) external returns (bool);
 
     // userWithDraw
-    function userWithDraw(Operations.txInfo memory) external returns (bool);
+    function userWithDraw(OperationsLib.txInfo memory) external returns (bool);
 
     // makerChanllenger
     function makerChanllenger(
-        Operations.txInfo memory,
-        Operations.txInfo memory,
+        OperationsLib.txInfo memory,
+        OperationsLib.txInfo memory,
         bytes memory
     ) external returns (bool);
 }
