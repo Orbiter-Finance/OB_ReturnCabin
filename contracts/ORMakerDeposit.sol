@@ -14,13 +14,13 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
     address _managerAddress;
     IORSpv _spv;
     // lpid->lpPairInfo
-    mapping(bytes32 => Operations.lpPairInfo) public lpInfo;
+    mapping(bytes32 => OperationsLib.lpPairInfo) public lpInfo;
 
     // supportChain->supportToken->chainDepost
-    mapping(uint256 => mapping(address => Operations.chainDeposit)) public chainDeposit;
+    mapping(uint256 => mapping(address => OperationsLib.chainDeposit)) public chainDeposit;
 
     // chanllengeInfos
-    mapping(bytes32 => Operations.chanllengeInfo) chanllengeInfos;
+    mapping(bytes32 => OperationsLib.chanllengeInfo) chanllengeInfos;
 
     //usedDeposit
     mapping(address => uint256) usedDeposit;
@@ -30,17 +30,23 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
         emit MakerContract(_owner, address(this));
     }
 
-    function getDepositTokenInfo(Operations.lpInfo memory _lpinfo) internal returns (Operations.tokenInfo memory) {
+    function getDepositTokenInfo(OperationsLib.lpInfo memory _lpinfo)
+        internal
+        returns (OperationsLib.tokenInfo memory)
+    {
         return IORManagerFactory(_managerAddress).getTokenInfo(_lpinfo.sourceChain, _lpinfo.sourceTAddress);
     }
 
-    function getChainDepositInfo(Operations.lpInfo memory _lpinfo) internal returns (Operations.chainDeposit memory) {
-        Operations.tokenInfo memory depositToken = getDepositTokenInfo(_lpinfo);
+    function getChainDepositInfo(OperationsLib.lpInfo memory _lpinfo)
+        internal
+        returns (OperationsLib.chainDeposit memory)
+    {
+        OperationsLib.tokenInfo memory depositToken = getDepositTokenInfo(_lpinfo);
         return chainDeposit[_lpinfo.sourceChain][depositToken.mainTokenAddress];
     }
 
-    function LPAction(Operations.lpInfo memory _lpinfo) external payable {
-        bytes32 lpid = Operations.getLpID(_lpinfo);
+    function LPAction(OperationsLib.lpInfo memory _lpinfo) external payable {
+        bytes32 lpid = OperationsLib.getLpID(_lpinfo);
         // first init lpPair
         if (lpInfo[lpid].isUsed == false) {
             bytes32 rootHash = keccak256(
@@ -64,14 +70,14 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
 
         require(lpInfo[lpid].startTime == 0 && lpInfo[lpid].stopTime == 0, "LPACTION_LPID_UNSTOP");
 
-        Operations.chainInfo memory souceChainInfo = IORManagerFactory(_managerAddress).getChainInfoByChainID(
+        OperationsLib.chainInfo memory souceChainInfo = IORManagerFactory(_managerAddress).getChainInfoByChainID(
             _lpinfo.sourceChain
         );
         uint256 needDepositAmount = souceChainInfo.batchLimit * _lpinfo.maxPrice;
 
-        Operations.tokenInfo memory depositToken = getDepositTokenInfo(_lpinfo);
+        OperationsLib.tokenInfo memory depositToken = getDepositTokenInfo(_lpinfo);
 
-        Operations.chainDeposit memory depositInfo = getChainDepositInfo(_lpinfo);
+        OperationsLib.chainDeposit memory depositInfo = getChainDepositInfo(_lpinfo);
 
         lpInfo[lpid].startTime = block.timestamp;
 
@@ -94,8 +100,8 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
     }
 
     // LPPause
-    function LPPause(Operations.lpInfo memory _lpinfo) external {
-        bytes32 lpid = Operations.getLpID(_lpinfo);
+    function LPPause(OperationsLib.lpInfo memory _lpinfo) external {
+        bytes32 lpid = OperationsLib.getLpID(_lpinfo);
 
         require(lpInfo[lpid].isUsed == true, "LPPAUSE_LPID_UNUSED");
         require(lpInfo[lpid].startTime != 0 && lpInfo[lpid].stopTime == 0, "LPPAUSE_LPID_UNACTION");
@@ -111,16 +117,16 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
     }
 
     // LPStop
-    function LPStop(Operations.lpInfo memory _lpinfo) external {
-        bytes32 lpid = Operations.getLpID(_lpinfo);
+    function LPStop(OperationsLib.lpInfo memory _lpinfo) external {
+        bytes32 lpid = OperationsLib.getLpID(_lpinfo);
 
         require(lpInfo[lpid].isUsed == true, "LPSTOP_LPID_UNUSED");
         require(lpInfo[lpid].startTime == 0 && lpInfo[lpid].stopTime != 0, "LPSTOP_LPID_UNPAUSE");
         require(block.timestamp > lpInfo[lpid].stopTime, "LPSTOP_LPID_TIMEUNABLE");
 
-        Operations.tokenInfo memory depositToken = getDepositTokenInfo(_lpinfo);
+        OperationsLib.tokenInfo memory depositToken = getDepositTokenInfo(_lpinfo);
 
-        Operations.chainDeposit memory depositInfo = getChainDepositInfo(_lpinfo);
+        OperationsLib.chainDeposit memory depositInfo = getChainDepositInfo(_lpinfo);
 
         depositInfo.useLimit--;
 
@@ -135,11 +141,11 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
 
     // LPUpdate
     function LPUpdate(
-        Operations.lpInfo memory _lpinfo,
+        OperationsLib.lpInfo memory _lpinfo,
         bytes32 proof,
         bool[] memory flag
     ) external {
-        bytes32 lpid = Operations.getLpID(_lpinfo);
+        bytes32 lpid = OperationsLib.getLpID(_lpinfo);
 
         require(lpInfo[lpid].isUsed == true, "LPUPDATE_LPID_UNUSED");
         require(lpInfo[lpid].startTime == 0 && lpInfo[lpid].stopTime == 0, "LPUPDATE_LPID_UNSTOP");
@@ -177,8 +183,8 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
 
     // userChanllenge
     function userChanllenge(
-        Operations.lpInfo memory _lpinfo,
-        Operations.txInfo memory _txinfo,
+        OperationsLib.lpInfo memory _lpinfo,
+        OperationsLib.txInfo memory _txinfo,
         bytes memory _proof
     ) external returns (bool) {
         //TODO
@@ -205,15 +211,15 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
     }
 
     // userWithDraw
-    function userWithDraw(Operations.txInfo memory userInfo) external returns (bool) {
+    function userWithDraw(OperationsLib.txInfo memory userInfo) external returns (bool) {
         console.log(userInfo.sourceAddress);
         return true;
     }
 
     // makerChanllenger
     function makerChanllenger(
-        Operations.txInfo memory _userTx,
-        Operations.txInfo memory _makerTx,
+        OperationsLib.txInfo memory _userTx,
+        OperationsLib.txInfo memory _makerTx,
         bytes memory proof
     ) external returns (bool) {
         bytes32 chanllengeID = keccak256(

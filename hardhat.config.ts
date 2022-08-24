@@ -7,10 +7,10 @@ const config: HardhatUserConfig = {
   // defaultNetwork: "ganache",
   networks: {
     hardhat: {
-      allowUnlimitedContractSize: false,
+      allowUnlimitedContractSize: true,
     },
     ganache: {
-      url: "http://127.0.0.1:7545"
+      url: 'http://127.0.0.1:7545',
     },
     mainnet: {
       url: `https://mainnet.infura.io/v3/${INFURA_API_KEY}`,

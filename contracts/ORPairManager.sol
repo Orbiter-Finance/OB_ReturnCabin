@@ -5,14 +5,14 @@ import "./interface/IORPairManager.sol";
 
 contract ORPairManager is IORPairManager {
     bytes32 public pairsHash;
-    event InitializePair(Operations.pairChainInfo[]);
-    event ChangePair(string index, Operations.pairChainInfo[]);
+    event InitializePair(OperationsLib.pairChainInfo[]);
+    event ChangePair(string index, OperationsLib.pairChainInfo[]);
 
-    function initializePair(bytes32 _pairsHash, Operations.pairChainInfo[] memory _pairs) external {
+    function initializePair(bytes32 _pairsHash, OperationsLib.pairChainInfo[] memory _pairs) external {
         pairsHash = _pairsHash;
         //  bytes32[] memory newLeafs = new bytes32[](_pairs.length);
         // for (uint256 i = 0; i < _pairs.length; i++) {
-        //     bytes32 pairHash = Operations.pairToHash(_pairs[i]);
+        //     bytes32 pairHash = OperationsLib.pairToHash(_pairs[i]);
         //     newLeafs[i] = pairHash;
         // }
         emit InitializePair(_pairs);
@@ -22,14 +22,14 @@ contract ORPairManager is IORPairManager {
         bytes32[] memory leafs,
         bytes32[] memory proofs,
         bool[] memory proofFlag,
-        Operations.pairChainInfo[] memory newPairs
+        OperationsLib.pairChainInfo[] memory newPairs
     ) external returns (bytes32) {
         require(leafs.length == newPairs.length, "Array length is inconsistent");
         bool isVerify = MerkleProof.multiProofVerify(proofs, proofFlag, pairsHash, leafs);
         require(isVerify, "Verify failed");
         bytes32[] memory newLeafs = new bytes32[](leafs.length);
         for (uint256 i = 0; i < newPairs.length; i++) {
-            bytes32 pairHash = Operations.getLpID(newPairs[i]);
+            bytes32 pairHash = OperationsLib.getLpID(newPairs[i]);
             newLeafs[i] = pairHash;
         }
         bytes32 newRoot = MerkleProof.processMultiProof(proofs, proofFlag, newLeafs);
@@ -38,12 +38,12 @@ contract ORPairManager is IORPairManager {
         return pairsHash;
     }
 
-    function removePair(bytes32 _pairsHash, Operations.pairChainInfo[] memory _pairs) external {
+    function removePair(bytes32 _pairsHash, OperationsLib.pairChainInfo[] memory _pairs) external {
         pairsHash = _pairsHash;
         emit ChangePair("Remove", _pairs);
     }
 
-    function createPair(bytes32 _pairsHash, Operations.pairChainInfo[] memory _pairs) external {
+    function createPair(bytes32 _pairsHash, OperationsLib.pairChainInfo[] memory _pairs) external {
         pairsHash = _pairsHash;
         emit ChangePair("Create", _pairs);
     }

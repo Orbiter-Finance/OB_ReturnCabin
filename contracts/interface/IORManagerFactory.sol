@@ -15,24 +15,24 @@ interface IORManagerFactory {
         uint256 batchLimit,
         uint256 maxDisputeTime,
         address[] memory tokenList
-        // Operations.tokenInfo[] memory tokenList
+        // OperationsLib.tokenInfo[] memory tokenList
     ) external;
 
     function setTokenInfo(
         uint256,
         address,
         uint256,
-        bytes8,
+        bytes memory,
         address
     ) external returns (bool);
 
-    function getTokenInfo(uint256, address) external view returns (Operations.tokenInfo memory);
+    function getTokenInfo(uint256, address) external view returns (OperationsLib.tokenInfo memory);
 
     function getEBC(uint256 ebcid) external returns (address);
 
     function updateEBC(uint256 ebcid, address ebcAddress) external;
 
-    function getChainInfoByChainID(uint256 chainID) external returns (Operations.chainInfo memory);
+    function getChainInfoByChainID(uint256 chainID) external returns (OperationsLib.chainInfo memory);
 
     function createMaker() external returns (address);
 }

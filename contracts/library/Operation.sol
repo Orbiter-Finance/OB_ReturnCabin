@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
-library Operations {
+library OperationsLib {
     /// pairChainInfo
     struct pairChainInfo {
         uint256 sourceChain;
@@ -12,8 +12,9 @@ library Operations {
     }
 
     struct tokenInfo {
+        uint256 chainID;
         address tokenAddress;
-        bytes8 tokenName;
+        bytes tokenName;
         uint256 tokenPresion;
         address mainTokenAddress;
     }
@@ -47,7 +48,7 @@ library Operations {
         uint256 maxPrice;
         uint256 gasFee;
         uint256 tradingFee;
-        bytes8 tokenName;
+        bytes tokenName;
     }
 
     struct lpPairInfo {
