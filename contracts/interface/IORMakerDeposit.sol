@@ -2,6 +2,7 @@
 pragma solidity ^0.8.9;
 
 import "../library/Operation.sol";
+import "../library/Spv.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 interface IORMakerDeposit {
@@ -46,9 +47,9 @@ interface IORMakerDeposit {
         OperationsLib.lpInfo memory,
         uint256,
         OperationsLib.txInfo memory,
-        bytes memory,
-        bytes memory,
-        bytes memory
+        bytes32[] memory,
+        bytes32[] memory,
+        bytes32[] memory
     ) external returns (bool);
 
     // userWithDraw

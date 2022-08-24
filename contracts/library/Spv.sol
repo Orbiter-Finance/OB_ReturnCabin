@@ -1,27 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
+import "./Operation.sol";
 
 library SpvLib {
-    struct Transaction {
-        uint256 chain;
-        bytes32 id;
-        address from;
-        address to;
-        uint256 value;
-        address token;
-        uint256 nonce;
-    }
-
-    function calculationTxId(SpvLib.Transaction memory _txInfo) internal pure returns (bytes32 txid) {
+    function calculationTxId(OperationsLib.txInfo memory _txInfo) internal pure returns (bytes32 txid) {
         txid = keccak256(
             abi.encodePacked(
-                _txInfo.chain,
-                _txInfo.id,
-                _txInfo.from,
-                _txInfo.to,
+                _txInfo.chainID,
+                _txInfo.txHash,
+                _txInfo.lpid,
+                _txInfo.sourceAddress,
+                _txInfo.destAddress,
                 _txInfo.nonce,
-                _txInfo.value,
-                _txInfo.token
+                _txInfo.amount,
+                _txInfo.tokenAddress
             )
         );
     }
