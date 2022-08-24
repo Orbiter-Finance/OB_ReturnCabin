@@ -195,10 +195,10 @@ describe('ORSpv.spec.ts', () => {
       expect(result).true;
     });
     it('Contract VerifyProof non-existent', async () => {
-      const { hex: leafHash, leaf }: any = getLeaf(UserTxList[0]);
-      leaf.chain = '2';
+      const { hex: leafHash, leaf } = getLeaf(UserTxList[0]);
+      leaf.chainID = '2';
       const proof = userTxTree.getHexProof(leafHash);
-      const result = await spv.verifyUserTxProof(leaf, proof);
+      const result = await spv.verifyUserTxProof(<any>leaf, proof);
       expect(result).false;
     });
 
@@ -259,10 +259,10 @@ describe('ORSpv.spec.ts', () => {
       expect(result).true;
     });
     it('Contract VerifyProof non-existent', async () => {
-      const { hex: leafHash, leaf }: any = getLeaf(MakerTxList[0]);
-      leaf.chain = '2';
+      const { hex: leafHash, leaf } = getLeaf(MakerTxList[0]);
+      leaf.chainID = '2';
       const proof = makerTxTree.getHexProof(leafHash);
-      const result = await spv.verifyMakerTxProof(leaf, proof);
+      const result = await spv.verifyMakerTxProof(<any>leaf, proof);
       expect(result).false;
     });
   });
