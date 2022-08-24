@@ -14,13 +14,7 @@ interface IORMakerDeposit {
     event MakerContract(address indexed maker, address indexed mdc);
     event AddPariChain(address indexed tokenAddress, OperationsLib.pairChainInfo pairChain);
     event AddPariChains(address indexed tokenAddress, OperationsLib.pairChainInfo[] pairChains);
-    event LogLpState(bytes32 indexed lpid, lpState indexed state, uint256 time);
-    event LogLpInfo(
-        bytes32 indexed lpid,
-        uint256 indexed sourceChain,
-        uint256 indexed destChain,
-        OperationsLib.lpInfo lpinfo
-    );
+    event LogLpInfo(bytes32 indexed lpid, lpState indexed state, uint256 time, OperationsLib.lpInfo lpinfo);
 
     function idleAmount(address tokenAddress) external view returns (uint256);
 
@@ -50,8 +44,11 @@ interface IORMakerDeposit {
     // userChanllenge
     function userChanllenge(
         OperationsLib.lpInfo memory,
+        uint256,
         OperationsLib.txInfo memory,
-        bytes memory proof
+        bytes memory,
+        bytes memory,
+        bytes memory
     ) external returns (bool);
 
     // userWithDraw

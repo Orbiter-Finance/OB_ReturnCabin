@@ -86,6 +86,7 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
         OperationsLib.chainDeposit memory depositInfo = getChainDepositInfo(_lpinfo);
 
         lpInfo[lpid].startTime = block.timestamp;
+        _lpinfo.startTime = block.timestamp;
 
         if (needDepositAmount > depositInfo.depositAmount) {
             uint256 unUsedAmount = idleAmount(depositToken.mainTokenAddress);
@@ -98,8 +99,7 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
             depositInfo.depositAmount = needDepositAmount;
         }
         depositInfo.useLimit++;
-        emit LogLpState(lpid, lpState.ACTION, lpInfo[lpid].startTime);
-        emit LogLpInfo(lpid, _lpinfo.sourceChain, _lpinfo.destChain, _lpinfo);
+        emit LogLpInfo(lpid, lpState.ACTION, lpInfo[lpid].startTime, _lpinfo);
     }
 
     // LPPause
@@ -117,7 +117,7 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
         lpInfo[lpid].startTime = 0;
         lpInfo[lpid].LPRootHash = rootHash;
 
-        emit LogLpState(lpid, lpState.PAUSE, lpInfo[lpid].stopTime);
+        emit LogLpInfo(lpid, lpState.PAUSE, lpInfo[lpid].stopTime, _lpinfo);
     }
 
     // LPStop
@@ -138,8 +138,7 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
             usedDeposit[depositToken.mainTokenAddress] -= depositInfo.depositAmount;
             depositInfo.depositAmount = 0;
         }
-
-        emit LogLpState(lpid, lpState.STOP, 0);
+        emit LogLpInfo(lpid, lpState.STOP, 0, _lpinfo);
     }
 
     // LPUpdate
@@ -162,8 +161,8 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
         bytes32 newLpHash = OperationsLib.getLpFullHash(_lpinfo);
         bytes32 newRootHash = MerkleProof.processProofCalldata(proof, newLpHash);
         lpInfo[lpid].LPRootHash = newRootHash;
-        emit LogLpState(lpid, lpState.UPDATE, block.timestamp);
-        emit LogLpInfo(lpid, _lpinfo.sourceChain, _lpinfo.destChain, _lpinfo);
+
+        emit LogLpInfo(lpid, lpState.UPDATE, block.timestamp, _lpinfo);
     }
 
     // withDrawAssert()
@@ -179,13 +178,20 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
     }
 
     // userChanllenge
+
+    // _txinfo + _txProof
+    // _lpinfo + _lpProof
+    // _lpinfo + stopTime -> midHash + midProof
     function userChanllenge(
         OperationsLib.lpInfo memory _lpinfo,
+        uint256 stopTime,
         OperationsLib.txInfo memory _txinfo,
+        bytes memory _lpProof,
+        bytes memory midProof,
         bytes memory _proof
     ) external returns (bool) {
-        //TODO
         //1. txinfo is already spv
+
         //2. txinfo unChanllenge
         bytes32 chanllengeID = keccak256(
             abi.encodePacked(

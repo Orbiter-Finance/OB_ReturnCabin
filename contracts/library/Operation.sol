@@ -47,6 +47,7 @@ library OperationsLib {
         uint256 gasFee;
         uint256 tradingFee;
         bytes tokenName;
+        uint256 startTime;
     }
 
     struct lpPairInfo {
