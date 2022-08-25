@@ -27,6 +27,7 @@ describe('MakerDeposit.test.ts', () => {
 
   it('LPAction', async () => {
     const lpInfo = lpInfoList[0];
+    console.log(lpInfo);
     const lpId = getLpID(lpInfo);
     const proof = supportPairTree.getHexProof(lpId);
     const overrides = {
