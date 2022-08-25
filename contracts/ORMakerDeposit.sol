@@ -70,6 +70,7 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
     }
 
     function LPAction(
+        uint256 amount,
         OperationsLib.lpInfo memory _lpinfo,
         bytes32[] memory proof,
         bytes32 rootHash
@@ -98,9 +99,16 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
             uint256 unUsedAmount = idleAmount(depositToken.mainTokenAddress);
             if (unUsedAmount < needDepositAmount - depositInfo.depositAmount) {
                 require(
-                    unUsedAmount + msg.value > needDepositAmount - depositInfo.depositAmount,
+                    unUsedAmount + amount > needDepositAmount - depositInfo.depositAmount,
                     "LPACTION_INSUFFICIENT_AMOUNT"
                 );
+                if (depositToken.mainTokenAddress != address(0)) {
+                    uint256 allowance = IERC20(depositToken.mainTokenAddress).allowance(msg.sender, address(this));
+                    require(allowance >= amount, "Check the token allowance");
+                    IERC20(depositToken.mainTokenAddress).transferFrom(msg.sender, address(this), amount);
+                } else {
+                    require(msg.value >= amount, "Check the eth send");
+                }
             }
             depositInfo.depositAmount = needDepositAmount;
         }
@@ -195,7 +203,32 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
         bytes32[] memory _lpProof,
         bytes32[] memory _midProof,
         bytes32[] memory _txproof
-    ) external returns (bool) {
+    ) external payable {
+        require(userChanllengeAuthentication(_lpinfo, stopTime, _txinfo, _lpProof, _midProof, _txproof), "111");
+        //3. txinfo unChanllenge
+        bytes32 chanllengeID = OperationsLib.getChanllengeID(_txinfo);
+        require(chanllengeInfos[chanllengeID].chanllengeState == 0, "UCE_USED");
+        //3. get response changellengeinfo Todo
+        address ebcAddress = IORManagerFactory(_managerAddress).getEBC(_lpinfo.ebcid);
+        uint256 pledgeAmount = IORProtocal(ebcAddress).getChanllengePledgeAmount();
+        require(msg.value >= pledgeAmount, "UCE_PLEDGEAMOUNT");
+
+        bytes32 responseInfoHash = IORProtocal(ebcAddress).getResponseTxHash();
+        chanllengeInfos[chanllengeID].responseTxinfo = responseInfoHash;
+        chanllengeInfos[chanllengeID].pledgeAmount = pledgeAmount;
+        chanllengeInfos[chanllengeID].chanllengeState = 1;
+        chanllengeInfos[chanllengeID].startTime = block.timestamp;
+        emit LogChanllengeInfo(chanllengeID, chanllengeState.ACTION);
+    }
+
+    function userChanllengeAuthentication(
+        OperationsLib.lpInfo memory _lpinfo,
+        uint256 stopTime,
+        OperationsLib.txInfo memory _txinfo,
+        bytes32[] memory _lpProof,
+        bytes32[] memory _midProof,
+        bytes32[] memory _txproof
+    ) internal view returns (bool) {
         address spvAddress = getSpvAddress();
         bytes32 lpid = OperationsLib.getLpID(_lpinfo);
         //1. txinfo is already spv
@@ -215,35 +248,52 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
         bytes32 mid_leaf = keccak256(abi.encodePacked(lp_leaf, keccak256(abi.encodePacked(stopTime))));
         bool midVerify = SpvLib.verify(lpInfo[lpid].LPRootHash, mid_leaf, _midProof);
         require(midVerify, "UCE_9");
-        //3. txinfo unChanllenge
-        bytes32 chanllengeID = OperationsLib.getChanllengeID(_txinfo);
-        require(chanllengeInfos[chanllengeID].chanllengeState == 0, "USERCHANLLENGE_USED");
-        //3. get response changellengeinfo
-        bytes32 responseInfoHash = "000000000";
-        chanllengeInfos[chanllengeID].responseTxinfo = responseInfoHash;
-        chanllengeInfos[chanllengeID].chanllengeState = 1;
-        chanllengeInfos[chanllengeID].startTime = block.timestamp;
         return true;
     }
 
     // userWithDraw
-    function userWithDraw(OperationsLib.txInfo memory userInfo) external returns (bool) {
-        console.log(userInfo.sourceAddress);
-        return true;
+    function userWithDraw(OperationsLib.txInfo memory _userTx) external {
+        bytes32 chanllengeID = OperationsLib.getChanllengeID(_userTx);
+        require(chanllengeInfos[chanllengeID].chanllengeState == 2, "MC_WITHDRAW");
+        console.log(_userTx.sourceAddress);
+        emit LogChanllengeInfo(chanllengeID, chanllengeState.WITHDRAWED);
     }
 
     // makerChanllenger
     function makerChanllenger(
         OperationsLib.txInfo memory _userTx,
         OperationsLib.txInfo memory _makerTx,
-        bytes memory proof
-    ) external returns (bool) {
+        bytes32[] memory _makerProof
+    ) external {
         bytes32 chanllengeID = OperationsLib.getChanllengeID(_userTx);
-        require(chanllengeInfos[chanllengeID].chanllengeState == 1, "MAKERCHANLLENGE_WATTINGFORANSWER");
-        bytes32 makerResponse = "000000000";
-        require(chanllengeInfos[chanllengeID].responseTxinfo == makerResponse, "MAKERCHANLLENGE_UNMATCH");
+        require(chanllengeInfos[chanllengeID].chanllengeState == 1, "MC_ANSWER");
+        address spvAddress = getSpvAddress();
+        //1. _makerTx is already spv
+        bool txVerify = IORSpv(spvAddress).verifyUserTxProof(_makerTx, _makerProof);
+        require(txVerify, "MCE_UNVERIFY");
+        bytes32 makerResponse = keccak256(
+            abi.encodePacked(
+                _makerTx.lpid,
+                _makerTx.chainID,
+                _makerTx.txHash,
+                _makerTx.sourceAddress,
+                _makerTx.destAddress,
+                _makerTx.nonce,
+                _makerTx.amount,
+                _makerTx.tokenAddress
+                // _txInfo.timestamp
+            )
+        );
+        require(chanllengeInfos[chanllengeID].responseTxinfo == makerResponse, "MCE_UNMATCH");
+        OperationsLib.chainInfo memory souceChainInfo = IORManagerFactory(_managerAddress).getChainInfoByChainID(
+            _userTx.chainID
+        );
+        require(
+            _makerTx.timestamp - _userTx.timestamp > 0 &&
+                _makerTx.timestamp - _userTx.timestamp < souceChainInfo.maxDisputeTime,
+            "MCE_TIMEINVALIDATE"
+        );
         chanllengeInfos[chanllengeID].chanllengeState = 2;
-        console.logBytes(proof);
-        return true;
+        emit LogChanllengeInfo(chanllengeID, chanllengeState.RESPONSED);
     }
 }

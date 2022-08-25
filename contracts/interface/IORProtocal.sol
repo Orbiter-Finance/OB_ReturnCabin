@@ -4,6 +4,10 @@ pragma solidity ^0.8.9;
 import "../library/Operation.sol";
 
 interface IORProtocal {
+    function getResponseTxHash() external returns (bytes32);
+
+    function getChanllengePledgeAmount() external view returns (uint256);
+
     function isSupportChainID(uint256 chainID) external returns (bool);
 
     function getDeposit(uint256 chainid, uint256 oneMax) external returns (uint256);

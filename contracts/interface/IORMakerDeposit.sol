@@ -12,14 +12,23 @@ interface IORMakerDeposit {
         PAUSE,
         STOP
     }
+    enum chanllengeState {
+        ACTION,
+        RESPONSED,
+        WITHDRAWED
+    }
+
     event MakerContract(address indexed maker, address indexed mdc);
     event AddPariChain(address indexed tokenAddress, OperationsLib.pairChainInfo pairChain);
     event AddPariChains(address indexed tokenAddress, OperationsLib.pairChainInfo[] pairChains);
     event LogLpInfo(bytes32 indexed lpid, lpState indexed state, uint256 time, OperationsLib.lpInfo lpinfo);
 
+    event LogChanllengeInfo(bytes32 indexed chanllengeid, chanllengeState indexed state);
+
     function idleAmount(address tokenAddress) external view returns (uint256);
 
     function LPAction(
+        uint256,
         OperationsLib.lpInfo memory _lpinfo,
         bytes32[] memory proof,
         bytes32 rootHash
@@ -50,15 +59,15 @@ interface IORMakerDeposit {
         bytes32[] memory,
         bytes32[] memory,
         bytes32[] memory
-    ) external returns (bool);
+    ) external payable;
 
     // userWithDraw
-    function userWithDraw(OperationsLib.txInfo memory) external returns (bool);
+    function userWithDraw(OperationsLib.txInfo memory) external;
 
     // makerChanllenger
     function makerChanllenger(
         OperationsLib.txInfo memory,
         OperationsLib.txInfo memory,
-        bytes memory
-    ) external returns (bool);
+        bytes32[] memory
+    ) external;
 }

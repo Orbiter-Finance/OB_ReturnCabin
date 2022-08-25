@@ -12,6 +12,15 @@ contract ORProtocalV1 is IORProtocal {
         _owner = owner;
     }
 
+    function getResponseTxHash() external pure returns (bytes32) {
+        bytes32 responseInfoHash = "000000000";
+        return responseInfoHash;
+    }
+
+    function getChanllengePledgeAmount() external pure returns (uint256) {
+        return 0.05 * 10**18;
+    }
+
     function isSupportChainID(uint256 chainID) external returns (bool) {
         return true;
     }
