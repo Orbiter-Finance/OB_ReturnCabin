@@ -101,8 +101,22 @@ contract ORManagerFactory is IORManagerFactory, ORPairManager, Ownable {
 
     function createMaker() external returns (address) {
         bytes32 salt = keccak256(abi.encodePacked(msg.sender));
+        console.logString("hello");
+        console.logBytes32(pairsRoot);
         ORMakerDeposit makerContract = new ORMakerDeposit{salt: salt}(address(this));
         emit MakerMap(msg.sender, address(makerContract));
         return address(makerContract);
+    }
+
+    function isSupportChain(uint256 chainID, address token) public view virtual override returns (bool) {
+        bool isSupportToken = false;
+        for (uint256 i = 0; i < chainList[chainID].tokenList.length; i++) {
+            if (chainList[chainID].tokenList[i] == token) {
+                isSupportToken = true;
+                break;
+            }
+        }
+        console.logString("isSupportChain child");
+        return isSupportToken;
     }
 }

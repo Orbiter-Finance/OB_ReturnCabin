@@ -3,23 +3,27 @@ import { MerkleTree } from 'merkletreejs';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import * as _ from 'lodash';
 import { expect } from 'chai';
-import { ORPairManager } from '../typechain-types/contracts/ORPairManager';
 import { getLpID } from './lib/PairManager';
 import { pairList } from './lib/Config';
+import { ORManagerFactory } from '../typechain-types/contracts/ORManagerFactory';
 import { clone } from 'lodash';
 const { keccak256 } = ethers.utils;
 describe('PairManager.spec', () => {
-  let pairManagerContrct: ORPairManager;
+  let pairManagerContrct: ORManagerFactory;
   async function deployPairManagerFixture() {
-    const PairManager = await ethers.getContractFactory('ORPairManager');
-    pairManagerContrct = await PairManager.deploy();
+    const factoryAddress = process.env['factory'] || '';
+    !expect(factoryAddress).not.empty;
+    pairManagerContrct = await ethers.getContractAt(
+      'ORManagerFactory',
+      factoryAddress,
+    );
   }
   const leafs = pairList.map(getLpID);
   const tree = new MerkleTree(leafs, keccak256, {
     sort: true,
   });
   before(deployPairManagerFixture);
-  it('initialize Pair', async () => {
+  it('Initialize Pair', async () => {
     const tx = await pairManagerContrct.initializePair(
       tree.getHexRoot(),
       pairList,
@@ -28,6 +32,7 @@ describe('PairManager.spec', () => {
       .to.emit(pairManagerContrct, 'PairLogEvent')
       .withArgs(0, anyValue);
   });
+
   it('Verify root hash', async () => {
     expect(await pairManagerContrct.pairsRoot()).to.equal(tree.getHexRoot());
   });
@@ -67,7 +72,7 @@ describe('PairManager.spec', () => {
     const newPair = [
       {
         sourceChain: 1,
-        destChain: 13,
+        destChain: 2,
         sourceTAddress: '0x0000000000000000000000000000000000000000',
         destTAddress: '0x0000000000000000000000000000000000000000',
         ebcid: '0x0000000000000000000000000000000000000001',
