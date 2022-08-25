@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
+import "./ORPairManager.sol";
+import "hardhat/console.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "./interface/IORPairManager.sol";
 
@@ -7,6 +9,10 @@ contract ORPairManager is IORPairManager {
     bytes32 public pairsRoot;
 
     function initializePair(bytes32 _pairsRoot, OperationsLib.pairChainInfo[] calldata pairs) external {
+        for (uint256 i = 0; i < pairs.length; i++) {
+            require(isSupportChain(pairs[i].sourceChain, pairs[i].sourceTAddress), "CHAINID_UNSUPPORTTOKEN");
+            require(isSupportChain(pairs[i].destChain, pairs[i].destTAddress), "CHAINID_UNSUPPORTTOKEN");
+        }
         pairsRoot = _pairsRoot;
         emit PairLogEvent(PairEventType.INIT, pairs);
     }
@@ -16,6 +22,8 @@ contract ORPairManager is IORPairManager {
         bytes32[] calldata proof,
         OperationsLib.pairChainInfo memory pair
     ) external returns (bytes32) {
+        require(isSupportChain(pair.sourceChain, pair.sourceTAddress), "CHAINID_UNSUPPORTTOKEN");
+        require(isSupportChain(pair.destChain, pair.destTAddress), "CHAINID_UNSUPPORTTOKEN");
         // require(leafs.length == newPairs.length, "ArrayLengthInconsistent");
         bool isVerify = MerkleProof.verifyCalldata(proof, pairsRoot, leaf);
         require(isVerify, "VerifyFailed");
@@ -39,11 +47,20 @@ contract ORPairManager is IORPairManager {
     }
 
     function createPair(bytes32 _pairsHash, OperationsLib.pairChainInfo[] calldata pairs) external {
+        for (uint256 i = 0; i < pairs.length; i++) {
+            require(isSupportChain(pairs[i].sourceChain, pairs[i].sourceTAddress), "CHAINID_UNSUPPORTTOKEN");
+            require(isSupportChain(pairs[i].destChain, pairs[i].destTAddress), "CHAINID_UNSUPPORTTOKEN");
+        }
         pairsRoot = _pairsHash;
         emit PairLogEvent(PairEventType.CREATE, pairs);
     }
 
     function isSupportPair(bytes32 pair, bytes32[] calldata proof) public view returns (bool isSupport) {
         isSupport = MerkleProof.verifyCalldata(proof, pairsRoot, pair);
+    }
+
+    function isSupportChain(uint256 chainID, address token) public view virtual returns (bool) {
+        console.logString("isSupportChain parent");
+        return false;
     }
 }

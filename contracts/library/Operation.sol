@@ -43,13 +43,13 @@ library OperationsLib {
         uint256 destChain;
         address sourceTAddress;
         address destTAddress;
-        uint256 tokenPresion;
+        uint256 sourcePresion;
+        uint256 destPresion;
         uint256 ebcid;
         uint256 minPrice;
         uint256 maxPrice;
         uint256 gasFee;
         uint256 tradingFee;
-        bytes tokenName;
         uint256 startTime;
     }
 
@@ -91,9 +91,9 @@ library OperationsLib {
         bytes32 rootHash = keccak256(
             abi.encodePacked(
                 lpId,
-                _lpinfo.tokenName,
-                _lpinfo.tokenPresion,
                 _lpinfo.ebcid,
+                _lpinfo.sourcePresion,
+                _lpinfo.destPresion,
                 _lpinfo.minPrice,
                 _lpinfo.maxPrice,
                 _lpinfo.gasFee,

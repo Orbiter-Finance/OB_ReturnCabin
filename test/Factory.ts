@@ -5,7 +5,6 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 
 let factory: ORManagerFactory;
-
 const chainInfo_main = {
   chainID: 1,
   batchLimit: 100,
@@ -76,6 +75,7 @@ async function deployFactoryFixture() {
   });
   factory = await Factory.deploy();
   console.log(`factory :`, factory.address);
+  process.env['factory'] = factory.address;
   return { Factory, factory, owner, addr1, addr2 };
 }
 
