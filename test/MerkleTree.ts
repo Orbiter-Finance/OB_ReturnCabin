@@ -1,0 +1,12 @@
+import { MerkleTree } from 'merkletreejs';
+import keccak256 from 'keccak256';
+const leaves = ['a', 'b', 'c', 'b'].map(keccak256);
+const tree = new MerkleTree(leaves, keccak256, { sort: true });
+const root = tree.getRoot();
+console.log(root, '=root');
+const proofLeaves = ['b'].map(keccak256);
+console.log('\n', tree.getHexLayers(), '\n');
+const proof = tree.getMultiProof(proofLeaves);
+console.log(proof, '=proof');
+// const proofFlags = tree.getProofFlags(proofLeaves, proof);
+// console.log(proofFlags, '=proofFlags');

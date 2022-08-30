@@ -4,13 +4,13 @@ pragma solidity ^0.8.9;
 import "./interface/IORManagerFactory.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "./ORMakerDeposit.sol";
-import "./ORPairManager.sol";
 
-contract ORManagerFactory is IORManagerFactory, ORPairManager, Ownable {
+contract ORManagerFactory is IORManagerFactory, Ownable {
     mapping(uint256 => address) ebcPair;
     mapping(uint256 => OperationsLib.chainInfo) public chainList;
     mapping(uint256 => mapping(address => OperationsLib.tokenInfo)) public tokenInfos;
     uint256 ebcids;
+    bytes32 public pairsRoot;
     address public spv;
 
     function getEBCids() external view returns (uint256) {
@@ -101,14 +101,12 @@ contract ORManagerFactory is IORManagerFactory, ORPairManager, Ownable {
 
     function createMaker() external returns (address) {
         bytes32 salt = keccak256(abi.encodePacked(msg.sender));
-        console.logString("hello");
-        console.logBytes32(pairsRoot);
         ORMakerDeposit makerContract = new ORMakerDeposit{salt: salt}(address(this));
         emit MakerMap(msg.sender, address(makerContract));
         return address(makerContract);
     }
 
-    function isSupportChain(uint256 chainID, address token) public view virtual override returns (bool) {
+    function isSupportChain(uint256 chainID, address token) public view returns (bool) {
         bool isSupportToken = false;
         for (uint256 i = 0; i < chainList[chainID].tokenList.length; i++) {
             if (chainList[chainID].tokenList[i] == token) {
@@ -116,7 +114,61 @@ contract ORManagerFactory is IORManagerFactory, ORPairManager, Ownable {
                 break;
             }
         }
-        console.logString("isSupportChain child");
         return isSupportToken;
+    }
+
+    function createPair(
+        OperationsLib.pairChainInfo[] calldata pairs,
+        bytes32 rootHash,
+        bytes32[] calldata proof,
+        bool[] calldata proofFlags
+    ) external {
+        bool isSupport = pairMultiProofVerifyCalldata(pairs, rootHash, proof, proofFlags);
+        require(isSupport, "Hash Inconsistent");
+        pairsRoot = rootHash;
+        emit PairLogEvent(PairEventType.CREATE, pairs);
+    }
+
+    function deletePair(
+        OperationsLib.pairChainInfo[] calldata pairs,
+        bytes32[] calldata proof,
+        bool[] calldata proofFlags,
+        bytes32 rootHash
+    ) external {
+        bool isSupport = pairMultiProofVerifyCalldata(pairs, pairsRoot, proof, proofFlags);
+        require(isSupport, "Hash Inconsistent");
+        pairsRoot = rootHash;
+        emit PairLogEvent(PairEventType.DELETE, pairs);
+    }
+
+    function isSupportPair(bytes32 pair, bytes32[] calldata proof) public view returns (bool) {
+        return MerkleProof.verifyCalldata(proof, pairsRoot, pair);
+    }
+
+    function isSupportPair(OperationsLib.pairChainInfo calldata pair, bytes32[] calldata proof)
+        public
+        view
+        returns (bool)
+    {
+        bytes32 leaf = OperationsLib.getLpID(pair);
+        return MerkleProof.verifyCalldata(proof, pairsRoot, leaf);
+    }
+
+    function pairObjectToHash(OperationsLib.pairChainInfo[] calldata pairs) internal pure returns (bytes32[] memory) {
+        bytes32[] memory leaves = new bytes32[](pairs.length);
+        for (uint256 i = 0; i < pairs.length; i++) {
+            leaves[i] = OperationsLib.getLpID(pairs[i]);
+        }
+        return leaves;
+    }
+
+    function pairMultiProofVerifyCalldata(
+        OperationsLib.pairChainInfo[] calldata pairs,
+        bytes32 root,
+        bytes32[] calldata proof,
+        bool[] calldata proofFlags
+    ) internal pure returns (bool isSupport) {
+        bytes32[] memory leaves = pairObjectToHash(pairs);
+        return MerkleProof.multiProofVerifyCalldata(proof, proofFlags, root, leaves);
     }
 }

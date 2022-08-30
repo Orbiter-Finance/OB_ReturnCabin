@@ -1,4 +1,5 @@
 import { ethers } from 'ethers';
+const { solidityKeccak256 } = ethers.utils;
 export interface PairChainInfoStruct {
   sourceChain: number;
   destChain: number;
@@ -7,7 +8,7 @@ export interface PairChainInfoStruct {
   ebcid: any;
 }
 export const getLpID = (pair: PairChainInfoStruct) => {
-  return ethers.utils.solidityKeccak256(
+  const lpId = solidityKeccak256(
     ['uint256', 'uint256', 'address', 'address', 'uint256'],
     [
       pair.sourceChain,
@@ -17,4 +18,5 @@ export const getLpID = (pair: PairChainInfoStruct) => {
       pair.ebcid,
     ],
   );
+  return Buffer.from(lpId.replace('0x', ''), 'hex');
 };

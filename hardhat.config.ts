@@ -1,7 +1,16 @@
 import 'dotenv/config';
 import '@nomicfoundation/hardhat-toolbox';
-import { HardhatUserConfig } from 'hardhat/config';
+import "@nomiclabs/hardhat-web3";
+import { HardhatUserConfig, task } from 'hardhat/config';
 const { INFURA_API_KEY, ETHERSCAN_API_KEY } = process.env;
+task("accounts", "Prints accounts", async (taskArgs,hre) => {
+  const accounts = await hre.ethers.getSigners()
+  for (const account of accounts) {
+    const balance=  await hre.web3.eth.getBalance(account.address)
+    console.log(account.address, '--------------------', balance.toString())
+  }
+});
+
 const config: HardhatUserConfig = {
   solidity: '0.8.9',
   // defaultNetwork: "ganache",

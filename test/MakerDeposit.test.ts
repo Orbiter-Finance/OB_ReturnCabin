@@ -2,15 +2,17 @@ import { ethers } from 'hardhat';
 import { ORMakerDeposit } from '../typechain-types/contracts/ORMakerDeposit';
 import { getLpID } from './lib/PairManager';
 import { MerkleTree } from 'merkletreejs';
-import { pairList, lpInfoList } from './lib/Config';
+import { pairList } from './lib/Config';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 let mdc: ORMakerDeposit;
 let supportPairTree: MerkleTree;
+let owner: SignerWithAddress;
 const { keccak256 } = ethers.utils;
 describe('MakerDeposit.test.ts', () => {
   async function getFactoryInfo() {
     const mdcContractAddress =
       process.env['MDC'] || '0xc8b335273449ec29644c5433cec7383ca4d2ea62';
-    const [owner] = await ethers.getSigners();
+    [owner] = await ethers.getSigners();
     mdc = await ethers.getContractAt(
       'ORMakerDeposit',
       mdcContractAddress,
@@ -25,20 +27,65 @@ describe('MakerDeposit.test.ts', () => {
 
   before(getFactoryInfo);
 
-  it('LPAction', async () => {
-    const lpInfo = lpInfoList[0];
-    console.log(lpInfo);
-    const lpId = getLpID(lpInfo);
-    const proof = supportPairTree.getHexProof(lpId);
-    const overrides = {
-      value: ethers.utils.parseEther('1.0'),
-    };
-    const response = await mdc.LPAction(
-      <any>lpInfo,
-      proof,
-      supportPairTree.getHexRoot(),
-      overrides,
-    );
-    console.log(response, '==response');
-  });
+  // it('LPAction Pledge ETH', async () => {
+  //   const lpInfo = lpInfoList[0];
+  //   console.log(lpInfo);
+  //   const lpId = getLpID(lpInfo);
+  //   const proof = supportPairTree.getHexProof(lpId);
+  //   const value = ethers.utils.parseEther('2');
+  //   const overrides = {
+  //     value,
+  //   };
+  //   const response = await mdc.LPAction(
+  //     value,
+  //     <any>lpInfo,
+  //     proof,
+  //     supportPairTree.getHexRoot(),
+  //     overrides,
+  //   );
+  //   await expect(response)
+  //     .to.emit(mdc, 'LogLpInfo')
+  //     .withArgs(lpId, 0, anyValue, anyValue);
+  //   const chainDeposit = await mdc.chainDeposit(
+  //     lpInfo.sourceChain,
+  //     lpInfo.sourceTAddress,
+  //   );
+  //   expect(chainDeposit.useLimit).equal(ethers.BigNumber.from(1));
+  //   expect(chainDeposit.tokenAddress).equal(lpInfo.sourceTAddress);
+  //   // const needDepositAmount = lpInfo.batchLimit * _lpinfo.maxPrice;
+  //   console.log(chainDeposit, '==chainDeposit');
+  //   const result2 = await mdc.usedDeposit(owner.address);
+  //   console.log(result2, '==user usedDeposit');
+  //   const contractBalance = await web3.eth.getBalance(mdc.address);
+  //   console.log('contractBalance:', contractBalance);
+  //   expect(chainDeposit.tokenAddress).equal(lpInfo.sourceTAddress);
+  //   // console.log(response, '==response---', tx);
+  // });
+  // it('LPAction Pledge ETH Mainnet-ZkSync', async () => {
+  //   const lpInfo = lpInfoList[1];
+  //   console.log(lpInfo);
+  //   const lpId = getLpID(lpInfo);
+  //   const proof = supportPairTree.getHexProof(lpId);
+  //   const value = ethers.utils.parseEther('1');
+  //   const overrides = {
+  //     value,
+  //   };
+  //   const response = await mdc.LPAction(
+  //     value,
+  //     <any>lpInfo,
+  //     proof,
+  //     supportPairTree.getHexRoot(),
+  //     overrides,
+  //   );
+  //   await expect(response)
+  //     .to.emit(mdc, 'LogLpInfo')
+  //     .withArgs(lpId, 0, anyValue, anyValue);
+  //   const chainDeposit = await mdc.chainDeposit(
+  //     lpInfo.sourceChain,
+  //     lpInfo.sourceTAddress,
+  //   );
+
+  //   expect(chainDeposit.useLimit).equal(ethers.BigNumber.from(2));
+  //   expect(chainDeposit.tokenAddress).equal(lpInfo.sourceTAddress);
+  // });
 });
