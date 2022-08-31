@@ -1,13 +1,13 @@
 import { ethers } from 'hardhat';
 import { MerkleTree } from 'merkletreejs';
-import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
-import * as _ from 'lodash';
-import { expect } from 'chai';
-import { getLpID } from './lib/PairManager';
+import { getPairID } from './lib/Utils';
 import { pairList } from './lib/Config';
+import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
+import { expect } from 'chai';
+import keccak256 from 'keccak256';
 import { ORManagerFactory } from '../typechain-types/contracts/ORManagerFactory';
-import { clone } from 'lodash';
-const { keccak256 } = ethers.utils;
+let PairTree: MerkleTree;
+let allPairLeafList: any[] = [];
 describe('PairManager.spec', () => {
   let pairManagerContrct: ORManagerFactory;
   async function deployPairManagerFixture() {
@@ -17,96 +17,85 @@ describe('PairManager.spec', () => {
       'ORManagerFactory',
       factoryAddress,
     );
+
+    // const PairManagerContrct = await ethers.getContractFactory('ORPairManager');
+    // pairManagerContrct = await PairManagerContrct.deploy();
   }
-  const leafs = pairList.map(getLpID);
-  const tree = new MerkleTree(leafs, keccak256, {
+  allPairLeafList = pairList.map((row: any) => {
+    row.leaf = getPairID(row);
+    return row;
+  });
+  PairTree = new MerkleTree([], keccak256, {
     sort: true,
   });
   before(deployPairManagerFixture);
-  it('Initialize Pair', async () => {
-    const tx = await pairManagerContrct.initializePair(
-      tree.getHexRoot(),
-      pairList,
+  it('createPair Pair1', async () => {
+    PairTree.addLeaves([allPairLeafList[0].leaf, allPairLeafList[1].leaf]);
+    const proofLeavesHash = [pairList[0], pairList[1]].map(getPairID);
+    const proof = await PairTree.getMultiProof(proofLeavesHash);
+    const proofFlags = PairTree.getProofFlags(proofLeavesHash, proof);
+    const tx = await pairManagerContrct.createPair(
+      proofLeavesHash.map((hashBuf) => {
+        const leaf = allPairLeafList.find(
+          (pair) => pair.leaf.toString('hex') === hashBuf.toString('hex'),
+        );
+        return leaf;
+      }),
+      PairTree.getHexRoot(),
+      proof,
+      proofFlags,
     );
     await expect(tx)
       .to.emit(pairManagerContrct, 'PairLogEvent')
       .withArgs(0, anyValue);
   });
-
-  it('Verify root hash', async () => {
-    expect(await pairManagerContrct.pairsRoot()).to.equal(tree.getHexRoot());
-  });
-
-  it('Update Pair', async () => {
-    const leafs = [getLpID(pairList[0])];
-    // const allLeaves = tree.getLeaves();
-    // const leaves = leafs.map((row) => {
-    //   return allLeaves[tree.getLeafIndex(<any>row)];
-    // });
-    // console.log(tree.getHexLayers(), '===leaves');
-    const proof = tree.getHexProof(leafs[0]);
-    // console.log('proof:', proof);
-    // const proofFlags = tree.getProofFlags(leaves, proof);
-    const newPair = clone(pairList[0]);
-    newPair.ebcid = '0x0000000000000000000000000000000000000001';
-    const result = await pairManagerContrct.updatePair(
-      leafs[0],
+  it('createPair Pair2', async () => {
+    PairTree.addLeaves([allPairLeafList[3].leaf, allPairLeafList[2].leaf]);
+    const proofLeavesHash = [pairList[2], pairList[3]].map(getPairID);
+    const proof = await PairTree.getMultiProof(proofLeavesHash);
+    const proofFlags = PairTree.getProofFlags(proofLeavesHash, proof);
+    const tx = await pairManagerContrct.createPair(
+      proofLeavesHash.map((hashBuf) => {
+        const leaf = allPairLeafList.find(
+          (pair) => pair.leaf.toString('hex') === hashBuf.toString('hex'),
+        );
+        return leaf;
+      }),
+      PairTree.getHexRoot(),
       proof,
-      newPair,
+      proofFlags,
     );
-    await expect(result)
+    await expect(tx)
       .to.emit(pairManagerContrct, 'PairLogEvent')
-      .withArgs(2, anyValue);
-    const newPairList = _.clone(pairList);
-    newPairList[0] = newPair;
-    const newTree = new MerkleTree(newPairList.map(getLpID), keccak256, {
+      .withArgs(0, anyValue);
+  });
+  it('Delete Pair', async () => {
+    // PairTree.addLeaves([allPairLeafList[3].leaf, allPairLeafList[2].leaf]);
+    const proofLeavesHash = [pairList[3]].map(getPairID);
+
+    const proof = await PairTree.getMultiProof(proofLeavesHash);
+    const proofFlags = PairTree.getProofFlags(proofLeavesHash, proof);
+    // new root hash
+    const newLevels = PairTree.getLeaves().filter(
+      (row) => row.toString('hex') !== allPairLeafList[3].leaf.toString('hex'),
+    );
+    const newTree = new MerkleTree(newLevels, keccak256, {
       sort: true,
     });
-
-    expect(await pairManagerContrct.pairsRoot()).to.equal(newTree.getHexRoot());
-  });
-
-  it('Create New Pair', async () => {
-    // new pair
-    const newPairList = _.clone(pairList);
-    const newPair = [
-      {
-        sourceChain: 1,
-        destChain: 2,
-        sourceTAddress: '0x0000000000000000000000000000000000000000',
-        destTAddress: '0x0000000000000000000000000000000000000000',
-        ebcid: '0x0000000000000000000000000000000000000001',
-      },
-    ];
-    const newTree = new MerkleTree(newPairList.map(getLpID), keccak256);
-    newTree.addLeaves(<any>newPair.map(getLpID));
-    const localNewRoot = tree.getHexRoot();
-    const result = await pairManagerContrct.createPair(
-      localNewRoot,
-      <any>newPair,
+    const tx = await pairManagerContrct.deletePair(
+      proofLeavesHash.map((hashBuf) => {
+        const leaf = allPairLeafList.find(
+          (pair) => pair.leaf.toString('hex') === hashBuf.toString('hex'),
+        );
+        return leaf;
+      }),
+      <any>proof,
+      proofFlags,
+      newTree.getHexRoot(),
     );
-    await expect(result)
+    await expect(tx)
       .to.emit(pairManagerContrct, 'PairLogEvent')
       .withArgs(1, anyValue);
-    expect(await pairManagerContrct.pairsRoot()).to.equal(localNewRoot);
-  });
-  it('isSupportPair(True)', async () => {
-    const lpId = getLpID(pairList[0]);
-    const proof = tree.getHexProof(lpId);
-    const isSupport = await pairManagerContrct.isSupportPair(lpId, proof);
-    expect(isSupport).true;
-  });
-  it('isSupportPair(False)', async () => {
-    const lpId = getLpID({
-      sourceChain: 99,
-      destChain: 99,
-      sourceTAddress: '0x0000000000000000000000000000000000000000',
-      destTAddress: '0x0000000000000000000000000000000000000000',
-      ebcid: '0x0000000000000000000000000000000000000000',
-    });
-    const proof = tree.getHexProof(lpId);
-    const isSupport = await pairManagerContrct.isSupportPair(lpId, proof);
-    expect(isSupport).false;
   });
 });
 //

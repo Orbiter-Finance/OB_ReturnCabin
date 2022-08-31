@@ -28,25 +28,20 @@ interface IORMakerDeposit {
     function idleAmount(address tokenAddress) external view returns (uint256);
 
     function LPAction(
-        uint256,
-        OperationsLib.lpInfo memory _lpinfo,
-        bytes32[] memory proof,
-        bytes32 rootHash
+        uint256 amount,
+        OperationsLib.lpInfo[] calldata _lpinfos,
+        bytes32[][] calldata proof,
+        bytes32[][] calldata pairProof
     ) external payable;
 
     // LPPause
-    function LPPause(OperationsLib.lpInfo memory _lpinfo, bytes32 rootHash) external;
+    function LPPause(OperationsLib.lpInfo[] calldata _lpinfos, bytes32[][] calldata proof) external;
 
     // LPStop
     function LPStop(OperationsLib.lpInfo memory) external;
 
     // LPUpdate
-    function LPUpdate(
-        bytes32 leaf,
-        bytes32[] calldata proof,
-        bool[] calldata proofFlag,
-        OperationsLib.lpInfo calldata _lpinfo
-    ) external;
+    function LPUpdate(OperationsLib.lpInfo calldata _lpinfo) external;
 
     // withDrawAssert()
     function withDrawAssert(uint256, address) external;

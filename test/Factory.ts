@@ -3,66 +3,19 @@ import { ethers } from 'hardhat';
 import { ORManagerFactory } from '../typechain-types/contracts/ORManagerFactory';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
-
+import { chainInfoList, tokenList } from './lib/Config';
 let factory: ORManagerFactory;
-const chainInfo_main = {
-  chainID: 1,
-  batchLimit: 100,
-  maxDisputeTime: 3600 * 24,
-  tokenList: [
-    '0x0000000000000000000000000000000000000000',
-    '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
-    '0xdac17f958d2ee523a2206206994597c13d831ec7',
-  ],
-};
+const chainInfo_main = chainInfoList[0];
+const chainInfo_arbitrum = chainInfoList[1];
+const chainInfo_zksync = chainInfoList[2];
+const chainInfo_op = chainInfoList[3];
 
-const chainInfo_arbitrum = {
-  chainID: 2,
-  batchLimit: 100,
-  maxDisputeTime: 3600 * 24,
-  tokenList: [
-    '0x0000000000000000000000000000000000000000',
-    '0xff970a61a04b1ca14834a43f5de4533ebddb5cc8',
-    '0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9',
-  ],
-};
-
-const tokeninfo_eth_main = {
-  chainID: 1,
-  tokenAddress: '0x0000000000000000000000000000000000000000',
-  tokenPresion: 18,
-  mainAddress: '0x0000000000000000000000000000000000000000',
-};
-const tokeninfo_usdc_main = {
-  chainID: 1,
-  tokenAddress: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
-  tokenPresion: 6,
-  mainAddress: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
-};
-const tokeninfo_usdt_main = {
-  chainID: 1,
-  tokenAddress: '0xdac17f958d2ee523a2206206994597c13d831ec7',
-  tokenPresion: 6,
-  mainAddress: '0xdac17f958d2ee523a2206206994597c13d831ec7',
-};
-const tokeninfo_eth_arb = {
-  chainID: 2,
-  tokenAddress: '0x0000000000000000000000000000000000000000',
-  tokenPresion: 18,
-  mainAddress: '0x0000000000000000000000000000000000000000',
-};
-const tokeninfo_usdc_arb = {
-  chainID: 2,
-  tokenAddress: '0xff970a61a04b1ca14834a43f5de4533ebddb5cc8',
-  tokenPresion: 6,
-  mainAddress: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
-};
-const tokeninfo_usdt_arb = {
-  chainID: 2,
-  tokenAddress: '0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9',
-  tokenPresion: 6,
-  mainAddress: '0xdac17f958d2ee523a2206206994597c13d831ec7',
-};
+const tokeninfo_eth_main = tokenList[0];
+const tokeninfo_usdc_main = tokenList[1];
+const tokeninfo_usdt_main = tokenList[2];
+const tokeninfo_eth_arb = tokenList[3];
+const tokeninfo_usdc_arb = tokenList[4];
+const tokeninfo_usdt_arb = tokenList[5];
 
 async function deployFactoryFixture() {
   const [owner, addr1, addr2] = await ethers.getSigners();
@@ -129,6 +82,18 @@ describe('Factory.spec.ts', () => {
         chainInfo_arbitrum.maxDisputeTime,
         chainInfo_arbitrum.tokenList,
       );
+      await userFactory.setChainInfo(
+        chainInfo_zksync.chainID,
+        chainInfo_zksync.batchLimit,
+        chainInfo_zksync.maxDisputeTime,
+        chainInfo_zksync.tokenList,
+      );
+      await userFactory.setChainInfo(
+        chainInfo_op.chainID,
+        chainInfo_op.batchLimit,
+        chainInfo_op.maxDisputeTime,
+        chainInfo_op.tokenList,
+      );
 
       expect(await (await userFactory.chainList(0)).isUsed).false;
 
@@ -146,7 +111,7 @@ describe('Factory.spec.ts', () => {
         24 * 3600,
       );
 
-      expect(await (await userFactory.chainList(3)).isUsed).false;
+      expect(await (await userFactory.chainList(9999999)).isUsed).false;
     });
 
     it('UPDATE CHAININFO', async () => {

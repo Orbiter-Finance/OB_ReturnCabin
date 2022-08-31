@@ -42,6 +42,7 @@ module.exports = {
       "@typescript-eslint/no-unsafe-assignment": "off",
       "@typescript-eslint/no-unsafe-argument": "off",
       "@typescript-eslint/ban-types": "off",
+      "@typescript-eslint/no-var-requires":"off",
       "@typescript-eslint/restrict-template-expressions": "off",
     },
   };
