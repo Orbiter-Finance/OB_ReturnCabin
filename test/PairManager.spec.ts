@@ -1,6 +1,6 @@
 import { ethers } from 'hardhat';
 import { MerkleTree } from 'merkletreejs';
-import { getLpID } from './lib/PairManager';
+import { getPairID } from './lib/Utils';
 import { pairList } from './lib/Config';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { expect } from 'chai';
@@ -22,7 +22,7 @@ describe('PairManager.spec', () => {
     // pairManagerContrct = await PairManagerContrct.deploy();
   }
   allPairLeafList = pairList.map((row: any) => {
-    row.leaf = getLpID(row);
+    row.leaf = getPairID(row);
     return row;
   });
   PairTree = new MerkleTree([], keccak256, {
@@ -31,7 +31,7 @@ describe('PairManager.spec', () => {
   before(deployPairManagerFixture);
   it('createPair Pair1', async () => {
     PairTree.addLeaves([allPairLeafList[0].leaf, allPairLeafList[1].leaf]);
-    const proofLeavesHash = [pairList[0], pairList[1]].map(getLpID);
+    const proofLeavesHash = [pairList[0], pairList[1]].map(getPairID);
     const proof = await PairTree.getMultiProof(proofLeavesHash);
     const proofFlags = PairTree.getProofFlags(proofLeavesHash, proof);
     const tx = await pairManagerContrct.createPair(
@@ -51,7 +51,7 @@ describe('PairManager.spec', () => {
   });
   it('createPair Pair2', async () => {
     PairTree.addLeaves([allPairLeafList[3].leaf, allPairLeafList[2].leaf]);
-    const proofLeavesHash = [pairList[2], pairList[3]].map(getLpID);
+    const proofLeavesHash = [pairList[2], pairList[3]].map(getPairID);
     const proof = await PairTree.getMultiProof(proofLeavesHash);
     const proofFlags = PairTree.getProofFlags(proofLeavesHash, proof);
     const tx = await pairManagerContrct.createPair(
@@ -71,7 +71,7 @@ describe('PairManager.spec', () => {
   });
   it('Delete Pair', async () => {
     // PairTree.addLeaves([allPairLeafList[3].leaf, allPairLeafList[2].leaf]);
-    const proofLeavesHash = [pairList[3]].map(getLpID);
+    const proofLeavesHash = [pairList[3]].map(getPairID);
 
     const proof = await PairTree.getMultiProof(proofLeavesHash);
     const proofFlags = PairTree.getProofFlags(proofLeavesHash, proof);
