@@ -8,18 +8,18 @@ export interface PairChainInfoStruct {
   ebcid: any;
 }
 export type LpInfoStruct = {
-  sourceChain: PromiseOrValue<BigNumberish>;
-  destChain: PromiseOrValue<BigNumberish>;
-  sourceTAddress: PromiseOrValue<string>;
-  destTAddress: PromiseOrValue<string>;
-  sourcePresion: PromiseOrValue<BigNumberish>;
-  destPresion: PromiseOrValue<BigNumberish>;
-  ebcid: PromiseOrValue<BigNumberish>;
-  minPrice: PromiseOrValue<BigNumberish>;
-  maxPrice: PromiseOrValue<BigNumberish>;
-  gasFee: PromiseOrValue<BigNumberish>;
-  tradingFee: PromiseOrValue<BigNumberish>;
-  startTime: PromiseOrValue<BigNumberish>;
+  sourceChain: number;
+  destChain: number;
+  sourceTAddress: string;
+  destTAddress: string;
+  sourcePresion: number;
+  destPresion: number;
+  ebcid: number;
+  minPrice: number;
+  maxPrice: number;
+  gasFee: number;
+  tradingFee: number;
+  startTime: number;
 };
 export const getPairID = (pair: PairChainInfoStruct) => {
   const lpId = solidityKeccak256(
