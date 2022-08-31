@@ -21,7 +21,7 @@ describe('MakerDeposit.test.ts', () => {
     );
     console.log('MDC Address：', mdc.address);
     // tree
-    supportPairTree = new MerkleTree(pairList.map(getLpID), keccak256, {
+    supportPairTree = new MerkleTree(pairList.map(getPairID), keccak256, {
       sort: true,
     });
     lpInfoTree = new MerkleTree([], keccak256, {
@@ -36,8 +36,8 @@ describe('MakerDeposit.test.ts', () => {
     const lpInfo = lpInfoList[0];
     const lpId = getPairID(lpInfo);
     const pairProof = supportPairTree.getHexProof(lpId);
-    OperationsLib.LpInfoStruct;
-    const response = await mdc.LPAction(value, [lpInfo], proof);
+    // OperationsLib.LpInfoStruct;
+    // const response = await mdc.LPAction(value, [lpInfo], proof);
   });
   //   const lpInfo = lpInfoList[0];
   //   console.log(lpInfo);
