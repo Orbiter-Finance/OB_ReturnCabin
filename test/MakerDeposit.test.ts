@@ -11,8 +11,7 @@ let lpInfoTree: MerkleTree;
 const { keccak256 } = ethers.utils;
 describe('MakerDeposit.test.ts', () => {
   async function getFactoryInfo() {
-    const mdcContractAddress =
-      process.env['MDC'] || '0xc8b335273449ec29644c5433cec7383ca4d2ea62';
+    const mdcContractAddress = process.env['MDC'] || '';
     [owner] = await ethers.getSigners();
     mdc = await ethers.getContractAt(
       'ORMakerDeposit',
