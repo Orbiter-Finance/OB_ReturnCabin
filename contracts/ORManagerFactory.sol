@@ -2,10 +2,12 @@
 pragma solidity ^0.8.9;
 
 import "./interface/IORManagerFactory.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
 import "./ORMakerDeposit.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "hardhat/console.sol";
 
-contract ORManagerFactory is IORManagerFactory, Ownable {
+contract ORManagerFactory is IORManagerFactory, Initializable, OwnableUpgradeable {
     mapping(uint256 => address) ebcPair;
     mapping(uint256 => OperationsLib.chainInfo) public chainList;
     mapping(uint256 => mapping(address => OperationsLib.tokenInfo)) public tokenInfos;
@@ -13,12 +15,16 @@ contract ORManagerFactory is IORManagerFactory, Ownable {
     bytes32 public pairsRoot;
     address public spv;
 
+    function initialize() public initializer {
+        __Ownable_init();
+    }
+
     function getEBCids() external view returns (uint256) {
         return ebcids;
     }
 
     function setSPV(address spvAddress) external onlyOwner returns (bool) {
-        require(spvAddress != address(0) && Address.isContract(spvAddress) == true, "SPV_INVALIDATE");
+        require(spvAddress != address(0), "SPV_INVALIDATE");
         spv = spvAddress;
         return true;
     }
@@ -29,7 +35,6 @@ contract ORManagerFactory is IORManagerFactory, Ownable {
     }
 
     function setEBC(address ebcAddress) external onlyOwner returns (bool) {
-        // require(Address.isContract(ebcAddress) == true, "SETEBC_INVALIDATEADDRESS");
         ebcPair[ebcids++] = ebcAddress;
         return true;
     }

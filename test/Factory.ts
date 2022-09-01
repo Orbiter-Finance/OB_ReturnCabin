@@ -19,7 +19,13 @@ const tokeninfo_usdt_arb = TOKEN_LIST[5];
 
 async function deployFactoryFixture() {
   const [owner, addr1, addr2] = await ethers.getSigners();
-  const Factory = await ethers.getContractFactory('ORManagerFactory');
+  const SpvLib = await ethers.getContractFactory('SpvLib');
+  const spvLib = await SpvLib.deploy();
+  const Factory = await ethers.getContractFactory('ORManagerFactory', {
+    libraries: {
+      SpvLib: spvLib.address,
+    },
+  });
   factory = await Factory.deploy();
   console.log(`factory :`, factory.address);
   process.env['factory'] = factory.address;

@@ -4,12 +4,15 @@ pragma solidity ^0.8.9;
 import "./interface/IORProtocal.sol";
 import "./interface/IORManagerFactory.sol";
 import "./interface/IORSpv.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-contract ORProtocalV1 is IORProtocal {
+contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     address _managerAddress;
 
-    constructor(address managerAddress) payable {
+    function initialize(address managerAddress) public initializer {
         _managerAddress = managerAddress;
+        __Ownable_init();
     }
 
     function getChanllengePledgeAmount() external pure returns (uint256) {
@@ -75,11 +78,15 @@ contract ORProtocalV1 is IORProtocal {
         require(lpid == _txinfo.lpid, "UCE_7");
         //2. lpinfo is already proof
         bytes32 lp_leaf = OperationsLib.getLpFullHash(_lpinfo);
-        bool lpVerify = SpvLib.verify(lpRootHash, lp_leaf, _lpProof);
+        // bool lpVerify = SpvLib.verify(lpRootHash, lp_leaf, _lpProof);
+        bool lpVerify = false;
+
         require(lpVerify, "UCE_8");
         //3. stoptime & mid is already proof
         bytes32 mid_leaf = keccak256(abi.encodePacked(lp_leaf, keccak256(abi.encodePacked(stopTime))));
-        bool midVerify = SpvLib.verify(lpRootHash, mid_leaf, _midProof);
+        // bool midVerify = SpvLib.verify(lpRootHash, mid_leaf, _midProof);
+        bool midVerify = false;
+
         require(midVerify, "UCE_9");
         return true;
     }
@@ -103,7 +110,6 @@ contract ORProtocalV1 is IORProtocal {
                 _makerTx.timestamp - _userTx.timestamp < souceChainInfo.maxDisputeTime,
             "MCE_TIMEINVALIDATE"
         );
-
         return true;
     }
 

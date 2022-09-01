@@ -1,7 +1,6 @@
 import { expect } from 'chai';
-import { ethers } from 'hardhat';
+import { ethers, upgrades } from 'hardhat';
 import { MerkleTree } from 'merkletreejs';
-import { ORSpv } from '../typechain-types/contracts/ORSpv';
 const { keccak256 } = ethers.utils;
 const UserTxList = [
   {
@@ -94,19 +93,16 @@ const MakerTxList = [
 ];
 
 describe('ORSpv.spec.ts', () => {
-  let spv: ORSpv;
+  let spv: any;
   const chainId = '1';
   let userTxTree: MerkleTree;
   let makerTxTree: MerkleTree;
   async function deploySpvFixture() {
-    const SpvLib = await ethers.getContractFactory('SpvLib');
-    const spvLib = await SpvLib.deploy();
     const ORSpv = await ethers.getContractFactory('ORSpv', {
-      libraries: {
-        SpvLib: spvLib.address,
-      },
+      libraries: {},
     });
-    spv = await ORSpv.deploy();
+    spv = await upgrades.deployProxy(ORSpv);
+    await spv.deployed();
     const { tree: tree1 } = generateMerkleTree(UserTxList);
     userTxTree = tree1;
     const { tree: tree2 } = generateMerkleTree(MakerTxList);
