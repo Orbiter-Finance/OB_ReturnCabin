@@ -10,7 +10,8 @@ interface IORMakerDeposit {
         ACTION,
         UPDATE,
         PAUSE,
-        STOP
+        STOP,
+        USERSTOP
     }
     enum chanllengeState {
         ACTION,
@@ -22,6 +23,7 @@ interface IORMakerDeposit {
     event AddPariChain(address indexed tokenAddress, OperationsLib.pairChainInfo pairChain);
     event AddPariChains(address indexed tokenAddress, OperationsLib.pairChainInfo[] pairChains);
     event LogLpInfo(bytes32 indexed lpid, lpState indexed state, uint256 time, OperationsLib.lpInfo lpinfo);
+    event LogLpInfo(bytes32 indexed lpid, lpState indexed state, uint256 time);
 
     event LogChanllengeInfo(bytes32 indexed chanllengeid, chanllengeState indexed state);
 
@@ -57,7 +59,7 @@ interface IORMakerDeposit {
     ) external payable;
 
     // userWithDraw
-    function userWithDraw(OperationsLib.txInfo memory) external;
+    function userWithDraw(OperationsLib.txInfo memory, OperationsLib.lpInfo memory) external;
 
     // makerChanllenger
     function makerChanllenger(

@@ -162,13 +162,15 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
 
         OperationsLib.chainDeposit storage depositInfo = getChainDepositInfo(_lpinfo);
 
+        lpInfo[lpid].stopTime = 0;
+
         depositInfo.useLimit--;
         // free up funds
         if (depositInfo.useLimit == 0) {
             usedDeposit[depositToken.mainTokenAddress] -= depositInfo.depositAmount;
             depositInfo.depositAmount = 0;
         }
-        emit LogLpInfo(lpid, lpState.STOP, 0, _lpinfo);
+        emit LogLpInfo(lpid, lpState.STOP, lpInfo[lpid].stopTime, _lpinfo);
     }
 
     // LPUpdate
@@ -184,6 +186,7 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
     // withDrawAssert()
     function withDrawAssert(uint256 amount, address tokenAddress) external onlyOwner {
         require(amount != 0, "WITHDRAW_ILLEGALAMOUNT");
+        require(chanllengePleged == 0, "WITHDRAW_NOCHANLLENGE");
         uint256 unUsedAmount = idleAmount(tokenAddress);
         require(amount < unUsedAmount, "WITHDRAW_INSUFFICIENT_AMOUNT");
         if (tokenAddress != address(0)) {
@@ -206,58 +209,81 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
         bytes32[] memory _midProof,
         bytes32[] memory _txproof
     ) external payable {
-        require(userChanllengeAuthentication(_lpinfo, stopTime, _txinfo, _lpProof, _midProof, _txproof), "111");
-        //3. txinfo unChanllenge
+        address ebcAddress = IORManagerFactory(_managerAddress).getEBC(_lpinfo.ebcid);
+        require(
+            IORProtocal(ebcAddress).checkUserChallenge(
+                _lpinfo,
+                stopTime,
+                _txinfo,
+                _lpProof,
+                _midProof,
+                _txproof,
+                OperationsLib.getLpID(_lpinfo)
+            ),
+            "UC_ERROR"
+        );
         bytes32 chanllengeID = OperationsLib.getChanllengeID(_txinfo);
         require(chanllengeInfos[chanllengeID].chanllengeState == 0, "UCE_USED");
-        //3. get response changellengeinfo Todo
-        address ebcAddress = IORManagerFactory(_managerAddress).getEBC(_lpinfo.ebcid);
         uint256 pledgeAmount = IORProtocal(ebcAddress).getChanllengePledgeAmount();
         require(msg.value >= pledgeAmount, "UCE_PLEDGEAMOUNT");
-
-        bytes32 responseInfoHash = IORProtocal(ebcAddress).getResponseTxHash();
-        chanllengeInfos[chanllengeID].responseTxinfo = responseInfoHash;
+        chanllengeInfos[chanllengeID].responseTxinfo = _txinfo.responseHash;
         chanllengeInfos[chanllengeID].pledgeAmount = pledgeAmount;
+        chanllengeInfos[chanllengeID].ebcid = _lpinfo.ebcid;
         chanllengeInfos[chanllengeID].chanllengeState = 1;
-        chanllengeInfos[chanllengeID].startTime = block.timestamp;
+        chanllengeInfos[chanllengeID].stopTime =
+            block.timestamp +
+            IORManagerFactory(_managerAddress).getChainInfoByChainID(_lpinfo.sourceChain).maxDisputeTime;
+        chanllengePleged += pledgeAmount;
         emit LogChanllengeInfo(chanllengeID, chanllengeState.ACTION);
     }
 
-    function userChanllengeAuthentication(
-        OperationsLib.lpInfo memory _lpinfo,
-        uint256 stopTime,
-        OperationsLib.txInfo memory _txinfo,
-        bytes32[] memory _lpProof,
-        bytes32[] memory _midProof,
-        bytes32[] memory _txproof
-    ) internal view returns (bool) {
-        address spvAddress = getSpvAddress();
-        bytes32 lpid = OperationsLib.getLpID(_lpinfo);
-        //1. txinfo is already spv
-        bool txVerify = IORSpv(spvAddress).verifyUserTxProof(_txinfo, _txproof);
-        require(txVerify, "UCE_1");
-        require(_lpinfo.sourceChain == _txinfo.chainID, "UCE_2");
-        require(_lpinfo.sourceTAddress == _txinfo.tokenAddress, "UCE_3");
-        require(_txinfo.destAddress == _owner, "UCE_4");
-        require(_txinfo.sourceAddress == msg.sender, "UCE_5");
-        require(_txinfo.timestamp > _lpinfo.startTime && _txinfo.timestamp < stopTime, "UCE_6");
-        require(lpid == _txinfo.lpid, "UCE_7");
-        //2. lpinfo is already proof
-        bytes32 lp_leaf = OperationsLib.getLpFullHash(_lpinfo);
-        bool lpVerify = SpvLib.verify(lpInfo[lpid].LPRootHash, lp_leaf, _lpProof);
-        require(lpVerify, "UCE_8");
-        //3. stoptime & mid is already proof
-        bytes32 mid_leaf = keccak256(abi.encodePacked(lp_leaf, keccak256(abi.encodePacked(stopTime))));
-        bool midVerify = SpvLib.verify(lpInfo[lpid].LPRootHash, mid_leaf, _midProof);
-        require(midVerify, "UCE_9");
-        return true;
+    // LPStop
+    function USER_LPStop(uint256 sourceChain, address tokenAddress) internal {
+        OperationsLib.tokenInfo memory _dTinfo = IORManagerFactory(_managerAddress).getTokenInfo(
+            sourceChain,
+            tokenAddress
+        );
+        OperationsLib.chainDeposit storage _cDinfo = chainDeposit[sourceChain][_dTinfo.mainTokenAddress];
+
+        bytes32[] memory lpids = _cDinfo.lpids;
+
+        if (lpids.length != 0) {
+            for (uint256 i = 0; i < lpids.length; i++) {
+                lpInfo[lpids[i]].startTime = 0;
+                lpInfo[lpids[i]].stopTime = 0;
+                delete _cDinfo.lpids[i];
+                _cDinfo.useLimit--;
+                emit LogLpInfo(lpids[i], lpState.USERSTOP, 0);
+            }
+            require(_cDinfo.useLimit == 0, "ULPSTOP_ERROR");
+
+            usedDeposit[_dTinfo.mainTokenAddress] -= _cDinfo.depositAmount;
+            _cDinfo.depositAmount = 0;
+        }
     }
 
     // userWithDraw
-    function userWithDraw(OperationsLib.txInfo memory _userTx) external {
+    function userWithDraw(OperationsLib.txInfo memory _userTx, OperationsLib.lpInfo memory _lpinfo) external {
         bytes32 chanllengeID = OperationsLib.getChanllengeID(_userTx);
-        require(chanllengeInfos[chanllengeID].chanllengeState == 2, "MC_WITHDRAW");
-        console.log(_userTx.sourceAddress);
+        require(_userTx.sourceAddress == msg.sender, "UW_SENDER");
+        require(chanllengeInfos[chanllengeID].chanllengeState == 1, "UW_WITHDRAW");
+        require(block.timestamp > chanllengeInfos[chanllengeID].stopTime, "UW_TIME");
+
+        address ebcAddress = IORManagerFactory(_managerAddress).getEBC(chanllengeInfos[chanllengeID].ebcid);
+        require(ebcAddress != address(0), "UW_EBCADDRESS_0");
+        if (_userTx.tokenAddress != address(0)) {
+            uint256 withDrawToken = IORProtocal(ebcAddress).getTokenPunish(_userTx.amount);
+            uint256 withDrawAmount = chanllengeInfos[chanllengeID].pledgeAmount;
+            IERC20(_userTx.tokenAddress).transfer(msg.sender, withDrawToken);
+            payable(msg.sender).transfer(withDrawAmount);
+        } else {
+            uint256 withDrawAmount = chanllengeInfos[chanllengeID].pledgeAmount +
+                IORProtocal(ebcAddress).getETHPunish(_userTx.amount);
+            payable(msg.sender).transfer(withDrawAmount);
+        }
+        uint256 unUsedAmount = idleAmount(_userTx.tokenAddress) + chanllengeInfos[chanllengeID].pledgeAmount;
+        chanllengePleged -= chanllengeInfos[chanllengeID].pledgeAmount;
+
         emit LogChanllengeInfo(chanllengeID, chanllengeState.WITHDRAWED);
     }
 
@@ -269,10 +295,8 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
     ) external {
         bytes32 chanllengeID = OperationsLib.getChanllengeID(_userTx);
         require(chanllengeInfos[chanllengeID].chanllengeState == 1, "MC_ANSWER");
-        address spvAddress = getSpvAddress();
-        //1. _makerTx is already spv
-        bool txVerify = IORSpv(spvAddress).verifyUserTxProof(_makerTx, _makerProof);
-        require(txVerify, "MCE_UNVERIFY");
+        address ebcAddress = IORManagerFactory(_managerAddress).getEBC(chanllengeInfos[chanllengeID].ebcid);
+        require(IORProtocal(ebcAddress).checkMakerChallenge(_userTx, _makerTx, _makerProof), "MC_ERROR");
         bytes32 makerResponse = keccak256(
             abi.encodePacked(
                 _makerTx.lpid,
@@ -280,22 +304,14 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
                 _makerTx.txHash,
                 _makerTx.sourceAddress,
                 _makerTx.destAddress,
-                _makerTx.nonce,
                 _makerTx.amount,
                 _makerTx.tokenAddress
-                // _txInfo.timestamp
             )
         );
         require(chanllengeInfos[chanllengeID].responseTxinfo == makerResponse, "MCE_UNMATCH");
-        OperationsLib.chainInfo memory souceChainInfo = IORManagerFactory(_managerAddress).getChainInfoByChainID(
-            _userTx.chainID
-        );
-        require(
-            _makerTx.timestamp - _userTx.timestamp > 0 &&
-                _makerTx.timestamp - _userTx.timestamp < souceChainInfo.maxDisputeTime,
-            "MCE_TIMEINVALIDATE"
-        );
         chanllengeInfos[chanllengeID].chanllengeState = 2;
+        chanllengePleged -= chanllengeInfos[chanllengeID].pledgeAmount;
+
         emit LogChanllengeInfo(chanllengeID, chanllengeState.RESPONSED);
     }
 }

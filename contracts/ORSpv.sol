@@ -55,7 +55,8 @@ contract ORSpv is IORSpv, Ownable {
                 _txInfo.nonce,
                 _txInfo.amount,
                 _txInfo.tokenAddress,
-                _txInfo.timestamp
+                _txInfo.timestamp,
+                _txInfo.responseHash
             )
         );
         return SpvLib.verify(userTxTree[_txInfo.chainID], _leaf, _proof);
@@ -80,7 +81,8 @@ contract ORSpv is IORSpv, Ownable {
                 _txInfo.nonce,
                 _txInfo.amount,
                 _txInfo.tokenAddress,
-                _txInfo.timestamp
+                _txInfo.timestamp,
+                _txInfo.responseHash
             )
         );
         return SpvLib.verify(makerTxTree[_txInfo.chainID], _leaf, _proof);

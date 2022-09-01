@@ -36,6 +36,7 @@ library OperationsLib {
         uint256 amount;
         uint256 nonce;
         uint256 timestamp;
+        bytes32 responseHash;
     }
 
     struct lpInfo {
@@ -63,14 +64,16 @@ library OperationsLib {
         address tokenAddress; // mainNetTokenAddress
         uint256 depositAmount;
         uint256 useLimit; //
+        bytes32[] lpids;
     }
 
     struct chanllengeInfo {
         uint256 chanllengeState; // 0:unused   1:watting for maker  2.maker success   3.maker failed   4.ma
         bytes32 responseTxinfo;
-        uint256 startTime;
+        uint256 stopTime;
         uint256 endTime;
         uint256 pledgeAmount;
+        uint256 ebcid;
     }
 
     function getLpID(pairChainInfo memory _lpinfo) internal pure returns (bytes32) {
