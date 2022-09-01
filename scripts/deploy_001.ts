@@ -1,4 +1,5 @@
 import { ethers, upgrades } from 'hardhat';
+import { ORManagerFactory } from '../typechain-types/contracts/ORManagerFactory';
 
 async function main() {
   // deploy spv
@@ -18,11 +19,11 @@ async function main() {
   const factoryProxy = await upgrades.deployProxy(ORManagerFactory);
   await factoryProxy.deployed();
   console.log('ORManagerFactory deployed to:', factoryProxy.address);
-  const factory = factory;
-
+  const factory = factoryProxy as ORManagerFactory;
+  console.log('factory:', factory.address);
   // create maker
-  // const [owner, maker] = await ethers.getSigners();
-  factory.createMaker({});
+  const [_, maker] = await ethers.getSigners();
+  await factory.connect(maker).createMaker();
 }
 
 main().catch((error) => {
