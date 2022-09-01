@@ -1,27 +1,7 @@
 import { ethers } from 'ethers';
+import { PairStruct, LpInfoStruct } from './Config';
 const { solidityKeccak256 } = ethers.utils;
-export interface PairChainInfoStruct {
-  sourceChain: number;
-  destChain: number;
-  sourceTAddress: string;
-  destTAddress: string;
-  ebcid: any;
-}
-export type LpInfoStruct = {
-  sourceChain: number;
-  destChain: number;
-  sourceTAddress: string;
-  destTAddress: string;
-  sourcePresion: number;
-  destPresion: number;
-  ebcid: number;
-  minPrice: number;
-  maxPrice: number;
-  gasFee: number;
-  tradingFee: number;
-  startTime: number;
-};
-export const getPairID = (pair: PairChainInfoStruct) => {
+export const getPairID = (pair: PairStruct): string => {
   const lpId = solidityKeccak256(
     ['uint256', 'uint256', 'address', 'address', 'uint256'],
     [
@@ -32,18 +12,35 @@ export const getPairID = (pair: PairChainInfoStruct) => {
       pair.ebcid,
     ],
   );
-  return Buffer.from(lpId.replace('0x', ''), 'hex');
+  return lpId.replace('0x', '');
+  // return Buffer.from(lpId.replace('0x', ''), 'hex');
 };
-export const getPairLPID = (pair: PairChainInfoStruct) => {
+export const getPairLPID = (lp: LpInfoStruct): string => {
   const lpId = solidityKeccak256(
-    ['uint256', 'uint256', 'address', 'address', 'uint256'],
     [
-      pair.sourceChain,
-      pair.destChain,
-      pair.sourceTAddress,
-      pair.destTAddress,
-      pair.ebcid,
+      'bytes32',
+      'uint256',
+      'uint256',
+      'uint256',
+      'uint256',
+      'uint256',
+      'uint256',
+      'uint256',
+      'uint256',
+    ],
+    [
+      `0x${lp.pairId}`,
+      ethers.BigNumber.from(lp.maxPrice),
+      ethers.BigNumber.from(lp.minPrice),
+      ethers.BigNumber.from(lp.gasFee),
+      ethers.BigNumber.from(lp.tradingFee),
+      ethers.BigNumber.from(lp.startTime),
+      ethers.BigNumber.from(lp.stopTime || 0),
+      ethers.BigNumber.from(lp.sourcePresion),
+      ethers.BigNumber.from(lp.destPresion),
     ],
   );
-  return Buffer.from(lpId.replace('0x', ''), 'hex');
+
+  return lpId.replace('0x', '');
+  // return Buffer.from(lpId.replace('0x', ''), 'hex');
 };
