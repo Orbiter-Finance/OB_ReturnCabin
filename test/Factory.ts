@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { ethers } from 'hardhat';
+import { ethers, upgrades } from 'hardhat';
 import { ORManagerFactory } from '../typechain-types/contracts/ORManagerFactory';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
@@ -19,14 +19,11 @@ const tokeninfo_usdt_arb = TOKEN_LIST[5];
 
 async function deployFactoryFixture() {
   const [owner, addr1, addr2] = await ethers.getSigners();
-  const SpvLib = await ethers.getContractFactory('SpvLib');
-  const spvLib = await SpvLib.deploy();
-  const Factory = await ethers.getContractFactory('ORManagerFactory', {
-    libraries: {
-      SpvLib: spvLib.address,
-    },
-  });
-  factory = await Factory.deploy();
+  const Factory = await ethers.getContractFactory('ORManagerFactory', {});
+  const factoryProxy = await upgrades.deployProxy(Factory);
+  // factory = await Factory.deploy();
+  await factoryProxy.deployed();
+  factory = factoryProxy as ORManagerFactory;
   console.log(`factory :`, factory.address);
   process.env['factory'] = factory.address;
   return { Factory, factory, owner, addr1, addr2 };

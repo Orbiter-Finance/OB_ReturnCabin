@@ -53,8 +53,11 @@
   "dependencies": {
     "@nomiclabs/hardhat-web3": "^2.0.0",
     "@openzeppelin/contracts": "^4.7.3",
+    "@openzeppelin/contracts-upgradeable": "^4.7.3",
+    "@openzeppelin/hardhat-upgrades": "^1.20.0",
     "dotenv": "^16.0.1",
     "ethereumjs-util": "^7.1.5",
+    "hardhat-contract-sizer": "^2.6.1",
     "keccak256": "^1.0.6",
     "level": "^8.0.0",
     "lodash": "^4.17.21",

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
-import "../library/Spv.sol";
+import "../library/Operation.sol";
 
 interface IORSpv {
     function setUserTxTreeRoot(uint256 chain, bytes32 root) external;

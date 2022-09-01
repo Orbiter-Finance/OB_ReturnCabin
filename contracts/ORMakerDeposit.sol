@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-import "hardhat/console.sol";
 import "./interface/IORMakerDeposit.sol";
 import "./library/Operation.sol";
 import "./interface/IORManagerFactory.sol";
@@ -243,11 +242,13 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
         require(lpid == _txinfo.lpid, "UCE_7");
         //2. lpinfo is already proof
         bytes32 lp_leaf = OperationsLib.getLpFullHash(_lpinfo);
-        bool lpVerify = SpvLib.verify(lpInfo[lpid].LPRootHash, lp_leaf, _lpProof);
+        // bool lpVerify = SpvLib.verify(lpInfo[lpid].LPRootHash, lp_leaf, _lpProof);
+        bool lpVerify = false;
         require(lpVerify, "UCE_8");
         //3. stoptime & mid is already proof
         bytes32 mid_leaf = keccak256(abi.encodePacked(lp_leaf, keccak256(abi.encodePacked(stopTime))));
-        bool midVerify = SpvLib.verify(lpInfo[lpid].LPRootHash, mid_leaf, _midProof);
+        bool midVerify = false;
+        // bool midVerify = SpvLib.verify(lpInfo[lpid].LPRootHash, mid_leaf, _midProof);
         require(midVerify, "UCE_9");
         return true;
     }
@@ -256,7 +257,6 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
     function userWithDraw(OperationsLib.txInfo memory _userTx) external {
         bytes32 chanllengeID = OperationsLib.getChanllengeID(_userTx);
         require(chanllengeInfos[chanllengeID].chanllengeState == 2, "MC_WITHDRAW");
-        console.log(_userTx.sourceAddress);
         emit LogChanllengeInfo(chanllengeID, chanllengeState.WITHDRAWED);
     }
 
