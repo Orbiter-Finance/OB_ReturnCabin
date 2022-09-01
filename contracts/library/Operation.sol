@@ -58,6 +58,7 @@ library OperationsLib {
         bytes32 LPRootHash;
         uint256 stopTime;
         uint256 startTime;
+        bool inlps;
     }
 
     struct chainDeposit {

@@ -31,10 +31,12 @@ contract ORProtocalV1 is IORProtocal {
     }
 
     function getStartDealyTime(uint256 chainID) external pure returns (uint256) {
+        require(chainID != 0, "CHAINID_ERROR");
         return 1000;
     }
 
     function getStopDealyTime(uint256 chainID) external pure returns (uint256) {
+        require(chainID != 0, "CHAINID_ERROR");
         return 1000;
     }
 
@@ -58,7 +60,7 @@ contract ORProtocalV1 is IORProtocal {
         bytes32[] memory _midProof,
         bytes32[] memory _txproof,
         bytes32 lpRootHash
-    ) external returns (bool) {
+    ) external view returns (bool) {
         require(_txinfo.sourceAddress == msg.sender, "UCE_SENDER");
         bytes32 lpid = OperationsLib.getLpID(_lpinfo);
         //1. txinfo is already spv
@@ -107,6 +109,7 @@ contract ORProtocalV1 is IORProtocal {
 
     function userChanllengeWithDraw(OperationsLib.txInfo memory userInfo)
         external
+        pure
         returns (
             bool,
             uint256,
@@ -116,11 +119,7 @@ contract ORProtocalV1 is IORProtocal {
         return (true, 1, 1);
     }
 
-    function getETHGas(uint256 sourceChainID, uint256 destChainID) external returns (uint256) {
-        return 1;
-    }
-
-    function maxWithdrawTime() external view returns (uint256) {
+    function maxWithdrawTime() external pure returns (uint256) {
         return 1;
     }
 

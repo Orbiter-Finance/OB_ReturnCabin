@@ -110,6 +110,9 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
                 supplement = (needDepositAmount - chainPledged.depositAmount);
             }
             chainPledged.useLimit++;
+            if (!lpInfo[lpid].inlps) {
+                chainPledged.lpids.push(lpid);
+            }
             emit LogLpInfo(lpid, lpState.ACTION, lpInfo[lpid].startTime, _lpinfo);
         }
         if (supplement - unUsedAmount > 0) {
@@ -250,12 +253,13 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
             for (uint256 i = 0; i < lpids.length; i++) {
                 lpInfo[lpids[i]].startTime = 0;
                 lpInfo[lpids[i]].stopTime = 0;
-                delete _cDinfo.lpids[i];
-                _cDinfo.useLimit--;
+
                 emit LogLpInfo(lpids[i], lpState.USERSTOP, 0);
             }
-            require(_cDinfo.useLimit == 0, "ULPSTOP_ERROR");
-
+            delete _cDinfo.lpids;
+            _cDinfo.useLimit = 0;
+            _cDinfo.depositAmount = 0;
+            //TODO: The funds of the maker that are released through the user's appeal must have a blocking period, and the maker cannot withdraw directly.
             usedDeposit[_dTinfo.mainTokenAddress] -= _cDinfo.depositAmount;
             _cDinfo.depositAmount = 0;
         }
@@ -270,19 +274,26 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
 
         address ebcAddress = IORManagerFactory(_managerAddress).getEBC(chanllengeInfos[chanllengeID].ebcid);
         require(ebcAddress != address(0), "UW_EBCADDRESS_0");
+        uint256 withDrawAmount = 0;
+        uint256 unUsedAmount = idleAmount(_userTx.tokenAddress);
         if (_userTx.tokenAddress != address(0)) {
-            uint256 withDrawToken = IORProtocal(ebcAddress).getTokenPunish(_userTx.amount);
-            uint256 withDrawAmount = chanllengeInfos[chanllengeID].pledgeAmount;
-            IERC20(_userTx.tokenAddress).transfer(msg.sender, withDrawToken);
-            payable(msg.sender).transfer(withDrawAmount);
+            withDrawAmount = IORProtocal(ebcAddress).getTokenPunish(_userTx.amount);
         } else {
-            uint256 withDrawAmount = chanllengeInfos[chanllengeID].pledgeAmount +
+            withDrawAmount =
+                chanllengeInfos[chanllengeID].pledgeAmount +
                 IORProtocal(ebcAddress).getETHPunish(_userTx.amount);
+        }
+        if (withDrawAmount > unUsedAmount) {
+            USER_LPStop(_lpinfo.sourceChain, _lpinfo.sourceTAddress);
+        }
+        if (_userTx.tokenAddress != address(0)) {
+            uint256 withDrawPledge = chanllengeInfos[chanllengeID].pledgeAmount;
+            IERC20(_userTx.tokenAddress).transfer(msg.sender, withDrawAmount);
+            payable(msg.sender).transfer(withDrawPledge);
+        } else {
             payable(msg.sender).transfer(withDrawAmount);
         }
-        uint256 unUsedAmount = idleAmount(_userTx.tokenAddress) + chanllengeInfos[chanllengeID].pledgeAmount;
         chanllengePleged -= chanllengeInfos[chanllengeID].pledgeAmount;
-
         emit LogChanllengeInfo(chanllengeID, chanllengeState.WITHDRAWED);
     }
 

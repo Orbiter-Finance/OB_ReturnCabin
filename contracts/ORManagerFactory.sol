@@ -61,7 +61,6 @@ contract ORManagerFactory is IORManagerFactory, Ownable {
         return info;
     }
 
-    // TODO
     function setTokenInfo(
         uint256 chainID,
         address tokenAddress,
@@ -96,7 +95,7 @@ contract ORManagerFactory is IORManagerFactory, Ownable {
                 return tokenInfos[chainID][tokenAddress];
             }
         }
-        // TODO  error
+        revert("UNSUPPORTTOKEN");
     }
 
     function createMaker() external returns (address) {
