@@ -69,20 +69,24 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
     }
 
     function LPAction(
-        uint256 amount,
         OperationsLib.lpInfo[] calldata _lpinfos,
         bytes32[][] calldata proof,
         bytes32[][] calldata pairProof
     ) external payable {
-        uint256 totalNeedDepositAmount = 0;
-        uint256 accountDepositAmount = 0;
-        address mainTokenAddress = address(0);
         require(_lpinfos.length == proof.length, "Inconsistent Array Length");
+        require(_lpinfos.length > 0, "Inconsistent Array Length");
+        OperationsLib.tokenInfo memory depositToken = getDepositTokenInfo(_lpinfos[0]);
+        address pledgedToken = depositToken.mainTokenAddress;
+        OperationsLib.chainDeposit storage chainPledged = chainDeposit[_lpinfos[0].sourceChain][pledgedToken];
+        // free
+        uint256 unUsedAmount = idleAmount(pledgedToken);
+        // Need to be supplemented
+        uint256 supplement = 0;
         for (uint256 i = 0; i < _lpinfos.length; i++) {
             OperationsLib.lpInfo memory _lpinfo = _lpinfos[i];
             bytes32 lpid = OperationsLib.getLpID(_lpinfo);
+            require(lpInfo[lpid].startTime == 0 && lpInfo[lpid].stopTime != 0, "LP Not Paused");
             require(IORManagerFactory(_managerAddress).isSupportPair(lpid, pairProof[i]), "Pair Not Supported");
-
             if (
                 !(_lpinfo.sourceChain == _lpinfos[0].sourceChain &&
                     _lpinfo.sourceTAddress == _lpinfos[0].sourceTAddress)
@@ -92,40 +96,35 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
             // first init lpPair
             lpInfo[lpid].LPRootHash = MerkleProof.processProofCalldata(proof[i], lpid);
             require(lpInfo[lpid].startTime == 0 && lpInfo[lpid].stopTime == 0, "LPACTION_LPID_UNSTOP");
-
             OperationsLib.chainInfo memory souceChainInfo = IORManagerFactory(_managerAddress).getChainInfoByChainID(
                 _lpinfo.sourceChain
             );
-            uint256 needDepositAmount = souceChainInfo.batchLimit * _lpinfo.maxPrice;
-            OperationsLib.tokenInfo memory depositToken = getDepositTokenInfo(_lpinfo);
-            OperationsLib.chainDeposit memory depositInfo = getChainDepositInfo(_lpinfo);
-            lpInfo[lpid].startTime = block.timestamp;
-            _lpinfo.startTime = block.timestamp;
-            totalNeedDepositAmount += needDepositAmount;
-            accountDepositAmount += depositInfo.depositAmount;
-            if (i > 0 && depositToken.mainTokenAddress != mainTokenAddress) {
+            depositToken = getDepositTokenInfo(_lpinfo);
+            if (i > 0 && depositToken.mainTokenAddress != pledgedToken) {
                 revert("LP that does not support multiple pledge tokens");
             }
-            mainTokenAddress = depositToken.mainTokenAddress;
-            depositInfo.depositAmount = needDepositAmount;
-            depositInfo.useLimit++;
+            uint256 needDepositAmount = souceChainInfo.batchLimit * _lpinfo.maxPrice;
+            lpInfo[lpid].startTime = block.timestamp;
+            _lpinfo.startTime = block.timestamp;
+            if (needDepositAmount > chainPledged.depositAmount) {
+                supplement = (needDepositAmount - chainPledged.depositAmount);
+            }
+            chainPledged.useLimit++;
             emit LogLpInfo(lpid, lpState.ACTION, lpInfo[lpid].startTime, _lpinfo);
         }
-
-        if (accountDepositAmount < totalNeedDepositAmount) {
-            // need inject
-            uint256 unUsedAmount = idleAmount(mainTokenAddress); // free
-            require(
-                unUsedAmount + amount > totalNeedDepositAmount - accountDepositAmount,
-                "LPACTION_INSUFFICIENT_AMOUNT"
-            );
-            if (unUsedAmount < totalNeedDepositAmount - accountDepositAmount) {
-                if (mainTokenAddress != address(0)) {
-                    uint256 allowance = IERC20(mainTokenAddress).allowance(msg.sender, address(this));
-                    require(allowance >= amount, "Check the token allowance");
-                    IERC20(mainTokenAddress).transferFrom(msg.sender, address(this), amount);
+        if (supplement - unUsedAmount > 0) {
+            // need deposit
+            uint256 realNeedAmount = supplement - unUsedAmount;
+            if (realNeedAmount > 0) {
+                if (pledgedToken != address(0)) {
+                    uint256 allowance = IERC20(pledgedToken).allowance(msg.sender, address(this));
+                    require(allowance >= realNeedAmount, "Check the token allowance");
+                    IERC20(pledgedToken).transferFrom(msg.sender, address(this), realNeedAmount);
+                    usedDeposit[pledgedToken] += realNeedAmount;
                 } else {
-                    require(msg.value >= amount, "Check the eth send");
+                    require(msg.value >= realNeedAmount, "Check the eth send");
+                    // user deposit
+                    usedDeposit[pledgedToken] += realNeedAmount;
                 }
             }
         }
