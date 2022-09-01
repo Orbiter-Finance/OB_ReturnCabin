@@ -3,13 +3,12 @@ pragma solidity ^0.8.9;
 
 import "./interface/IORProtocal.sol";
 import "./library/Operation.sol";
-import "hardhat/console.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-contract ORProtocalV1 is IORProtocal {
-    address _owner;
-
-    constructor(address owner) payable {
-        _owner = owner;
+contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
+    function initialize() public initializer {
+        __Ownable_init();
     }
 
     function getResponseTxHash() external pure returns (bytes32) {
@@ -21,31 +20,31 @@ contract ORProtocalV1 is IORProtocal {
         return 0.05 * 10**18;
     }
 
-    function isSupportChainID(uint256 chainID) external returns (bool) {
+    function isSupportChainID(uint256 chainID) external pure returns (bool) {
         return true;
     }
 
-    function getDeposit(uint256 chainid, uint256 oneMax) external returns (uint256) {
+    function getDeposit(uint256 chainid, uint256 oneMax) external pure returns (uint256) {
         return 1;
     }
 
-    function getTokenPunish(uint256 amount) external view returns (uint256) {
+    function getTokenPunish(uint256 amount) external pure returns (uint256) {
         return 1;
     }
 
-    function getETHPunish(uint256 fromChainID) external view returns (uint256) {
+    function getETHPunish(uint256 fromChainID) external pure returns (uint256) {
         return 1;
     }
 
-    function getDisputeTimeTime(uint256 chainID) external returns (uint256) {
+    function getDisputeTimeTime(uint256 chainID) external pure returns (uint256) {
         return 1;
     }
 
-    function getStartDealyTime(uint256 chainID) external view returns (uint256) {
+    function getStartDealyTime(uint256 chainID) external pure returns (uint256) {
         return 1;
     }
 
-    function getStopDealyTime(uint256 chainID) external view returns (uint256) {
+    function getStopDealyTime(uint256 chainID) external pure returns (uint256) {
         return 1;
     }
 
@@ -53,7 +52,7 @@ contract ORProtocalV1 is IORProtocal {
         OperationsLib.lpInfo memory,
         OperationsLib.txInfo memory,
         bytes memory proof
-    ) external returns (bool) {
+    ) external pure returns (bool) {
         return true;
     }
 
@@ -61,12 +60,13 @@ contract ORProtocalV1 is IORProtocal {
         OperationsLib.txInfo memory,
         OperationsLib.txInfo memory,
         bytes memory proof
-    ) external returns (bool) {
+    ) external pure returns (bool) {
         return true;
     }
 
     function userChanllengeWithDraw(OperationsLib.txInfo memory userInfo)
         external
+        pure
         returns (
             bool,
             uint256,
@@ -76,11 +76,11 @@ contract ORProtocalV1 is IORProtocal {
         return (true, 1, 1);
     }
 
-    function getETHGas(uint256 sourceChainID, uint256 destChainID) external returns (uint256) {
+    function getETHGas(uint256 sourceChainID, uint256 destChainID) external pure returns (uint256) {
         return 1;
     }
 
-    function maxWithdrawTime() external view returns (uint256) {
+    function maxWithdrawTime() external pure returns (uint256) {
         return 1;
     }
 }
