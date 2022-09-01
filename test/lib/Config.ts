@@ -1,5 +1,27 @@
-export const pairList = [
+import { getPairID, getPairLPID } from './Utils';
+export interface PairStruct {
+  id: string;
+  sourceChain: number;
+  destChain: number;
+  sourceTAddress: string;
+  destTAddress: string;
+  ebcid: any;
+}
+export interface LpInfoStruct {
+  id: string;
+  pairId: string;
+  sourcePresion: number;
+  destPresion: number;
+  maxPrice: string;
+  minPrice: string;
+  gasFee: string;
+  tradingFee: string;
+  startTime: number;
+  stopTime?: number;
+}
+export const PAIR_LIST: PairStruct[] = [
   {
+    id: '',
     sourceChain: 1,
     destChain: 2,
     sourceTAddress: '0x0000000000000000000000000000000000000000',
@@ -7,6 +29,7 @@ export const pairList = [
     ebcid: '0x0000000000000000000000000000000000000000',
   },
   {
+    id: '',
     sourceChain: 1,
     destChain: 3,
     sourceTAddress: '0x0000000000000000000000000000000000000000',
@@ -14,6 +37,7 @@ export const pairList = [
     ebcid: '0x0000000000000000000000000000000000000000',
   },
   {
+    id: '',
     sourceChain: 2,
     destChain: 1,
     sourceTAddress: '0x0000000000000000000000000000000000000000',
@@ -21,14 +45,45 @@ export const pairList = [
     ebcid: '0x0000000000000000000000000000000000000000',
   },
   {
+    id: '',
     sourceChain: 3,
     destChain: 1,
     sourceTAddress: '0x0000000000000000000000000000000000000000',
     destTAddress: '0x0000000000000000000000000000000000000000',
     ebcid: '0x0000000000000000000000000000000000000000',
   },
-];
-export const chainInfoList = [
+].map((row: PairStruct) => {
+  row.id = getPairID(row);
+  return row;
+});
+export const LP_LIST: LpInfoStruct[] = [
+  {
+    id: '',
+    pairId: String(PAIR_LIST[0].id),
+    sourcePresion: 18,
+    destPresion: 18,
+    minPrice: '5000000000000000',
+    maxPrice: '9000000000000000',
+    gasFee: '10000000000000000',
+    tradingFee: '10000000000000000',
+    startTime: 0,
+  },
+  {
+    id: '',
+    pairId: String(PAIR_LIST[1].id),
+    sourcePresion: 18,
+    destPresion: 18,
+    minPrice: '5000000000000000',
+    maxPrice: '9000000000000000',
+    gasFee: '10000000000000000',
+    tradingFee: '10000000000000000',
+    startTime: 0,
+  },
+].map((row: LpInfoStruct) => {
+  row.id = getPairLPID(row);
+  return row;
+});
+export const CHAIN_INFO_LIST = [
   {
     chainID: 1,
     batchLimit: 100,
@@ -62,7 +117,7 @@ export const chainInfoList = [
     tokenList: ['0x0000000000000000000000000000000000000000'],
   },
 ];
-export const tokenList = [
+export const TOKEN_LIST = [
   {
     chainID: 1,
     symbol: 'ETH',
@@ -105,24 +160,4 @@ export const tokenList = [
     tokenPresion: 6,
     mainAddress: '0xdac17f958d2ee523a2206206994597c13d831ec7',
   },
-];
-export const lpInfoList = [
-  Object.assign(pairList[0], {
-    sourcePresion: 18,
-    destPresion: 18,
-    minPrice: '5000000000000000',
-    maxPrice: '9000000000000000',
-    gasFee: '10000000000000000',
-    tradingFee: '10000000000000000',
-    startTime: 0,
-  }),
-  Object.assign(pairList[1], {
-    sourcePresion: 18,
-    destPresion: 18,
-    minPrice: '5000000000000000',
-    maxPrice: '9000000000000000',
-    gasFee: '10000000000000000',
-    tradingFee: '10000000000000000',
-    startTime: 0,
-  }),
 ];

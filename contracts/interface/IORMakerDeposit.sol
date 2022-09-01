@@ -30,7 +30,6 @@ interface IORMakerDeposit {
     function idleAmount(address tokenAddress) external view returns (uint256);
 
     function LPAction(
-        uint256 amount,
         OperationsLib.lpInfo[] calldata _lpinfos,
         bytes32[][] calldata proof,
         bytes32[][] calldata pairProof

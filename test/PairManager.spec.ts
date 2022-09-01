@@ -1,7 +1,7 @@
 import { ethers } from 'hardhat';
 import { MerkleTree } from 'merkletreejs';
 import { getPairID } from './lib/Utils';
-import { pairList } from './lib/Config';
+import { PAIR_LIST } from './lib/Config';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { expect } from 'chai';
 import keccak256 from 'keccak256';
@@ -21,8 +21,8 @@ describe('PairManager.spec', () => {
     // const PairManagerContrct = await ethers.getContractFactory('ORPairManager');
     // pairManagerContrct = await PairManagerContrct.deploy();
   }
-  allPairLeafList = pairList.map((row: any) => {
-    row.leaf = getPairID(row);
+  allPairLeafList = PAIR_LIST.map((row: any) => {
+    row.leaf = Buffer.from(getPairID(row), 'hex');
     return row;
   });
   PairTree = new MerkleTree([], keccak256, {
@@ -31,7 +31,9 @@ describe('PairManager.spec', () => {
   before(deployPairManagerFixture);
   it('createPair Pair1', async () => {
     PairTree.addLeaves([allPairLeafList[0].leaf, allPairLeafList[1].leaf]);
-    const proofLeavesHash = [pairList[0], pairList[1]].map(getPairID);
+    const proofLeavesHash = [PAIR_LIST[0], PAIR_LIST[1]].map((row) => {
+      return Buffer.from(getPairID(row), 'hex');
+    });
     const proof = await PairTree.getMultiProof(proofLeavesHash);
     const proofFlags = PairTree.getProofFlags(proofLeavesHash, proof);
     const tx = await pairManagerContrct.createPair(
@@ -51,7 +53,9 @@ describe('PairManager.spec', () => {
   });
   it('createPair Pair2', async () => {
     PairTree.addLeaves([allPairLeafList[3].leaf, allPairLeafList[2].leaf]);
-    const proofLeavesHash = [pairList[2], pairList[3]].map(getPairID);
+    const proofLeavesHash = [PAIR_LIST[2], PAIR_LIST[3]].map((row) => {
+      return Buffer.from(getPairID(row), 'hex');
+    });
     const proof = await PairTree.getMultiProof(proofLeavesHash);
     const proofFlags = PairTree.getProofFlags(proofLeavesHash, proof);
     const tx = await pairManagerContrct.createPair(
@@ -71,7 +75,9 @@ describe('PairManager.spec', () => {
   });
   it('Delete Pair', async () => {
     // PairTree.addLeaves([allPairLeafList[3].leaf, allPairLeafList[2].leaf]);
-    const proofLeavesHash = [pairList[3]].map(getPairID);
+    const proofLeavesHash = [PAIR_LIST[3]].map((row) => {
+      return Buffer.from(getPairID(row), 'hex');
+    });
 
     const proof = await PairTree.getMultiProof(proofLeavesHash);
     const proofFlags = PairTree.getProofFlags(proofLeavesHash, proof);

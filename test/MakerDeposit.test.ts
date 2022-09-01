@@ -1,9 +1,9 @@
 import { ethers } from 'hardhat';
 import { ORMakerDeposit } from '../typechain-types/contracts/ORMakerDeposit';
 import { MerkleTree } from 'merkletreejs';
-import { pairList, lpInfoList } from './lib/Config';
-import { getPairID } from './lib/Utils';
+import { LP_LIST } from './lib/Config';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { PAIR_LIST } from './lib/Config';
 let mdc: ORMakerDeposit;
 let supportPairTree: MerkleTree;
 let owner: SignerWithAddress;
@@ -21,7 +21,10 @@ describe('MakerDeposit.test.ts', () => {
     );
     console.log('MDC Address：', mdc.address);
     // tree
-    supportPairTree = new MerkleTree(pairList.map(getPairID), keccak256, {
+    const pairLefs = PAIR_LIST.map((row) => {
+      return Buffer.from(String(row.id), 'hex');
+    });
+    supportPairTree = new MerkleTree(pairLefs, keccak256, {
       sort: true,
     });
     lpInfoTree = new MerkleTree([], keccak256, {
@@ -32,12 +35,13 @@ describe('MakerDeposit.test.ts', () => {
   before(getFactoryInfo);
 
   it('LPAction Pledge ETH', async () => {
-    const value = ethers.utils.parseEther('2');
-    const lpInfo = lpInfoList[0];
-    const lpId = getPairID(lpInfo);
-    const pairProof = supportPairTree.getHexProof(lpId);
+    // const value = ethers.utils.parseEther('2');
+    lpInfoTree.addLeaf(Buffer.from(LP_LIST[0].id, 'hex'));
+    lpInfoTree.addLeaf(Buffer.from(LP_LIST[1].id, 'hex'));
+    // const lpId = getPairID(lpInfo);
+    // const pairProof = supportPairTree.getHexProof(lpId);
     // OperationsLib.LpInfoStruct;
-    // const response = await mdc.LPAction(value, [lpInfo], proof);
+    // const response = await mdc.LPAction();
   });
   //   const lpInfo = lpInfoList[0];
   //   console.log(lpInfo);

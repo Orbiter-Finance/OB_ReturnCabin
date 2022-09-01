@@ -3,19 +3,19 @@ import { ethers } from 'hardhat';
 import { ORManagerFactory } from '../typechain-types/contracts/ORManagerFactory';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
-import { chainInfoList, tokenList } from './lib/Config';
+import { CHAIN_INFO_LIST as chainInfoList, TOKEN_LIST } from './lib/Config';
 let factory: ORManagerFactory;
 const chainInfo_main = chainInfoList[0];
 const chainInfo_arbitrum = chainInfoList[1];
 const chainInfo_zksync = chainInfoList[2];
 const chainInfo_op = chainInfoList[3];
 
-const tokeninfo_eth_main = tokenList[0];
-const tokeninfo_usdc_main = tokenList[1];
-const tokeninfo_usdt_main = tokenList[2];
-const tokeninfo_eth_arb = tokenList[3];
-const tokeninfo_usdc_arb = tokenList[4];
-const tokeninfo_usdt_arb = tokenList[5];
+const tokeninfo_eth_main = TOKEN_LIST[0];
+const tokeninfo_usdc_main = TOKEN_LIST[1];
+const tokeninfo_usdt_main = TOKEN_LIST[2];
+const tokeninfo_eth_arb = TOKEN_LIST[3];
+const tokeninfo_usdc_arb = TOKEN_LIST[4];
+const tokeninfo_usdt_arb = TOKEN_LIST[5];
 
 async function deployFactoryFixture() {
   const [owner, addr1, addr2] = await ethers.getSigners();
