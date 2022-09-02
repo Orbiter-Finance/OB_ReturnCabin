@@ -1,10 +1,12 @@
 import { expect } from 'chai';
 import { ethers, upgrades } from 'hardhat';
 import { ORManagerFactory } from '../typechain-types/contracts/ORManagerFactory';
+import { ORMakerV1Factory } from '../typechain-types/contracts/ORMakerV1Factory';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { CHAIN_INFO_LIST as chainInfoList, TOKEN_LIST } from './lib/Config';
 let factory: ORManagerFactory;
+let makerV1Factory: ORMakerV1Factory;
 const chainInfo_main = chainInfoList[0];
 const chainInfo_arbitrum = chainInfoList[1];
 const chainInfo_zksync = chainInfoList[2];
@@ -25,6 +27,16 @@ async function deployFactoryFixture() {
   const factoryProxy = await upgrades.deployProxy(Factory);
   await factoryProxy.deployed();
   factory = factoryProxy as ORManagerFactory;
+  // makerV1Factory
+  const ORMakerV1Factory = await ethers.getContractFactory('ORMakerV1Factory', {
+    libraries: {},
+  });
+  const makerFactoryProxy = await upgrades.deployProxy(ORMakerV1Factory, [
+    factory.address,
+  ]);
+  await makerFactoryProxy.deployed();
+  makerV1Factory = makerFactoryProxy as ORMakerV1Factory;
+
   console.log(`factory :`, factory.address);
   process.env['factory'] = factory.address;
   return { Factory, factory, owner, addr1, addr2 };
@@ -263,10 +275,16 @@ describe('Factory.spec.ts', () => {
   });
 
   describe('Factory_CREATE_MDC', () => {
+    it('MakerV1Factory Set Manager', async () => {
+      const tx = await makerV1Factory.setManager(factory.address);
+      expect(tx.blockNumber).gt(0);
+    });
     it('CREATE_MDC', async () => {
-      const response = await userFactory.createMaker();
+      const response = await makerV1Factory.connect(address1).createMaker();
       const tx = await response.wait();
-      const makerMapEvent = tx.events?.find((row) => row.event == 'MakerMap');
+      const makerMapEvent = tx.events?.find(
+        (row) => row.event == 'MakerCreated',
+      );
       if (makerMapEvent && makerMapEvent.args) {
         process.env['MDC'] = makerMapEvent.args[1];
       }

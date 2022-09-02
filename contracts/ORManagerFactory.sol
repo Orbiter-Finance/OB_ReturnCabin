@@ -103,13 +103,6 @@ contract ORManagerFactory is IORManagerFactory, Initializable, OwnableUpgradeabl
         revert("UNSUPPORTTOKEN");
     }
 
-    function createMaker() external returns (address) {
-        bytes32 salt = keccak256(abi.encodePacked(msg.sender));
-        ORMakerDeposit makerContract = new ORMakerDeposit{salt: salt}(address(this));
-        emit MakerMap(msg.sender, address(makerContract));
-        return address(makerContract);
-    }
-
     function isSupportChain(uint256 chainID, address token) public view returns (bool) {
         bool isSupportToken = false;
         for (uint256 i = 0; i < chainList[chainID].tokenList.length; i++) {

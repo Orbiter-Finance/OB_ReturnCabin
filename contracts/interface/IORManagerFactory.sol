@@ -4,7 +4,7 @@ pragma solidity ^0.8.9;
 import "../library/Operation.sol";
 
 interface IORManagerFactory {
-    event MakerMap(address indexed makerAddress, address indexed contractAddress);
+    event MakerMap(address indexed maker, address indexed makerContract);
     enum PairEventType {
         CREATE,
         DELETE
@@ -17,7 +17,7 @@ interface IORManagerFactory {
 
     function setEBC(address ebcAddress) external returns (bool);
 
-    function getEBC(uint256 ebcid) external returns (address);
+    function getEBC(uint256 ebcid) external view returns (address);
 
     function updateEBC(uint256 ebcid, address ebcAddress) external;
 
@@ -28,7 +28,7 @@ interface IORManagerFactory {
         address[] memory
     ) external;
 
-    function getChainInfoByChainID(uint256 chainID) external returns (OperationsLib.chainInfo memory);
+    function getChainInfoByChainID(uint256 chainID) external view returns (OperationsLib.chainInfo memory);
 
     function setTokenInfo(
         uint256,
@@ -38,8 +38,6 @@ interface IORManagerFactory {
     ) external returns (bool);
 
     function getTokenInfo(uint256, address) external view returns (OperationsLib.tokenInfo memory);
-
-    function createMaker() external returns (address);
 
     function createPair(
         OperationsLib.pairChainInfo[] calldata pairs,

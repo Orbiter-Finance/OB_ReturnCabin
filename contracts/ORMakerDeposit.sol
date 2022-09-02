@@ -1,18 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-import "hardhat/console.sol";
 import "./interface/IORMakerDeposit.sol";
 import "./library/Operation.sol";
 import "./interface/IORManagerFactory.sol";
 import "./interface/IORProtocal.sol";
 import "./interface/IERC20.sol";
 import "./interface/IORSpv.sol";
+import "./interface/IORMakerV1Factory.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-contract ORMakerDeposit is IORMakerDeposit, Ownable {
-    address _owner;
-    address _managerAddress;
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
+contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
+    address makerFactory;
     // lpid->lpPairInfo
     mapping(bytes32 => OperationsLib.lpPairInfo) public lpInfo;
 
@@ -28,9 +29,27 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
     // chanllenge pleged eth amount
     uint256 chanllengePleged;
 
-    constructor(address managerAddress) payable {
-        _managerAddress = managerAddress;
-        emit MakerContract(_owner, address(this));
+    function initialize(address _owner, address _makerFactory) public initializer {
+        _transferOwnership(_owner);
+        makerFactory = _makerFactory;
+        emit MakerContract(owner(), address(this));
+        address fact = getManagerAddress();
+    }
+
+    function getManagerAddress() internal view returns (address) {
+        return IORMakerV1Factory(makerFactory).getManager();
+    }
+
+    function getEBCAddress(uint256 ebcid) internal view returns (address) {
+        address manager = getManagerAddress();
+        address ebcAddress = IORManagerFactory(manager).getEBC(ebcid);
+        return ebcAddress;
+    }
+
+    function getChainInfoByChainID(uint256 chainId) internal view returns (OperationsLib.chainInfo memory) {
+        address manager = getManagerAddress();
+        OperationsLib.chainInfo memory chainInfo = IORManagerFactory(manager).getChainInfoByChainID(chainId);
+        return chainInfo;
     }
 
     function idleAmount(address tokenAddress) public view returns (uint256) {
@@ -50,7 +69,8 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
         view
         returns (OperationsLib.tokenInfo memory)
     {
-        return IORManagerFactory(_managerAddress).getTokenInfo(_lpinfo.sourceChain, _lpinfo.sourceTAddress);
+        address manager = getManagerAddress();
+        return IORManagerFactory(manager).getTokenInfo(_lpinfo.sourceChain, _lpinfo.sourceTAddress);
     }
 
     function getChainDepositInfo(OperationsLib.lpInfo memory _lpinfo)
@@ -63,7 +83,8 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
     }
 
     function getSpvAddress() internal view returns (address) {
-        address spvAddress = IORManagerFactory(_managerAddress).getSPV();
+        address manager = getManagerAddress();
+        address spvAddress = IORManagerFactory(manager).getSPV();
         require(spvAddress != address(0), "SPV_NOT_INSTALL");
         return spvAddress;
     }
@@ -82,11 +103,12 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
         uint256 unUsedAmount = idleAmount(pledgedToken);
         // Need to be supplemented
         uint256 supplement = 0;
+        address manager = getManagerAddress();
         for (uint256 i = 0; i < _lpinfos.length; i++) {
             OperationsLib.lpInfo memory _lpinfo = _lpinfos[i];
             bytes32 lpid = OperationsLib.getLpID(_lpinfo);
             require(lpInfo[lpid].startTime == 0 && lpInfo[lpid].stopTime != 0, "LP Not Paused");
-            require(IORManagerFactory(_managerAddress).isSupportPair(lpid, pairProof[i]), "Pair Not Supported");
+            require(IORManagerFactory(manager).isSupportPair(lpid, pairProof[i]), "Pair Not Supported");
             if (
                 !(_lpinfo.sourceChain == _lpinfos[0].sourceChain &&
                     _lpinfo.sourceTAddress == _lpinfos[0].sourceTAddress)
@@ -96,7 +118,7 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
             // first init lpPair
             lpInfo[lpid].LPRootHash = MerkleProof.processProofCalldata(proof[i], lpid);
             require(lpInfo[lpid].startTime == 0 && lpInfo[lpid].stopTime == 0, "LPACTION_LPID_UNSTOP");
-            OperationsLib.chainInfo memory souceChainInfo = IORManagerFactory(_managerAddress).getChainInfoByChainID(
+            OperationsLib.chainInfo memory souceChainInfo = IORManagerFactory(manager).getChainInfoByChainID(
                 _lpinfo.sourceChain
             );
             depositToken = getDepositTokenInfo(_lpinfo);
@@ -136,6 +158,7 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
     // LPPause
     function LPPause(OperationsLib.lpInfo[] calldata _lpinfos, bytes32[][] calldata proof) external {
         require(_lpinfos.length == proof.length, "InconsistentArrayLength");
+        address manager = getManagerAddress();
         for (uint256 i = 0; i < _lpinfos.length; i++) {
             // calc root Hash
             OperationsLib.lpInfo memory _lpinfo = _lpinfos[i];
@@ -143,7 +166,7 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
             require(lpInfo[lpid].LPRootHash != "", "LPPAUSE_LPID_UNUSED");
             require(lpInfo[lpid].startTime != 0 && lpInfo[lpid].stopTime == 0, "LPPAUSE_LPID_UNACTION");
             lpInfo[lpid].LPRootHash = MerkleProof.processProofCalldata(proof[i], lpid);
-            address ebcAddress = IORManagerFactory(_managerAddress).getEBC(_lpinfo.ebcid);
+            address ebcAddress = IORManagerFactory(manager).getEBC(_lpinfo.ebcid);
             require(ebcAddress != address(0), "LPPAUSE_EBCADDRESS_0");
             uint256 stopDelayTime = IORProtocal(ebcAddress).getStopDealyTime(_lpinfo.sourceChain);
             lpInfo[lpid].stopTime = block.timestamp + stopDelayTime;
@@ -211,19 +234,22 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
         bytes32[] memory _midProof,
         bytes32[] memory _txproof
     ) external payable {
-        address ebcAddress = IORManagerFactory(_managerAddress).getEBC(_lpinfo.ebcid);
-        require(
-            IORProtocal(ebcAddress).checkUserChallenge(
-                _lpinfo,
-                stopTime,
-                _txinfo,
-                _lpProof,
-                _midProof,
-                _txproof,
-                OperationsLib.getLpID(_lpinfo)
-            ),
-            "UC_ERROR"
-        );
+        // address manager = getManagerAddress();
+        address ebcAddress = getEBCAddress(_lpinfo.ebcid);
+        OperationsLib.chainInfo memory chainInfo = getChainInfoByChainID(_lpinfo.sourceChain);
+        // TODO
+        // require(
+        //     IORProtocal(ebcAddress).checkUserChallenge(
+        //         _lpinfo,
+        //         stopTime,
+        //         _txinfo,
+        //         _lpProof,
+        //         _midProof,
+        //         _txproof,
+        //         OperationsLib.getLpID(_lpinfo)
+        //     ),
+        //     "UC_ERROR"
+        // );
         bytes32 chanllengeID = OperationsLib.getChanllengeID(_txinfo);
         require(chanllengeInfos[chanllengeID].chanllengeState == 0, "UCE_USED");
         uint256 pledgeAmount = IORProtocal(ebcAddress).getChanllengePledgeAmount();
@@ -232,19 +258,15 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
         chanllengeInfos[chanllengeID].pledgeAmount = pledgeAmount;
         chanllengeInfos[chanllengeID].ebcid = _lpinfo.ebcid;
         chanllengeInfos[chanllengeID].chanllengeState = 1;
-        chanllengeInfos[chanllengeID].stopTime =
-            block.timestamp +
-            IORManagerFactory(_managerAddress).getChainInfoByChainID(_lpinfo.sourceChain).maxDisputeTime;
+        chanllengeInfos[chanllengeID].stopTime = block.timestamp + chainInfo.maxDisputeTime;
         chanllengePleged += pledgeAmount;
         emit LogChanllengeInfo(chanllengeID, chanllengeState.ACTION);
     }
 
     // LPStop
     function USER_LPStop(uint256 sourceChain, address tokenAddress) internal {
-        OperationsLib.tokenInfo memory _dTinfo = IORManagerFactory(_managerAddress).getTokenInfo(
-            sourceChain,
-            tokenAddress
-        );
+        address manager = getManagerAddress();
+        OperationsLib.tokenInfo memory _dTinfo = IORManagerFactory(manager).getTokenInfo(sourceChain, tokenAddress);
         OperationsLib.chainDeposit storage _cDinfo = chainDeposit[sourceChain][_dTinfo.mainTokenAddress];
 
         bytes32[] memory lpids = _cDinfo.lpids;
@@ -268,11 +290,12 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
     // userWithDraw
     function userWithDraw(OperationsLib.txInfo memory _userTx, OperationsLib.lpInfo memory _lpinfo) external {
         bytes32 chanllengeID = OperationsLib.getChanllengeID(_userTx);
+        address manager = getManagerAddress();
         require(_userTx.sourceAddress == msg.sender, "UW_SENDER");
         require(chanllengeInfos[chanllengeID].chanllengeState == 1, "UW_WITHDRAW");
         require(block.timestamp > chanllengeInfos[chanllengeID].stopTime, "UW_TIME");
 
-        address ebcAddress = IORManagerFactory(_managerAddress).getEBC(chanllengeInfos[chanllengeID].ebcid);
+        address ebcAddress = IORManagerFactory(manager).getEBC(chanllengeInfos[chanllengeID].ebcid);
         require(ebcAddress != address(0), "UW_EBCADDRESS_0");
         uint256 withDrawAmount = 0;
         uint256 unUsedAmount = idleAmount(_userTx.tokenAddress);
@@ -303,9 +326,10 @@ contract ORMakerDeposit is IORMakerDeposit, Ownable {
         OperationsLib.txInfo memory _makerTx,
         bytes32[] memory _makerProof
     ) external {
+        address manager = getManagerAddress();
         bytes32 chanllengeID = OperationsLib.getChanllengeID(_userTx);
         require(chanllengeInfos[chanllengeID].chanllengeState == 1, "MC_ANSWER");
-        address ebcAddress = IORManagerFactory(_managerAddress).getEBC(chanllengeInfos[chanllengeID].ebcid);
+        address ebcAddress = IORManagerFactory(manager).getEBC(chanllengeInfos[chanllengeID].ebcid);
         require(IORProtocal(ebcAddress).checkMakerChallenge(_userTx, _makerTx, _makerProof), "MC_ERROR");
         bytes32 makerResponse = keccak256(
             abi.encodePacked(
