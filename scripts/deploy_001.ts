@@ -15,7 +15,6 @@ async function main() {
   await factoryProxy.deployed();
   console.log('ORManagerFactory deployed to:', factoryProxy.address);
   const factory = factoryProxy as ORManagerFactory;
-
   const ORMakerV1Factory = await ethers.getContractFactory('ORMakerV1Factory');
   const makerfactoryProxy = await upgrades.deployProxy(ORMakerV1Factory, [
     factory.address,
@@ -26,8 +25,8 @@ async function main() {
 
   // create maker
   const [_, maker] = await ethers.getSigners();
-  await makerV1factory.connect(maker).createMaker();
-
+  const tx = await makerV1factory.connect(maker).createMaker();
+  console.log('Create Maker Tx:', tx.hash);
   // deplory ORProtocalV1
   const ORProtocalV1 = await ethers.getContractFactory('ORProtocalV1');
   const protocalV1 = await upgrades.deployProxy(ORProtocalV1, [
