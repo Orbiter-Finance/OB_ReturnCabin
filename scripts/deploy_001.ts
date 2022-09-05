@@ -1,5 +1,5 @@
 import { ethers, upgrades } from 'hardhat';
-import { ORManagerFactory } from '../typechain-types/contracts/ORManagerFactory';
+import { ORManager } from '../typechain-types/contracts/ORManager';
 import { ORMakerV1Factory } from '../typechain-types/contracts/ORMakerV1Factory';
 
 async function main() {
@@ -10,11 +10,11 @@ async function main() {
   console.log('ORSpv deployed to:', spv.address);
 
   // deploy factory
-  const ORManagerFactory = await ethers.getContractFactory('ORManagerFactory');
-  const factoryProxy = await upgrades.deployProxy(ORManagerFactory);
+  const ORManager = await ethers.getContractFactory('ORManager');
+  const factoryProxy = await upgrades.deployProxy(ORManager);
   await factoryProxy.deployed();
-  console.log('ORManagerFactory deployed to:', factoryProxy.address);
-  const factory = factoryProxy as ORManagerFactory;
+  console.log('ORManager deployed to:', factoryProxy.address);
+  const factory = factoryProxy as ORManager;
   const ORMakerV1Factory = await ethers.getContractFactory('ORMakerV1Factory');
   const makerfactoryProxy = await upgrades.deployProxy(ORMakerV1Factory, [
     factory.address,
@@ -24,9 +24,24 @@ async function main() {
   const makerV1factory = makerfactoryProxy as ORMakerV1Factory;
 
   // create maker
-  const [_, maker] = await ethers.getSigners();
+  const [owner, maker] = await ethers.getSigners();
+  console.log('owner wallet:', owner.address);
+  console.log('maker wallet:', maker.address);
   const tx = await makerV1factory.connect(maker).createMaker();
   console.log('Create Maker Tx:', tx.hash);
+  tx.wait()
+    .then((rawTx) => {
+      const makerMapEvent = rawTx.events?.find(
+        (row) => row.event == 'MakerCreated',
+      );
+      if (makerMapEvent && makerMapEvent.args) {
+        console.log('First Maker User:', makerMapEvent.args[0]);
+        console.log('First Maker User Pool:', makerMapEvent.args[1]);
+      }
+    })
+    .catch((error) => {
+      console.error('Create Maker Error:', error);
+    });
   // deplory ORProtocalV1
   const ORProtocalV1 = await ethers.getContractFactory('ORProtocalV1');
   const protocalV1 = await upgrades.deployProxy(ORProtocalV1, [

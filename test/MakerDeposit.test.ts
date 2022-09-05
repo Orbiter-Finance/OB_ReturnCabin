@@ -4,6 +4,7 @@ import { MerkleTree } from 'merkletreejs';
 import { LP_LIST } from './lib/Config';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { PAIR_LIST } from './lib/Config';
+import { expect } from 'chai';
 let mdc: ORMakerDeposit;
 let supportPairTree: MerkleTree;
 let owner: SignerWithAddress;
@@ -32,7 +33,10 @@ describe('MakerDeposit.test.ts', () => {
   }
 
   before(getFactoryInfo);
-
+  it('Get MakerFactory', async () => {
+    const result = await mdc.makerFactory();
+    expect(result).equal(process.env['MDCFactory']);
+  });
   it('LPAction Pledge ETH', async () => {
     // const value = ethers.utils.parseEther('2');
     lpInfoTree.addLeaf(Buffer.from(LP_LIST[0].id, 'hex'));

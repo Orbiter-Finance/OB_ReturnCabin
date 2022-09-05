@@ -2,7 +2,7 @@
 pragma solidity ^0.8.9;
 
 interface IORMakerV1Factory {
-    event MakerCreated(address merchant, address store);
+    event MakerCreated(address maker, address pool);
 
     function initialize(address) external;
 

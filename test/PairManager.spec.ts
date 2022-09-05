@@ -2,19 +2,19 @@ import { ethers } from 'hardhat';
 import { MerkleTree } from 'merkletreejs';
 import { getPairID } from './lib/Utils';
 import { PAIR_LIST } from './lib/Config';
+import { ORManager } from '../typechain-types/contracts/ORManager';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { expect } from 'chai';
 import keccak256 from 'keccak256';
-import { ORManagerFactory } from '../typechain-types/contracts/ORManagerFactory';
 let PairTree: MerkleTree;
 let allPairLeafList: any[] = [];
 describe('PairManager.spec', () => {
-  let pairManagerContrct: ORManagerFactory;
+  let pairManagerContrct: ORManager;
   async function deployPairManagerFixture() {
     const factoryAddress = process.env['factory'] || '';
     !expect(factoryAddress).not.empty;
     pairManagerContrct = await ethers.getContractAt(
-      'ORManagerFactory',
+      'ORManager',
       factoryAddress,
     );
 

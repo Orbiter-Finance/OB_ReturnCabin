@@ -2,7 +2,7 @@
 pragma solidity ^0.8.9;
 
 import "./interface/IORProtocal.sol";
-import "./interface/IORManagerFactory.sol";
+import "./interface/IORManager.sol";
 import "./interface/IORSpv.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -102,7 +102,7 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
         bool txVerify = IORSpv(spvAddress).verifyUserTxProof(_makerTx, _makerProof);
         require(txVerify, "MCE_UNVERIFY");
 
-        OperationsLib.chainInfo memory souceChainInfo = IORManagerFactory(_managerAddress).getChainInfoByChainID(
+        OperationsLib.chainInfo memory souceChainInfo = IORManager(_managerAddress).getChainInfoByChainID(
             _userTx.chainID
         );
         require(
@@ -130,7 +130,7 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     }
 
     function getSpvAddress() internal view returns (address) {
-        address spvAddress = IORManagerFactory(_managerAddress).getSPV();
+        address spvAddress = IORManager(_managerAddress).getSPV();
         require(spvAddress != address(0), "SPV_NOT_INSTALL");
         return spvAddress;
     }
