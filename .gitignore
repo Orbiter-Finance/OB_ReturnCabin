@@ -15,3 +15,6 @@ artifacts
 
 .yalc
 .openzeppelin/
+
+
+.DS_Store
