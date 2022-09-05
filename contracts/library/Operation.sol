@@ -36,7 +36,7 @@ library OperationsLib {
         uint256 amount;
         uint256 nonce;
         uint256 timestamp;
-        bytes32 responseHash;
+        uint256 responseAmount;
     }
 
     struct lpInfo {

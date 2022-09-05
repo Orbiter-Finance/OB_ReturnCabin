@@ -233,31 +233,30 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         bytes32[] memory _midProof,
         bytes32[] memory _txproof
     ) external payable {
-        // address manager = getManagerAddress();
         address ebcAddress = getEBCAddress(_lpinfo.ebcid);
-        OperationsLib.chainInfo memory chainInfo = getChainInfoByChainID(_lpinfo.sourceChain);
-        // TODO
-        // require(
-        //     IORProtocal(ebcAddress).checkUserChallenge(
-        //         _lpinfo,
-        //         stopTime,
-        //         _txinfo,
-        //         _lpProof,
-        //         _midProof,
-        //         _txproof,
-        //         OperationsLib.getLpID(_lpinfo)
-        //     ),
-        //     "UC_ERROR"
-        // );
+        require(
+            IORProtocal(ebcAddress).checkUserChallenge(
+                _lpinfo,
+                stopTime,
+                _txinfo,
+                _lpProof,
+                _midProof,
+                _txproof,
+                OperationsLib.getLpID(_lpinfo)
+            ),
+            "UC_ERROR"
+        );
         bytes32 chanllengeID = OperationsLib.getChanllengeID(_txinfo);
         require(chanllengeInfos[chanllengeID].chanllengeState == 0, "UCE_USED");
         uint256 pledgeAmount = IORProtocal(ebcAddress).getChanllengePledgeAmount();
         require(msg.value >= pledgeAmount, "UCE_PLEDGEAMOUNT");
-        chanllengeInfos[chanllengeID].responseTxinfo = _txinfo.responseHash;
+        chanllengeInfos[chanllengeID].responseTxinfo = IORProtocal(ebcAddress).getRespnseHash(_txinfo);
         chanllengeInfos[chanllengeID].pledgeAmount = pledgeAmount;
         chanllengeInfos[chanllengeID].ebcid = _lpinfo.ebcid;
         chanllengeInfos[chanllengeID].chanllengeState = 1;
-        chanllengeInfos[chanllengeID].stopTime = block.timestamp + chainInfo.maxDisputeTime;
+        chanllengeInfos[chanllengeID].stopTime =
+            block.timestamp +
+            getChainInfoByChainID(_lpinfo.sourceChain).maxDisputeTime;
         chanllengePleged += pledgeAmount;
         emit LogChanllengeInfo(chanllengeID, chanllengeState.ACTION);
     }

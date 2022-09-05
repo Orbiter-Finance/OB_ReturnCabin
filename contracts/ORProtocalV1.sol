@@ -55,6 +55,29 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
         return (securityCode, isSupport);
     }
 
+    function getRespnseHash(OperationsLib.txInfo memory _txinfo) external pure returns (bytes32) {
+        (uint256 securityCode, bool sourceIsSupport) = getSecuirtyCode(true, _txinfo.amount);
+        (uint256 nonce, bool responseIsSupport) = getSecuirtyCode(false, _txinfo.responseAmount);
+
+        require(sourceIsSupport && responseIsSupport, "GRH_ERROR");
+
+        require(_txinfo.nonce < 9000, "GRH_NONCE_ERROR1");
+
+        require(nonce == _txinfo.nonce, "GRH_NONCE_ERROR2");
+
+        bytes32 needRespnse = keccak256(
+            abi.encodePacked(
+                _txinfo.lpid,
+                securityCode,
+                _txinfo.destAddress,
+                _txinfo.sourceAddress,
+                _txinfo.responseAmount,
+                _txinfo.tokenAddress
+            )
+        );
+        return needRespnse;
+    }
+
     function checkUserChallenge(
         OperationsLib.lpInfo memory _lpinfo,
         uint256 stopTime,

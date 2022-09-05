@@ -14,8 +14,7 @@ const UserTxList = [
     value: '998798000000009003',
     nonce: 0,
     timestamp: 111111111,
-    responseHash:
-      '0x12747d215bcd3c407229d6fdfaf3c9e29608573499f4640e2d50fdef01360b91',
+    responseAmount: 10000,
   },
   {
     lpid: '0x12747d215bcd3c407229d6fdfaf3c9e29608573499f4640e2d50fdef01360b94',
@@ -28,8 +27,7 @@ const UserTxList = [
     value: '998798000000009003',
     nonce: 1,
     timestamp: 111111111,
-    responseHash:
-      '0x12747d215bcd3c407229d6fdfaf3c9e29608573499f4640e2d50fdef01360b91',
+    responseAmount: 10000,
   },
   {
     lpid: '0x12747d215bcd3c407229d6fdfaf3c9e29608573499f4640e2d50fdef01360b93',
@@ -42,8 +40,7 @@ const UserTxList = [
     value: '998798000000009003',
     nonce: 3,
     timestamp: 111111111,
-    responseHash:
-      '0x12747d215bcd3c407229d6fdfaf3c9e29608573499f4640e2d50fdef01360b91',
+    responseAmount: 10000,
   },
   {
     lpid: '0x12747d215bcd3c407229d6fdfaf3c9e29608573499f4640e2d50fdef01360b92',
@@ -56,8 +53,7 @@ const UserTxList = [
     value: '276866090070000000',
     nonce: 9,
     timestamp: 111111111,
-    responseHash:
-      '0x12747d215bcd3c407229d6fdfaf3c9e29608573499f4640e2d50fdef01360b91',
+    responseAmount: 10000,
   },
 ];
 const MakerTxList = [
@@ -72,8 +68,7 @@ const MakerTxList = [
     value: '276016000000000009',
     nonce: 62374,
     timestamp: 111111111,
-    responseHash:
-      '0x12747d215bcd3c407229d6fdfaf3c9e29608573499f4640e2d50fdef01360b91',
+    responseAmount: 10000,
   },
 
   {
@@ -87,8 +82,7 @@ const MakerTxList = [
     value: '389667000000000007',
     nonce: 62373,
     timestamp: 111111111,
-    responseHash:
-      '0x12747d215bcd3c407229d6fdfaf3c9e29608573499f4640e2d50fdef01360b91',
+    responseAmount: 10000,
   },
 ];
 
@@ -122,7 +116,7 @@ describe('ORSpv.spec.ts', () => {
     const chainID = tx.chainId;
     const tokenAddress = tx.token;
     const timestamp = tx.timestamp;
-    const responseHash = tx.responseHash;
+    const responseAmount = tx.responseAmount;
     const hex = ethers.utils.solidityKeccak256(
       [
         'bytes32',
@@ -134,7 +128,7 @@ describe('ORSpv.spec.ts', () => {
         'uint256',
         'address',
         'uint256',
-        'bytes32',
+        'uint256',
       ],
       [
         lpid,
@@ -146,7 +140,7 @@ describe('ORSpv.spec.ts', () => {
         amount,
         tokenAddress,
         timestamp,
-        responseHash,
+        responseAmount,
       ],
     );
     const leaf = {
@@ -159,7 +153,7 @@ describe('ORSpv.spec.ts', () => {
       amount,
       tokenAddress,
       timestamp,
-      responseHash,
+      responseAmount,
     };
     return { hex, leaf };
   }
