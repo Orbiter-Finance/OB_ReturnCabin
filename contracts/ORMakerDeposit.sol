@@ -33,7 +33,6 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         _transferOwnership(_owner);
         makerFactory = _makerFactory;
         emit MakerContract(owner(), address(this));
-        address fact = getManagerAddress();
     }
 
     function getManagerAddress() internal view returns (address) {
