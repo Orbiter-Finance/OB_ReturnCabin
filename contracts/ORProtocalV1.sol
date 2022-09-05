@@ -55,39 +55,41 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
         return (securityCode, isSupport);
     }
 
-    function checkUserChallenge(
-        OperationsLib.lpInfo memory _lpinfo,
-        uint256 stopTime,
-        OperationsLib.txInfo memory _txinfo,
-        bytes32[] memory _lpProof,
-        bytes32[] memory _midProof,
-        bytes32[] memory _txproof,
-        bytes32 lpRootHash
-    ) external view returns (bool) {
+    function getRespnseHash(OperationsLib.txInfo memory _txinfo) external pure returns (bytes32) {
+        (uint256 securityCode, bool sourceIsSupport) = getSecuirtyCode(true, _txinfo.amount);
+        (uint256 nonce, bool responseIsSupport) = getSecuirtyCode(false, _txinfo.responseAmount);
+
+        require(sourceIsSupport && responseIsSupport, "GRH_ERROR");
+
+        require(_txinfo.nonce < 9000, "GRH_NONCE_ERROR1");
+
+        require(nonce == _txinfo.nonce, "GRH_NONCE_ERROR2");
+
+        bytes32 needRespnse = keccak256(
+            abi.encodePacked(
+                _txinfo.lpid,
+                securityCode,
+                _txinfo.destAddress,
+                _txinfo.sourceAddress,
+                _txinfo.responseAmount,
+                _txinfo.tokenAddress
+            )
+        );
+        return needRespnse;
+    }
+
+    function checkUserChallenge(OperationsLib.txInfo memory _txinfo, bytes32[] memory _txproof)
+        external
+        view
+        returns (bool)
+    {
         require(_txinfo.sourceAddress == msg.sender, "UCE_SENDER");
-        bytes32 lpid = OperationsLib.getLpID(_lpinfo);
+        bytes32 lpid = _txinfo.lpid;
         //1. txinfo is already spv
         address spvAddress = getSpvAddress();
         bool txVerify = IORSpv(spvAddress).verifyUserTxProof(_txinfo, _txproof);
         require(txVerify, "UCE_1");
-        require(_lpinfo.sourceChain == _txinfo.chainID, "UCE_2");
-        require(_lpinfo.sourceTAddress == _txinfo.tokenAddress, "UCE_3");
         require(_txinfo.destAddress == msg.sender, "UCE_4");
-        require(_txinfo.sourceAddress == msg.sender, "UCE_5");
-        require(_txinfo.timestamp > _lpinfo.startTime && _txinfo.timestamp < stopTime, "UCE_6");
-        require(lpid == _txinfo.lpid, "UCE_7");
-        //2. lpinfo is already proof
-        bytes32 lp_leaf = OperationsLib.getLpFullHash(_lpinfo);
-        // bool lpVerify = SpvLib.verify(lpRootHash, lp_leaf, _lpProof);
-        bool lpVerify = false;
-
-        require(lpVerify, "UCE_8");
-        //3. stoptime & mid is already proof
-        bytes32 mid_leaf = keccak256(abi.encodePacked(lp_leaf, keccak256(abi.encodePacked(stopTime))));
-        // bool midVerify = SpvLib.verify(lpRootHash, mid_leaf, _midProof);
-        bool midVerify = false;
-
-        require(midVerify, "UCE_9");
         return true;
     }
 

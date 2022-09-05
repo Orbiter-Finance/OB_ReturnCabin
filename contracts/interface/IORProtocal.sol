@@ -16,15 +16,9 @@ interface IORProtocal {
 
     function getSecuirtyCode(bool isSource, uint256 amount) external view returns (uint256, bool);
 
-    function checkUserChallenge(
-        OperationsLib.lpInfo memory,
-        uint256,
-        OperationsLib.txInfo memory,
-        bytes32[] memory,
-        bytes32[] memory,
-        bytes32[] memory,
-        bytes32
-    ) external view returns (bool);
+    function getRespnseHash(OperationsLib.txInfo memory _txinfo) external pure returns (bytes32);
+
+    function checkUserChallenge(OperationsLib.txInfo memory, bytes32[] memory) external view returns (bool);
 
     function checkMakerChallenge(
         OperationsLib.txInfo memory,

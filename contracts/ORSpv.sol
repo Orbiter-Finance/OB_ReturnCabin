@@ -61,7 +61,8 @@ contract ORSpv is IORSpv, Initializable, OwnableUpgradeable {
                 _txInfo.amount,
                 _txInfo.tokenAddress,
                 _txInfo.timestamp,
-                _txInfo.responseHash
+                _txInfo.responseAmount,
+                _txInfo.ebcid
             )
         );
         return verify(userTxTree[_txInfo.chainID], _leaf, _proof);
@@ -87,7 +88,8 @@ contract ORSpv is IORSpv, Initializable, OwnableUpgradeable {
                 _txInfo.amount,
                 _txInfo.tokenAddress,
                 _txInfo.timestamp,
-                _txInfo.responseHash
+                _txInfo.responseAmount,
+                _txInfo.ebcid
             )
         );
         return verify(makerTxTree[_txInfo.chainID], _leaf, _proof);
