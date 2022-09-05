@@ -3716,6 +3716,11 @@ hardhat-contract-sizer@^2.6.1:
     chalk "^4.0.0"
     cli-table3 "^0.6.0"
 
+hardhat-etherscan@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/hardhat-etherscan/-/hardhat-etherscan-1.0.1.tgz#db22142ccd101c4a2c6c6b12232a4daf4657e4a1"
+  integrity sha512-FShbbcrmxLK0n1JJfRO0xq6CfEsbynt0HiNHQYvY9GOQ9UDTHRAtZT4+P20cn/yAqfyQl4bgw3URxvvNN85HXA==
+
 hardhat-gas-reporter@^1.0.8:
   version "1.0.8"
   resolved "https://registry.npmmirror.com/hardhat-gas-reporter/-/hardhat-gas-reporter-1.0.8.tgz#93ce271358cd748d9c4185dbb9d1d5525ec145e0"

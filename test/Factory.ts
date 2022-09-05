@@ -1,11 +1,11 @@
 import { expect } from 'chai';
 import { ethers, upgrades } from 'hardhat';
-import { ORManagerFactory } from '../typechain-types/contracts/ORManagerFactory';
+import { ORManager } from '../typechain-types/contracts/ORManager';
 import { ORMakerV1Factory } from '../typechain-types/contracts/ORMakerV1Factory';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { CHAIN_INFO_LIST as chainInfoList, TOKEN_LIST } from './lib/Config';
-let factory: ORManagerFactory;
+let factory: ORManager;
 let makerV1Factory: ORMakerV1Factory;
 const chainInfo_main = chainInfoList[0];
 const chainInfo_arbitrum = chainInfoList[1];
@@ -21,12 +21,12 @@ const tokeninfo_usdt_arb = TOKEN_LIST[5];
 
 async function deployFactoryFixture() {
   const [owner, addr1, addr2] = await ethers.getSigners();
-  const Factory = await ethers.getContractFactory('ORManagerFactory', {
+  const ORManager = await ethers.getContractFactory('ORManager', {
     libraries: {},
   });
-  const factoryProxy = await upgrades.deployProxy(Factory);
-  await factoryProxy.deployed();
-  factory = factoryProxy as ORManagerFactory;
+  const managerProxy = await upgrades.deployProxy(ORManager);
+  await managerProxy.deployed();
+  factory = managerProxy as ORManager;
   // makerV1Factory
   const ORMakerV1Factory = await ethers.getContractFactory('ORMakerV1Factory', {
     libraries: {},
@@ -39,11 +39,11 @@ async function deployFactoryFixture() {
 
   console.log(`factory :`, factory.address);
   process.env['factory'] = factory.address;
-  return { Factory, factory, owner, addr1, addr2 };
+  return { managerProxy, factory, owner, addr1, addr2 };
 }
 
 describe('Factory.spec.ts', () => {
-  let userFactory: ORManagerFactory;
+  let userFactory: ORManager;
   let address1: SignerWithAddress;
   let address2: SignerWithAddress;
 
@@ -287,6 +287,7 @@ describe('Factory.spec.ts', () => {
       );
       if (makerMapEvent && makerMapEvent.args) {
         process.env['MDC'] = makerMapEvent.args[1];
+        process.env['MDCFactory'] = makerV1Factory.address;
       }
       //
     });

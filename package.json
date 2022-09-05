@@ -58,6 +58,7 @@
     "dotenv": "^16.0.1",
     "ethereumjs-util": "^7.1.5",
     "hardhat-contract-sizer": "^2.6.1",
+    "hardhat-etherscan": "^1.0.1",
     "keccak256": "^1.0.6",
     "level": "^8.0.0",
     "lodash": "^4.17.21",

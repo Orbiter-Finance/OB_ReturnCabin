@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.9;
 import "./ORMakerDeposit.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -21,12 +23,12 @@ contract ORMakerV1Factory is IORMakerV1Factory, OwnableUpgradeable {
         return manager;
     }
 
-    function createMaker() external returns (address store) {
+    function createMaker() external returns (address pool) {
         bytes32 salt = keccak256(abi.encodePacked(msg.sender));
         ORMakerDeposit makerContract = new ORMakerDeposit{salt: salt}();
         makerContract.initialize(msg.sender, address(this));
-        store = address(makerContract);
-        getMaker[msg.sender] = store;
-        emit MakerCreated(msg.sender, store);
+        pool = address(makerContract);
+        getMaker[msg.sender] = pool;
+        emit MakerCreated(msg.sender, pool);
     }
 }
