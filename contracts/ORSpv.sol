@@ -14,9 +14,6 @@ contract ORSpv is IORSpv, Initializable, OwnableUpgradeable {
         __Ownable_init();
     }
 
-    // mapping(bytes32 => bool) public verifyRecordsee;
-
-    // event ChangeTxTree(uint256 indexed chain, bytes32 root);
     /// @notice Set new transaction tree root hash
     /// @param chain Public chain ID
     /// @param root New root hash
@@ -30,16 +27,6 @@ contract ORSpv is IORSpv, Initializable, OwnableUpgradeable {
     function setMakerTxTreeRoot(uint256 chain, bytes32 root) external onlyOwner {
         makerTxTree[chain] = root;
     }
-
-    // function setVerifyRecordsee(bytes32 txid) public onlyOwner {
-    //     require(verifyRecordsee[txid] != true, "TxidVerified");
-    //     verifyRecordsee[txid] = true;
-    // }
-
-    // function isVerify(bytes32 txid) public view returns (bool) {
-    //     // bytes32 txid = SpvLib.calculationTxId(_txInfo);
-    //     return verifyRecordsee[txid];
-    // }
 
     /// @notice Transaction list of unpaid users
     /// @param _txInfo User transaction object
@@ -94,22 +81,6 @@ contract ORSpv is IORSpv, Initializable, OwnableUpgradeable {
         );
         return verify(makerTxTree[_txInfo.chainID], _leaf, _proof);
     }
-
-    function calculationTxId(OperationsLib.txInfo memory _txInfo) internal pure returns (bytes32 txid) {
-        txid = keccak256(
-            abi.encodePacked(
-                _txInfo.chainID,
-                _txInfo.txHash,
-                _txInfo.lpid,
-                _txInfo.sourceAddress,
-                _txInfo.destAddress,
-                _txInfo.nonce,
-                _txInfo.amount,
-                _txInfo.tokenAddress
-            )
-        );
-    }
-
     /// @notice Validation exists in the merkle tree
     /// @param root This root will be compared to the calculated root
     /// @param leaf Leaf nodes that need proof

@@ -24,6 +24,7 @@ contract ORMakerV1Factory is IORMakerV1Factory, OwnableUpgradeable {
     }
 
     function createMaker() external returns (address pool) {
+        require(getMaker[msg.sender] == address(0), "Exists Maker");
         bytes32 salt = keccak256(abi.encodePacked(msg.sender, block.timestamp));
         ORMakerDeposit makerContract = new ORMakerDeposit{salt: salt}();
         makerContract.initialize(msg.sender, address(this));

@@ -115,7 +115,6 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
                 revert("LP of multiple pledge currencies is not supported");
             }
             // first init lpPair
-            lpInfo[lpid].LPRootHash = MerkleProof.processProofCalldata(proof[i], lpid);
             require(lpInfo[lpid].startTime == 0 && lpInfo[lpid].stopTime == 0, "LPACTION_LPID_UNSTOP");
             OperationsLib.chainInfo memory souceChainInfo = IORManager(manager).getChainInfoByChainID(
                 _lpinfo.sourceChain
@@ -134,6 +133,7 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
             if (!lpInfo[lpid].inlps) {
                 chainPledged.lpids.push(lpid);
             }
+            lpInfo[lpid].LPRootHash = MerkleProof.processProofCalldata(proof[i], OperationsLib.getLpFullHash(_lpinfo));
             emit LogLpInfo(lpid, lpState.ACTION, lpInfo[lpid].startTime, _lpinfo);
         }
         if (supplement - unUsedAmount > 0) {
@@ -164,12 +164,12 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
             bytes32 lpid = OperationsLib.getLpID(_lpinfo);
             require(lpInfo[lpid].LPRootHash != "", "LPPAUSE_LPID_UNUSED");
             require(lpInfo[lpid].startTime != 0 && lpInfo[lpid].stopTime == 0, "LPPAUSE_LPID_UNACTION");
-            lpInfo[lpid].LPRootHash = MerkleProof.processProofCalldata(proof[i], lpid);
             address ebcAddress = IORManager(manager).getEBC(_lpinfo.ebcid);
             require(ebcAddress != address(0), "LPPAUSE_EBCADDRESS_0");
             uint256 stopDelayTime = IORProtocal(ebcAddress).getStopDealyTime(_lpinfo.sourceChain);
             lpInfo[lpid].stopTime = block.timestamp + stopDelayTime;
             lpInfo[lpid].startTime = 0;
+            lpInfo[lpid].LPRootHash = MerkleProof.processProofCalldata(proof[i],  OperationsLib.getLpFullHash(_lpinfo));
             emit LogLpInfo(lpid, lpState.PAUSE, lpInfo[lpid].stopTime, _lpinfo);
         }
     }
