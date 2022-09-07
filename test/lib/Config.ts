@@ -67,6 +67,7 @@ export const LP_LIST: LpInfoStruct[] = [
     gasFee: '10000000000000000',
     tradingFee: '10000000000000000',
     startTime: 0,
+    stopTime: 0,
   },
   {
     id: '',
@@ -78,6 +79,7 @@ export const LP_LIST: LpInfoStruct[] = [
     gasFee: '10000000000000000',
     tradingFee: '10000000000000000',
     startTime: 0,
+    stopTime: 0,
   },
 ].map((row: LpInfoStruct) => {
   row.id = getPairLPID(row);

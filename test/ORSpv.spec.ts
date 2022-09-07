@@ -97,6 +97,8 @@ describe('ORSpv.spec.ts', () => {
     });
     spv = await upgrades.deployProxy(ORSpv);
     await spv.deployed();
+    console.log('spv address', spv.address);
+    process.env['SPV'] = spv.address;
     const { tree: tree1 } = generateMerkleTree(UserTxList);
     userTxTree = tree1;
     const { tree: tree2 } = generateMerkleTree(MakerTxList);

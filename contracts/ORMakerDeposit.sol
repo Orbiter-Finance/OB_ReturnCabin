@@ -12,6 +12,8 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
+import "hardhat/console.sol";
+
 contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
     address public makerFactory;
     // lpid->lpPairInfo
@@ -106,7 +108,7 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         for (uint256 i = 0; i < _lpinfos.length; i++) {
             OperationsLib.lpInfo memory _lpinfo = _lpinfos[i];
             bytes32 lpid = OperationsLib.getLpID(_lpinfo);
-            require(lpInfo[lpid].startTime == 0 && lpInfo[lpid].stopTime != 0, "LP Not Paused");
+            require(lpInfo[lpid].startTime == 0 && lpInfo[lpid].stopTime == 0, "LP Not Paused");
             require(IORManager(manager).isSupportPair(lpid, pairProof[i]), "Pair Not Supported");
             if (
                 !(_lpinfo.sourceChain == _lpinfos[0].sourceChain &&
@@ -136,20 +138,19 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
             }
             emit LogLpInfo(lpid, lpState.ACTION, lpInfo[lpid].startTime, _lpinfo);
         }
-        if (supplement - unUsedAmount > 0) {
-            // need deposit
-            uint256 realNeedAmount = supplement - unUsedAmount;
-            if (realNeedAmount > 0) {
-                if (pledgedToken != address(0)) {
-                    uint256 allowance = IERC20(pledgedToken).allowance(msg.sender, address(this));
-                    require(allowance >= realNeedAmount, "Check the token allowance");
-                    IERC20(pledgedToken).transferFrom(msg.sender, address(this), realNeedAmount);
-                    usedDeposit[pledgedToken] += realNeedAmount;
-                } else {
-                    require(msg.value >= realNeedAmount, "Check the eth send");
-                    // user deposit
-                    usedDeposit[pledgedToken] += realNeedAmount;
-                }
+        // need deposit
+        int256 AssessmentAmount = int256(supplement) - int256(unUsedAmount);
+        if (AssessmentAmount > 0) {
+            uint256 realNeedAmount = uint256(AssessmentAmount);
+            if (pledgedToken != address(0)) {
+                uint256 allowance = IERC20(pledgedToken).allowance(msg.sender, address(this));
+                require(allowance >= realNeedAmount, "Check the token allowance");
+                IERC20(pledgedToken).transferFrom(msg.sender, address(this), realNeedAmount);
+                usedDeposit[pledgedToken] += realNeedAmount;
+            } else {
+                require(msg.value >= realNeedAmount, "Check the eth send");
+                // user deposit
+                usedDeposit[pledgedToken] += realNeedAmount;
             }
         }
     }
