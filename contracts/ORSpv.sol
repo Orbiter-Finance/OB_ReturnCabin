@@ -81,6 +81,7 @@ contract ORSpv is IORSpv, Initializable, OwnableUpgradeable {
         );
         return verify(makerTxTree[_txInfo.chainID], _leaf, _proof);
     }
+
     /// @notice Validation exists in the merkle tree
     /// @param root This root will be compared to the calculated root
     /// @param leaf Leaf nodes that need proof

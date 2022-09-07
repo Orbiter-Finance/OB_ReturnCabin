@@ -6,6 +6,7 @@ import "./interface/IORManager.sol";
 import "./interface/IORSpv.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "hardhat/console.sol";
 
 contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     address _managerAddress;
@@ -78,12 +79,12 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
         return needRespnse;
     }
 
-    function checkUserChallenge(OperationsLib.txInfo memory _txinfo, bytes32[] memory _txproof)
-        external
-        view
-        returns (bool)
-    {
-        require(_txinfo.sourceAddress == msg.sender, "UCE_SENDER");
+    function checkUserChallenge(
+        OperationsLib.txInfo memory _txinfo,
+        bytes32[] memory _txproof,
+        address from
+    ) external view returns (bool) {
+        require(_txinfo.sourceAddress == from, "UCE_SENDER");
         bytes32 lpid = _txinfo.lpid;
         //1. txinfo is already spv
         address spvAddress = getSpvAddress();
@@ -94,14 +95,14 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     }
 
     function checkMakerChallenge(
-        OperationsLib.txInfo memory _makerTx,
         OperationsLib.txInfo memory _userTx,
+        OperationsLib.txInfo memory _makerTx,
         bytes32[] memory _makerProof
     ) external returns (bool) {
         address spvAddress = getSpvAddress();
         require(_makerTx.sourceAddress == msg.sender, "MC_SENDER");
         //1. _makerTx is already spv
-        bool txVerify = IORSpv(spvAddress).verifyUserTxProof(_makerTx, _makerProof);
+        bool txVerify = IORSpv(spvAddress).verifyMakerTxProof(_makerTx, _makerProof);
         require(txVerify, "MCE_UNVERIFY");
 
         OperationsLib.chainInfo memory souceChainInfo = IORManager(_managerAddress).getChainInfoByChainID(

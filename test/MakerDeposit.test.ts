@@ -1,113 +1,28 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import { ethers, web3 } from 'hardhat';
-import { ORMakerDeposit } from '../typechain-types/contracts/ORMakerDeposit';
+import { ORMakerDeposit } from '../typechain-types';
 import { MerkleTree } from 'merkletreejs';
-import { LP_LIST } from './lib/Config';
+import { LP_LIST, MAKER_TX_LIST, USER_TX_LIST } from './lib/Config';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { PAIR_LIST } from './lib/Config';
 import { expect } from 'chai';
-import { getPairID, getPairLPID } from './lib/Utils';
+import { getPairID, getPairLPID, getLeaf } from './lib/Utils';
+import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 let mdc: ORMakerDeposit;
 let supportPairTree: MerkleTree;
 let owner: SignerWithAddress;
+let UserTx1Account: SignerWithAddress;
+let UserTx3Account: SignerWithAddress;
 let lpInfoTree: MerkleTree;
 let allPairLeafList: any[] = [];
 let userTxTree: MerkleTree;
 let makerTxTree: MerkleTree;
-const { keccak256 } = ethers.utils;
-const UserTxList = [
-  {
-    lpid: '0x12747d215bcd3c407229d6fdfaf3c9e29608573499f4640e2d50fdef01360b91',
-    id: '0x12747d215bcd3c407229d6fdfaf3c9e29608573499f4640e2d50fdef01360b91',
-    from: '0x188DD5b655E2fe78f5ede164d37170FB1B941c9e',
-    to: '0x80c67432656d59144ceff962e8faf8926599bcf8',
-    token: '0x0000000000000000000000000000000000000000',
-    chainId: '1',
-    fee: '46810453281384',
-    value: '998798000000009003',
-    nonce: 0,
-    timestamp: 111111111,
-    responseAmount: 10000,
-    ebcid: 0,
-  },
-  {
-    lpid: '0x12747d215bcd3c407229d6fdfaf3c9e29608573499f4640e2d50fdef01360b94',
-    id: '0x12747d215bcd3c407229d6fdfaf3c9e29608573499f4640e2d50fdef01360b92',
-    from: '0xAec1379dc4BDe48245F75f9726239cEC2E0C8DDa',
-    to: '0x80c67432656d59144ceff962e8faf8926599bcf8',
-    chainId: '1',
-    token: '0x0000000000000000000000000000000000000000',
-    fee: '46810453281384',
-    value: '998798000000009003',
-    nonce: 1,
-    timestamp: 111111111,
-    responseAmount: 10000,
-    ebcid: 0,
-  },
-  {
-    lpid: '0x12747d215bcd3c407229d6fdfaf3c9e29608573499f4640e2d50fdef01360b93',
-    id: '0x12747d215bcd3c407229d6fdfaf3c9e29608573499f4640e2d50fdef01360b93',
-    from: '0xE879e54Ab4893953773C0b41304A05C2D49cc612',
-    chainId: '1',
-    to: '0x80c67432656d59144ceff962e8faf8926599bcf8',
-    token: '0x0000000000000000000000000000000000000000',
-    fee: '46810453281384',
-    value: '998798000000009003',
-    nonce: 3,
-    timestamp: 111111111,
-    responseAmount: 10000,
-    ebcid: 0,
-  },
-  {
-    lpid: '0x12747d215bcd3c407229d6fdfaf3c9e29608573499f4640e2d50fdef01360b92',
-    id: '0xfd123fe2054b7f2140ebc9be98dc8638d17f7eae74887894d220d160dc188c1b',
-    from: '0xbf28bce31463a3a023c2c324aecbd5689ffa06ee',
-    to: '0x80c67432656d59144ceff962e8faf8926599bcf8',
-    token: '0x0000000000000000000000000000000000000000',
-    chainId: '3',
-    fee: '20969931642240',
-    value: '276866090070000000',
-    nonce: 9,
-    timestamp: 111111111,
-    responseAmount: 10000,
-    ebcid: 0,
-  },
-];
-const MakerTxList = [
-  {
-    lpid: '0x12747d215bcd3c407229d6fdfaf3c9e29608573499f4640e2d50fdef01360b95',
-    id: '0x6f1308d493d20956ef2806439e095451ba859c02211b60595d6469858161c9bd',
-    from: '0x80c67432656d59144ceff962e8faf8926599bcf8',
-    to: '0xbf28bce31463a3a023c2c324aecbd5689ffa06ee',
-    token: '0x0000000000000000000000000000000000000000',
-    chainId: '7',
-    fee: '378000000000000',
-    value: '276016000000000009',
-    nonce: 62374,
-    timestamp: 111111111,
-    responseAmount: 10000,
-    ebcid: 0,
-  },
 
-  {
-    lpid: '0x12747d215bcd3c407229d6fdfaf3c9e29608573499f4640e2d50fdef01360b96',
-    id: '0xd615805a657aa2fae3172ca6f6fdbd1c0036f29c233eb2a94b408f7ef2b29a02',
-    from: '0x80c67432656d59144ceff962e8faf8926599bcf8',
-    to: '0xac9facad1c42986520bd7df5ded1d30d94a13095',
-    token: '0x0000000000000000000000000000000000000000',
-    chainId: '7',
-    fee: '378000000000000',
-    value: '389667000000000007',
-    nonce: 62373,
-    timestamp: 111111111,
-    responseAmount: 10000,
-    ebcid: 0,
-  },
-];
+const { keccak256 } = ethers.utils;
 describe('MakerDeposit.test.ts', () => {
   async function getFactoryInfo() {
     const mdcContractAddress = process.env['MDC'] || '';
-    [owner] = await ethers.getSigners();
+    [owner, , UserTx1Account, UserTx3Account] = await ethers.getSigners();
     mdc = await ethers.getContractAt(
       'ORMakerDeposit',
       mdcContractAddress,
@@ -130,68 +45,13 @@ describe('MakerDeposit.test.ts', () => {
       sort: true,
     });
 
-    const { tree: tree1 } = generateMerkleTree(UserTxList);
+    const { tree: tree1 } = generateMerkleTree(USER_TX_LIST, true);
     userTxTree = tree1;
-    const { tree: tree2 } = generateMerkleTree(MakerTxList);
+    const { tree: tree2 } = generateMerkleTree(MAKER_TX_LIST, false);
     makerTxTree = tree2;
   }
 
   before(getFactoryInfo);
-  function getLeaf(tx: typeof UserTxList[0]) {
-    const lpid = tx.lpid.toLowerCase();
-    const txHash = tx.id.toLowerCase();
-    const sourceAddress = tx.from.toLowerCase();
-    const destAddress = tx.to.toLowerCase();
-    const nonce = tx.nonce;
-    const amount = tx.value;
-    const chainID = tx.chainId;
-    const tokenAddress = tx.token;
-    const timestamp = tx.timestamp;
-    const responseAmount = tx.responseAmount;
-    const ebcid = tx.ebcid;
-    const hex = ethers.utils.solidityKeccak256(
-      [
-        'bytes32',
-        'uint256',
-        'bytes32',
-        'address',
-        'address',
-        'uint256',
-        'uint256',
-        'address',
-        'uint256',
-        'uint256',
-        'uint256',
-      ],
-      [
-        lpid,
-        chainID,
-        txHash,
-        sourceAddress,
-        destAddress,
-        nonce,
-        amount,
-        tokenAddress,
-        timestamp,
-        responseAmount,
-        ebcid,
-      ],
-    );
-    const leaf = {
-      lpid,
-      chainID,
-      txHash,
-      sourceAddress,
-      destAddress,
-      nonce,
-      amount,
-      tokenAddress,
-      timestamp,
-      responseAmount,
-      ebcid,
-    };
-    return { hex, leaf };
-  }
   function getLpInfo(LPLIST: typeof LP_LIST[0]) {
     let lpInfo: any = LPLIST;
     const lpId = getPairLPID(lpInfo);
@@ -206,10 +66,13 @@ describe('MakerDeposit.test.ts', () => {
     }
     return lpInfo;
   }
-  function generateMerkleTree(txList: Array<typeof UserTxList[0]>) {
+  function generateMerkleTree(
+    txList: Array<typeof USER_TX_LIST[0]>,
+    status: boolean,
+  ) {
     const leafs = txList.map((tx) => {
       // from , to, value, nonce
-      const { hex } = getLeaf(tx);
+      const { hex } = getLeaf(tx, status);
       return hex;
     });
     const tree = new MerkleTree(leafs, keccak256, {
@@ -279,19 +142,42 @@ describe('MakerDeposit.test.ts', () => {
       'LPSTOP_LPID_TIMEUNABLE',
     );
   });
-  // it('LPWith Draw', async () => {
-  //   const { leaf } = getLeaf(UserTxList[0]);
-  //   const owner = await mdc.owner();
-  //   console.log('owner: ', owner);
-  //   const response = await mdc.withDrawAssert(leaf.amount, leaf.tokenAddress);
-  //   const tx = await response.wait();
-  //   console.log(tx.events);
-  // });
   it('userChanllenge for maker not send', async () => {
-    const { hex } = getLeaf(UserTxList[0]);
-    console.log(userTxTree.toString());
+    const { leaf, hex } = getLeaf(USER_TX_LIST[0], true);
     const txProof = userTxTree.getHexProof(hex);
-    console.log('txProof: ', txProof);
-    // const response = await mdc.userChanllenge(lpInfo, stopTime, leaf);
+    const overrides = {
+      value: ethers.utils.parseEther('1'),
+    };
+    const response = await mdc
+      .connect(UserTx1Account)
+      .userChanllenge(leaf, txProof, overrides);
+    await expect(response)
+      .to.emit(mdc, 'LogChanllengeInfo')
+      .withArgs(anyValue, 0);
+  });
+  it('userChanllenge for maker already send', async () => {
+    // User
+    const { leaf: userLeaf, hex: userHex } = getLeaf(USER_TX_LIST[4], true);
+    const userProof = userTxTree.getHexProof(userHex);
+    const overrides = {
+      value: ethers.utils.parseEther('1'),
+    };
+    const userResponse = await mdc
+      .connect(UserTx3Account)
+      .userChanllenge(userLeaf, userProof, overrides);
+    await expect(userResponse)
+      .to.emit(mdc, 'LogChanllengeInfo')
+      .withArgs(anyValue, 0);
+    // Maker
+    const { leaf: makerLeaf, hex: makerHex } = getLeaf(MAKER_TX_LIST[2], false);
+    const makerProof = makerTxTree.getHexProof(makerHex);
+    const makerResponce = await mdc.makerChanllenger(
+      userLeaf,
+      makerLeaf,
+      makerProof,
+    );
+    await expect(makerResponce)
+      .to.emit(mdc, 'LogChanllengeInfo')
+      .withArgs(anyValue, 1);
   });
 });

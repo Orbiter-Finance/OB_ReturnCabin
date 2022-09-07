@@ -18,7 +18,11 @@ interface IORProtocal {
 
     function getRespnseHash(OperationsLib.txInfo memory _txinfo) external pure returns (bytes32);
 
-    function checkUserChallenge(OperationsLib.txInfo memory, bytes32[] memory) external view returns (bool);
+    function checkUserChallenge(
+        OperationsLib.txInfo memory,
+        bytes32[] memory,
+        address from
+    ) external view returns (bool);
 
     function checkMakerChallenge(
         OperationsLib.txInfo memory,

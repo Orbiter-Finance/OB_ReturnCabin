@@ -2,7 +2,7 @@ import { ethers } from 'hardhat';
 import { MerkleTree } from 'merkletreejs';
 import { getPairID } from './lib/Utils';
 import { PAIR_LIST } from './lib/Config';
-import { ORManager } from '../typechain-types/contracts/ORManager';
+import { ORManager } from '../typechain-types';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { expect } from 'chai';
 import keccak256 from 'keccak256';

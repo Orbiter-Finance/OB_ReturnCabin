@@ -1,97 +1,9 @@
 import { expect } from 'chai';
 import { ethers, upgrades } from 'hardhat';
 import { MerkleTree } from 'merkletreejs';
+import { MAKER_TX_LIST, USER_TX_LIST } from './lib/Config';
+import { getLeaf } from './lib/Utils';
 const { keccak256 } = ethers.utils;
-const UserTxList = [
-  {
-    lpid: '0x12747d215bcd3c407229d6fdfaf3c9e29608573499f4640e2d50fdef01360b91',
-    id: '0x12747d215bcd3c407229d6fdfaf3c9e29608573499f4640e2d50fdef01360b91',
-    from: '0x188DD5b655E2fe78f5ede164d37170FB1B941c9e',
-    to: '0x80c67432656d59144ceff962e8faf8926599bcf8',
-    token: '0x0000000000000000000000000000000000000000',
-    chainId: '1',
-    fee: '46810453281384',
-    value: '998798000000009003',
-    nonce: 0,
-    timestamp: 111111111,
-    responseAmount: 10000,
-    ebcid: 0,
-  },
-  {
-    lpid: '0x12747d215bcd3c407229d6fdfaf3c9e29608573499f4640e2d50fdef01360b94',
-    id: '0x12747d215bcd3c407229d6fdfaf3c9e29608573499f4640e2d50fdef01360b92',
-    from: '0xAec1379dc4BDe48245F75f9726239cEC2E0C8DDa',
-    to: '0x80c67432656d59144ceff962e8faf8926599bcf8',
-    chainId: '1',
-    token: '0x0000000000000000000000000000000000000000',
-    fee: '46810453281384',
-    value: '998798000000009003',
-    nonce: 1,
-    timestamp: 111111111,
-    responseAmount: 10000,
-    ebcid: 0,
-  },
-  {
-    lpid: '0x12747d215bcd3c407229d6fdfaf3c9e29608573499f4640e2d50fdef01360b93',
-    id: '0x12747d215bcd3c407229d6fdfaf3c9e29608573499f4640e2d50fdef01360b93',
-    from: '0xE879e54Ab4893953773C0b41304A05C2D49cc612',
-    chainId: '1',
-    to: '0x80c67432656d59144ceff962e8faf8926599bcf8',
-    token: '0x0000000000000000000000000000000000000000',
-    fee: '46810453281384',
-    value: '998798000000009003',
-    nonce: 3,
-    timestamp: 111111111,
-    responseAmount: 10000,
-    ebcid: 0,
-  },
-  {
-    lpid: '0x12747d215bcd3c407229d6fdfaf3c9e29608573499f4640e2d50fdef01360b92',
-    id: '0xfd123fe2054b7f2140ebc9be98dc8638d17f7eae74887894d220d160dc188c1b',
-    from: '0xbf28bce31463a3a023c2c324aecbd5689ffa06ee',
-    to: '0x80c67432656d59144ceff962e8faf8926599bcf8',
-    token: '0x0000000000000000000000000000000000000000',
-    chainId: '3',
-    fee: '20969931642240',
-    value: '276866090070000000',
-    nonce: 9,
-    timestamp: 111111111,
-    responseAmount: 10000,
-    ebcid: 0,
-  },
-];
-const MakerTxList = [
-  {
-    lpid: '0x12747d215bcd3c407229d6fdfaf3c9e29608573499f4640e2d50fdef01360b95',
-    id: '0x6f1308d493d20956ef2806439e095451ba859c02211b60595d6469858161c9bd',
-    from: '0x80c67432656d59144ceff962e8faf8926599bcf8',
-    to: '0xbf28bce31463a3a023c2c324aecbd5689ffa06ee',
-    token: '0x0000000000000000000000000000000000000000',
-    chainId: '7',
-    fee: '378000000000000',
-    value: '276016000000000009',
-    nonce: 62374,
-    timestamp: 111111111,
-    responseAmount: 10000,
-    ebcid: 0,
-  },
-
-  {
-    lpid: '0x12747d215bcd3c407229d6fdfaf3c9e29608573499f4640e2d50fdef01360b96',
-    id: '0xd615805a657aa2fae3172ca6f6fdbd1c0036f29c233eb2a94b408f7ef2b29a02',
-    from: '0x80c67432656d59144ceff962e8faf8926599bcf8',
-    to: '0xac9facad1c42986520bd7df5ded1d30d94a13095',
-    token: '0x0000000000000000000000000000000000000000',
-    chainId: '7',
-    fee: '378000000000000',
-    value: '389667000000000007',
-    nonce: 62373,
-    timestamp: 111111111,
-    responseAmount: 10000,
-    ebcid: 0,
-  },
-];
-
 describe('ORSpv.spec.ts', () => {
   let spv: any;
   const chainId = '1';
@@ -105,74 +17,22 @@ describe('ORSpv.spec.ts', () => {
     await spv.deployed();
     console.log('spv address', spv.address);
     process.env['SPV'] = spv.address;
-    const { tree: tree1 } = generateMerkleTree(UserTxList);
+    const { tree: tree1 } = generateMerkleTree(USER_TX_LIST, true);
     userTxTree = tree1;
-    const { tree: tree2 } = generateMerkleTree(MakerTxList);
+    const { tree: tree2 } = generateMerkleTree(MAKER_TX_LIST, false);
     makerTxTree = tree2;
     console.log(`UserTree：\n`, tree1.toString());
     console.log(`MakerTree：\n`, tree2.toString());
   }
 
   before(deploySpvFixture);
-  function getLeaf(tx: typeof UserTxList[0]) {
-    const lpid = tx.lpid.toLowerCase();
-    const txHash = tx.id.toLowerCase();
-    const sourceAddress = tx.from.toLowerCase();
-    const destAddress = tx.to.toLowerCase();
-    const nonce = tx.nonce;
-    const amount = tx.value;
-    const chainID = tx.chainId;
-    const tokenAddress = tx.token;
-    const timestamp = tx.timestamp;
-    const responseAmount = tx.responseAmount;
-    const ebcid = tx.ebcid;
-    const hex = ethers.utils.solidityKeccak256(
-      [
-        'bytes32',
-        'uint256',
-        'bytes32',
-        'address',
-        'address',
-        'uint256',
-        'uint256',
-        'address',
-        'uint256',
-        'uint256',
-        'uint256',
-      ],
-      [
-        lpid,
-        chainID,
-        txHash,
-        sourceAddress,
-        destAddress,
-        nonce,
-        amount,
-        tokenAddress,
-        timestamp,
-        responseAmount,
-        ebcid,
-      ],
-    );
-    const leaf = {
-      lpid,
-      chainID,
-      txHash,
-      sourceAddress,
-      destAddress,
-      nonce,
-      amount,
-      tokenAddress,
-      timestamp,
-      responseAmount,
-      ebcid,
-    };
-    return { hex, leaf };
-  }
-  function generateMerkleTree(txList: Array<typeof UserTxList[0]>) {
+  function generateMerkleTree(
+    txList: Array<typeof USER_TX_LIST[0]>,
+    status: boolean,
+  ) {
     const leafs = txList.map((tx) => {
       // from , to, value, nonce
-      const { hex } = getLeaf(tx);
+      const { hex } = getLeaf(tx, status);
       return hex;
     });
     const tree = new MerkleTree(leafs, keccak256, {
@@ -193,7 +53,7 @@ describe('ORSpv.spec.ts', () => {
     });
     it('Local VerifyProof', () => {
       const root = userTxTree.getHexRoot();
-      const { hex: leafHash } = getLeaf(UserTxList[0]);
+      const { hex: leafHash } = getLeaf(USER_TX_LIST[0], true);
       const proof = userTxTree.getHexProof(leafHash);
       const result = userTxTree.verify(proof, leafHash, root);
       expect(result).true;
@@ -207,13 +67,13 @@ describe('ORSpv.spec.ts', () => {
     });
 
     it('Contract VerifyProof', async () => {
-      const { hex: leafHash, leaf }: any = getLeaf(UserTxList[0]);
+      const { hex: leafHash, leaf }: any = getLeaf(USER_TX_LIST[0], true);
       const proof = userTxTree.getHexProof(leafHash);
       const result = await spv.verifyUserTxProof(leaf, proof);
       expect(result).true;
     });
     it('Contract VerifyProof non-existent', async () => {
-      const { hex: leafHash, leaf } = getLeaf(UserTxList[0]);
+      const { hex: leafHash, leaf } = getLeaf(USER_TX_LIST[0], true);
       leaf.chainID = '2';
       const proof = userTxTree.getHexProof(leafHash);
       const result = await spv.verifyUserTxProof(<any>leaf, proof);
@@ -221,29 +81,29 @@ describe('ORSpv.spec.ts', () => {
     });
 
     // it('Set validation record', async () => {
-    //   const { hex: leafHash }: any = getLeaf(UserTxList[0]);
+    //   const { hex: leafHash }: any = getLeaf(USER_TX_LIST[0]);
     //   const tx = await spv.setVerifyRecordsee(leafHash);
     //   expect(tx.blockNumber).gt(0);
     // });
     // it('Set validation record:(Txid Verified)', async () => {
-    //   const { hex: leafHash }: any = getLeaf(UserTxList[0]);
+    //   const { hex: leafHash }: any = getLeaf(USER_TX_LIST[0]);
     //   await expect(spv.setVerifyRecordsee(leafHash)).to.be.rejectedWith(
     //     'Txid Verified',
     //   );
     // });
 
     // it('Verified records', async () => {
-    //   const { hex: leafHash }: any = getLeaf(UserTxList[0]);
+    //   const { hex: leafHash }: any = getLeaf(USER_TX_LIST[0]);
     //   const result = await spv.isVerify(leafHash);
     //   expect(result).true;
     // });
     // it('Unverified records', async () => {
-    //   const { hex: leafHash }: any = getLeaf(UserTxList[1]);
+    //   const { hex: leafHash }: any = getLeaf(USER_TX_LIST[1]);
     //   const result = await spv.isVerify(leafHash);
     //   expect(result).false;
     // });
   });
-  describe('SPV Makerr Test', () => {
+  describe('SPV Maker Test', () => {
     const chainId = 7;
     it('SetMerkleRoot', async () => {
       const root = makerTxTree.getHexRoot();
@@ -257,7 +117,7 @@ describe('ORSpv.spec.ts', () => {
     });
     it('Local VerifyProof', () => {
       const root = makerTxTree.getHexRoot();
-      const { hex: leafHash } = getLeaf(MakerTxList[0]);
+      const { hex: leafHash } = getLeaf(MAKER_TX_LIST[0], false);
       const proof = makerTxTree.getHexProof(leafHash);
       const result = makerTxTree.verify(proof, leafHash, root);
       expect(result).true;
@@ -271,13 +131,13 @@ describe('ORSpv.spec.ts', () => {
     });
 
     it('Contract VerifyProof', async () => {
-      const { hex: leafHash, leaf }: any = getLeaf(MakerTxList[0]);
+      const { hex: leafHash, leaf }: any = getLeaf(MAKER_TX_LIST[0], false);
       const proof = makerTxTree.getHexProof(leafHash);
       const result = await spv.verifyMakerTxProof(leaf, proof);
       expect(result).true;
     });
     it('Contract VerifyProof non-existent', async () => {
-      const { hex: leafHash, leaf } = getLeaf(MakerTxList[0]);
+      const { hex: leafHash, leaf } = getLeaf(MAKER_TX_LIST[0], false);
       leaf.chainID = '2';
       const proof = makerTxTree.getHexProof(leafHash);
       const result = await spv.verifyMakerTxProof(<any>leaf, proof);

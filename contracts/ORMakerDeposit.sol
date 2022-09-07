@@ -170,7 +170,7 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
             uint256 stopDelayTime = IORProtocal(ebcAddress).getStopDealyTime(_lpinfo.sourceChain);
             lpInfo[lpid].stopTime = block.timestamp + stopDelayTime;
             lpInfo[lpid].startTime = 0;
-            lpInfo[lpid].LPRootHash = MerkleProof.processProofCalldata(proof[i],  OperationsLib.getLpFullHash(_lpinfo));
+            lpInfo[lpid].LPRootHash = MerkleProof.processProofCalldata(proof[i], OperationsLib.getLpFullHash(_lpinfo));
             emit LogLpInfo(lpid, lpState.PAUSE, lpInfo[lpid].stopTime, _lpinfo);
         }
     }
@@ -224,7 +224,7 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
     // userChanllenge
     function userChanllenge(OperationsLib.txInfo memory _txinfo, bytes32[] memory _txproof) external payable {
         address ebcAddress = getEBCAddress(_txinfo.ebcid);
-        require(IORProtocal(ebcAddress).checkUserChallenge(_txinfo, _txproof), "UC_ERROR");
+        require(IORProtocal(ebcAddress).checkUserChallenge(_txinfo, _txproof, msg.sender), "UC_ERROR");
         bytes32 chanllengeID = OperationsLib.getChanllengeID(_txinfo);
         require(chanllengeInfos[chanllengeID].chanllengeState == 0, "UCE_USED");
         uint256 pledgeAmount = IORProtocal(ebcAddress).getChanllengePledgeAmount();
@@ -312,10 +312,11 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
             abi.encodePacked(
                 _makerTx.lpid,
                 _makerTx.chainID,
-                _makerTx.txHash,
+                // _makerTx.txHash,//delete
                 _makerTx.sourceAddress,
                 _makerTx.destAddress,
-                _makerTx.amount,
+                // _makerTx.amount,
+                _makerTx.responseAmount, // _makerTx.amount -> _makerTx.responseAmount
                 _makerTx.tokenAddress
             )
         );
