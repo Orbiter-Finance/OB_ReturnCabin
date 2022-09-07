@@ -16,6 +16,7 @@ const UserTxList = [
     nonce: 0,
     timestamp: 111111111,
     responseAmount: 10000,
+    ebcid: 0,
   },
   {
     lpid: '0x12747d215bcd3c407229d6fdfaf3c9e29608573499f4640e2d50fdef01360b94',
@@ -29,6 +30,7 @@ const UserTxList = [
     nonce: 1,
     timestamp: 111111111,
     responseAmount: 10000,
+    ebcid: 0,
   },
   {
     lpid: '0x12747d215bcd3c407229d6fdfaf3c9e29608573499f4640e2d50fdef01360b93',
@@ -42,6 +44,7 @@ const UserTxList = [
     nonce: 3,
     timestamp: 111111111,
     responseAmount: 10000,
+    ebcid: 0,
   },
   {
     lpid: '0x12747d215bcd3c407229d6fdfaf3c9e29608573499f4640e2d50fdef01360b92',
@@ -55,6 +58,7 @@ const UserTxList = [
     nonce: 9,
     timestamp: 111111111,
     responseAmount: 10000,
+    ebcid: 0,
   },
 ];
 // const MakerTxList = [
@@ -70,6 +74,7 @@ const UserTxList = [
 //     nonce: 62374,
 //     timestamp: 111111111,
 //     responseAmount: 10000,
+//     ebcid: 0,
 //   },
 
 //   {
@@ -84,6 +89,7 @@ const UserTxList = [
 //     nonce: 62373,
 //     timestamp: 111111111,
 //     responseAmount: 10000,
+//     ebcid: 0,
 //   },
 // ];
 describe('ORProtocalV1.test.ts', () => {
@@ -111,6 +117,7 @@ describe('ORProtocalV1.test.ts', () => {
     const tokenAddress = tx.token;
     const timestamp = tx.timestamp;
     const responseAmount = tx.responseAmount;
+    const ebcid = tx.ebcid;
     const hex = ethers.utils.solidityKeccak256(
       [
         'bytes32',
@@ -121,6 +128,7 @@ describe('ORProtocalV1.test.ts', () => {
         'uint256',
         'uint256',
         'address',
+        'uint256',
         'uint256',
         'uint256',
       ],
@@ -135,6 +143,7 @@ describe('ORProtocalV1.test.ts', () => {
         tokenAddress,
         timestamp,
         responseAmount,
+        ebcid,
       ],
     );
     const leaf = {
@@ -148,16 +157,18 @@ describe('ORProtocalV1.test.ts', () => {
       tokenAddress,
       timestamp,
       responseAmount,
+      ebcid,
     };
     return { hex, leaf };
   }
   it('Create EBC', async () => {
     console.log('EBC address', ebc.address);
   });
-  it('Update EBC factory', async () => {
+  it('Update EBC and SPV factory', async () => {
     const factoryAddress = process.env['factory'] || '';
-    const spvAddress = process.env['SPV'];
+    const spvAddress = process.env['SPV'] || '';
     !expect(factoryAddress).not.empty;
+    !expect(spvAddress).not.empty;
     const factoryContract = await ethers.getContractAt(
       'ORManager',
       factoryAddress,
@@ -166,9 +177,10 @@ describe('ORProtocalV1.test.ts', () => {
       (await factoryContract.getEBCids()).toNumber() - 1,
       ebc.address,
     );
-    console.log('fa spv', await factoryContract.spv());
+    await factoryContract.setSPV(spvAddress);
     expect(await factoryContract.getEBCids()).equal(1);
     expect(await factoryContract.getEBC(0)).equal(ebc.address);
+    expect(await factoryContract.getSPV()).equal(spvAddress);
   });
   it('getETHPunish', async () => {
     const value = UserTxList[0].value;

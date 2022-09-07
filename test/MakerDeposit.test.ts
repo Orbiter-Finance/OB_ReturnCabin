@@ -12,6 +12,8 @@ let supportPairTree: MerkleTree;
 let owner: SignerWithAddress;
 let lpInfoTree: MerkleTree;
 let allPairLeafList: any[] = [];
+let userTxTree: MerkleTree;
+let makerTxTree: MerkleTree;
 const { keccak256 } = ethers.utils;
 const UserTxList = [
   {
@@ -26,6 +28,7 @@ const UserTxList = [
     nonce: 0,
     timestamp: 111111111,
     responseAmount: 10000,
+    ebcid: 0,
   },
   {
     lpid: '0x12747d215bcd3c407229d6fdfaf3c9e29608573499f4640e2d50fdef01360b94',
@@ -39,6 +42,7 @@ const UserTxList = [
     nonce: 1,
     timestamp: 111111111,
     responseAmount: 10000,
+    ebcid: 0,
   },
   {
     lpid: '0x12747d215bcd3c407229d6fdfaf3c9e29608573499f4640e2d50fdef01360b93',
@@ -52,6 +56,7 @@ const UserTxList = [
     nonce: 3,
     timestamp: 111111111,
     responseAmount: 10000,
+    ebcid: 0,
   },
   {
     lpid: '0x12747d215bcd3c407229d6fdfaf3c9e29608573499f4640e2d50fdef01360b92',
@@ -65,6 +70,7 @@ const UserTxList = [
     nonce: 9,
     timestamp: 111111111,
     responseAmount: 10000,
+    ebcid: 0,
   },
 ];
 const MakerTxList = [
@@ -80,6 +86,7 @@ const MakerTxList = [
     nonce: 62374,
     timestamp: 111111111,
     responseAmount: 10000,
+    ebcid: 0,
   },
 
   {
@@ -94,6 +101,7 @@ const MakerTxList = [
     nonce: 62373,
     timestamp: 111111111,
     responseAmount: 10000,
+    ebcid: 0,
   },
 ];
 describe('MakerDeposit.test.ts', () => {
@@ -121,6 +129,11 @@ describe('MakerDeposit.test.ts', () => {
     lpInfoTree = new MerkleTree([], keccak256, {
       sort: true,
     });
+
+    const { tree: tree1 } = generateMerkleTree(UserTxList);
+    userTxTree = tree1;
+    const { tree: tree2 } = generateMerkleTree(MakerTxList);
+    makerTxTree = tree2;
   }
 
   before(getFactoryInfo);
@@ -135,6 +148,7 @@ describe('MakerDeposit.test.ts', () => {
     const tokenAddress = tx.token;
     const timestamp = tx.timestamp;
     const responseAmount = tx.responseAmount;
+    const ebcid = tx.ebcid;
     const hex = ethers.utils.solidityKeccak256(
       [
         'bytes32',
@@ -145,6 +159,7 @@ describe('MakerDeposit.test.ts', () => {
         'uint256',
         'uint256',
         'address',
+        'uint256',
         'uint256',
         'uint256',
       ],
@@ -159,6 +174,7 @@ describe('MakerDeposit.test.ts', () => {
         tokenAddress,
         timestamp,
         responseAmount,
+        ebcid,
       ],
     );
     const leaf = {
@@ -172,6 +188,7 @@ describe('MakerDeposit.test.ts', () => {
       tokenAddress,
       timestamp,
       responseAmount,
+      ebcid,
     };
     return { hex, leaf };
   }
@@ -188,6 +205,17 @@ describe('MakerDeposit.test.ts', () => {
       return;
     }
     return lpInfo;
+  }
+  function generateMerkleTree(txList: Array<typeof UserTxList[0]>) {
+    const leafs = txList.map((tx) => {
+      // from , to, value, nonce
+      const { hex } = getLeaf(tx);
+      return hex;
+    });
+    const tree = new MerkleTree(leafs, keccak256, {
+      sort: true,
+    });
+    return { tree };
   }
   it('Get MakerFactory', async () => {
     const result = await mdc.makerFactory();
@@ -260,17 +288,9 @@ describe('MakerDeposit.test.ts', () => {
   //   console.log(tx.events);
   // });
   it('userChanllenge for maker not send', async () => {
-    const { leaf, hex } = getLeaf(UserTxList[0]);
-    const txInfoTree = new MerkleTree([hex], keccak256, {
-      sort: true,
-    });
-    const lpInfo = getLpInfo(LP_LIST[0]);
-    const contractLpId = '0x' + String(getPairID(lpInfo));
-    const realLpInfo = await mdc.lpInfo(contractLpId);
-    const stopTime = ethers.BigNumber.from(realLpInfo.stopTime).toNumber();
-    const lpProof = lpInfoTree.getHexProof(lpInfo.id);
-    console.log(txInfoTree.toString());
-    const txProof = txInfoTree.getHexProof(hex);
+    const { hex } = getLeaf(UserTxList[0]);
+    console.log(userTxTree.toString());
+    const txProof = userTxTree.getHexProof(hex);
     console.log('txProof: ', txProof);
     // const response = await mdc.userChanllenge(lpInfo, stopTime, leaf);
   });
