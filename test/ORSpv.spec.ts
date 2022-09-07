@@ -15,6 +15,7 @@ const UserTxList = [
     nonce: 0,
     timestamp: 111111111,
     responseAmount: 10000,
+    ebcid: 0,
   },
   {
     lpid: '0x12747d215bcd3c407229d6fdfaf3c9e29608573499f4640e2d50fdef01360b94',
@@ -28,6 +29,7 @@ const UserTxList = [
     nonce: 1,
     timestamp: 111111111,
     responseAmount: 10000,
+    ebcid: 0,
   },
   {
     lpid: '0x12747d215bcd3c407229d6fdfaf3c9e29608573499f4640e2d50fdef01360b93',
@@ -41,6 +43,7 @@ const UserTxList = [
     nonce: 3,
     timestamp: 111111111,
     responseAmount: 10000,
+    ebcid: 0,
   },
   {
     lpid: '0x12747d215bcd3c407229d6fdfaf3c9e29608573499f4640e2d50fdef01360b92',
@@ -54,6 +57,7 @@ const UserTxList = [
     nonce: 9,
     timestamp: 111111111,
     responseAmount: 10000,
+    ebcid: 0,
   },
 ];
 const MakerTxList = [
@@ -69,6 +73,7 @@ const MakerTxList = [
     nonce: 62374,
     timestamp: 111111111,
     responseAmount: 10000,
+    ebcid: 0,
   },
 
   {
@@ -83,6 +88,7 @@ const MakerTxList = [
     nonce: 62373,
     timestamp: 111111111,
     responseAmount: 10000,
+    ebcid: 0,
   },
 ];
 
@@ -119,6 +125,7 @@ describe('ORSpv.spec.ts', () => {
     const tokenAddress = tx.token;
     const timestamp = tx.timestamp;
     const responseAmount = tx.responseAmount;
+    const ebcid = tx.ebcid;
     const hex = ethers.utils.solidityKeccak256(
       [
         'bytes32',
@@ -129,6 +136,7 @@ describe('ORSpv.spec.ts', () => {
         'uint256',
         'uint256',
         'address',
+        'uint256',
         'uint256',
         'uint256',
       ],
@@ -143,6 +151,7 @@ describe('ORSpv.spec.ts', () => {
         tokenAddress,
         timestamp,
         responseAmount,
+        ebcid,
       ],
     );
     const leaf = {
@@ -156,6 +165,7 @@ describe('ORSpv.spec.ts', () => {
       tokenAddress,
       timestamp,
       responseAmount,
+      ebcid,
     };
     return { hex, leaf };
   }

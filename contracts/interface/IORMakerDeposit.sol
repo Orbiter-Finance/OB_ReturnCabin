@@ -45,14 +45,7 @@ interface IORMakerDeposit {
     function withDrawAssert(uint256, address) external;
 
     // userChanllenge
-    function userChanllenge(
-        OperationsLib.lpInfo memory,
-        uint256,
-        OperationsLib.txInfo memory,
-        bytes32[] memory,
-        bytes32[] memory,
-        bytes32[] memory
-    ) external payable;
+    function userChanllenge(OperationsLib.txInfo memory, bytes32[] memory) external payable;
 
     // userWithDraw
     function userWithDraw(OperationsLib.txInfo memory, OperationsLib.lpInfo memory) external;
