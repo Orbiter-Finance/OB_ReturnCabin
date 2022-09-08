@@ -8,6 +8,7 @@ import { PAIR_LIST } from './lib/Config';
 import { expect } from 'chai';
 import { getPairID, getPairLPID, getLeaf } from './lib/Utils';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
+// import { time } from '@openzeppelin/test-helpers';
 let mdc: ORMakerDeposit;
 let supportPairTree: MerkleTree;
 let owner: SignerWithAddress;
@@ -180,4 +181,7 @@ describe('MakerDeposit.test.ts', () => {
       .to.emit(mdc, 'LogChanllengeInfo')
       .withArgs(anyValue, 1);
   });
+  // it('test time ', async () => {
+  //   let duration = time.duration.seconds(3);
+  // });
 });
