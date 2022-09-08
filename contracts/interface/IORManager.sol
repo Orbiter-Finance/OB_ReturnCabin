@@ -4,7 +4,6 @@ pragma solidity ^0.8.9;
 import "../library/Operation.sol";
 
 interface IORManager {
-    event MakerMap(address indexed maker, address indexed makerContract);
     enum PairEventType {
         CREATE,
         DELETE

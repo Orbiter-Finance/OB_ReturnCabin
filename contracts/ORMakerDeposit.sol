@@ -106,7 +106,7 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         for (uint256 i = 0; i < _lpinfos.length; i++) {
             OperationsLib.lpInfo memory _lpinfo = _lpinfos[i];
             bytes32 lpid = OperationsLib.getLpID(_lpinfo);
-            require(lpInfo[lpid].startTime == 0 && lpInfo[lpid].stopTime != 0, "LP Not Paused");
+            require(lpInfo[lpid].startTime == 0 && lpInfo[lpid].stopTime == 0, "LP Not Paused");
             require(IORManager(manager).isSupportPair(lpid, pairProof[i]), "Pair Not Supported");
             if (
                 !(_lpinfo.sourceChain == _lpinfos[0].sourceChain &&
@@ -169,7 +169,7 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
             uint256 stopDelayTime = IORProtocal(ebcAddress).getStopDealyTime(_lpinfo.sourceChain);
             lpInfo[lpid].stopTime = block.timestamp + stopDelayTime;
             lpInfo[lpid].startTime = 0;
-            lpInfo[lpid].LPRootHash = MerkleProof.processProofCalldata(proof[i],  OperationsLib.getLpFullHash(_lpinfo));
+            lpInfo[lpid].LPRootHash = MerkleProof.processProofCalldata(proof[i], OperationsLib.getLpFullHash(_lpinfo));
             emit LogLpInfo(lpid, lpState.PAUSE, lpInfo[lpid].stopTime, _lpinfo);
         }
     }
