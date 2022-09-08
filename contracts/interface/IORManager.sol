@@ -8,7 +8,7 @@ interface IORManager {
         CREATE,
         DELETE
     }
-    event PairLogEvent(PairEventType index, OperationsLib.pairChainInfo[]);
+    event PairLogEvent(PairEventType indexed opType, OperationsLib.pairChainInfo[] pairs);
 
     function setSPV(address spvAddress) external returns (bool);
 
