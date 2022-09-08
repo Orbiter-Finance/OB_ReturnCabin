@@ -3,7 +3,7 @@
   "scripts": {
     "compile": "hardhat compile",
     "coverage": "env COVERAGE=true hardhat coverage",
-    "test": "hardhat test ./test/Factory.ts ./test/PairManager.spec.ts ./test/MakerDeposit.test.ts ./test/ORSpv.spec.ts",
+    "test": "hardhat test ./test/Factory.ts ./test/PairManager.spec.ts  ./test/ORSpv.spec.ts ./test/ORProtocalV1.test.ts ./test/MakerDeposit.test.ts",
     "lint": "npm run lint:ts && npm run lint:sol",
     "lint:fix": "npm run lint:ts:fix && npm run lint:sol:fix",
     "lint:ts": "eslint --ext .ts,.js ./",
@@ -55,6 +55,7 @@
     "@openzeppelin/contracts": "^4.7.3",
     "@openzeppelin/contracts-upgradeable": "^4.7.3",
     "@openzeppelin/hardhat-upgrades": "^1.20.0",
+    "@openzeppelin/test-helpers":"^0.5.16",
     "dotenv": "^16.0.1",
     "ethereumjs-util": "^7.1.5",
     "hardhat-contract-sizer": "^2.6.1",

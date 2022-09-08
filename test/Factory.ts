@@ -280,6 +280,7 @@ describe('Factory.spec.ts', () => {
       expect(tx.blockNumber).gt(0);
     });
     it('CREATE_MDC', async () => {
+      // create mdc
       const response = await makerV1Factory.connect(address1).createMaker();
       const tx = await response.wait();
       const makerMapEvent = tx.events?.find(
@@ -287,6 +288,7 @@ describe('Factory.spec.ts', () => {
       );
       if (makerMapEvent && makerMapEvent.args) {
         process.env['MDC'] = makerMapEvent.args[1];
+        console.log(makerMapEvent.args[1]);
         process.env['MDCFactory'] = makerV1Factory.address;
       }
       //

@@ -11,6 +11,7 @@ import "./interface/IORMakerV1Factory.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "hardhat/console.sol";
 
 contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
     address public makerFactory;
@@ -136,20 +137,19 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
             lpInfo[lpid].LPRootHash = MerkleProof.processProofCalldata(proof[i], OperationsLib.getLpFullHash(_lpinfo));
             emit LogLpInfo(lpid, lpState.ACTION, lpInfo[lpid].startTime, _lpinfo);
         }
-        if (supplement - unUsedAmount > 0) {
-            // need deposit
-            uint256 realNeedAmount = supplement - unUsedAmount;
-            if (realNeedAmount > 0) {
-                if (pledgedToken != address(0)) {
-                    uint256 allowance = IERC20(pledgedToken).allowance(msg.sender, address(this));
-                    require(allowance >= realNeedAmount, "Check the token allowance");
-                    IERC20(pledgedToken).transferFrom(msg.sender, address(this), realNeedAmount);
-                    usedDeposit[pledgedToken] += realNeedAmount;
-                } else {
-                    require(msg.value >= realNeedAmount, "Check the eth send");
-                    // user deposit
-                    usedDeposit[pledgedToken] += realNeedAmount;
-                }
+        // need deposit
+        int256 AssessmentAmount = int256(supplement) - int256(unUsedAmount);
+        if (AssessmentAmount > 0) {
+            uint256 realNeedAmount = uint256(AssessmentAmount);
+            if (pledgedToken != address(0)) {
+                uint256 allowance = IERC20(pledgedToken).allowance(msg.sender, address(this));
+                require(allowance >= realNeedAmount, "Check the token allowance");
+                IERC20(pledgedToken).transferFrom(msg.sender, address(this), realNeedAmount);
+                usedDeposit[pledgedToken] += realNeedAmount;
+            } else {
+                require(msg.value >= realNeedAmount, "Check the eth send");
+                // user deposit
+                usedDeposit[pledgedToken] += realNeedAmount;
             }
         }
     }
@@ -223,7 +223,7 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
     // userChanllenge
     function userChanllenge(OperationsLib.txInfo memory _txinfo, bytes32[] memory _txproof) external payable {
         address ebcAddress = getEBCAddress(_txinfo.ebcid);
-        require(IORProtocal(ebcAddress).checkUserChallenge(_txinfo, _txproof), "UC_ERROR");
+        require(IORProtocal(ebcAddress).checkUserChallenge(_txinfo, _txproof, msg.sender), "UC_ERROR");
         bytes32 chanllengeID = OperationsLib.getChanllengeID(_txinfo);
         require(chanllengeInfos[chanllengeID].chanllengeState == 0, "UCE_USED");
         uint256 pledgeAmount = IORProtocal(ebcAddress).getChanllengePledgeAmount();
@@ -311,10 +311,11 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
             abi.encodePacked(
                 _makerTx.lpid,
                 _makerTx.chainID,
-                _makerTx.txHash,
+                // _makerTx.txHash,//delete
                 _makerTx.sourceAddress,
                 _makerTx.destAddress,
-                _makerTx.amount,
+                // _makerTx.amount,
+                _makerTx.responseAmount, // _makerTx.amount -> _makerTx.responseAmount
                 _makerTx.tokenAddress
             )
         );

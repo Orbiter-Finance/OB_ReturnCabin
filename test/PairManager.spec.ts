@@ -2,7 +2,7 @@ import { ethers } from 'hardhat';
 import { MerkleTree } from 'merkletreejs';
 import { getPairID } from './lib/Utils';
 import { PAIR_LIST } from './lib/Config';
-import { ORManager } from '../typechain-types/contracts/ORManager';
+import { ORManager } from '../typechain-types';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 import { expect } from 'chai';
 import keccak256 from 'keccak256';
@@ -51,57 +51,57 @@ describe('PairManager.spec', () => {
       .to.emit(pairManagerContrct, 'PairLogEvent')
       .withArgs(0, anyValue);
   });
-  it('createPair Pair2', async () => {
-    PairTree.addLeaves([allPairLeafList[3].leaf, allPairLeafList[2].leaf]);
-    const proofLeavesHash = [PAIR_LIST[2], PAIR_LIST[3]].map((row) => {
-      return Buffer.from(getPairID(row), 'hex');
-    });
-    const proof = await PairTree.getMultiProof(proofLeavesHash);
-    const proofFlags = PairTree.getProofFlags(proofLeavesHash, proof);
-    const tx = await pairManagerContrct.createPair(
-      proofLeavesHash.map((hashBuf) => {
-        const leaf = allPairLeafList.find(
-          (pair) => pair.leaf.toString('hex') === hashBuf.toString('hex'),
-        );
-        return leaf;
-      }),
-      PairTree.getHexRoot(),
-      proof,
-      proofFlags,
-    );
-    await expect(tx)
-      .to.emit(pairManagerContrct, 'PairLogEvent')
-      .withArgs(0, anyValue);
-  });
-  it('Delete Pair', async () => {
-    // PairTree.addLeaves([allPairLeafList[3].leaf, allPairLeafList[2].leaf]);
-    const proofLeavesHash = [PAIR_LIST[3]].map((row) => {
-      return Buffer.from(getPairID(row), 'hex');
-    });
+  // it('createPair Pair2', async () => {
+  //   PairTree.addLeaves([allPairLeafList[3].leaf, allPairLeafList[2].leaf]);
+  //   const proofLeavesHash = [PAIR_LIST[2], PAIR_LIST[3]].map((row) => {
+  //     return Buffer.from(getPairID(row), 'hex');
+  //   });
+  //   const proof = await PairTree.getMultiProof(proofLeavesHash);
+  //   const proofFlags = PairTree.getProofFlags(proofLeavesHash, proof);
+  //   const tx = await pairManagerContrct.createPair(
+  //     proofLeavesHash.map((hashBuf) => {
+  //       const leaf = allPairLeafList.find(
+  //         (pair) => pair.leaf.toString('hex') === hashBuf.toString('hex'),
+  //       );
+  //       return leaf;
+  //     }),
+  //     PairTree.getHexRoot(),
+  //     proof,
+  //     proofFlags,
+  //   );
+  //   await expect(tx)
+  //     .to.emit(pairManagerContrct, 'PairLogEvent')
+  //     .withArgs(0, anyValue);
+  // });
+  // it('Delete Pair', async () => {
+  //   // PairTree.addLeaves([allPairLeafList[3].leaf, allPairLeafList[2].leaf]);
+  //   const proofLeavesHash = [PAIR_LIST[3]].map((row) => {
+  //     return Buffer.from(getPairID(row), 'hex');
+  //   });
 
-    const proof = await PairTree.getMultiProof(proofLeavesHash);
-    const proofFlags = PairTree.getProofFlags(proofLeavesHash, proof);
-    // new root hash
-    const newLevels = PairTree.getLeaves().filter(
-      (row) => row.toString('hex') !== allPairLeafList[3].leaf.toString('hex'),
-    );
-    const newTree = new MerkleTree(newLevels, keccak256, {
-      sort: true,
-    });
-    const tx = await pairManagerContrct.deletePair(
-      proofLeavesHash.map((hashBuf) => {
-        const leaf = allPairLeafList.find(
-          (pair) => pair.leaf.toString('hex') === hashBuf.toString('hex'),
-        );
-        return leaf;
-      }),
-      <any>proof,
-      proofFlags,
-      newTree.getHexRoot(),
-    );
-    await expect(tx)
-      .to.emit(pairManagerContrct, 'PairLogEvent')
-      .withArgs(1, anyValue);
-  });
+  //   const proof = await PairTree.getMultiProof(proofLeavesHash);
+  //   const proofFlags = PairTree.getProofFlags(proofLeavesHash, proof);
+  //   // new root hash
+  //   const newLevels = PairTree.getLeaves().filter(
+  //     (row) => row.toString('hex') !== allPairLeafList[3].leaf.toString('hex'),
+  //   );
+  //   const newTree = new MerkleTree(newLevels, keccak256, {
+  //     sort: true,
+  //   });
+  //   const tx = await pairManagerContrct.deletePair(
+  //     proofLeavesHash.map((hashBuf) => {
+  //       const leaf = allPairLeafList.find(
+  //         (pair) => pair.leaf.toString('hex') === hashBuf.toString('hex'),
+  //       );
+  //       return leaf;
+  //     }),
+  //     <any>proof,
+  //     proofFlags,
+  //     newTree.getHexRoot(),
+  //   );
+  //   await expect(tx)
+  //     .to.emit(pairManagerContrct, 'PairLogEvent')
+  //     .withArgs(1, anyValue);
+  // });
 });
 //
