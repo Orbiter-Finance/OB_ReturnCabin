@@ -283,20 +283,21 @@ describe('MakerDeposit.test.ts', () => {
     const response = mdc.connect(UserTx3Account).userWithDraw(userLeaf, lpInfo);
     await expect(response).to.be.revertedWith('UW_WITHDRAW');
   });
-  // it('Maker withDraw in time', async () => {
-  //   const withDrawMax = await mdc
-  //     .connect(maker)
-  //     .idleAmount(tokeninfo_eth_main.mainAddress);
-  //   console.log('withDrawMax: ', withDrawMax);
-  //   const response = await mdc
-  //     .connect(maker)
-  //     .withDrawAssert(withDrawMax, tokeninfo_eth_main.mainAddress);
-  //   const tx = await response.wait();
-  //   // const gasUsed = tx.cumulativeGasUsed.mul(tx.effectiveGasPrice);
-  //   // const afterAmount = await maker.getBalance();
-  //   const nowWithDraw = await mdc
-  //     .connect(maker)
-  //     .idleAmount(tokeninfo_eth_main.mainAddress);
-  //   console.log('now', nowWithDraw);
-  // });
+  it('Maker withDraw in time', async () => {
+    const beforeAmount = await maker.getBalance();
+    const withDrawMax = await mdc
+      .connect(maker)
+      .idleAmount(tokeninfo_eth_main.mainAddress);
+    const response = await mdc
+      .connect(maker)
+      .withDrawAssert(withDrawMax, tokeninfo_eth_main.mainAddress);
+    const tx = await response.wait();
+    const gasUsed = tx.cumulativeGasUsed.mul(tx.effectiveGasPrice);
+    const afterAmount = await maker.getBalance();
+    const nowWithDraw = await mdc
+      .connect(maker)
+      .idleAmount(tokeninfo_eth_main.mainAddress);
+    expect(beforeAmount.add(withDrawMax).sub(gasUsed)).eq(afterAmount);
+    expect(nowWithDraw).eq(0);
+  });
 });
