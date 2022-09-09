@@ -37,7 +37,7 @@ describe('MakerDeposit.test.ts', () => {
       return row;
     });
     supportPairTree = new MerkleTree(
-      [allPairLeafList[0].leaf, allPairLeafList[1].leaf],
+      [allPairLeafList[0].leaf, allPairLeafList[2].leaf],
       keccak256,
       {
         sort: true,
@@ -179,12 +179,9 @@ describe('MakerDeposit.test.ts', () => {
     expect(nowWithDraw).eq(0);
   });
   it('LPAction again', async () => {
-    lpInfoTree.addLeaf(Buffer.from(LP_LIST[0].id, 'hex'));
-    lpInfoTree.addLeaf(Buffer.from(LP_LIST[1].id, 'hex'));
-
     const lpInfo = getLpInfo(LP_LIST[0]);
     const proof = lpInfoTree.getHexProof(lpInfo.id);
-    const value = ethers.utils.parseEther('2');
+    const value = ethers.utils.parseEther('1.2');
     const pairProofLeavesHash = [PAIR_LIST[0]].map((row) => {
       return Buffer.from(getPairID(row), 'hex');
     });

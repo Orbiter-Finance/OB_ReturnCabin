@@ -71,7 +71,7 @@ export const LP_LIST: LpInfoStruct[] = [
   },
   {
     id: '',
-    pairId: String(PAIR_LIST[1].id),
+    pairId: String(PAIR_LIST[2].id),
     sourcePresion: 18,
     destPresion: 18,
     minPrice: '5000000000000000',

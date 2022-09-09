@@ -30,8 +30,8 @@ describe('PairManager.spec', () => {
   });
   before(deployPairManagerFixture);
   it('createPair Pair1', async () => {
-    PairTree.addLeaves([allPairLeafList[0].leaf, allPairLeafList[1].leaf]);
-    const proofLeavesHash = [PAIR_LIST[0], PAIR_LIST[1]].map((row) => {
+    PairTree.addLeaves([allPairLeafList[0].leaf, allPairLeafList[2].leaf]);
+    const proofLeavesHash = [PAIR_LIST[0], PAIR_LIST[2]].map((row) => {
       return Buffer.from(getPairID(row), 'hex');
     });
     const proof = await PairTree.getMultiProof(proofLeavesHash);
