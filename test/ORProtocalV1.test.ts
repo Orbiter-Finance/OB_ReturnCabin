@@ -43,12 +43,12 @@ describe('ORProtocalV1.test.ts', () => {
   it('getETHPunish', async () => {
     const value = USER_TX_LIST[0].value;
     const response = await ebc.getETHPunish(value);
-    expect(response).lt(ethers.BigNumber.from(value));
+    expect(response).gt(ethers.BigNumber.from(value));
   });
   it('getTokenPunish', async () => {
     const value = USER_TX_LIST[0].value;
     const response = await ebc.getTokenPunish(value);
-    expect(response).lt(ethers.BigNumber.from(value));
+    expect(response).gt(ethers.BigNumber.from(value));
   });
   it('getRespnseHash', async () => {
     const { leaf } = getLeaf(USER_TX_LIST[0], true);

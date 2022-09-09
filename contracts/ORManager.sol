@@ -139,9 +139,6 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable {
     }
 
     function isSupportPair(bytes32 pair, bytes32[] calldata proof) public view returns (bool) {
-        console.logString("isSupportPair");
-        console.logBytes32(MerkleProof.processProof(proof, pair));
-        console.logBytes32(pairsRoot);
         return MerkleProof.verifyCalldata(proof, pairsRoot, pair);
     }
 

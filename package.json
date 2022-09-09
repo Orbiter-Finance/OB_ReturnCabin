@@ -55,7 +55,6 @@
     "@openzeppelin/contracts": "^4.7.3",
     "@openzeppelin/contracts-upgradeable": "^4.7.3",
     "@openzeppelin/hardhat-upgrades": "^1.20.0",
-    "@openzeppelin/test-helpers":"^0.5.16",
     "dotenv": "^16.0.1",
     "ethereumjs-util": "^7.1.5",
     "hardhat-contract-sizer": "^2.6.1",
