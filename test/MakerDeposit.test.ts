@@ -15,7 +15,6 @@ let maker: SignerWithAddress;
 let UserTx1Account: SignerWithAddress;
 let UserTx3Account: SignerWithAddress;
 let lpInfoTree: MerkleTree;
-const allPairLeafList: any[] = [];
 let userTxTree: MerkleTree;
 let makerTxTree: MerkleTree;
 const { keccak256 } = ethers.utils;
