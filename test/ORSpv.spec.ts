@@ -21,8 +21,8 @@ describe('ORSpv.spec.ts', () => {
     userTxTree = tree1;
     const { tree: tree2 } = generateMerkleTree(MAKER_TX_LIST, false);
     makerTxTree = tree2;
-    console.log(`UserTree：\n`, tree1.toString());
-    console.log(`MakerTree：\n`, tree2.toString());
+    // console.log(`UserTree：\n`, tree1.toString());
+    // console.log(`MakerTree：\n`, tree2.toString());
   }
 
   before(deploySpvFixture);

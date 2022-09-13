@@ -24,14 +24,14 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
         (uint256 securityCode, bool isSupport) = getSecuirtyCode(true, amount);
         require(isSupport, "GEP_AMOUNT_INVALIDATE");
         amount = amount - securityCode;
-        return (amount * 11) / 100;
+        return (amount * 11) / 10;
     }
 
     function getTokenPunish(uint256 amount) external pure returns (uint256) {
         (uint256 securityCode, bool isSupport) = getSecuirtyCode(true, amount);
         require(isSupport, "GTP_AMOUNT_INVALIDATE");
         amount = amount - securityCode;
-        return (amount * 11) / 100;
+        return (amount * 11) / 10;
     }
 
     function getStartDealyTime(uint256 chainID) external pure returns (uint256) {
@@ -84,12 +84,15 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
         bytes32[] memory _txproof,
         address from
     ) external view returns (bool) {
+        // Determine whether sourceAddress in txinfo is consistent with the caller's address
         require(_txinfo.sourceAddress == from, "UCE_SENDER");
         bytes32 lpid = _txinfo.lpid;
         //1. txinfo is already spv
         address spvAddress = getSpvAddress();
+        // Verify that txinfo and txproof are valid
         bool txVerify = IORSpv(spvAddress).verifyUserTxProof(_txinfo, _txproof);
         require(txVerify, "UCE_1");
+        // Determine whether destAddress in txinfo is an MDC address
         require(_txinfo.destAddress == msg.sender, "UCE_4");
         return true;
     }
@@ -98,8 +101,9 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
         OperationsLib.txInfo memory _userTx,
         OperationsLib.txInfo memory _makerTx,
         bytes32[] memory _makerProof
-    ) external returns (bool) {
+    ) external view returns (bool) {
         address spvAddress = getSpvAddress();
+        // Determine whether sourceAddress in txinfo is an MDC address
         require(_makerTx.sourceAddress == msg.sender, "MC_SENDER");
         //1. _makerTx is already spv
         bool txVerify = IORSpv(spvAddress).verifyMakerTxProof(_makerTx, _makerProof);
@@ -108,6 +112,8 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
         OperationsLib.chainInfo memory souceChainInfo = IORManager(_managerAddress).getChainInfoByChainID(
             _userTx.chainID
         );
+        // The transaction time of maker is required to be later than that of user.
+        // At the same time, the time difference between the above two times is required to be less than the maxDisputeTime.
         require(
             _makerTx.timestamp - _userTx.timestamp > 0 &&
                 _makerTx.timestamp - _userTx.timestamp < souceChainInfo.maxDisputeTime,

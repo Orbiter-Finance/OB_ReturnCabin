@@ -62,18 +62,16 @@ describe('Factory.spec.ts', () => {
       //ERROR TEST
       // await userFactory.setEBC('0x0000000000000000000000000000000000000000');
       expect(await userFactory.getEBCids()).equal(1);
-      expect(await userFactory.getEBC(0)).equal(address1.address);
+
+      expect(await userFactory.getEBC(1)).equal(address1.address);
     });
     it('UPDATE EBC', async () => {
       expect(await userFactory.getEBCids()).equal(1);
-      expect(await userFactory.getEBC(0)).equal(address1.address);
+      expect(await userFactory.getEBC(1)).equal(address1.address);
 
-      await userFactory.updateEBC(
-        (await userFactory.getEBCids()).toNumber() - 1,
-        address2.address,
-      );
+      await userFactory.updateEBC(1, address2.address);
       expect(await userFactory.getEBCids()).equal(1);
-      expect(await userFactory.getEBC(0)).equal(address2.address);
+      expect(await userFactory.getEBC(1)).equal(address2.address);
     });
   });
 
@@ -288,7 +286,6 @@ describe('Factory.spec.ts', () => {
       );
       if (makerMapEvent && makerMapEvent.args) {
         process.env['MDC'] = makerMapEvent.args[1];
-        console.log(makerMapEvent.args[1]);
         process.env['MDCFactory'] = makerV1Factory.address;
       }
       //

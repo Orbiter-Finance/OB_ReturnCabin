@@ -27,13 +27,13 @@ describe('PairManager.spec', () => {
     return row;
   });
   PairTree = new MerkleTree([], keccak256, {
-    sortPairs: true,
+    sort: true,
   });
   before(deployPairManagerFixture);
   it('createPair Pair1', async () => {
     PairTree.addLeaves([allPairLeafList[0].leaf, allPairLeafList[1].leaf]);
     const proofLeavesHash = [PAIR_LIST[0], PAIR_LIST[1]].map((row) => {
-      return Buffer.from(row.id, 'hex');
+      return Buffer.from(getPairID(row), 'hex');
     });
     const proof = await PairTree.getMultiProof(proofLeavesHash);
     const proofFlags = PairTree.getProofFlags(proofLeavesHash, proof);

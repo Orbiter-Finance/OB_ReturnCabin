@@ -31,24 +31,21 @@ describe('ORProtocalV1.test.ts', () => {
       'ORManager',
       factoryAddress,
     );
-    await factoryContract.updateEBC(
-      (await factoryContract.getEBCids()).toNumber() - 1,
-      ebc.address,
-    );
+    await factoryContract.updateEBC(1, ebc.address);
     await factoryContract.setSPV(spvAddress);
     expect(await factoryContract.getEBCids()).equal(1);
-    expect(await factoryContract.getEBC(0)).equal(ebc.address);
+    expect(await factoryContract.getEBC(1)).equal(ebc.address);
     expect(await factoryContract.getSPV()).equal(spvAddress);
   });
   it('getETHPunish', async () => {
     const value = USER_TX_LIST[0].value;
     const response = await ebc.getETHPunish(value);
-    expect(response).lt(ethers.BigNumber.from(value));
+    expect(response).gt(ethers.BigNumber.from(value));
   });
   it('getTokenPunish', async () => {
     const value = USER_TX_LIST[0].value;
     const response = await ebc.getTokenPunish(value);
-    expect(response).lt(ethers.BigNumber.from(value));
+    expect(response).gt(ethers.BigNumber.from(value));
   });
   it('getRespnseHash', async () => {
     const { leaf } = getLeaf(USER_TX_LIST[0], true);
