@@ -98,7 +98,6 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         require(_lpinfos.length > 0, "Inconsistent Array Length");
         OperationsLib.tokenInfo memory depositToken = getDepositTokenInfo(_lpinfos[0]);
         address pledgedToken = depositToken.mainTokenAddress;
-        OperationsLib.chainDeposit storage chainPledged = chainDeposit[_lpinfos[0].sourceChain][pledgedToken];
         // free
         uint256 unUsedAmount = idleAmount(pledgedToken);
         // Need to be supplemented
@@ -109,12 +108,7 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
             bytes32 lpid = OperationsLib.getLpID(_lpinfo);
             require(lpInfo[lpid].startTime == 0 && lpInfo[lpid].stopTime == 0, "LP Not Paused");
             require(IORManager(manager).isSupportPair(lpid, pairProof[i]), "Pair Not Supported");
-            if (
-                !(_lpinfo.sourceChain == _lpinfos[0].sourceChain &&
-                    _lpinfo.sourceTAddress == _lpinfos[0].sourceTAddress)
-            ) {
-                revert("LP of multiple pledge currencies is not supported");
-            }
+            OperationsLib.chainDeposit storage chainPledged = chainDeposit[_lpinfo.sourceChain][pledgedToken];
             // first init lpPair
             require(lpInfo[lpid].startTime == 0 && lpInfo[lpid].stopTime == 0, "LPACTION_LPID_UNSTOP");
             OperationsLib.chainInfo memory souceChainInfo = IORManager(manager).getChainInfoByChainID(

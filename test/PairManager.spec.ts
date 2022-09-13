@@ -11,7 +11,8 @@ let allPairLeafList: any[] = [];
 describe('PairManager.spec', () => {
   let pairManagerContrct: ORManager;
   async function deployPairManagerFixture() {
-    const factoryAddress = process.env['factory'] || '';
+    const factoryAddress =
+      process.env['factory'] || '0xa5f78a0EA71D09E4C4207819B15FdFA215AB7095';
     !expect(factoryAddress).not.empty;
     pairManagerContrct = await ethers.getContractAt(
       'ORManager',
@@ -26,23 +27,24 @@ describe('PairManager.spec', () => {
     return row;
   });
   PairTree = new MerkleTree([], keccak256, {
-    sort: true,
+    sortPairs: true,
   });
   before(deployPairManagerFixture);
   it('createPair Pair1', async () => {
     PairTree.addLeaves([allPairLeafList[0].leaf, allPairLeafList[1].leaf]);
     const proofLeavesHash = [PAIR_LIST[0], PAIR_LIST[1]].map((row) => {
-      return Buffer.from(getPairID(row), 'hex');
+      return Buffer.from(row.id, 'hex');
     });
     const proof = await PairTree.getMultiProof(proofLeavesHash);
     const proofFlags = PairTree.getProofFlags(proofLeavesHash, proof);
+    const addPairObj = proofLeavesHash.map((hashBuf) => {
+      const leaf = allPairLeafList.find(
+        (pair) => pair.leaf.toString('hex') === hashBuf.toString('hex'),
+      );
+      return leaf;
+    });
     const tx = await pairManagerContrct.createPair(
-      proofLeavesHash.map((hashBuf) => {
-        const leaf = allPairLeafList.find(
-          (pair) => pair.leaf.toString('hex') === hashBuf.toString('hex'),
-        );
-        return leaf;
-      }),
+      addPairObj,
       PairTree.getHexRoot(),
       proof,
       proofFlags,
