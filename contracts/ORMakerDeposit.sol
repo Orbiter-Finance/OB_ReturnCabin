@@ -151,8 +151,8 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
     }
 
     // LPPause
-    function LPPause(OperationsLib.lpInfo[] calldata _lpinfos, bytes32[][] calldata proof) external onlyOwner {
-        require(_lpinfos.length == proof.length, "InconsistentArrayLength");
+    function LPPause(OperationsLib.lpInfo[] calldata _lpinfos) external onlyOwner {
+        // require(_lpinfos.length == proof.length, "InconsistentArrayLength");
         address manager = getManagerAddress();
         for (uint256 i = 0; i < _lpinfos.length; i++) {
             // calc root Hash

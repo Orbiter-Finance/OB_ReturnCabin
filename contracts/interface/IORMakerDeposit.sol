@@ -26,7 +26,7 @@ interface IORMakerDeposit {
     function LPAction(OperationsLib.lpInfo[] calldata _lpinfos, bytes32[][] calldata pairProof) external payable;
 
     // LPPause
-    function LPPause(OperationsLib.lpInfo[] calldata _lpinfos, bytes32[][] calldata proof) external;
+    function LPPause(OperationsLib.lpInfo[] calldata _lpinfos) external;
 
     // LPStop
     function LPStop(OperationsLib.lpInfo memory) external;

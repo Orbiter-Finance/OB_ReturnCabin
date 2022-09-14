@@ -129,7 +129,7 @@ describe('MakerDeposit.test.ts', () => {
   it('LPPause', async () => {
     const lpInfo = getLpInfo(LP_LIST[0]);
     const proof = lpInfoTree.getHexProof(lpInfo.id);
-    const response = await mdc.connect(maker).LPPause([lpInfo], [proof]);
+    const response = await mdc.connect(maker).LPPause([lpInfo]);
     const tx = await response.wait();
     expect(tx.blockNumber).gt(0);
     if (tx.events !== undefined) {
