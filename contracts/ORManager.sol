@@ -55,7 +55,7 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable {
         uint256 batchLimit,
         uint256 maxDisputeTime,
         address[] memory tokenList
-    ) external {
+    ) external onlyOwner {
         require(chainList[chainID].isUsed == false, "CHAININFO_INSTALL_ALREADY");
         chainList[chainID] = OperationsLib.chainInfo(chainID, batchLimit, maxDisputeTime, tokenList, true);
     }
@@ -71,7 +71,7 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable {
         address tokenAddress,
         uint256 tokenPresion,
         address mainAddress
-    ) external returns (bool) {
+    ) external onlyOwner returns (bool) {
         require(chainList[chainID].tokenList.length != 0, "SETTOKENINFO_UNSUPPORTTOKEN");
         for (uint256 i = 0; i < chainList[chainID].tokenList.length; i++) {
             address supportTokenAddress = chainList[chainID].tokenList[i];

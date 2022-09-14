@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import { ethers, web3 } from 'hardhat';
+import { ethers } from 'hardhat';
 import { ORMakerDeposit } from '../typechain-types';
 import { MerkleTree } from 'merkletreejs';
 import { LP_LIST, MAKER_TX_LIST, TOKEN_LIST, USER_TX_LIST } from './lib/Config';
@@ -83,12 +83,7 @@ describe('MakerDeposit.test.ts', () => {
     const blockNumBefore = await ethers.provider.getBlockNumber();
     const blockBefore = await ethers.provider.getBlock(blockNumBefore);
     const timestampBefore = blockBefore.timestamp;
-    console.log('timestampBefore: ', timestampBefore);
     await ethers.provider.send('evm_mine', [timestampBefore + ms]);
-    const blockNumAfter = await ethers.provider.getBlockNumber();
-    const blockAfter = await ethers.provider.getBlock(blockNumAfter);
-    const timestampAfter = blockAfter.timestamp;
-    console.log('timestampAfter: ', timestampAfter);
   }
   it('Get MakerFactory', async () => {
     const result = await mdc.makerFactory();
@@ -113,6 +108,7 @@ describe('MakerDeposit.test.ts', () => {
       .connect(maker)
       .LPAction([lpInfo], [proof], pairProof, overrides);
     const tx = await response.wait();
+    console.log(tx.events);
     expect(tx.blockNumber).gt(0);
     if (tx.events !== undefined) {
       expect(tx.events?.findIndex((row) => row.event === 'LogLpInfo') >= 0)
@@ -124,7 +120,7 @@ describe('MakerDeposit.test.ts', () => {
     );
     expect(chainDeposit.useLimit).equal(ethers.BigNumber.from(1));
     expect(chainDeposit.tokenAddress).equal(lpInfo.sourceTAddress);
-    const contractBalance = await web3.eth.getBalance(mdc.address);
+    const contractBalance = await ethers.provider.getBalance(mdc.address);
     console.log('contractBalance: ', contractBalance);
     expect(chainDeposit.tokenAddress).equal(lpInfo.sourceTAddress);
   });
@@ -202,7 +198,7 @@ describe('MakerDeposit.test.ts', () => {
     );
     expect(chainDeposit.useLimit).equal(ethers.BigNumber.from(1));
     expect(chainDeposit.tokenAddress).equal(lpInfo.sourceTAddress);
-    const contractBalance = await web3.eth.getBalance(mdc.address);
+    const contractBalance = await ethers.provider.getBalance(mdc.address);
     console.log('contractBalance: ', contractBalance);
     expect(chainDeposit.tokenAddress).equal(lpInfo.sourceTAddress);
   });
@@ -276,11 +272,103 @@ describe('MakerDeposit.test.ts', () => {
     const response = mdc.connect(UserTx3Account).userWithDraw(userLeaf, lpInfo);
     await expect(response).to.be.revertedWith('UW_WITHDRAW');
   });
+  it('LPAction again (Second time)', async () => {
+    const lpInfo = getLpInfo(LP_LIST[1]);
+    const proof = lpInfoTree.getHexProof(lpInfo.id);
+    const value = ethers.utils.parseEther('0.9');
+    const pairProofLeavesHash = [PAIR_LIST[1]].map((row) => {
+      return Buffer.from(getPairID(row), 'hex');
+    });
+    const pairProof = pairProofLeavesHash.map((row) => {
+      return supportPairTree.getHexProof(row);
+    });
+    const overrides = {
+      value,
+    };
+    const response = await mdc
+      .connect(maker)
+      .LPAction([lpInfo], [proof], pairProof, overrides);
+    const tx = await response.wait();
+    expect(tx.blockNumber).gt(0);
+    if (tx.events !== undefined) {
+      expect(tx.events?.findIndex((row) => row.event === 'LogLpInfo') >= 0)
+        .true;
+    }
+    const chainDeposit = await mdc.chainDeposit(
+      lpInfo.sourceChain,
+      lpInfo.sourceTAddress,
+    );
+    expect(chainDeposit.useLimit).equal(ethers.BigNumber.from(2));
+    expect(chainDeposit.tokenAddress).equal(lpInfo.sourceTAddress);
+
+    const contractBalance = await ethers.provider.getBalance(mdc.address);
+    console.log('contractBalance: ', contractBalance);
+    expect(chainDeposit.tokenAddress).equal(lpInfo.sourceTAddress);
+  });
+  it('userChanllenge for maker not send (Second time)', async () => {
+    const { leaf, hex } = getLeaf(USER_TX_LIST[1], true);
+    const txProof = userTxTree.getHexProof(hex);
+    const overrides = {
+      value: ethers.utils.parseEther('1'),
+    };
+    const response = await mdc
+      .connect(UserTx1Account)
+      .userChanllenge(leaf, txProof, overrides);
+    await expect(response)
+      .to.emit(mdc, 'LogChanllengeInfo')
+      .withArgs(anyValue, 0);
+  });
+  it('After a day of simulation', async () => {
+    await speedUpTime(3600 * 24);
+  });
+  it('User Withdrawal under successful UserChallenge (Second time and USER_LP_STOP)', async () => {
+    const lpInfo = getLpInfo(LP_LIST[1]);
+    const { leaf: userLeaf } = getLeaf(USER_TX_LIST[1], true);
+    const beforeAmount = await UserTx1Account.getBalance();
+    const response = await mdc
+      .connect(UserTx1Account)
+      .userWithDraw(userLeaf, lpInfo);
+    const tx = await response.wait();
+    const gasUsed = tx.cumulativeGasUsed.mul(tx.effectiveGasPrice);
+    const pledgeAmount = ethers.utils.parseEther('1');
+    const ETHPunishAmount = ethers.BigNumber.from(userLeaf.amount)
+      .sub(
+        ethers.BigNumber.from(userLeaf.amount)
+          .mod(ethers.BigNumber.from(10000))
+          .sub(ethers.BigNumber.from(9000)),
+      )
+      .mul(ethers.BigNumber.from(11))
+      .div(ethers.BigNumber.from(10));
+    const realAfterAmount = await UserTx1Account.getBalance();
+    const expectAfterAmount = beforeAmount
+      .add(pledgeAmount)
+      .add(ETHPunishAmount)
+      .sub(gasUsed);
+    expect(realAfterAmount).eq(expectAfterAmount);
+    expect(tx.blockNumber).gt(0);
+    if (tx.events !== undefined) {
+      expect(tx.events?.findIndex((row) => row.event === 'LogLpInfo') >= 0)
+        .true;
+    }
+  });
+  it('Maker withDraw not time', async () => {
+    const withDrawMax = await mdc
+      .connect(maker)
+      .idleAmount(tokeninfo_eth_main.mainAddress);
+    const response = mdc
+      .connect(maker)
+      .withDrawAssert(withDrawMax, tokeninfo_eth_main.mainAddress);
+    await expect(response).to.be.revertedWith('WITHDRAW_NOTIME');
+  });
+  it('After a day of simulation', async () => {
+    await speedUpTime(3600 * 24);
+  });
   it('Maker withDraw in time', async () => {
     const beforeAmount = await maker.getBalance();
     const withDrawMax = await mdc
       .connect(maker)
       .idleAmount(tokeninfo_eth_main.mainAddress);
+    console.log('withDrawMax: ', withDrawMax);
     const response = await mdc
       .connect(maker)
       .withDrawAssert(withDrawMax, tokeninfo_eth_main.mainAddress);
@@ -293,4 +381,10 @@ describe('MakerDeposit.test.ts', () => {
     expect(beforeAmount.add(withDrawMax).sub(gasUsed)).eq(afterAmount);
     expect(nowWithDraw).eq(0);
   });
+  // it('LPUpdate', async () => {
+  //   const lpInfo = getLpInfo(LP_LIST[0]);
+  //   const response = await mdc.connect(maker).LPUpdate(lpInfo);
+  //   const tx = await response.wait();
+  //   console.log(tx.events);
+  // });
 });

@@ -24,7 +24,7 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
     // chanllengeInfos
     mapping(bytes32 => OperationsLib.chanllengeInfo) chanllengeInfos;
 
-    //usedDeposit
+    // usedDeposit
     mapping(address => uint256) public usedDeposit;
 
     // After the User forcibly stops LP, Maker delays the withdrawal time.
@@ -268,6 +268,8 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         bytes32[] memory lpids = _cDinfo.lpids;
         // Stop
         if (lpids.length != 0) {
+            console.logString("lpids");
+            console.logUint(lpids.length);
             for (uint256 i = 0; i < lpids.length; i++) {
                 lpInfo[lpids[i]].startTime = 0;
                 lpInfo[lpids[i]].stopTime = 0;
@@ -309,6 +311,7 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         }
         // When withDrawAmount is greater than unUsedAmount, it indicates that the available funds are insufficient and will trigger the mandatory stop of all LPs with sourceChain as lpinfo.sourceChain.
         if (withDrawAmount > unUsedAmount) {
+            console.logString("withDrawAmount more than unUsedAmount");
             USER_LPStop(_lpinfo.sourceChain, _lpinfo.sourceTAddress, _lpinfo.ebcid);
         }
         // withDraw
@@ -322,6 +325,7 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         // Subtract the pledge money transferred by the user challenge from the total pledge money.
         chanllengePleged -= chanllengeInfos[chanllengeID].pledgeAmount;
         emit LogChanllengeInfo(chanllengeID, chanllengeState.WITHDRAWED);
+        console.logUint(USER_LPStopDelayTime[_lpinfo.sourceTAddress]);
     }
 
     // makerChanllenger

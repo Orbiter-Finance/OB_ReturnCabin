@@ -35,7 +35,7 @@ describe('PairManager.spec', () => {
     const proofLeavesHash = [PAIR_LIST[0], PAIR_LIST[1]].map((row) => {
       return Buffer.from(getPairID(row), 'hex');
     });
-    const proof = await PairTree.getMultiProof(proofLeavesHash);
+    const proof = PairTree.getMultiProof(proofLeavesHash);
     const proofFlags = PairTree.getProofFlags(proofLeavesHash, proof);
     const addPairObj = proofLeavesHash.map((hashBuf) => {
       const leaf = allPairLeafList.find(
