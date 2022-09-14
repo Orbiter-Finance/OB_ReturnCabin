@@ -21,6 +21,7 @@ const tokeninfo_usdt_arb = TOKEN_LIST[5];
 
 async function deployFactoryFixture() {
   const [owner, addr1, addr2] = await ethers.getSigners();
+
   const ORManager = await ethers.getContractFactory('ORManager', {
     libraries: {},
   });
@@ -37,8 +38,8 @@ async function deployFactoryFixture() {
   await makerFactoryProxy.deployed();
   makerV1Factory = makerFactoryProxy as ORMakerV1Factory;
 
-  console.log(`factory :`, factory.address);
-  process.env['factory'] = factory.address;
+  console.log(`ManagerContract Address:`, factory.address);
+  process.env['ManagerContract'] = factory.address;
   return { managerProxy, factory, owner, addr1, addr2 };
 }
 

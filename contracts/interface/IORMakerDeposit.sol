@@ -17,9 +17,6 @@ interface IORMakerDeposit {
         WITHDRAWED
     }
 
-    event MakerContract(address indexed maker, address indexed mdc);
-    event AddPariChain(address indexed tokenAddress, OperationsLib.pairChainInfo pairChain);
-    event AddPariChains(address indexed tokenAddress, OperationsLib.pairChainInfo[] pairChains);
     event LogLpInfo(bytes32 indexed lpid, lpState indexed state, uint256 time);
     event LogLpInfo(bytes32 indexed lpid, lpState indexed state, uint256 time, OperationsLib.lpInfo lpinfo);
     event LogChanllengeInfo(bytes32 indexed chanllengeid, chanllengeState indexed state);
@@ -28,7 +25,6 @@ interface IORMakerDeposit {
 
     function LPAction(
         OperationsLib.lpInfo[] calldata _lpinfos,
-        bytes32[][] calldata proof,
         bytes32[][] calldata pairProof
     ) external payable;
 

@@ -34,9 +34,8 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
     uint256 chanllengePleged;
 
     function initialize(address _owner, address _makerFactory) public initializer {
-        _transferOwnership(_owner);
         makerFactory = _makerFactory;
-        emit MakerContract(owner(), address(this));
+        _transferOwnership(_owner);
     }
 
     function getManagerAddress() internal view returns (address) {
@@ -94,11 +93,10 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
 
     function LPAction(
         OperationsLib.lpInfo[] calldata _lpinfos,
-        bytes32[][] calldata proof,
         bytes32[][] calldata pairProof
     ) external payable onlyOwner {
-        require(_lpinfos.length == proof.length, "Inconsistent Array Length");
         require(_lpinfos.length > 0, "Inconsistent Array Length");
+        require(_lpinfos.length == pairProof.length, "Inconsistent Array Length");
         OperationsLib.tokenInfo memory depositToken = getDepositTokenInfo(_lpinfos[0]);
         address pledgedToken = depositToken.mainTokenAddress;
         // free
@@ -131,7 +129,7 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
             if (!lpInfo[lpid].inlps) {
                 chainPledged.lpids.push(lpid);
             }
-            lpInfo[lpid].LPRootHash = MerkleProof.processProofCalldata(proof[i], OperationsLib.getLpFullHash(_lpinfo));
+            // lpInfo[lpid].LPRootHash = MerkleProof.processProofCalldata(proof[i], OperationsLib.getLpFullHash(_lpinfo));
             emit LogLpInfo(lpid, lpState.ACTION, lpInfo[lpid].startTime, _lpinfo);
         }
         // need deposit
@@ -159,14 +157,14 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
             // calc root Hash
             OperationsLib.lpInfo memory _lpinfo = _lpinfos[i];
             bytes32 lpid = OperationsLib.getLpID(_lpinfo);
-            require(lpInfo[lpid].LPRootHash != "", "LPPAUSE_LPID_UNUSED");
+            // require(lpInfo[lpid].LPRootHash != "", "LPPAUSE_LPID_UNUSED");
             require(lpInfo[lpid].startTime != 0 && lpInfo[lpid].stopTime == 0, "LPPAUSE_LPID_UNACTION");
             address ebcAddress = IORManager(manager).getEBC(_lpinfo.ebcid);
             require(ebcAddress != address(0), "LPPAUSE_EBCADDRESS_0");
             uint256 stopDelayTime = IORProtocal(ebcAddress).getStopDealyTime(_lpinfo.sourceChain);
             lpInfo[lpid].stopTime = block.timestamp + stopDelayTime;
             lpInfo[lpid].startTime = 0;
-            lpInfo[lpid].LPRootHash = MerkleProof.processProofCalldata(proof[i], OperationsLib.getLpFullHash(_lpinfo));
+            // lpInfo[lpid].LPRootHash = MerkleProof.processProofCalldata(proof[i], OperationsLib.getLpFullHash(_lpinfo));
             emit LogLpInfo(lpid, lpState.PAUSE, lpInfo[lpid].stopTime, _lpinfo);
         }
     }
@@ -175,7 +173,7 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
     function LPStop(OperationsLib.lpInfo memory _lpinfo) external onlyOwner {
         bytes32 lpid = OperationsLib.getLpID(_lpinfo);
 
-        require(lpInfo[lpid].LPRootHash != "", "LPSTOP_LPID_UNUSED");
+        // require(lpInfo[lpid].LPRootHash != "", "LPSTOP_LPID_UNUSED");
         require(lpInfo[lpid].startTime == 0 && lpInfo[lpid].stopTime != 0, "LPSTOP_LPID_UNPAUSE");
         require(block.timestamp > lpInfo[lpid].stopTime, "LPSTOP_LPID_TIMEUNABLE");
 
@@ -198,7 +196,7 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
     function LPUpdate(OperationsLib.lpInfo calldata _lpinfo) external onlyOwner {
         bytes32 lpid = OperationsLib.getLpID(_lpinfo);
 
-        require(lpInfo[lpid].LPRootHash != "", "LPUPDATE_LPID_UNUSED");
+        // require(lpInfo[lpid].LPRootHash != "", "LPUPDATE_LPID_UNUSED");
         require(lpInfo[lpid].startTime == 0 && lpInfo[lpid].stopTime == 0, "LPUPDATE_LPID_UNSTOP");
 
         emit LogLpInfo(lpid, lpState.UPDATE, block.timestamp, _lpinfo);

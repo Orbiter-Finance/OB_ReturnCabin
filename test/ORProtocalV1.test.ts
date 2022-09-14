@@ -5,14 +5,15 @@ import { ORProtocalV1 } from '../typechain-types';
 import { USER_TX_LIST } from './lib/Config';
 import { getLeaf } from './lib/Utils';
 let ebc: ORProtocalV1;
+let managerContractAddress: string;
 describe('ORProtocalV1.test.ts', () => {
   async function createEbcInfo() {
-    const managerAddress = process.env['factory'] || '';
+    managerContractAddress = String(process.env['ManagerContract']);
     const ORProtocalV1 = await ethers.getContractFactory('ORProtocalV1', {
       libraries: {},
     });
     const ORProtocalV1Proxy = await upgrades.deployProxy(ORProtocalV1, [
-      managerAddress,
+      managerContractAddress,
     ]);
     await ORProtocalV1Proxy.deployed();
     ebc = ORProtocalV1Proxy as ORProtocalV1;
@@ -23,13 +24,12 @@ describe('ORProtocalV1.test.ts', () => {
     console.log('EBC address', ebc.address);
   });
   it('Update EBC and SPV factory', async () => {
-    const factoryAddress = process.env['factory'] || '';
     const spvAddress = process.env['SPV'] || '';
-    !expect(factoryAddress).not.empty;
+    !expect(managerContractAddress).not.empty;
     !expect(spvAddress).not.empty;
     const factoryContract = await ethers.getContractAt(
       'ORManager',
-      factoryAddress,
+      managerContractAddress,
     );
     await factoryContract.updateEBC(1, ebc.address);
     await factoryContract.setSPV(spvAddress);
