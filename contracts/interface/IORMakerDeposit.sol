@@ -23,10 +23,7 @@ interface IORMakerDeposit {
 
     function idleAmount(address tokenAddress) external view returns (uint256);
 
-    function LPAction(
-        OperationsLib.lpInfo[] calldata _lpinfos,
-        bytes32[][] calldata pairProof
-    ) external payable;
+    function LPAction(OperationsLib.lpInfo[] calldata _lpinfos, bytes32[][] calldata pairProof) external payable;
 
     // LPPause
     function LPPause(OperationsLib.lpInfo[] calldata _lpinfos, bytes32[][] calldata proof) external;

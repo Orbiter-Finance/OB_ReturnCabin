@@ -91,10 +91,11 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         return spvAddress;
     }
 
-    function LPAction(
-        OperationsLib.lpInfo[] calldata _lpinfos,
-        bytes32[][] calldata pairProof
-    ) external payable onlyOwner {
+    function LPAction(OperationsLib.lpInfo[] calldata _lpinfos, bytes32[][] calldata pairProof)
+        external
+        payable
+        onlyOwner
+    {
         require(_lpinfos.length > 0, "Inconsistent Array Length");
         require(_lpinfos.length == pairProof.length, "Inconsistent Array Length");
         OperationsLib.tokenInfo memory depositToken = getDepositTokenInfo(_lpinfos[0]);
