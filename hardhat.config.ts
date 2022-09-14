@@ -15,7 +15,7 @@ task('accounts', 'Prints accounts', async (taskArgs, hre) => {
 });
 const accounts = ACCOUNTS?.split(',');
 const config: HardhatUserConfig = {
-  defaultNetwork: NETWORK || 'hardhat',
+  defaultNetwork: NETWORK,
   solidity: {
     version: '0.8.9',
     settings: {

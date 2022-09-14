@@ -11,8 +11,7 @@ let allPairLeafList: any[] = [];
 describe('PairManager.spec', () => {
   let pairManagerContrct: ORManager;
   async function deployPairManagerFixture() {
-    const factoryAddress =
-      process.env['factory'] || '0xa5f78a0EA71D09E4C4207819B15FdFA215AB7095';
+    const factoryAddress = String(process.env['ManagerContract']);
     !expect(factoryAddress).not.empty;
     pairManagerContrct = await ethers.getContractAt(
       'ORManager',

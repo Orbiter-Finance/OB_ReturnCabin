@@ -19,16 +19,16 @@ let userTxTree: MerkleTree;
 let makerTxTree: MerkleTree;
 const { keccak256 } = ethers.utils;
 const tokeninfo_eth_main = TOKEN_LIST[0];
+let MakerPoolAddress: string;
+let ORMakerV1FactoryAddress: string;
 describe('MakerDeposit.test.ts', () => {
   async function getFactoryInfo() {
-    const mdcContractAddress = process.env['MDC'] || '';
+    MakerPoolAddress = String(process.env['MDC']);
+    ORMakerV1FactoryAddress = String(process.env['MDCFactory']);
     [owner, maker, UserTx1Account, UserTx3Account] = await ethers.getSigners();
-    mdc = await ethers.getContractAt(
-      'ORMakerDeposit',
-      mdcContractAddress,
-      owner,
-    );
-    console.log('MDC Address:', mdc.address);
+    mdc = await ethers.getContractAt('ORMakerDeposit', MakerPoolAddress, owner);
+    console.log('MDCFactory Address:', ORMakerV1FactoryAddress);
+    console.log('MDC Address:', MakerPoolAddress);
     // tree
     supportPairTree = new MerkleTree(
       [
@@ -87,7 +87,7 @@ describe('MakerDeposit.test.ts', () => {
   }
   it('Get MakerFactory', async () => {
     const result = await mdc.makerFactory();
-    expect(result).equal(process.env['MDCFactory']);
+    expect(result).equal(ORMakerV1FactoryAddress);
   });
   it('LPAction pledge ETH', async () => {
     lpInfoTree.addLeaf(Buffer.from(LP_LIST[0].id, 'hex'));
@@ -106,7 +106,7 @@ describe('MakerDeposit.test.ts', () => {
     };
     const response = await mdc
       .connect(maker)
-      .LPAction([lpInfo], [proof], pairProof, overrides);
+      .LPAction([lpInfo], pairProof, overrides);
     const tx = await response.wait();
     console.log(tx.events);
     expect(tx.blockNumber).gt(0);
@@ -185,7 +185,7 @@ describe('MakerDeposit.test.ts', () => {
     };
     const response = await mdc
       .connect(maker)
-      .LPAction([lpInfo], [proof], pairProof, overrides);
+      .LPAction([lpInfo], pairProof, overrides);
     const tx = await response.wait();
     expect(tx.blockNumber).gt(0);
     if (tx.events !== undefined) {
