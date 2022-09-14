@@ -31,10 +31,9 @@ describe('MakerDeposit.test.ts', () => {
     console.log('MDC Address:', MakerPoolAddress);
     // tree
     supportPairTree = new MerkleTree(
-      [
-        Buffer.from(PAIR_LIST[0].id, 'hex'),
-        Buffer.from(PAIR_LIST[1].id, 'hex'),
-      ],
+      PAIR_LIST.map((row) => {
+        return Buffer.from(row.id, 'hex');
+      }),
       keccak256,
       {
         sort: true,
@@ -98,7 +97,6 @@ describe('MakerDeposit.test.ts', () => {
     lpInfoTree.addLeaf(Buffer.from(LP_LIST[0].id, 'hex'));
     lpInfoTree.addLeaf(Buffer.from(LP_LIST[1].id, 'hex'));
     const lpInfo = getLpInfo(LP_LIST[0]);
-    const proof = lpInfoTree.getHexProof(lpInfo.id);
     const value = ethers.utils.parseEther('2');
     const pairProofLeavesHash = [PAIR_LIST[0]].map((row) => {
       return Buffer.from(getPairID(row), 'hex');

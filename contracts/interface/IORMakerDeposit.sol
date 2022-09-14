@@ -17,7 +17,7 @@ interface IORMakerDeposit {
         WITHDRAWED
     }
 
-    event LogLpInfo(bytes32 indexed lpid, lpState indexed state, uint256 time);
+    event LogLpInfoSys(bytes32 indexed lpid, lpState indexed state, uint256 time);
     event LogLpInfo(bytes32 indexed lpid, lpState indexed state, uint256 time, OperationsLib.lpInfo lpinfo);
     event LogChanllengeInfo(bytes32 indexed chanllengeid, chanllengeState indexed state);
 

@@ -3,6 +3,9 @@ import { ethers, upgrades } from 'hardhat';
 import { ORManager } from '../typechain-types/contracts/ORManager';
 import { ORMakerV1Factory } from '../typechain-types/contracts/ORMakerV1Factory';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { MerkleTree } from 'merkletreejs';
+import { PAIR_LIST } from './lib/Config';
+import keccak256 from 'keccak256';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { CHAIN_INFO_LIST as chainInfoList, TOKEN_LIST } from './lib/Config';
 let factory: ORManager;
@@ -272,7 +275,32 @@ describe('Factory.spec.ts', () => {
       });
     });
   });
-
+  describe('Factory_CREATE_PAIR', () => {
+    const leafs = PAIR_LIST.map((row) => {
+      return Buffer.from(row.id, 'hex');
+    });
+    const pairTree = new MerkleTree(leafs, keccak256, {
+      sort: true,
+    });
+    it('Create Support Pair', async () => {
+      // create Pair
+      const proof = await pairTree.getMultiProof(leafs);
+      const proofFlags = pairTree.getProofFlags(leafs, proof);
+      const addPairObj = leafs.map((hashBuf) => {
+        const leaf = PAIR_LIST.find((pair) => {
+          return pair.id.toString() === hashBuf.toString('hex');
+        });
+        return leaf;
+      });
+      const tx = await factory.createPair(
+        <any>addPairObj,
+        pairTree.getHexRoot(),
+        proof,
+        proofFlags,
+      );
+      expect(tx.blockNumber).gt(0);
+    });
+  });
   describe('Factory_CREATE_MDC', () => {
     it('MakerV1Factory Set Manager', async () => {
       const tx = await makerV1Factory.setManager(factory.address);

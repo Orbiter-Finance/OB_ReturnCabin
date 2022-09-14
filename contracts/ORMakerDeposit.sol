@@ -271,7 +271,7 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
                 lpInfo[lpids[i]].startTime = 0;
                 lpInfo[lpids[i]].stopTime = 0;
 
-                emit LogLpInfo(lpids[i], lpState.USERSTOP, 0);
+                emit LogLpInfoSys(lpids[i], lpState.USERSTOP, 0);
             }
             delete _cDinfo.lpids;
             _cDinfo.useLimit = 0;
