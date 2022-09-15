@@ -108,7 +108,6 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         for (uint256 i = 0; i < _lpinfos.length; i++) {
             OperationsLib.lpInfo memory _lpinfo = _lpinfos[i];
             bytes32 lpid = OperationsLib.getLpID(_lpinfo);
-            require(lpInfo[lpid].startTime == 0 && lpInfo[lpid].stopTime == 0, "LP Not Paused");
             require(IORManager(manager).isSupportPair(lpid, pairProof[i]), "Pair Not Supported");
             OperationsLib.chainDeposit storage chainPledged = chainDeposit[_lpinfo.sourceChain][pledgedToken];
             // first init lpPair
@@ -185,6 +184,15 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         lpInfo[lpid].stopTime = 0;
 
         depositInfo.useLimit--;
+
+        // delete lpid
+        for (uint256 i = 0; i < depositInfo.lpids.length; i++) {
+            if (lpid == depositInfo.lpids[i]) {
+                depositInfo.lpids[i] = depositInfo.lpids[depositInfo.lpids.length - 1];
+                depositInfo.lpids.pop();
+            }
+        }
+
         // free up funds
         if (depositInfo.useLimit == 0) {
             usedDeposit[depositToken.mainTokenAddress] -= depositInfo.depositAmount;
@@ -267,12 +275,12 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         bytes32[] memory lpids = _cDinfo.lpids;
         // Stop
         if (lpids.length != 0) {
-            console.logString("lpids");
-            console.logUint(lpids.length);
             for (uint256 i = 0; i < lpids.length; i++) {
-                lpInfo[lpids[i]].startTime = 0;
-                lpInfo[lpids[i]].stopTime = 0;
-
+                //Determine whether it is in Action or Pause state
+                if (lpInfo[lpids[i]].startTime != 0 || lpInfo[lpids[i]].stopTime != 0) {
+                    lpInfo[lpids[i]].startTime = 0;
+                    lpInfo[lpids[i]].stopTime = 0;
+                }
                 emit LogLpInfo(lpids[i], lpState.USERSTOP, 0);
             }
             delete _cDinfo.lpids;
@@ -310,7 +318,6 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         }
         // When withDrawAmount is greater than unUsedAmount, it indicates that the available funds are insufficient and will trigger the mandatory stop of all LPs with sourceChain as lpinfo.sourceChain.
         if (withDrawAmount > unUsedAmount) {
-            console.logString("withDrawAmount more than unUsedAmount");
             USER_LPStop(_lpinfo.sourceChain, _lpinfo.sourceTAddress, _lpinfo.ebcid);
         }
         // withDraw
@@ -324,7 +331,6 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         // Subtract the pledge money transferred by the user challenge from the total pledge money.
         chanllengePleged -= chanllengeInfos[chanllengeID].pledgeAmount;
         emit LogChanllengeInfo(chanllengeID, chanllengeState.WITHDRAWED);
-        console.logUint(USER_LPStopDelayTime[_lpinfo.sourceTAddress]);
     }
 
     // makerChanllenger

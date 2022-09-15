@@ -93,7 +93,6 @@ describe('MakerDeposit.test.ts', () => {
     lpInfoTree.addLeaf(Buffer.from(LP_LIST[0].id, 'hex'));
     lpInfoTree.addLeaf(Buffer.from(LP_LIST[1].id, 'hex'));
     const lpInfo = getLpInfo(LP_LIST[0]);
-    const proof = lpInfoTree.getHexProof(lpInfo.id);
     const value = ethers.utils.parseEther('2');
     const pairProofLeavesHash = [PAIR_LIST[0]].map((row) => {
       return Buffer.from(getPairID(row), 'hex');
@@ -108,7 +107,6 @@ describe('MakerDeposit.test.ts', () => {
       .connect(maker)
       .LPAction([lpInfo], pairProof, overrides);
     const tx = await response.wait();
-    console.log(tx.events);
     expect(tx.blockNumber).gt(0);
     if (tx.events !== undefined) {
       expect(tx.events?.findIndex((row) => row.event === 'LogLpInfo') >= 0)
@@ -172,7 +170,6 @@ describe('MakerDeposit.test.ts', () => {
   });
   it('LPAction again', async () => {
     const lpInfo = getLpInfo(LP_LIST[0]);
-    const proof = lpInfoTree.getHexProof(lpInfo.id);
     const value = ethers.utils.parseEther('1.2');
     const pairProofLeavesHash = [PAIR_LIST[0]].map((row) => {
       return Buffer.from(getPairID(row), 'hex');
@@ -274,7 +271,6 @@ describe('MakerDeposit.test.ts', () => {
   });
   it('LPAction again (Second time)', async () => {
     const lpInfo = getLpInfo(LP_LIST[1]);
-    const proof = lpInfoTree.getHexProof(lpInfo.id);
     const value = ethers.utils.parseEther('0.9');
     const pairProofLeavesHash = [PAIR_LIST[1]].map((row) => {
       return Buffer.from(getPairID(row), 'hex');
@@ -287,7 +283,7 @@ describe('MakerDeposit.test.ts', () => {
     };
     const response = await mdc
       .connect(maker)
-      .LPAction([lpInfo], [proof], pairProof, overrides);
+      .LPAction([lpInfo], pairProof, overrides);
     const tx = await response.wait();
     expect(tx.blockNumber).gt(0);
     if (tx.events !== undefined) {
@@ -368,7 +364,6 @@ describe('MakerDeposit.test.ts', () => {
     const withDrawMax = await mdc
       .connect(maker)
       .idleAmount(tokeninfo_eth_main.mainAddress);
-    console.log('withDrawMax: ', withDrawMax);
     const response = await mdc
       .connect(maker)
       .withDrawAssert(withDrawMax, tokeninfo_eth_main.mainAddress);
@@ -381,10 +376,4 @@ describe('MakerDeposit.test.ts', () => {
     expect(beforeAmount.add(withDrawMax).sub(gasUsed)).eq(afterAmount);
     expect(nowWithDraw).eq(0);
   });
-  // it('LPUpdate', async () => {
-  //   const lpInfo = getLpInfo(LP_LIST[0]);
-  //   const response = await mdc.connect(maker).LPUpdate(lpInfo);
-  //   const tx = await response.wait();
-  //   console.log(tx.events);
-  // });
 });
