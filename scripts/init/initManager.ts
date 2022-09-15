@@ -6,7 +6,7 @@ import { PAIR_LIST } from '../../test/lib/Config';
 const leafs = PAIR_LIST.map((row) => {
   return Buffer.from(row.id, 'hex');
 });
-export const pairTree = new MerkleTree(leafs, keccak256, {
+const pairTree = new MerkleTree(leafs, keccak256, {
   sort: true,
 });
 async function main() {

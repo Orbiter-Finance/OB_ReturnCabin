@@ -17,7 +17,7 @@ interface IORMakerDeposit {
         WITHDRAWED
     }
 
-    event LogLpInfo(bytes32 indexed lpid, lpState indexed state, uint256 time);
+    event LogLpInfoSys(bytes32 indexed lpid, lpState indexed state, uint256 time);
     event LogLpInfo(bytes32 indexed lpid, lpState indexed state, uint256 time, OperationsLib.lpInfo lpinfo);
     event LogChanllengeInfo(bytes32 indexed chanllengeid, chanllengeState indexed state);
 
@@ -26,7 +26,7 @@ interface IORMakerDeposit {
     function LPAction(OperationsLib.lpInfo[] calldata _lpinfos, bytes32[][] calldata pairProof) external payable;
 
     // LPPause
-    function LPPause(OperationsLib.lpInfo[] calldata _lpinfos, bytes32[][] calldata proof) external;
+    function LPPause(OperationsLib.lpInfo[] calldata _lpinfos) external;
 
     // LPStop
     function LPStop(OperationsLib.lpInfo memory) external;

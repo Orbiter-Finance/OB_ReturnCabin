@@ -31,10 +31,9 @@ describe('MakerDeposit.test.ts', () => {
     console.log('MDC Address:', MakerPoolAddress);
     // tree
     supportPairTree = new MerkleTree(
-      [
-        Buffer.from(PAIR_LIST[0].id, 'hex'),
-        Buffer.from(PAIR_LIST[1].id, 'hex'),
-      ],
+      PAIR_LIST.map((row) => {
+        return Buffer.from(row.id, 'hex');
+      }),
       keccak256,
       {
         sort: true,
@@ -106,32 +105,22 @@ describe('MakerDeposit.test.ts', () => {
     const response = await mdc
       .connect(maker)
       .LPAction([lpInfo], pairProof, overrides);
-    const tx = await response.wait();
-    expect(tx.blockNumber).gt(0);
-    if (tx.events !== undefined) {
-      expect(tx.events?.findIndex((row) => row.event === 'LogLpInfo') >= 0)
-        .true;
-    }
+    await expect(response)
+      .to.emit(mdc, 'LogLpInfo')
+      .withArgs(anyValue, 0, anyValue, anyValue);
     const chainDeposit = await mdc.chainDeposit(
       lpInfo.sourceChain,
       lpInfo.sourceTAddress,
     );
     expect(chainDeposit.useLimit).equal(ethers.BigNumber.from(1));
     expect(chainDeposit.tokenAddress).equal(lpInfo.sourceTAddress);
-    const contractBalance = await ethers.provider.getBalance(mdc.address);
-    console.log('contractBalance: ', contractBalance);
-    expect(chainDeposit.tokenAddress).equal(lpInfo.sourceTAddress);
   });
   it('LPPause', async () => {
     const lpInfo = getLpInfo(LP_LIST[0]);
-    const proof = lpInfoTree.getHexProof(lpInfo.id);
-    const response = await mdc.connect(maker).LPPause([lpInfo], [proof]);
-    const tx = await response.wait();
-    expect(tx.blockNumber).gt(0);
-    if (tx.events !== undefined) {
-      expect(tx.events?.findIndex((row) => row.event === 'LogLpInfo') >= 0)
-        .true;
-    }
+    const response = await mdc.connect(maker).LPPause([lpInfo]);
+    await expect(response)
+      .to.emit(mdc, 'LogLpInfo')
+      .withArgs(anyValue, 2, anyValue, anyValue);
   });
   it('LPStop not time', async () => {
     const lpInfo = getLpInfo(LP_LIST[0]);
@@ -144,12 +133,9 @@ describe('MakerDeposit.test.ts', () => {
   it('LPStop is time', async () => {
     const lpInfo = getLpInfo(LP_LIST[0]);
     const response = await mdc.connect(maker).LPStop(lpInfo);
-    const tx = await response.wait();
-    expect(tx.blockNumber).gt(0);
-    if (tx.events !== undefined) {
-      expect(tx.events?.findIndex((row) => row.event === 'LogLpInfo') >= 0)
-        .true;
-    }
+    await expect(response)
+      .to.emit(mdc, 'LogLpInfo')
+      .withArgs(anyValue, 3, anyValue, anyValue);
   });
   it('Maker withDraw is time and no chanllenge', async () => {
     const beforeAmount = await maker.getBalance();
@@ -183,20 +169,14 @@ describe('MakerDeposit.test.ts', () => {
     const response = await mdc
       .connect(maker)
       .LPAction([lpInfo], pairProof, overrides);
-    const tx = await response.wait();
-    expect(tx.blockNumber).gt(0);
-    if (tx.events !== undefined) {
-      expect(tx.events?.findIndex((row) => row.event === 'LogLpInfo') >= 0)
-        .true;
-    }
+    await expect(response)
+      .to.emit(mdc, 'LogLpInfo')
+      .withArgs(anyValue, 0, anyValue, anyValue);
     const chainDeposit = await mdc.chainDeposit(
       lpInfo.sourceChain,
       lpInfo.sourceTAddress,
     );
     expect(chainDeposit.useLimit).equal(ethers.BigNumber.from(1));
-    expect(chainDeposit.tokenAddress).equal(lpInfo.sourceTAddress);
-    const contractBalance = await ethers.provider.getBalance(mdc.address);
-    console.log('contractBalance: ', contractBalance);
     expect(chainDeposit.tokenAddress).equal(lpInfo.sourceTAddress);
   });
   it('userChanllenge for maker not send', async () => {
@@ -284,21 +264,14 @@ describe('MakerDeposit.test.ts', () => {
     const response = await mdc
       .connect(maker)
       .LPAction([lpInfo], pairProof, overrides);
-    const tx = await response.wait();
-    expect(tx.blockNumber).gt(0);
-    if (tx.events !== undefined) {
-      expect(tx.events?.findIndex((row) => row.event === 'LogLpInfo') >= 0)
-        .true;
-    }
+    await expect(response)
+      .to.emit(mdc, 'LogLpInfo')
+      .withArgs(anyValue, 0, anyValue, anyValue);
     const chainDeposit = await mdc.chainDeposit(
       lpInfo.sourceChain,
       lpInfo.sourceTAddress,
     );
     expect(chainDeposit.useLimit).equal(ethers.BigNumber.from(2));
-    expect(chainDeposit.tokenAddress).equal(lpInfo.sourceTAddress);
-
-    const contractBalance = await ethers.provider.getBalance(mdc.address);
-    console.log('contractBalance: ', contractBalance);
     expect(chainDeposit.tokenAddress).equal(lpInfo.sourceTAddress);
   });
   it('userChanllenge for maker not send (Second time)', async () => {
@@ -342,9 +315,13 @@ describe('MakerDeposit.test.ts', () => {
       .sub(gasUsed);
     expect(realAfterAmount).eq(expectAfterAmount);
     expect(tx.blockNumber).gt(0);
+
     if (tx.events !== undefined) {
-      expect(tx.events?.findIndex((row) => row.event === 'LogLpInfo') >= 0)
+      expect(tx.events?.findIndex((row) => row.event === 'LogLpInfoSys') >= 0)
         .true;
+      expect(
+        tx.events?.findIndex((row) => row.event === 'LogChanllengeInfo') >= 0,
+      ).true;
     }
   });
   it('Maker withDraw not time', async () => {

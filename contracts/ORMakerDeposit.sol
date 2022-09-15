@@ -150,8 +150,8 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
     }
 
     // LPPause
-    function LPPause(OperationsLib.lpInfo[] calldata _lpinfos, bytes32[][] calldata proof) external onlyOwner {
-        require(_lpinfos.length == proof.length, "InconsistentArrayLength");
+    function LPPause(OperationsLib.lpInfo[] calldata _lpinfos) external onlyOwner {
+        // require(_lpinfos.length == proof.length, "InconsistentArrayLength");
         address manager = getManagerAddress();
         for (uint256 i = 0; i < _lpinfos.length; i++) {
             // calc root Hash
@@ -281,7 +281,7 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
                     lpInfo[lpids[i]].startTime = 0;
                     lpInfo[lpids[i]].stopTime = 0;
                 }
-                emit LogLpInfo(lpids[i], lpState.USERSTOP, 0);
+                emit LogLpInfoSys(lpids[i], lpState.USERSTOP, 0);
             }
             delete _cDinfo.lpids;
             _cDinfo.useLimit = 0;
