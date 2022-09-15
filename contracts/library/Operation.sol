@@ -56,10 +56,9 @@ library OperationsLib {
     }
 
     struct lpPairInfo {
-        bytes32 LPRootHash;
+        bool LPRootHash;
         uint256 stopTime;
         uint256 startTime;
-        bool inlps;
     }
 
     struct chainDeposit {

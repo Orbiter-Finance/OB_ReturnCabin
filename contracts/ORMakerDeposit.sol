@@ -126,9 +126,8 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
                 supplement = (needDepositAmount - chainPledged.depositAmount);
             }
             chainPledged.useLimit++;
-            if (!lpInfo[lpid].inlps) {
-                chainPledged.lpids.push(lpid);
-            }
+            chainPledged.lpids.push(lpid);
+            lpInfo[lpid].LPRootHash = true;
             // lpInfo[lpid].LPRootHash = MerkleProof.processProofCalldata(proof[i], OperationsLib.getLpFullHash(_lpinfo));
             emit LogLpInfo(lpid, lpState.ACTION, lpInfo[lpid].startTime, _lpinfo);
         }
@@ -158,6 +157,7 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
             OperationsLib.lpInfo memory _lpinfo = _lpinfos[i];
             bytes32 lpid = OperationsLib.getLpID(_lpinfo);
             // require(lpInfo[lpid].LPRootHash != "", "LPPAUSE_LPID_UNUSED");
+            require(lpInfo[lpid].LPRootHash == true, "LPPAUSE_LPID_UNUSED");
             require(lpInfo[lpid].startTime != 0 && lpInfo[lpid].stopTime == 0, "LPPAUSE_LPID_UNACTION");
             address ebcAddress = IORManager(manager).getEBC(_lpinfo.ebcid);
             require(ebcAddress != address(0), "LPPAUSE_EBCADDRESS_0");
@@ -174,6 +174,7 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         bytes32 lpid = OperationsLib.getLpID(_lpinfo);
 
         // require(lpInfo[lpid].LPRootHash != "", "LPSTOP_LPID_UNUSED");
+        require(lpInfo[lpid].LPRootHash == true, "LPPAUSE_LPID_UNUSED");
         require(lpInfo[lpid].startTime == 0 && lpInfo[lpid].stopTime != 0, "LPSTOP_LPID_UNPAUSE");
         require(block.timestamp > lpInfo[lpid].stopTime, "LPSTOP_LPID_TIMEUNABLE");
 
@@ -206,6 +207,7 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         bytes32 lpid = OperationsLib.getLpID(_lpinfo);
 
         // require(lpInfo[lpid].LPRootHash != "", "LPUPDATE_LPID_UNUSED");
+        require(lpInfo[lpid].LPRootHash == true, "LPPAUSE_LPID_UNUSED");
         require(lpInfo[lpid].startTime == 0 && lpInfo[lpid].stopTime == 0, "LPUPDATE_LPID_UNSTOP");
 
         emit LogLpInfo(lpid, lpState.UPDATE, block.timestamp, _lpinfo);
