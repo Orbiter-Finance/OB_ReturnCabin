@@ -91,18 +91,19 @@ library OperationsLib {
             );
     }
 
-    function getLpFullHash(OperationsLib.lpInfo memory _lpinfo) internal pure returns (bytes32) {
+    function getMakerLPHash(address maker,OperationsLib.lpInfo memory _lpinfo) internal pure returns (bytes32) {
         bytes32 lpId = getLpID(_lpinfo);
         bytes32 rootHash = keccak256(
             abi.encodePacked(
+                maker,
                 lpId,
-                _lpinfo.ebcid,
                 _lpinfo.sourcePresion,
                 _lpinfo.destPresion,
                 _lpinfo.minPrice,
                 _lpinfo.maxPrice,
                 _lpinfo.gasFee,
-                _lpinfo.tradingFee
+                _lpinfo.tradingFee,
+                _lpinfo.startTime
             )
         );
         return rootHash;

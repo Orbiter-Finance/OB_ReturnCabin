@@ -34,6 +34,9 @@ async function main() {
   );
   console.log('Create Pair tx:', tx.hash);
   console.log(`\n${pairTree.toString()}\n`);
+  await managerContract.setEBC('0x0000000000000000000000000000000000000000');
+  await managerContract.setEBC('0x0000000000000000000000000000000000000000');
+
   for (const row of chainInfoList) {
     await managerContract.setChainInfo(
       row.chainID,

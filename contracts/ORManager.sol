@@ -58,7 +58,7 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable {
     ) external {
         require(chainList[chainID].isUsed == false, "CHAININFO_INSTALL_ALREADY");
         chainList[chainID] = OperationsLib.chainInfo(chainID, batchLimit, maxDisputeTime, tokenList, true);
-        emit ChangeChain(chainID,chainList[chainID]);
+        emit ChangeChain(chainID, chainList[chainID]);
     }
 
     function getChainInfoByChainID(uint256 chainID) public view returns (OperationsLib.chainInfo memory) {
@@ -84,8 +84,7 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable {
                     mainAddress
                 );
             }
-            emit ChangeToken(chainID,tokenInfos[chainID][tokenAddress]);
-
+            emit ChangeToken(chainID,tokenAddress, tokenInfos[chainID][tokenAddress]);
         }
         return false;
     }
