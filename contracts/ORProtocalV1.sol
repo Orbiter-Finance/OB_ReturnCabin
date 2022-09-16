@@ -61,6 +61,7 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     }
 
     function getDepositAmount(uint256 batchLimit, uint256 maxPrice) external view returns (uint256) {
+        require(batchLimit != 0 && maxPrice != 0 && DepositAmountCoefficient != 0, "GET_DEPOSITCOEFFICIENT_ERROR");
         return (batchLimit * maxPrice * DepositAmountCoefficient) / 100;
     }
 
