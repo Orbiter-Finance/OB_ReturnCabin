@@ -2,7 +2,10 @@ import { ethers } from 'hardhat';
 import { ORManager } from '../../typechain-types';
 import { MerkleTree } from 'merkletreejs';
 import keccak256 from 'keccak256';
-import { PAIR_LIST } from '../../test/lib/Config';
+import {
+  PAIR_LIST,
+  CHAIN_INFO_LIST as chainInfoList,
+} from '../../test/lib/Config';
 const leafs = PAIR_LIST.map((row) => {
   return Buffer.from(row.id, 'hex');
 });
@@ -31,15 +34,14 @@ async function main() {
   );
   console.log('Create Pair tx:', tx.hash);
   console.log(`\n${pairTree.toString()}\n`);
-  // set chain
-  // for (const row of chainInfoList) {
-  //   await managerContract.setChainInfo(
-  //     row.chainID,
-  //     row.batchLimit,
-  //     row.maxDisputeTime,
-  //     row.tokenList,
-  //   );
-  // }
+  for (const row of chainInfoList) {
+    await managerContract.setChainInfo(
+      row.chainID,
+      row.batchLimit,
+      row.maxDisputeTime,
+      row.tokenList,
+    );
+  }
 }
 main().catch((error) => {
   console.error(error);

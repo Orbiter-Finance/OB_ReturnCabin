@@ -15,9 +15,11 @@ export const getPairID = (pair: PairStruct): string => {
   return lpId.replace('0x', '');
   // return Buffer.from(lpId.replace('0x', ''), 'hex');
 };
+
 export const getPairLPID = (lp: LpInfoStruct): string => {
   const lpId = solidityKeccak256(
     [
+      'address',
       'bytes32',
       'uint256',
       'uint256',
@@ -26,21 +28,21 @@ export const getPairLPID = (lp: LpInfoStruct): string => {
       'uint256',
       'uint256',
       'uint256',
-      'uint256',
+      // 'uint256',
     ],
     [
+      '0xba47e2bd934907a2c2bc7B3c70E9AE41135Fa40E',
       `0x${lp.pairId}`,
-      ethers.BigNumber.from(lp.maxPrice),
+      ethers.BigNumber.from(lp.sourcePresion),
+      ethers.BigNumber.from(lp.destPresion),
       ethers.BigNumber.from(lp.minPrice),
+      ethers.BigNumber.from(lp.maxPrice),
       ethers.BigNumber.from(lp.gasFee),
       ethers.BigNumber.from(lp.tradingFee),
       ethers.BigNumber.from(lp.startTime),
-      ethers.BigNumber.from(lp.stopTime || 0),
-      ethers.BigNumber.from(lp.sourcePresion),
-      ethers.BigNumber.from(lp.destPresion),
+      // ethers.BigNumber.from(lp.stopTime || 0),
     ],
   );
-
   return lpId.replace('0x', '');
   // return Buffer.from(lpId.replace('0x', ''), 'hex');
 };

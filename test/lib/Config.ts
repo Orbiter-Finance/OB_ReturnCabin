@@ -1,4 +1,7 @@
 import { getPairID, getPairLPID } from './Utils';
+import { ethers } from 'ethers';
+const { solidityKeccak256 } = ethers.utils;
+
 export interface PairStruct {
   id: string;
   sourceChain: number;
@@ -89,6 +92,30 @@ export const LP_LIST: LpInfoStruct[] = [
   {
     id: '',
     pairId: String(PAIR_LIST[1].id),
+    sourcePresion: 18,
+    destPresion: 18,
+    minPrice: '5000000000000000',
+    maxPrice: '9000000000000000',
+    gasFee: '10000000000000000',
+    tradingFee: '10000000000000000',
+    startTime: 0,
+    stopTime: 0,
+  },
+  {
+    id: '',
+    pairId: String(PAIR_LIST[2].id),
+    sourcePresion: 18,
+    destPresion: 18,
+    minPrice: '5000000000000000',
+    maxPrice: '9000000000000000',
+    gasFee: '10000000000000000',
+    tradingFee: '10000000000000000',
+    startTime: 0,
+    stopTime: 0,
+  },
+  {
+    id: '',
+    pairId: String(PAIR_LIST[3].id),
     sourcePresion: 18,
     destPresion: 18,
     minPrice: '5000000000000000',
