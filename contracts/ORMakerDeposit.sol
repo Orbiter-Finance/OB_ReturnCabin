@@ -124,6 +124,7 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
             _lpinfo.startTime = block.timestamp;
             if (needDepositAmount > chainPledged.depositAmount) {
                 supplement = (needDepositAmount - chainPledged.depositAmount);
+                chainPledged.depositAmount = needDepositAmount;
             }
             chainPledged.useLimit++;
             chainPledged.lpids.push(lpid);
@@ -131,16 +132,21 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
             // lpInfo[lpid].LPRootHash = MerkleProof.processProofCalldata(proof[i], OperationsLib.getLpFullHash(_lpinfo));
             emit LogLpInfo(lpid, lpState.ACTION, lpInfo[lpid].startTime, _lpinfo);
         }
+
         // need deposit
-        int256 AssessmentAmount = int256(supplement) - int256(unUsedAmount);
-        if (AssessmentAmount > 0) {
-            uint256 realNeedAmount = uint256(AssessmentAmount);
-            if (pledgedToken != address(0)) {
+        if (pledgedToken != address(0)) {
+            int256 AssessmentAmount = int256(supplement) - int256(unUsedAmount);
+            if (AssessmentAmount > 0) {
+                uint256 realNeedAmount = uint256(AssessmentAmount);
                 uint256 allowance = IERC20(pledgedToken).allowance(msg.sender, address(this));
                 require(allowance >= realNeedAmount, "Check the token allowance");
                 IERC20(pledgedToken).transferFrom(msg.sender, address(this), realNeedAmount);
                 usedDeposit[pledgedToken] += realNeedAmount;
-            } else {
+            }
+        } else {
+            int256 AssessmentAmount = int256(supplement) - int256(unUsedAmount - msg.value);
+            if (AssessmentAmount > 0) {
+                uint256 realNeedAmount = uint256(AssessmentAmount);
                 require(msg.value >= realNeedAmount, "Check the eth send");
                 // user deposit
                 usedDeposit[pledgedToken] += realNeedAmount;
@@ -287,7 +293,6 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
             }
             delete _cDinfo.lpids;
             _cDinfo.useLimit = 0;
-            _cDinfo.depositAmount = 0;
             //TODO: The funds of the maker that are released through the user's appeal must have a blocking period, and the maker cannot withdraw directly.
             usedDeposit[_dTinfo.mainTokenAddress] -= _cDinfo.depositAmount;
             _cDinfo.depositAmount = 0;

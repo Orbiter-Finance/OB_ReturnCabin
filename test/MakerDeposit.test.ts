@@ -137,11 +137,6 @@ describe('MakerDeposit.test.ts', () => {
       .to.emit(mdc, 'LogLpInfo')
       .withArgs(anyValue, 3, anyValue, anyValue);
   });
-  it('LPUpdate for UNUSED', async () => {
-    const lpInfo = getLpInfo(LP_LIST[1]);
-    const response = mdc.connect(maker).LPUpdate(lpInfo);
-    await expect(response).to.be.revertedWith('LPPAUSE_LPID_UNUSED');
-  });
   it('Maker withDraw is time and no chanllenge', async () => {
     const beforeAmount = await maker.getBalance();
     const withDrawMax = await mdc
@@ -161,7 +156,7 @@ describe('MakerDeposit.test.ts', () => {
   });
   it('LPAction again', async () => {
     const lpInfo = getLpInfo(LP_LIST[0]);
-    const value = ethers.utils.parseEther('1.2');
+    const value = ethers.utils.parseEther('2.1');
     const pairProofLeavesHash = [PAIR_LIST[0]].map((row) => {
       return Buffer.from(getPairID(row), 'hex');
     });
