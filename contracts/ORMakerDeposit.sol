@@ -9,7 +9,6 @@ import "./interface/IERC20.sol";
 import "./interface/IORSpv.sol";
 import "./interface/IORMakerV1Factory.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "hardhat/console.sol";
 
@@ -112,14 +111,13 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
             OperationsLib.chainDeposit storage chainPledged = chainDeposit[_lpinfo.sourceChain][pledgedToken];
             // first init lpPair
             require(lpInfo[lpid].startTime == 0 && lpInfo[lpid].stopTime == 0, "LPACTION_LPID_UNSTOP");
-            OperationsLib.chainInfo memory souceChainInfo = IORManager(manager).getChainInfoByChainID(
-                _lpinfo.sourceChain
-            );
             depositToken = getDepositTokenInfo(_lpinfo);
             if (i > 0 && depositToken.mainTokenAddress != pledgedToken) {
                 revert("LP that does not support multiple pledge tokens");
             }
-            uint256 needDepositAmount = souceChainInfo.batchLimit * _lpinfo.maxPrice;
+            address ebcAddress = IORManager(manager).getEBC(_lpinfo.ebcid);
+            require(ebcAddress != address(0), "LPACTION_EBCADDRESS_0");
+            uint256 needDepositAmount = IORProtocal(ebcAddress).getDepositAmountCoefficient();
             lpInfo[lpid].startTime = block.timestamp;
             _lpinfo.startTime = block.timestamp;
             if (needDepositAmount > chainPledged.depositAmount) {
@@ -248,7 +246,7 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         bytes32 chanllengeID = OperationsLib.getChanllengeID(_txinfo);
         // The corresponding chanllengeInfo is required to be in an unused state.
         require(chanllengeInfos[chanllengeID].chanllengeState == 0, "UCE_USED");
-        uint256 pledgeAmount = IORProtocal(ebcAddress).getChanllengePledgeAmount();
+        uint256 pledgeAmount = IORProtocal(ebcAddress).getChanllengePledgeAmountCoefficient();
         // The pledge required to be transferred by the user is greater than that stipulated in the EBC contract.
         require(msg.value >= pledgeAmount, "UCE_PLEDGEAMOUNT");
         // Obtaining txinfo Validity Proof by EBC

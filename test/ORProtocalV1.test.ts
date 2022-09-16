@@ -1,17 +1,23 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
 import { ethers, upgrades } from 'hardhat';
 import { ORProtocalV1 } from '../typechain-types';
 import { USER_TX_LIST } from './lib/Config';
 import { getLeaf } from './lib/Utils';
 let ebc: ORProtocalV1;
+let ebcOwner: SignerWithAddress;
 let managerContractAddress: string;
 describe('ORProtocalV1.test.ts', () => {
   async function createEbcInfo() {
+    const accounts = await ethers.getSigners();
+    ebcOwner = accounts[accounts.length - 2];
     managerContractAddress = String(process.env['ManagerContract']);
-    const ORProtocalV1 = await ethers.getContractFactory('ORProtocalV1', {
-      libraries: {},
-    });
+    const ORProtocalV1 = (
+      await ethers.getContractFactory('ORProtocalV1', {
+        libraries: {},
+      })
+    ).connect(ebcOwner);
     const ORProtocalV1Proxy = await upgrades.deployProxy(ORProtocalV1, [
       managerContractAddress,
     ]);
@@ -36,6 +42,30 @@ describe('ORProtocalV1.test.ts', () => {
     expect(await factoryContract.getEBCids()).equal(1);
     expect(await factoryContract.getEBC(1)).equal(ebc.address);
     expect(await factoryContract.getSPV()).equal(spvAddress);
+  });
+  it('setAndGetChanllengePledgeAmountCoefficient', async () => {
+    const value = ethers.utils.parseEther('0.05');
+    await ebc.connect(ebcOwner).setChanllengePledgeAmountCoefficient(value);
+    const result = await ebc.getChanllengePledgeAmountCoefficient();
+    expect(result).eq(value);
+  });
+  it('setAndGetDepositAmountCoefficient', async () => {
+    const value = ethers.utils.parseEther('0.9');
+    await ebc.connect(ebcOwner).setDepositAmountCoefficient(value);
+    const result = await ebc.getDepositAmountCoefficient();
+    expect(result).eq(value);
+  });
+  it('setAndGetETHPunishCoefficient', async () => {
+    const value = 11;
+    await ebc.connect(ebcOwner).setETHPunishCoefficient(value);
+    const result = await ebc.getETHPunishCoefficient();
+    expect(result).eq(value);
+  });
+  it('setAndGetTokenPunishCoefficient', async () => {
+    const value = 11;
+    await ebc.connect(ebcOwner).setTokenPunishCoefficient(value);
+    const result = await ebc.getTokenPunishCoefficient();
+    expect(result).eq(value);
   });
   it('getETHPunish', async () => {
     const value = USER_TX_LIST[0].value;
