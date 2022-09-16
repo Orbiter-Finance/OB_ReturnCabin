@@ -50,19 +50,19 @@ describe('ORProtocalV1.test.ts', () => {
     expect(result).eq(value);
   });
   it('setAndGetDepositAmountCoefficient', async () => {
-    const value = ethers.utils.parseEther('0.9');
+    const value = 110;
     await ebc.connect(ebcOwner).setDepositAmountCoefficient(value);
     const result = await ebc.getDepositAmountCoefficient();
     expect(result).eq(value);
   });
   it('setAndGetETHPunishCoefficient', async () => {
-    const value = 11;
+    const value = 110;
     await ebc.connect(ebcOwner).setETHPunishCoefficient(value);
     const result = await ebc.getETHPunishCoefficient();
     expect(result).eq(value);
   });
   it('setAndGetTokenPunishCoefficient', async () => {
-    const value = 11;
+    const value = 110;
     await ebc.connect(ebcOwner).setTokenPunishCoefficient(value);
     const result = await ebc.getTokenPunishCoefficient();
     expect(result).eq(value);

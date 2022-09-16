@@ -30,9 +30,9 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
         return ChanllengePledgeAmountCoefficient;
     }
 
-    // This parameter is the amount that Maker needs to pledge when initiating a transaction pair.
-    function setDepositAmountCoefficient(uint256 _wei) external onlyOwner returns (bool) {
-        DepositAmountCoefficient = _wei;
+    // The parameter is a number of percentile precision, for example: When tenDigits is 110, it represents 1.1
+    function setDepositAmountCoefficient(uint256 hundredDigits) external onlyOwner returns (bool) {
+        DepositAmountCoefficient = hundredDigits;
         return true;
     }
 
@@ -40,9 +40,9 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
         return DepositAmountCoefficient;
     }
 
-    // The parameter is a number with a ten-bit precision, for example: When tenDigits is 11, it represents 1.1
-    function setETHPunishCoefficient(uint256 tenDigits) external onlyOwner returns (bool) {
-        EthPunishCoefficient = tenDigits;
+    // The parameter is a number of percentile precision, for example: When tenDigits is 110, it represents 1.1
+    function setETHPunishCoefficient(uint256 hundredDigits) external onlyOwner returns (bool) {
+        EthPunishCoefficient = hundredDigits;
         return true;
     }
 
@@ -50,9 +50,9 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
         return EthPunishCoefficient;
     }
 
-    // The parameter is a number with a ten-bit precision, for example: When tenDigits is 11, it represents 1.1
-    function setTokenPunishCoefficient(uint256 tenDigits) external onlyOwner returns (bool) {
-        TokenPunishCoefficient = tenDigits;
+    // The parameter is a number of percentile precision, for example: When tenDigits is 110, it represents 1.1
+    function setTokenPunishCoefficient(uint256 hundredDigits) external onlyOwner returns (bool) {
+        TokenPunishCoefficient = hundredDigits;
         return true;
     }
 
@@ -60,18 +60,22 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
         return TokenPunishCoefficient;
     }
 
+    function getDepositAmount(uint256 batchLimit, uint256 maxPrice) external view returns (uint256) {
+        return (batchLimit * maxPrice * DepositAmountCoefficient) / 100;
+    }
+
     function getETHPunish(uint256 amount) external view returns (uint256) {
         (uint256 securityCode, bool isSupport) = getSecuirtyCode(true, amount);
         require(isSupport, "GEP_AMOUNT_INVALIDATE");
         amount = amount - securityCode;
-        return (amount * EthPunishCoefficient) / 10;
+        return (amount * EthPunishCoefficient) / 100;
     }
 
     function getTokenPunish(uint256 amount) external view returns (uint256) {
         (uint256 securityCode, bool isSupport) = getSecuirtyCode(true, amount);
         require(isSupport, "GTP_AMOUNT_INVALIDATE");
         amount = amount - securityCode;
-        return (amount * TokenPunishCoefficient) / 10;
+        return (amount * TokenPunishCoefficient) / 100;
     }
 
     function getStartDealyTime(uint256 chainID) external pure returns (uint256) {

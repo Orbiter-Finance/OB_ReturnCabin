@@ -111,13 +111,19 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
             OperationsLib.chainDeposit storage chainPledged = chainDeposit[_lpinfo.sourceChain][pledgedToken];
             // first init lpPair
             require(lpInfo[lpid].startTime == 0 && lpInfo[lpid].stopTime == 0, "LPACTION_LPID_UNSTOP");
+            OperationsLib.chainInfo memory souceChainInfo = IORManager(manager).getChainInfoByChainID(
+                _lpinfo.sourceChain
+            );
             depositToken = getDepositTokenInfo(_lpinfo);
             if (i > 0 && depositToken.mainTokenAddress != pledgedToken) {
                 revert("LP that does not support multiple pledge tokens");
             }
             address ebcAddress = IORManager(manager).getEBC(_lpinfo.ebcid);
             require(ebcAddress != address(0), "LPACTION_EBCADDRESS_0");
-            uint256 needDepositAmount = IORProtocal(ebcAddress).getDepositAmountCoefficient();
+            uint256 needDepositAmount = IORProtocal(ebcAddress).getDepositAmount(
+                souceChainInfo.batchLimit,
+                _lpinfo.maxPrice
+            );
             lpInfo[lpid].startTime = block.timestamp;
             _lpinfo.startTime = block.timestamp;
             if (needDepositAmount > chainPledged.depositAmount) {
