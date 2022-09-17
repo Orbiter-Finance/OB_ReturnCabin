@@ -10,28 +10,73 @@ import "hardhat/console.sol";
 
 contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     address _managerAddress;
+    uint256 public ChanllengePledgeAmountCoefficient;
+    uint256 public DepositAmountCoefficient;
+    uint256 public EthPunishCoefficient;
+    uint256 public TokenPunishCoefficient;
 
     function initialize(address managerAddress) public initializer {
         _managerAddress = managerAddress;
         __Ownable_init();
     }
 
-    function getChanllengePledgeAmount() external pure returns (uint256) {
-        return 0.05 * 10**18;
+    // The parameter here is the user challenge pledge factor in wei.
+    function setChanllengePledgeAmountCoefficient(uint256 _wei) external onlyOwner returns (bool) {
+        ChanllengePledgeAmountCoefficient = _wei;
+        return true;
     }
 
-    function getETHPunish(uint256 amount) external pure returns (uint256) {
+    function getChanllengePledgeAmountCoefficient() external view returns (uint256) {
+        return ChanllengePledgeAmountCoefficient;
+    }
+
+    // The parameter is a number of percentile precision, for example: When tenDigits is 110, it represents 1.1
+    function setDepositAmountCoefficient(uint256 hundredDigits) external onlyOwner returns (bool) {
+        DepositAmountCoefficient = hundredDigits;
+        return true;
+    }
+
+    function getDepositAmountCoefficient() external view returns (uint256) {
+        return DepositAmountCoefficient;
+    }
+
+    // The parameter is a number of percentile precision, for example: When tenDigits is 110, it represents 1.1
+    function setETHPunishCoefficient(uint256 hundredDigits) external onlyOwner returns (bool) {
+        EthPunishCoefficient = hundredDigits;
+        return true;
+    }
+
+    function getETHPunishCoefficient() external view returns (uint256) {
+        return EthPunishCoefficient;
+    }
+
+    // The parameter is a number of percentile precision, for example: When tenDigits is 110, it represents 1.1
+    function setTokenPunishCoefficient(uint256 hundredDigits) external onlyOwner returns (bool) {
+        TokenPunishCoefficient = hundredDigits;
+        return true;
+    }
+
+    function getTokenPunishCoefficient() external view returns (uint256) {
+        return TokenPunishCoefficient;
+    }
+
+    function getDepositAmount(uint256 batchLimit, uint256 maxPrice) external view returns (uint256) {
+        require(batchLimit != 0 && maxPrice != 0 && DepositAmountCoefficient != 0, "GET_DEPOSITCOEFFICIENT_ERROR");
+        return (batchLimit * maxPrice * DepositAmountCoefficient) / 100;
+    }
+
+    function getETHPunish(uint256 amount) external view returns (uint256) {
         (uint256 securityCode, bool isSupport) = getSecuirtyCode(true, amount);
         require(isSupport, "GEP_AMOUNT_INVALIDATE");
         amount = amount - securityCode;
-        return (amount * 11) / 10;
+        return (amount * EthPunishCoefficient) / 100;
     }
 
-    function getTokenPunish(uint256 amount) external pure returns (uint256) {
+    function getTokenPunish(uint256 amount) external view returns (uint256) {
         (uint256 securityCode, bool isSupport) = getSecuirtyCode(true, amount);
         require(isSupport, "GTP_AMOUNT_INVALIDATE");
         amount = amount - securityCode;
-        return (amount * 11) / 10;
+        return (amount * TokenPunishCoefficient) / 100;
     }
 
     function getStartDealyTime(uint256 chainID) external pure returns (uint256) {

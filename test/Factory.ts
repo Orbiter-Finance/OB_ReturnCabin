@@ -107,23 +107,19 @@ describe('Factory.spec.ts', () => {
         chainInfo_op.tokenList,
       );
 
-      expect(await (await userFactory.chainList(0)).isUsed).false;
+      expect((await userFactory.chainList(0)).isUsed).false;
 
-      expect(await (await userFactory.chainList(1)).isUsed).true;
-      expect(await (await userFactory.chainList(1)).chainid).equal(1);
-      expect(await (await userFactory.chainList(1)).batchLimit).equal(100);
-      expect(await (await userFactory.chainList(1)).maxDisputeTime).equal(
-        24 * 3600,
-      );
+      expect((await userFactory.chainList(1)).isUsed).true;
+      expect((await userFactory.chainList(1)).chainid).equal(1);
+      expect((await userFactory.chainList(1)).batchLimit).equal(100);
+      expect((await userFactory.chainList(1)).maxDisputeTime).equal(24 * 3600);
 
-      expect(await (await userFactory.chainList(2)).isUsed).true;
-      expect(await (await userFactory.chainList(2)).chainid).equal(2);
-      expect(await (await userFactory.chainList(2)).batchLimit).equal(100);
-      expect(await (await userFactory.chainList(2)).maxDisputeTime).equal(
-        24 * 3600,
-      );
+      expect((await userFactory.chainList(2)).isUsed).true;
+      expect((await userFactory.chainList(2)).chainid).equal(2);
+      expect((await userFactory.chainList(2)).batchLimit).equal(100);
+      expect((await userFactory.chainList(2)).maxDisputeTime).equal(24 * 3600);
 
-      expect(await (await userFactory.chainList(9999999)).isUsed).false;
+      expect((await userFactory.chainList(9999999)).isUsed).false;
     });
 
     it('UPDATE CHAININFO', async () => {
