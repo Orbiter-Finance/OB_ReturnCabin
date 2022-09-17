@@ -91,7 +91,7 @@ library OperationsLib {
             );
     }
 
-    function getMakerLPHash(address maker,OperationsLib.lpInfo memory _lpinfo) internal pure returns (bytes32) {
+    function getMakerLPHash(address maker, OperationsLib.lpInfo memory _lpinfo) internal pure returns (bytes32) {
         bytes32 lpId = getLpID(_lpinfo);
         bytes32 rootHash = keccak256(
             abi.encodePacked(

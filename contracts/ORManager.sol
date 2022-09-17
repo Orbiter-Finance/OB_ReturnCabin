@@ -84,7 +84,7 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable {
                     mainAddress
                 );
             }
-            emit ChangeToken(chainID,tokenAddress, tokenInfos[chainID][tokenAddress]);
+            emit ChangeToken(chainID, tokenAddress, tokenInfos[chainID][tokenAddress]);
         }
         return false;
     }

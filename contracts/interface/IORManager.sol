@@ -10,7 +10,7 @@ interface IORManager {
     }
     event PairLogEvent(PairEventType indexed opType, OperationsLib.pairChainInfo[] pairs);
     event ChangeChain(uint256 indexed chainId, OperationsLib.chainInfo chain);
-    event ChangeToken(uint256 indexed chainId,address indexed tokenAddress,OperationsLib.tokenInfo token);
+    event ChangeToken(uint256 indexed chainId, address indexed tokenAddress, OperationsLib.tokenInfo token);
 
     function setSPV(address spvAddress) external returns (bool);
 
