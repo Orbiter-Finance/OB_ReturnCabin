@@ -31,6 +31,10 @@ const config: HardhatUserConfig = {
     },
     ganache: {
       url: 'http://127.0.0.1:7545',
+      // url: 'http://ec2-54-178-23-104.ap-northeast-1.compute.amazonaws.com:8545',
+    },
+    test: {
+      url: 'http://ec2-54-178-23-104.ap-northeast-1.compute.amazonaws.com:8545',
     },
     mainnet: {
       url: `https://mainnet.infura.io/v3/${INFURA_API_KEY}`,
