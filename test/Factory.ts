@@ -72,7 +72,6 @@ describe('Factory.spec.ts', () => {
     it('UPDATE EBC', async () => {
       expect(await userFactory.getEBCids()).equal(1);
       expect(await userFactory.getEBC(1)).equal(address1.address);
-
       await userFactory.updateEBC(1, address2.address);
       expect(await userFactory.getEBCids()).equal(1);
       expect(await userFactory.getEBC(1)).equal(address2.address);

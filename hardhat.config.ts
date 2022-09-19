@@ -30,11 +30,12 @@ const config: HardhatUserConfig = {
       allowUnlimitedContractSize: true,
     },
     ganache: {
-      url: 'http://127.0.0.1:7545',
-      // url: 'http://ec2-54-178-23-104.ap-northeast-1.compute.amazonaws.com:8545',
+      url: 'http://127.0.0.1:8545',
+      accounts
     },
     test: {
       url: 'http://ec2-54-178-23-104.ap-northeast-1.compute.amazonaws.com:8545',
+      accounts
     },
     mainnet: {
       url: `https://mainnet.infura.io/v3/${INFURA_API_KEY}`,
@@ -86,6 +87,9 @@ const config: HardhatUserConfig = {
     // Obtain one at https://etherscan.io/
     apiKey: ETHERSCAN_API_KEY,
   },
+  mocha: {
+    timeout: 40000 * 10
+  }
 };
 
 export default config;
