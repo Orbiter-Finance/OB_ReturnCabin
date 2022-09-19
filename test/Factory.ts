@@ -6,7 +6,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { MerkleTree } from 'merkletreejs';
 import { PAIR_LIST } from './lib/Config';
 import keccak256 from 'keccak256';
-import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
+// import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { CHAIN_INFO_LIST as chainInfoList, TOKEN_LIST } from './lib/Config';
 let factory: ORManager;
 let makerV1Factory: ORMakerV1Factory;
@@ -52,7 +52,7 @@ describe('Factory.spec.ts', () => {
   let address2: SignerWithAddress;
 
   async function getFactoryInfo() {
-    const { factory, addr1, addr2 } = await loadFixture(deployFactoryFixture);
+    const { factory, addr1, addr2 } = await deployFactoryFixture();
     userFactory = factory;
     address1 = addr1;
     address2 = addr2;
