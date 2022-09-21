@@ -14,7 +14,7 @@ import "hardhat/console.sol";
 
 contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
     address public makerFactory;
-    // lpid->lpPairInfo
+    // pairId->lpPairInfo
     mapping(bytes32 => OperationsLib.lpPairInfo) public lpInfo;
 
     // supportChain->supportToken->chainDepost
@@ -106,11 +106,11 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         address manager = getManagerAddress();
         for (uint256 i = 0; i < _lpinfos.length; i++) {
             OperationsLib.lpInfo memory _lpinfo = _lpinfos[i];
-            bytes32 lpid = OperationsLib.getLpID(_lpinfo);
-            require(IORManager(manager).isSupportPair(lpid, pairProof[i]), "Pair Not Supported");
+            bytes32 pairId = OperationsLib.getPairID(_lpinfo);
+            require(IORManager(manager).isSupportPair(pairId, pairProof[i]), "Pair Not Supported");
             OperationsLib.chainDeposit storage chainPledged = chainDeposit[_lpinfo.sourceChain][pledgedToken];
             // first init lpPair
-            require(lpInfo[lpid].startTime == 0 && lpInfo[lpid].stopTime == 0, "LPACTION_LPID_UNSTOP");
+            require(lpInfo[pairId].startTime == 0 && lpInfo[pairId].stopTime == 0, "LPACTION_LPID_UNSTOP");
             OperationsLib.chainInfo memory souceChainInfo = IORManager(manager).getChainInfoByChainID(
                 _lpinfo.sourceChain
             );
@@ -124,17 +124,17 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
                 souceChainInfo.batchLimit,
                 _lpinfo.maxPrice
             );
-            lpInfo[lpid].startTime = block.timestamp;
+            lpInfo[pairId].startTime = block.timestamp;
             _lpinfo.startTime = block.timestamp;
             if (needDepositAmount > chainPledged.depositAmount) {
                 supplement = (needDepositAmount - chainPledged.depositAmount);
                 chainPledged.depositAmount = needDepositAmount;
             }
+            chainPledged.tokenAddress = pledgedToken;
             chainPledged.useLimit++;
-            chainPledged.lpids.push(lpid);
-            lpInfo[lpid].LPRootHash = true;
-            // lpInfo[lpid].LPRootHash = MerkleProof.processProofCalldata(proof[i], OperationsLib.getLpFullHash(_lpinfo));
-            emit LogLpInfo(lpid, lpState.ACTION, lpInfo[lpid].startTime, _lpinfo);
+            chainPledged.pairs.push(pairId);
+            lpInfo[pairId].lpId = OperationsLib.getLpID(address(this), _lpinfo);
+            emit LogLpInfo(pairId, lpInfo[pairId].lpId, lpState.ACTION, _lpinfo);
         }
 
         // need deposit
@@ -165,42 +165,39 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         for (uint256 i = 0; i < _lpinfos.length; i++) {
             // calc root Hash
             OperationsLib.lpInfo memory _lpinfo = _lpinfos[i];
-            bytes32 lpid = OperationsLib.getLpID(_lpinfo);
-            // require(lpInfo[lpid].LPRootHash != "", "LPPAUSE_LPID_UNUSED");
-            require(lpInfo[lpid].LPRootHash == true, "LPPAUSE_LPID_UNUSED");
-            require(lpInfo[lpid].startTime != 0 && lpInfo[lpid].stopTime == 0, "LPPAUSE_LPID_UNACTION");
+            bytes32 pairId = OperationsLib.getPairID(_lpinfo);
+            require(lpInfo[pairId].lpId != "", "LPPAUSE_LPID_UNUSED");
+            require(lpInfo[pairId].startTime != 0 && lpInfo[pairId].stopTime == 0, "LPPAUSE_LPID_UNACTION");
             address ebcAddress = IORManager(manager).getEBC(_lpinfo.ebcid);
             require(ebcAddress != address(0), "LPPAUSE_EBCADDRESS_0");
             uint256 stopDelayTime = IORProtocal(ebcAddress).getStopDealyTime(_lpinfo.sourceChain);
-            lpInfo[lpid].stopTime = block.timestamp + stopDelayTime;
-            lpInfo[lpid].startTime = 0;
-            // lpInfo[lpid].LPRootHash = MerkleProof.processProofCalldata(proof[i], OperationsLib.getLpFullHash(_lpinfo));
-            emit LogLpInfo(lpid, lpState.PAUSE, lpInfo[lpid].stopTime, _lpinfo);
+            lpInfo[pairId].stopTime = block.timestamp + stopDelayTime;
+            lpInfo[pairId].startTime = 0;
+            emit LogLpInfo(pairId, lpInfo[pairId].lpId, lpState.PAUSE, _lpinfo);
         }
     }
 
     // LPStop
     function LPStop(OperationsLib.lpInfo memory _lpinfo) external onlyOwner {
-        bytes32 lpid = OperationsLib.getLpID(_lpinfo);
+        bytes32 pairId = OperationsLib.getPairID(_lpinfo);
 
-        // require(lpInfo[lpid].LPRootHash != "", "LPSTOP_LPID_UNUSED");
-        require(lpInfo[lpid].LPRootHash == true, "LPPAUSE_LPID_UNUSED");
-        require(lpInfo[lpid].startTime == 0 && lpInfo[lpid].stopTime != 0, "LPSTOP_LPID_UNPAUSE");
-        require(block.timestamp > lpInfo[lpid].stopTime, "LPSTOP_LPID_TIMEUNABLE");
+        require(lpInfo[pairId].lpId != "", "LPPAUSE_LPID_UNUSED");
+        require(lpInfo[pairId].startTime == 0 && lpInfo[pairId].stopTime != 0, "LPSTOP_LPID_UNPAUSE");
+        require(block.timestamp > lpInfo[pairId].stopTime, "LPSTOP_LPID_TIMEUNABLE");
 
         OperationsLib.tokenInfo memory depositToken = getDepositTokenInfo(_lpinfo);
 
         OperationsLib.chainDeposit storage depositInfo = getChainDepositInfo(_lpinfo);
 
-        lpInfo[lpid].stopTime = 0;
+        lpInfo[pairId].stopTime = 0;
 
         depositInfo.useLimit--;
 
         // delete lpid
-        for (uint256 i = 0; i < depositInfo.lpids.length; i++) {
-            if (lpid == depositInfo.lpids[i]) {
-                depositInfo.lpids[i] = depositInfo.lpids[depositInfo.lpids.length - 1];
-                depositInfo.lpids.pop();
+        for (uint256 i = 0; i < depositInfo.pairs.length; i++) {
+            if (pairId == depositInfo.pairs[i]) {
+                depositInfo.pairs[i] = depositInfo.pairs[depositInfo.pairs.length - 1];
+                depositInfo.pairs.pop();
             }
         }
 
@@ -209,18 +206,17 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
             usedDeposit[depositToken.mainTokenAddress] -= depositInfo.depositAmount;
             depositInfo.depositAmount = 0;
         }
-        emit LogLpInfo(lpid, lpState.STOP, lpInfo[lpid].stopTime, _lpinfo);
+        emit LogLpInfo(pairId, lpInfo[pairId].lpId, lpState.STOP, _lpinfo);
     }
 
     // LPUpdate
     function LPUpdate(OperationsLib.lpInfo calldata _lpinfo) external onlyOwner {
-        bytes32 lpid = OperationsLib.getLpID(_lpinfo);
+        bytes32 pairId = OperationsLib.getPairID(_lpinfo);
 
-        // require(lpInfo[lpid].LPRootHash != "", "LPUPDATE_LPID_UNUSED");
-        require(lpInfo[lpid].LPRootHash == true, "LPPAUSE_LPID_UNUSED");
-        require(lpInfo[lpid].startTime == 0 && lpInfo[lpid].stopTime == 0, "LPUPDATE_LPID_UNSTOP");
+        require(lpInfo[pairId].lpId != "", "LPPAUSE_LPID_UNUSED");
+        require(lpInfo[pairId].startTime == 0 && lpInfo[pairId].stopTime == 0, "LPUPDATE_LPID_UNSTOP");
 
-        emit LogLpInfo(lpid, lpState.UPDATE, block.timestamp, _lpinfo);
+        emit LogLpInfo(pairId, lpInfo[pairId].lpId, lpState.UPDATE, _lpinfo);
     }
 
     // withDrawAssert()
@@ -284,18 +280,18 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         require(ebcAddress != address(0), "USER_LPStop_EBCADDRESS_0");
         uint256 stopDelayTime = IORProtocal(ebcAddress).getStopDealyTime(sourceChain);
 
-        bytes32[] memory lpids = _cDinfo.lpids;
+        bytes32[] memory pairs = _cDinfo.pairs;
         // Stop
-        if (lpids.length != 0) {
-            for (uint256 i = 0; i < lpids.length; i++) {
+        if (pairs.length != 0) {
+            for (uint256 i = 0; i < pairs.length; i++) {
                 //Determine whether it is in Action or Pause state
-                if (lpInfo[lpids[i]].startTime != 0 || lpInfo[lpids[i]].stopTime != 0) {
-                    lpInfo[lpids[i]].startTime = 0;
-                    lpInfo[lpids[i]].stopTime = 0;
+                if (lpInfo[pairs[i]].startTime != 0 || lpInfo[pairs[i]].stopTime != 0) {
+                    lpInfo[pairs[i]].startTime = 0;
+                    lpInfo[pairs[i]].stopTime = 0;
                 }
-                emit LogLPStop(lpids[i]);
+                emit LogLPStop(pairs[i]);
             }
-            delete _cDinfo.lpids;
+            delete _cDinfo.pairs;
             _cDinfo.useLimit = 0;
             //TODO: The funds of the maker that are released through the user's appeal must have a blocking period, and the maker cannot withdraw directly.
             usedDeposit[_dTinfo.mainTokenAddress] -= _cDinfo.depositAmount;

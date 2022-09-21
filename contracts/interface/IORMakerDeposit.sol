@@ -18,7 +18,8 @@ interface IORMakerDeposit {
     }
 
     event LogLPStop(bytes32 indexed lpid);
-    event LogLpInfo(bytes32 indexed lpid, lpState indexed state, uint256 time, OperationsLib.lpInfo lpinfo);
+    event ChainDepositChange(address indexed makerId, address token, uint256 amount, uint256 useLimit, bytes32[] pairs);
+    event LogLpInfo(bytes32 indexed pairId, bytes32 lpId, lpState indexed state, OperationsLib.lpInfo lpinfo);
     event LogChanllengeInfo(bytes32 indexed chanllengeid, chanllengeState indexed state);
 
     function idleAmount(address tokenAddress) external view returns (uint256);

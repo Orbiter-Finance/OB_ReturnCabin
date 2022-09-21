@@ -107,7 +107,7 @@ describe('MakerDeposit.test.ts', () => {
       .LPAction([lpInfo], pairProof, overrides);
     await expect(response)
       .to.emit(mdc, 'LogLpInfo')
-      .withArgs(anyValue, 0, anyValue, anyValue);
+      .withArgs(anyValue, anyValue, 0, anyValue);
     const chainDeposit = await mdc.chainDeposit(
       lpInfo.sourceChain,
       lpInfo.sourceTAddress,
@@ -120,7 +120,7 @@ describe('MakerDeposit.test.ts', () => {
     const response = await mdc.connect(maker).LPPause([lpInfo]);
     await expect(response)
       .to.emit(mdc, 'LogLpInfo')
-      .withArgs(anyValue, 2, anyValue, anyValue);
+      .withArgs(anyValue, anyValue, 2, anyValue);
   });
   it('LPStop not time', async () => {
     const lpInfo = getLpInfo(LP_LIST[0]);
@@ -135,7 +135,7 @@ describe('MakerDeposit.test.ts', () => {
     const response = await mdc.connect(maker).LPStop(lpInfo);
     await expect(response)
       .to.emit(mdc, 'LogLpInfo')
-      .withArgs(anyValue, 3, anyValue, anyValue);
+      .withArgs(anyValue, anyValue, 3, anyValue);
   });
   it('Maker withDraw is time and no chanllenge', async () => {
     const beforeAmount = await maker.getBalance();
@@ -171,7 +171,7 @@ describe('MakerDeposit.test.ts', () => {
       .LPAction([lpInfo], pairProof, overrides);
     await expect(response)
       .to.emit(mdc, 'LogLpInfo')
-      .withArgs(anyValue, 0, anyValue, anyValue);
+      .withArgs(anyValue, anyValue, 0, anyValue);
     const chainDeposit = await mdc.chainDeposit(
       lpInfo.sourceChain,
       lpInfo.sourceTAddress,
@@ -266,7 +266,7 @@ describe('MakerDeposit.test.ts', () => {
       .LPAction([lpInfo], pairProof, overrides);
     await expect(response)
       .to.emit(mdc, 'LogLpInfo')
-      .withArgs(anyValue, 0, anyValue, anyValue);
+      .withArgs(anyValue, anyValue, 0, anyValue);
     const chainDeposit = await mdc.chainDeposit(
       lpInfo.sourceChain,
       lpInfo.sourceTAddress,

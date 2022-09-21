@@ -149,14 +149,14 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable {
         view
         returns (bool)
     {
-        bytes32 leaf = OperationsLib.getLpID(pair);
+        bytes32 leaf = OperationsLib.getPairID(pair);
         return MerkleProof.verifyCalldata(proof, pairsRoot, leaf);
     }
 
     function pairObjectToHash(OperationsLib.pairChainInfo[] calldata pairs) internal pure returns (bytes32[] memory) {
         bytes32[] memory leaves = new bytes32[](pairs.length);
         for (uint256 i = 0; i < pairs.length; i++) {
-            leaves[i] = OperationsLib.getLpID(pairs[i]);
+            leaves[i] = OperationsLib.getPairID(pairs[i]);
         }
         return leaves;
     }

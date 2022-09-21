@@ -56,7 +56,7 @@ library OperationsLib {
     }
 
     struct lpPairInfo {
-        bool LPRootHash;
+        bytes32 lpId;
         uint256 stopTime;
         uint256 startTime;
     }
@@ -65,7 +65,7 @@ library OperationsLib {
         address tokenAddress; // mainNetTokenAddress
         uint256 depositAmount;
         uint256 useLimit; //
-        bytes32[] lpids;
+        bytes32[] pairs;
     }
 
     struct chanllengeInfo {
@@ -77,7 +77,7 @@ library OperationsLib {
         uint256 ebcid;
     }
 
-    function getLpID(pairChainInfo memory _lpinfo) internal pure returns (bytes32) {
+    function getPairID(pairChainInfo memory _lpinfo) internal pure returns (bytes32) {
         return
             keccak256(
                 abi.encodePacked(
@@ -90,8 +90,21 @@ library OperationsLib {
             );
     }
 
-    function getMakerLPHash(address maker, OperationsLib.lpInfo memory _lpinfo) internal pure returns (bytes32) {
-        bytes32 lpId = getLpID(_lpinfo);
+    function getPairID(lpInfo memory _lpinfo) internal pure returns (bytes32) {
+        return
+            keccak256(
+                abi.encodePacked(
+                    _lpinfo.sourceChain,
+                    _lpinfo.destChain,
+                    _lpinfo.sourceTAddress,
+                    _lpinfo.destTAddress,
+                    _lpinfo.ebcid
+                )
+            );
+    }
+
+    function getLpID(address maker, OperationsLib.lpInfo memory _lpinfo) internal pure returns (bytes32) {
+        bytes32 lpId = getPairID(_lpinfo);
         bytes32 rootHash = keccak256(
             abi.encodePacked(
                 maker,
@@ -106,19 +119,6 @@ library OperationsLib {
             )
         );
         return rootHash;
-    }
-
-    function getLpID(lpInfo memory _lpinfo) internal pure returns (bytes32) {
-        return
-            keccak256(
-                abi.encodePacked(
-                    _lpinfo.sourceChain,
-                    _lpinfo.destChain,
-                    _lpinfo.sourceTAddress,
-                    _lpinfo.destTAddress,
-                    _lpinfo.ebcid
-                )
-            );
     }
 
     function getChanllengeID(txInfo memory _txinfo) internal pure returns (bytes32) {
