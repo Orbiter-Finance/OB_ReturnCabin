@@ -10,7 +10,7 @@ import "hardhat/console.sol";
 contract ORManager is IORManager, Initializable, OwnableUpgradeable {
     mapping(uint256 => address) ebcPair;
     mapping(uint256 => OperationsLib.chainInfo) public chainList;
-    mapping(uint256 => mapping(address => OperationsLib.tokenInfo)) public tokenInfos;
+    mapping(uint256 => mapping(address => OperationsLib.tokenInfo)) private tokenInfos;
     uint256 ebcids;
     bytes32 public pairsRoot;
     address public spv;
@@ -122,6 +122,8 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable {
         bytes32[] calldata proof,
         bool[] calldata proofFlags
     ) external {
+        // is support chain
+
         bool isSupport = pairMultiProofVerifyCalldata(pairs, rootHash, proof, proofFlags);
         require(isSupport, "Hash Inconsistent");
         pairsRoot = rootHash;
@@ -149,8 +151,8 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable {
         view
         returns (bool)
     {
-        bytes32 leaf = OperationsLib.getPairID(pair);
-        return MerkleProof.verifyCalldata(proof, pairsRoot, leaf);
+        bytes32 pairId = OperationsLib.getPairID(pair);
+        return isSupportPair(pairId, proof);
     }
 
     function pairObjectToHash(OperationsLib.pairChainInfo[] calldata pairs) internal pure returns (bytes32[] memory) {

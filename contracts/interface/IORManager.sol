@@ -54,6 +54,8 @@ interface IORManager {
         bytes32 rootHash
     ) external;
 
+    function isSupportChain(uint256 chainID, address token) external view returns (bool);
+
     function isSupportPair(bytes32 pair, bytes32[] memory proof) external view returns (bool);
 
     function isSupportPair(OperationsLib.pairChainInfo calldata pair, bytes32[] calldata proof)

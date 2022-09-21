@@ -107,6 +107,10 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         for (uint256 i = 0; i < _lpinfos.length; i++) {
             OperationsLib.lpInfo memory _lpinfo = _lpinfos[i];
             bytes32 pairId = OperationsLib.getPairID(_lpinfo);
+            require(
+                IORManager(manager).isSupportChain(_lpinfo.sourceChain, _lpinfo.sourceTAddress),
+                "Chain Not Supported"
+            );
             require(IORManager(manager).isSupportPair(pairId, pairProof[i]), "Pair Not Supported");
             OperationsLib.chainDeposit storage chainPledged = chainDeposit[_lpinfo.sourceChain][pledgedToken];
             // first init lpPair
@@ -289,7 +293,7 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
                     lpInfo[pairs[i]].startTime = 0;
                     lpInfo[pairs[i]].stopTime = 0;
                 }
-                emit LogLPStop(pairs[i]);
+                emit LogLPStop(pairs[i], lpInfo[pairs[i]].lpId);
             }
             delete _cDinfo.pairs;
             _cDinfo.useLimit = 0;

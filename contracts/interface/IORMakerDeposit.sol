@@ -17,7 +17,7 @@ interface IORMakerDeposit {
         WITHDRAWED
     }
 
-    event LogLPStop(bytes32 indexed lpid);
+    event LogLPStop(bytes32 indexed pairId, bytes32 lpId);
     event ChainDepositChange(address indexed makerId, address token, uint256 amount, uint256 useLimit, bytes32[] pairs);
     event LogLpInfo(bytes32 indexed pairId, bytes32 lpId, lpState indexed state, OperationsLib.lpInfo lpinfo);
     event LogChanllengeInfo(bytes32 indexed chanllengeid, chanllengeState indexed state);
