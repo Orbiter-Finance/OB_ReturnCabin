@@ -30,7 +30,7 @@ const config: HardhatUserConfig = {
       allowUnlimitedContractSize: true,
     },
     ganache: {
-      url: 'http://127.0.0.1:8545',
+      url: 'http://127.0.0.1:7545',
       accounts
     },
     test: {

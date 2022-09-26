@@ -140,47 +140,14 @@ describe('Factory.spec.ts', () => {
 
   describe('Factory_TOKENINFO_TEST', () => {
     it('SET TOKENINFO', async () => {
-      await userFactory.setTokenInfo(
-        tokeninfo_eth_main.chainID,
-        tokeninfo_eth_main.tokenAddress,
-        tokeninfo_eth_main.tokenPresion,
-        tokeninfo_eth_main.mainAddress,
-      );
-
-      await userFactory.setTokenInfo(
-        tokeninfo_usdc_main.chainID,
-        tokeninfo_usdc_main.tokenAddress,
-        tokeninfo_usdc_main.tokenPresion,
-        tokeninfo_usdc_main.mainAddress,
-      );
-
-      await userFactory.setTokenInfo(
-        tokeninfo_usdt_main.chainID,
-        tokeninfo_usdt_main.tokenAddress,
-        tokeninfo_usdt_main.tokenPresion,
-        tokeninfo_usdt_main.mainAddress,
-      );
-
-      await userFactory.setTokenInfo(
-        tokeninfo_eth_arb.chainID,
-        tokeninfo_eth_arb.tokenAddress,
-        tokeninfo_eth_arb.tokenPresion,
-        tokeninfo_eth_arb.mainAddress,
-      );
-
-      await userFactory.setTokenInfo(
-        tokeninfo_usdc_arb.chainID,
-        tokeninfo_usdc_arb.tokenAddress,
-        tokeninfo_usdc_arb.tokenPresion,
-        tokeninfo_usdc_arb.mainAddress,
-      );
-
-      await userFactory.setTokenInfo(
-        tokeninfo_usdt_arb.chainID,
-        tokeninfo_usdt_arb.tokenAddress,
-        tokeninfo_usdt_arb.tokenPresion,
-        tokeninfo_usdt_arb.mainAddress,
-      );
+      for (const token of TOKEN_LIST) {
+        await userFactory.setTokenInfo(
+          token.chainID,
+          token.tokenAddress,
+          token.tokenPresion,
+          token.mainAddress,
+        );
+      }
     });
     describe('GET TOKENINFO', () => {
       it('Main_ETH', async () => {

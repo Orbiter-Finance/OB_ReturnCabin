@@ -10,6 +10,7 @@ import "hardhat/console.sol";
 contract ORManager is IORManager, Initializable, OwnableUpgradeable {
     mapping(uint256 => address) ebcPair;
     mapping(uint256 => OperationsLib.chainInfo) public chainList;
+    // chainId => tokenAddress
     mapping(uint256 => mapping(address => OperationsLib.tokenInfo)) private tokenInfos;
     uint256 ebcids;
     bytes32 public pairsRoot;
