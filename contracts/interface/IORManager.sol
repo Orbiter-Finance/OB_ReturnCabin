@@ -36,7 +36,7 @@ interface IORManager {
         address,
         uint256,
         address
-    ) external returns (bool);
+    ) external;
 
     function getTokenInfo(uint256, address) external view returns (OperationsLib.tokenInfo memory);
 

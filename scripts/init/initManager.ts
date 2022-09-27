@@ -9,10 +9,19 @@ async function deploy(name: string, ...params: undefined[]) {
   const Contract = await ethers.getContractFactory(name);
   return await Contract.deploy(...params).then((f: any) => f.deployed());
 }
+let contractAddress = '';
 async function getManagerContract(): Promise<ORManager> {
-  const manager = (await deploy('ORManager')) as ORManager;
-  await manager.initialize();
-  return manager;
+  if (contractAddress) {
+    const manager = await ethers.getContractAt('ORManager', contractAddress);
+    console.log('load manager contract:', manager.address.toString());
+    return manager;
+  } else {
+    const manager = (await deploy('ORManager')) as ORManager;
+    console.log('deploy manager contract:', manager.address.toString());
+    await manager.initialize();
+    contractAddress = manager.address;
+    return manager;
+  }
 }
 async function initChain() {
   const contract = await getManagerContract();

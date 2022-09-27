@@ -5,7 +5,6 @@ import "./interface/IORManager.sol";
 import "./ORMakerDeposit.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "hardhat/console.sol";
 
 contract ORManager is IORManager, Initializable, OwnableUpgradeable {
     mapping(uint256 => address) ebcPair;
@@ -57,7 +56,6 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable {
         uint256 maxDisputeTime,
         address[] memory tokenList
     ) external onlyOwner {
-        require(chainList[chainID].isUsed == false, "CHAININFO_INSTALL_ALREADY");
         chainList[chainID] = OperationsLib.chainInfo(chainID, batchLimit, maxDisputeTime, tokenList, true);
         emit ChangeChain(chainID, chainList[chainID]);
     }
@@ -73,7 +71,7 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable {
         address tokenAddress,
         uint256 tokenPresion,
         address mainAddress
-    ) external onlyOwner returns (bool) {
+    ) external onlyOwner {
         require(chainList[chainID].tokenList.length != 0, "SETTOKENINFO_UNSUPPORTTOKEN");
         for (uint256 i = 0; i < chainList[chainID].tokenList.length; i++) {
             address supportTokenAddress = chainList[chainID].tokenList[i];
@@ -87,7 +85,6 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable {
             }
             emit ChangeToken(chainID, tokenAddress, tokenInfos[chainID][tokenAddress]);
         }
-        return false;
     }
 
     function getTokenInfo(uint256 chainID, address tokenAddress)
@@ -124,7 +121,6 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable {
         bool[] calldata proofFlags
     ) external {
         // is support chain
-
         bool isSupport = pairMultiProofVerifyCalldata(pairs, rootHash, proof, proofFlags);
         require(isSupport, "Hash Inconsistent");
         pairsRoot = rootHash;

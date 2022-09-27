@@ -9,8 +9,8 @@ import "./interface/IERC20.sol";
 import "./interface/IORSpv.sol";
 import "./interface/IORMakerV1Factory.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "hardhat/console.sol";
 
 contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
     address public makerFactory;
@@ -33,6 +33,8 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
     uint256 chanllengePleged;
 
     function initialize(address _owner, address _makerFactory) public initializer {
+        require(_owner != address(0), "Owner address error");
+        require(_makerFactory != address(0), "makerFactory address error");
         makerFactory = _makerFactory;
         _transferOwnership(_owner);
     }
@@ -140,7 +142,6 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
             lpInfo[pairId].lpId = OperationsLib.getLpID(address(this), _lpinfo);
             emit LogLpInfo(pairId, lpInfo[pairId].lpId, lpState.ACTION, _lpinfo);
         }
-
         // need deposit
         if (pledgedToken != address(0)) {
             int256 AssessmentAmount = int256(supplement) - int256(unUsedAmount);
@@ -148,16 +149,16 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
                 uint256 realNeedAmount = uint256(AssessmentAmount);
                 uint256 allowance = IERC20(pledgedToken).allowance(msg.sender, address(this));
                 require(allowance >= realNeedAmount, "Check the token allowance");
-                IERC20(pledgedToken).transferFrom(msg.sender, address(this), realNeedAmount);
                 usedDeposit[pledgedToken] += realNeedAmount;
+                IERC20(pledgedToken).transferFrom(msg.sender, address(this), realNeedAmount);
             }
         } else {
             int256 AssessmentAmount = int256(supplement) - int256(unUsedAmount - msg.value);
             if (AssessmentAmount > 0) {
                 uint256 realNeedAmount = uint256(AssessmentAmount);
-                require(msg.value >= realNeedAmount, "Check the eth send");
                 // user deposit
                 usedDeposit[pledgedToken] += realNeedAmount;
+                require(msg.value >= realNeedAmount, "Check the eth send");
             }
         }
     }
@@ -231,14 +232,14 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         require(chanllengePleged == 0, "WITHDRAW_NOCHANLLENGE");
         uint256 unUsedAmount = idleAmount(tokenAddress);
         require(amount <= unUsedAmount, "WITHDRAW_INSUFFICIENT_AMOUNT");
+        // Cancellation of Maker withdrawal time limit
+        if (USER_LPStopDelayTime[tokenAddress] != 0) {
+            USER_LPStopDelayTime[tokenAddress] = 0;
+        }
         if (tokenAddress != address(0)) {
             IERC20(tokenAddress).transfer(msg.sender, amount);
         } else {
             payable(msg.sender).transfer(amount);
-        }
-        // Cancellation of Maker withdrawal time limit
-        if (USER_LPStopDelayTime[tokenAddress] != 0) {
-            USER_LPStopDelayTime[tokenAddress] = 0;
         }
     }
 
@@ -331,7 +332,9 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         if (withDrawAmount > unUsedAmount) {
             USER_LPStop(_lpinfo.sourceChain, _lpinfo.sourceTAddress, _lpinfo.ebcid);
         }
-        // withDraw
+        // Subtract the pledge money transferred by the user challenge from the total pledge money.
+        chanllengePleged -= chanllengeInfos[chanllengeID].pledgeAmount;
+        emit LogChanllengeInfo(chanllengeID, chanllengeState.WITHDRAWED);
         if (_userTx.tokenAddress != address(0)) {
             uint256 withDrawPledge = chanllengeInfos[chanllengeID].pledgeAmount;
             IERC20(_userTx.tokenAddress).transfer(msg.sender, withDrawAmount);
@@ -339,9 +342,6 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         } else {
             payable(msg.sender).transfer(withDrawAmount);
         }
-        // Subtract the pledge money transferred by the user challenge from the total pledge money.
-        chanllengePleged -= chanllengeInfos[chanllengeID].pledgeAmount;
-        emit LogChanllengeInfo(chanllengeID, chanllengeState.WITHDRAWED);
     }
 
     // makerChanllenger
@@ -356,6 +356,8 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         bytes32 chanllengeID = OperationsLib.getChanllengeID(_userTx);
         // The corresponding chanllengeInfo is required to be in a waiting for maker state.
         require(chanllengeInfos[chanllengeID].chanllengeState == 1, "MC_ANSWER");
+        // Change the corresponding chanllengeInfos state to maker success
+        chanllengeInfos[chanllengeID].chanllengeState = 2;
         address ebcAddress = IORManager(manager).getEBC(chanllengeInfos[chanllengeID].ebcid);
         // userTx,makerTx and makerProof are provided to EBC and verified to pass
         require(IORProtocal(ebcAddress).checkMakerChallenge(_userTx, _makerTx, _makerProof), "MC_ERROR");
@@ -372,8 +374,6 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         );
         // The proof of validity of userTx is required to be consistent with that of makerTx.
         require(chanllengeInfos[chanllengeID].responseTxinfo == makerResponse, "MCE_UNMATCH");
-        // Change the corresponding chanllengeInfos state to maker success
-        chanllengeInfos[chanllengeID].chanllengeState = 2;
         // Subtract the pledge money transferred by the user challenge from the total pledge money.
         chanllengePleged -= chanllengeInfos[chanllengeID].pledgeAmount;
 

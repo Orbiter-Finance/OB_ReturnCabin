@@ -10,7 +10,7 @@
     "lint:ts:fix": "eslint --ext .ts,.js ./ --fix",
     "lint:sol": "solhint 'contracts/**/*.sol' && prettier -c 'contracts/**/*.sol'",
     "lint:sol:fix": "prettier --write \"contracts/**/*.sol\"",
-    "slither": "npm run clean && slither . --detect reentrancy-eth,reentrancy-no-eth,reentrancy-unlimited-gas",
+    "slither": "npm run clean && slither . --detect reentrancy-eth,reentrancy-no-eth,reentrancy-unlimited-gas,arbitrary-send,unprotected-upgrade,uninitialized-storage,controlled-delegatecall,delegatecall-loop,msg-value-loop",
     "clean": "hardhat clean && rimraf build contracts/build",
     "prepare": "husky install"
   },

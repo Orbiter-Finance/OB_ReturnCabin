@@ -28,9 +28,9 @@ contract ORMakerV1Factory is IORMakerV1Factory, OwnableUpgradeable {
         ORMakerDeposit makerContract = new ORMakerDeposit{
             salt: keccak256(abi.encodePacked(address(this), msg.sender))
         }();
+        getMaker[msg.sender] = address(makerContract);
         makerContract.initialize(msg.sender, address(this));
         pool = address(makerContract);
-        getMaker[msg.sender] = pool;
         emit MakerCreated(msg.sender, pool);
     }
 }

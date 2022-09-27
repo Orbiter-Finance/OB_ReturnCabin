@@ -6,7 +6,6 @@ import "./interface/IORManager.sol";
 import "./interface/IORSpv.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "hardhat/console.sol";
 
 contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     address _managerAddress;
@@ -16,6 +15,7 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     uint256 public TokenPunishCoefficient;
 
     function initialize(address managerAddress) public initializer {
+        require(managerAddress != address(0), "Owner address error");
         _managerAddress = managerAddress;
         __Ownable_init();
     }
@@ -131,7 +131,7 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     ) external view returns (bool) {
         // Determine whether sourceAddress in txinfo is consistent with the caller's address
         require(_txinfo.sourceAddress == from, "UCE_SENDER");
-        bytes32 lpid = _txinfo.lpid;
+        // bytes32 lpid = _txinfo.lpid;
         //1. txinfo is already spv
         address spvAddress = getSpvAddress();
         // Verify that txinfo and txproof are valid
