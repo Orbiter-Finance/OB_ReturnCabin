@@ -24,7 +24,6 @@ const tokeninfo_usdt_arb = TOKEN_LIST[5];
 
 async function deployFactoryFixture() {
   const [owner, addr1, addr2] = await ethers.getSigners();
-
   const ORManager = await ethers.getContractFactory('ORManager', {
     libraries: {},
   });

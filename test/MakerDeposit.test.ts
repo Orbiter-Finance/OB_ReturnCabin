@@ -190,7 +190,7 @@ describe('MakerDeposit.test.ts', () => {
       .userChanllenge(leaf, txProof, overrides);
     await expect(response)
       .to.emit(mdc, 'LogChanllengeInfo')
-      .withArgs(anyValue, 0);
+      .withArgs(anyValue, 0, anyValue, anyValue);
   });
   it('userChanllenge for maker already send', async () => {
     // User
@@ -204,7 +204,7 @@ describe('MakerDeposit.test.ts', () => {
       .userChanllenge(userLeaf, userProof, overrides);
     await expect(userResponse)
       .to.emit(mdc, 'LogChanllengeInfo')
-      .withArgs(anyValue, 0);
+      .withArgs(anyValue, 0, anyValue, anyValue);
     // Maker
     const { leaf: makerLeaf, hex: makerHex } = getLeaf(MAKER_TX_LIST[2], false);
     const makerProof = makerTxTree.getHexProof(makerHex);
@@ -213,7 +213,7 @@ describe('MakerDeposit.test.ts', () => {
       .makerChanllenger(userLeaf, makerLeaf, makerProof);
     await expect(makerResponce)
       .to.emit(mdc, 'LogChanllengeInfo')
-      .withArgs(anyValue, 1);
+      .withArgs(anyValue, 1, anyValue, anyValue);
   });
   it('After a day of simulation', async () => {
     await speedUpTime(3600 * 24);
@@ -285,7 +285,7 @@ describe('MakerDeposit.test.ts', () => {
       .userChanllenge(leaf, txProof, overrides);
     await expect(response)
       .to.emit(mdc, 'LogChanllengeInfo')
-      .withArgs(anyValue, 0);
+      .withArgs(anyValue, 0, anyValue, anyValue);
   });
   it('After a day of simulation', async () => {
     await speedUpTime(3600 * 24);

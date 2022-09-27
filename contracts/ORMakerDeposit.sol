@@ -268,7 +268,7 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
             getChainInfoByChainID(_txinfo.chainID).maxDisputeTime;
         // The pledge transferred by the user is included in the total pledge.
         chanllengePleged += msg.value;
-        emit LogChanllengeInfo(chanllengeID, chanllengeState.ACTION);
+        emit LogChanllengeInfo(_txinfo.chainID, chanllengeState.ACTION, chanllengeID, _txinfo);
     }
 
     // LPStop
@@ -334,7 +334,7 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         }
         // Subtract the pledge money transferred by the user challenge from the total pledge money.
         chanllengePleged -= chanllengeInfos[chanllengeID].pledgeAmount;
-        emit LogChanllengeInfo(chanllengeID, chanllengeState.WITHDRAWED);
+        emit LogChanllengeInfo(_userTx.chainID, chanllengeState.WITHDRAWED, chanllengeID, _userTx);
         if (_userTx.tokenAddress != address(0)) {
             uint256 withDrawPledge = chanllengeInfos[chanllengeID].pledgeAmount;
             IERC20(_userTx.tokenAddress).transfer(msg.sender, withDrawAmount);
@@ -376,7 +376,6 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         require(chanllengeInfos[chanllengeID].responseTxinfo == makerResponse, "MCE_UNMATCH");
         // Subtract the pledge money transferred by the user challenge from the total pledge money.
         chanllengePleged -= chanllengeInfos[chanllengeID].pledgeAmount;
-
-        emit LogChanllengeInfo(chanllengeID, chanllengeState.RESPONSED);
+        emit LogChanllengeInfo(_makerTx.chainID, chanllengeState.RESPONSED, chanllengeID, _makerTx);
     }
 }

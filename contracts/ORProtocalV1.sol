@@ -86,7 +86,7 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
 
     function getStopDealyTime(uint256 chainID) external pure returns (uint256) {
         require(chainID != 0, "CHAINID_ERROR");
-        return 200;
+        return 60 * 60 * 1;
     }
 
     function getSecuirtyCode(bool isSource, uint256 amount) public pure returns (uint256, bool) {
