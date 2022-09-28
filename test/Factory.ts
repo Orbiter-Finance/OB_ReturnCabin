@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { ethers, upgrades } from 'hardhat';
+import { ethers } from 'hardhat';
 import { ORManager } from '../typechain-types/contracts/ORManager';
 import { ORMakerV1Factory } from '../typechain-types/contracts/ORMakerV1Factory';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
@@ -8,6 +8,7 @@ import { PAIR_LIST } from './lib/Config';
 import keccak256 from 'keccak256';
 // import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { CHAIN_INFO_LIST as chainInfoList, TOKEN_LIST } from './lib/Config';
+import { deploy } from '../scripts/utils';
 let factory: ORManager;
 let makerV1Factory: ORMakerV1Factory;
 const chainInfo_main = chainInfoList[0];
@@ -24,25 +25,11 @@ const tokeninfo_usdt_arb = TOKEN_LIST[5];
 
 async function deployFactoryFixture() {
   const [owner, addr1, addr2] = await ethers.getSigners();
-  const ORManager = await ethers.getContractFactory('ORManager', {
-    libraries: {},
-  });
-  const managerProxy = await upgrades.deployProxy(ORManager);
-  await managerProxy.deployed();
-  factory = managerProxy as ORManager;
-  // makerV1Factory
-  const ORMakerV1Factory = await ethers.getContractFactory('ORMakerV1Factory', {
-    libraries: {},
-  });
-  const makerFactoryProxy = await upgrades.deployProxy(ORMakerV1Factory, [
-    factory.address,
-  ]);
-  await makerFactoryProxy.deployed();
-  makerV1Factory = makerFactoryProxy as ORMakerV1Factory;
-
-  console.log(`ManagerContract Address:`, factory.address);
-  process.env['ManagerContract'] = factory.address;
-  return { managerProxy, factory, owner, addr1, addr2 };
+  factory = await deploy<ORManager>(false, 'ORManager');
+  await factory.initialize();
+  makerV1Factory = await deploy<ORMakerV1Factory>(false, 'ORMakerV1Factory');
+  await makerV1Factory.initialize(factory.address.toString());
+  return { factory, owner, addr1, addr2 };
 }
 
 describe('Factory.spec.ts', () => {

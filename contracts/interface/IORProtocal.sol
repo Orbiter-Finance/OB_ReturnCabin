@@ -4,19 +4,19 @@ pragma solidity ^0.8.9;
 import "../library/Operation.sol";
 
 interface IORProtocal {
-    function setChanllengePledgeAmountCoefficient(uint256 _wei) external returns (bool);
+    function setChanllengePledgeAmountCoefficient(uint256 _wei) external;
 
     function getChanllengePledgeAmountCoefficient() external view returns (uint256);
 
-    function setDepositAmountCoefficient(uint256 hundredDigits) external returns (bool);
+    function setDepositAmountCoefficient(uint256 hundredDigits) external;
 
     function getDepositAmountCoefficient() external view returns (uint256);
 
-    function setTokenPunishCoefficient(uint256 hundredDigits) external returns (bool);
+    function setTokenPunishCoefficient(uint256 hundredDigits) external;
 
     function getTokenPunishCoefficient() external view returns (uint256);
 
-    function setETHPunishCoefficient(uint256 hundredDigits) external returns (bool);
+    function setETHPunishCoefficient(uint256 hundredDigits) external;
 
     function getETHPunishCoefficient() external view returns (uint256);
 

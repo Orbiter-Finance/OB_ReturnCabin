@@ -4,21 +4,16 @@ import { orderBy } from 'lodash';
 import MerkleTree from 'merkletreejs';
 import { getPairID } from '../../test/lib/Utils';
 import { ORManager } from '../../typechain-types';
+import { deploy, printContract, printSuccess } from '../utils';
 import { chains, pairs } from './georli.data.json';
-async function deploy(name: string, ...params: undefined[]) {
-  const Contract = await ethers.getContractFactory(name);
-  return await Contract.deploy(...params).then((f: any) => f.deployed());
-}
-let contractAddress = '';
+let contractAddress = process.env['ORManager'] || '';
 async function getManagerContract(): Promise<ORManager> {
   if (contractAddress) {
     const manager = await ethers.getContractAt('ORManager', contractAddress);
-    console.log('load manager contract:', manager.address.toString());
+    printContract('load manager contract:', manager.address.toString());
     return manager;
   } else {
-    const manager = (await deploy('ORManager')) as ORManager;
-    console.log('deploy manager contract:', manager.address.toString());
-    await manager.initialize();
+    const manager = await deploy<ORManager>(true, 'ORManager');
     contractAddress = manager.address;
     return manager;
   }
@@ -33,7 +28,7 @@ async function initChain() {
       chain.maxDisputeTime,
       tokenList,
     );
-    console.log(`Add Chain ${chain.chainID} ， Hash： ${tx.hash}`);
+    printSuccess(`Add Chain ${chain.chainID} Hash: ${tx.hash}`);
     for (const token of chain.tokenList) {
       const tx = await contract.setTokenInfo(
         chain.chainID,
@@ -41,8 +36,8 @@ async function initChain() {
         token.decimals,
         token.pledgeToken,
       );
-      console.log(
-        `Add Chain Token ${token.symbol} ${chain.chainID} Token:${token.address}， Hash： ${tx.hash}`,
+      printSuccess(
+        `Add Chain Token ${token.symbol} ${chain.chainID} Token:${token.address} Hash: ${tx.hash}`,
       );
     }
   }
@@ -70,9 +65,9 @@ async function initPair() {
     proof,
     proofFlag,
   );
-  console.log(`multiple createPair hash:${tx.hash}`);
+  printSuccess(`Multiple CreatePair Hash:${tx.hash}`);
 }
-async function main() {
+export async function main() {
   await initChain();
   await initPair();
 }

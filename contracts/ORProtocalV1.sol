@@ -14,16 +14,25 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     uint256 public EthPunishCoefficient;
     uint256 public TokenPunishCoefficient;
 
-    function initialize(address managerAddress) public initializer {
+    function initialize(
+        address managerAddress,
+        uint256 _chanllengePledgeAmountCoefficient,
+        uint256 _depositAmountCoefficient,
+        uint256 _ethPunishCoefficient,
+        uint256 _tokenPunishCoefficient
+    ) public initializer {
         require(managerAddress != address(0), "Owner address error");
         _managerAddress = managerAddress;
+        ChanllengePledgeAmountCoefficient = _chanllengePledgeAmountCoefficient;
+        DepositAmountCoefficient = _depositAmountCoefficient;
+        EthPunishCoefficient = _ethPunishCoefficient;
+        TokenPunishCoefficient = _tokenPunishCoefficient;
         __Ownable_init();
     }
 
     // The parameter here is the user challenge pledge factor in wei.
-    function setChanllengePledgeAmountCoefficient(uint256 _wei) external onlyOwner returns (bool) {
+    function setChanllengePledgeAmountCoefficient(uint256 _wei) external onlyOwner {
         ChanllengePledgeAmountCoefficient = _wei;
-        return true;
     }
 
     function getChanllengePledgeAmountCoefficient() external view returns (uint256) {
@@ -31,9 +40,8 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     }
 
     // The parameter is a number of percentile precision, for example: When tenDigits is 110, it represents 1.1
-    function setDepositAmountCoefficient(uint256 hundredDigits) external onlyOwner returns (bool) {
+    function setDepositAmountCoefficient(uint256 hundredDigits) external onlyOwner {
         DepositAmountCoefficient = hundredDigits;
-        return true;
     }
 
     function getDepositAmountCoefficient() external view returns (uint256) {
@@ -41,9 +49,8 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     }
 
     // The parameter is a number of percentile precision, for example: When tenDigits is 110, it represents 1.1
-    function setETHPunishCoefficient(uint256 hundredDigits) external onlyOwner returns (bool) {
+    function setETHPunishCoefficient(uint256 hundredDigits) external onlyOwner {
         EthPunishCoefficient = hundredDigits;
-        return true;
     }
 
     function getETHPunishCoefficient() external view returns (uint256) {
@@ -51,9 +58,8 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     }
 
     // The parameter is a number of percentile precision, for example: When tenDigits is 110, it represents 1.1
-    function setTokenPunishCoefficient(uint256 hundredDigits) external onlyOwner returns (bool) {
+    function setTokenPunishCoefficient(uint256 hundredDigits) external onlyOwner {
         TokenPunishCoefficient = hundredDigits;
-        return true;
     }
 
     function getTokenPunishCoefficient() external view returns (uint256) {
@@ -86,7 +92,8 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
 
     function getStopDealyTime(uint256 chainID) external pure returns (uint256) {
         require(chainID != 0, "CHAINID_ERROR");
-        return 60 * 60 * 1;
+        return 300;
+        // return 60 * 60 * 1;
     }
 
     function getSecuirtyCode(bool isSource, uint256 amount) public pure returns (uint256, bool) {
