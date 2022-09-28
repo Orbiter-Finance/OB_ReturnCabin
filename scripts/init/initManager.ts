@@ -37,7 +37,7 @@ async function initChain() {
         token.pledgeToken,
       );
       printSuccess(
-        `Add Chain Token ${token.symbol} ${chain.chainID} Token:${token.address} Hash: ${tx.hash}`,
+        `Add Chain Token ${token.symbol} ${chain.chainID} Token:${token.address} Hash: `, tx.hash
       );
     }
   }

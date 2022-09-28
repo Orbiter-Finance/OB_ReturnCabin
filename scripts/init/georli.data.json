@@ -1,6 +1,19 @@
 {
   "chains": [
     {
+      "chainID": 1337,
+      "batchLimit": 100,
+      "maxDisputeTime": 86400,
+      "tokenList": [
+        {
+          "address": "0x0000000000000000000000000000000000000000",
+          "symbol": "ETH",
+          "decimals": 18,
+          "pledgeToken": "0x0000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
       "chainID": 5,
       "batchLimit": 100,
       "maxDisputeTime": 86400,
@@ -56,6 +69,13 @@
       "ebcid": 1
     },
     {
+      "sourceChain": 5,
+      "destChain": 1337,
+      "sourceTAddress": "0x0000000000000000000000000000000000000000",
+      "destTAddress": "0x0000000000000000000000000000000000000000",
+      "ebcid": 1
+    },
+    {
       "sourceChain": 33,
       "destChain": 5,
       "sourceTAddress": "0x0000000000000000000000000000000000000000",
@@ -70,6 +90,13 @@
       "ebcid": 1
     },
     {
+      "sourceChain": 33,
+      "destChain": 1337,
+      "sourceTAddress": "0x0000000000000000000000000000000000000000",
+      "destTAddress": "0x0000000000000000000000000000000000000000",
+      "ebcid": 1
+    },
+    {
       "sourceChain": 516,
       "destChain": 5,
       "sourceTAddress": "0x0000000000000000000000000000000000000000",
@@ -79,6 +106,34 @@
     {
       "sourceChain": 516,
       "destChain": 33,
+      "sourceTAddress": "0x0000000000000000000000000000000000000000",
+      "destTAddress": "0x0000000000000000000000000000000000000000",
+      "ebcid": 1
+    },
+    {
+      "sourceChain": 516,
+      "destChain": 1337,
+      "sourceTAddress": "0x0000000000000000000000000000000000000000",
+      "destTAddress": "0x0000000000000000000000000000000000000000",
+      "ebcid": 1
+    },
+    {
+      "sourceChain": 1337,
+      "destChain": 5,
+      "sourceTAddress": "0x0000000000000000000000000000000000000000",
+      "destTAddress": "0x0000000000000000000000000000000000000000",
+      "ebcid": 1
+    },
+    {
+      "sourceChain": 1337,
+      "destChain": 33,
+      "sourceTAddress": "0x0000000000000000000000000000000000000000",
+      "destTAddress": "0x0000000000000000000000000000000000000000",
+      "ebcid": 1
+    },
+    {
+      "sourceChain": 1337,
+      "destChain": 516,
       "sourceTAddress": "0x0000000000000000000000000000000000000000",
       "destTAddress": "0x0000000000000000000000000000000000000000",
       "ebcid": 1

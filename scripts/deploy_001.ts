@@ -46,9 +46,13 @@ async function main() {
     110,
   );
   // // set spv
-  await manager.setSPV(spv.address);
+  const tx1 = await manager.setSPV(spv.address);
+  await tx1.wait();
+  printHash('setSPV', tx1.hash);
   // set ebc
-  await manager.setEBC(protocalV1.address);
+  const tx2 = await manager.setEBC(protocalV1.address);
+  await tx2.wait();
+  printHash('setEBC', tx2.hash);
   // init manager();
   require('./init/initManager');
 }
