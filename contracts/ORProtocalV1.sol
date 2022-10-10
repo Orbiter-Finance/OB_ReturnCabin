@@ -172,18 +172,6 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
         return true;
     }
 
-    function userChanllengeWithDraw(OperationsLib.txInfo memory userInfo)
-        external
-        pure
-        returns (
-            bool,
-            uint256,
-            uint256
-        )
-    {
-        return (true, 1, 1);
-    }
-
     function maxWithdrawTime() external pure returns (uint256) {
         return 1;
     }

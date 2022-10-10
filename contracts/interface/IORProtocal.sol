@@ -42,13 +42,5 @@ interface IORProtocal {
         bytes32[] memory
     ) external returns (bool);
 
-    function userChanllengeWithDraw(OperationsLib.txInfo memory userInfo)
-        external
-        returns (
-            bool,
-            uint256,
-            uint256
-        );
-
     function maxWithdrawTime() external view returns (uint256);
 }
