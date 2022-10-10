@@ -22,9 +22,10 @@ interface IORMakerDeposit {
     event LogLpInfo(bytes32 indexed pairId, bytes32 lpId, lpState indexed state, OperationsLib.lpInfo lpinfo);
     event LogChanllengeInfo(
         uint256 indexed chainId,
-        chanllengeState indexed state,
+        chanllengeState indexed opType,
         bytes32 chanllengeId,
-        OperationsLib.txInfo txInfo
+        OperationsLib.txInfo txInfo,
+        OperationsLib.chanllengeInfo chanllenge
     );
 
     function idleAmount(address tokenAddress) external view returns (uint256);

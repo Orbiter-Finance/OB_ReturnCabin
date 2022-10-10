@@ -26,6 +26,7 @@ interface IORManager {
         uint256,
         uint256,
         uint256,
+        uint256,
         address[] memory
     ) external;
 

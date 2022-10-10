@@ -190,7 +190,7 @@ describe('MakerDeposit.test.ts', () => {
       .userChanllenge(leaf, txProof, overrides);
     await expect(response)
       .to.emit(mdc, 'LogChanllengeInfo')
-      .withArgs(anyValue, 0, anyValue, anyValue);
+      .withArgs(anyValue, 0, anyValue, anyValue, anyValue);
   });
   it('userChanllenge for maker already send', async () => {
     // User
@@ -200,11 +200,11 @@ describe('MakerDeposit.test.ts', () => {
       value: ethers.utils.parseEther('1'),
     };
     const userResponse = await mdc
-      .connect(UserTx3Account)
+      .connect(UserTx1Account)
       .userChanllenge(userLeaf, userProof, overrides);
     await expect(userResponse)
       .to.emit(mdc, 'LogChanllengeInfo')
-      .withArgs(anyValue, 0, anyValue, anyValue);
+      .withArgs(anyValue, 0, anyValue, anyValue, anyValue);
     // Maker
     const { leaf: makerLeaf, hex: makerHex } = getLeaf(MAKER_TX_LIST[2], false);
     const makerProof = makerTxTree.getHexProof(makerHex);
@@ -213,7 +213,7 @@ describe('MakerDeposit.test.ts', () => {
       .makerChanllenger(userLeaf, makerLeaf, makerProof);
     await expect(makerResponce)
       .to.emit(mdc, 'LogChanllengeInfo')
-      .withArgs(anyValue, 1, anyValue, anyValue);
+      .withArgs(anyValue, 1, anyValue, anyValue, anyValue);
   });
   it('After a day of simulation', async () => {
     await speedUpTime(3600 * 24);
@@ -243,12 +243,12 @@ describe('MakerDeposit.test.ts', () => {
       .sub(gasUsed);
     expect(realAfterAmount).eq(expectAfterAmount);
   });
-  it('User Withdrawal in failure of UserChallenge', async () => {
-    const lpInfo = getLpInfo(LP_LIST[0]);
-    const { leaf: userLeaf } = getLeaf(USER_TX_LIST[4], true);
-    const response = mdc.connect(UserTx3Account).userWithDraw(userLeaf, lpInfo);
-    await expect(response).to.be.revertedWith('UW_WITHDRAW');
-  });
+  // it('User Withdrawal in failure of UserChallenge', async () => {
+  //   const lpInfo = getLpInfo(LP_LIST[0]);
+  //   const { leaf: userLeaf } = getLeaf(USER_TX_LIST[4], true);
+  //   const response = mdc.connect(UserTx3Account).userWithDraw(userLeaf, lpInfo);
+  //   await expect(response).to.be.revertedWith('UW_WITHDRAW');
+  // });
   it('LPAction again (Second time)', async () => {
     const lpInfo = getLpInfo(LP_LIST[1]);
     const value = ethers.utils.parseEther('0.9');
@@ -285,7 +285,7 @@ describe('MakerDeposit.test.ts', () => {
       .userChanllenge(leaf, txProof, overrides);
     await expect(response)
       .to.emit(mdc, 'LogChanllengeInfo')
-      .withArgs(anyValue, 0, anyValue, anyValue);
+      .withArgs(anyValue, 0, anyValue, anyValue, anyValue);
   });
   it('After a day of simulation', async () => {
     await speedUpTime(3600 * 24);
@@ -317,10 +317,15 @@ describe('MakerDeposit.test.ts', () => {
     expect(tx.blockNumber).gt(0);
 
     if (tx.events !== undefined) {
-      expect(tx.events?.findIndex((row) => row.event === 'LogLPStop') >= 0)
-        .true;
       expect(
-        tx.events?.findIndex((row) => row.event === 'LogChanllengeInfo') >= 0,
+        tx.events?.findIndex(
+          (row: { event: string }) => row.event === 'LogLPStop',
+        ) >= 0,
+      ).true;
+      expect(
+        tx.events?.findIndex(
+          (row: { event: string }) => row.event === 'LogChanllengeInfo',
+        ) >= 0,
       ).true;
     }
   });

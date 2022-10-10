@@ -77,7 +77,15 @@ describe('ORProtocalV1.test.ts', () => {
   it('getRespnseHash', async () => {
     const { leaf } = getLeaf(USER_TX_LIST[0], true);
     const expectResponce = ethers.utils.solidityKeccak256(
-      ['bytes32', 'uint256', 'address', 'address', 'uint256', 'address'],
+      [
+        'bytes32',
+        'uint256',
+        'address',
+        'address',
+        'uint256',
+        'uint256',
+        'address',
+      ],
       [
         leaf.lpid,
         ethers.BigNumber.from(leaf.amount)
@@ -86,6 +94,7 @@ describe('ORProtocalV1.test.ts', () => {
         leaf.destAddress,
         leaf.sourceAddress,
         leaf.responseAmount,
+        leaf.responseSafetyCode,
         leaf.tokenAddress,
       ],
     );

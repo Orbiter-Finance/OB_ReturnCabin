@@ -53,10 +53,10 @@ export const getPairLPID = (lp: LpInfoStruct): string => {
  * @returns
  */
 export const getLeaf = (tx: typeof USER_TX_LIST[0], status: boolean) => {
-  const mdcContractAddress = process.env['MDC'] || '';
-  status === true
-    ? (tx.to = mdcContractAddress)
-    : (tx.from = mdcContractAddress);
+  // const mdcContractAddress = process.env['MDC'] || '';
+  // status === true
+  //   ? (tx.to = mdcContractAddress)
+  //   : (tx.from = mdcContractAddress);
   const lpid = tx.lpid.toLowerCase();
   const txHash = tx.id.toLowerCase();
   const sourceAddress = tx.from.toLowerCase();
@@ -67,6 +67,7 @@ export const getLeaf = (tx: typeof USER_TX_LIST[0], status: boolean) => {
   const tokenAddress = tx.token;
   const timestamp = tx.timestamp;
   const responseAmount = tx.responseAmount;
+  const responseSafetyCode = tx.responseSafetyCode;
   const ebcid = tx.ebcid;
   const hex = ethers.utils.solidityKeccak256(
     [
@@ -78,6 +79,7 @@ export const getLeaf = (tx: typeof USER_TX_LIST[0], status: boolean) => {
       'uint256',
       'uint256',
       'address',
+      'uint256',
       'uint256',
       'uint256',
       'uint256',
@@ -93,6 +95,7 @@ export const getLeaf = (tx: typeof USER_TX_LIST[0], status: boolean) => {
       tokenAddress,
       timestamp,
       responseAmount,
+      responseSafetyCode,
       ebcid,
     ],
   );
@@ -107,6 +110,7 @@ export const getLeaf = (tx: typeof USER_TX_LIST[0], status: boolean) => {
     tokenAddress,
     timestamp,
     responseAmount,
+    responseSafetyCode,
     ebcid,
   };
   return { hex, leaf };

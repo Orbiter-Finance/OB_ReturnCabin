@@ -28,16 +28,8 @@ contract ORSpv is IORSpv, Initializable, OwnableUpgradeable {
         makerTxTree[chain] = root;
     }
 
-    /// @notice Transaction list of unpaid users
-    /// @param _txInfo User transaction object
-    /// @param _proof Transaction proof path
-    /// @return Exist or fail to verify
-    function verifyUserTxProof(OperationsLib.txInfo calldata _txInfo, bytes32[] calldata _proof)
-        public
-        view
-        returns (bool)
-    {
-        bytes32 _leaf = keccak256(
+    function getSpvTxId(OperationsLib.txInfo calldata _txInfo) internal pure returns (bytes32) {
+        bytes32 id = keccak256(
             abi.encodePacked(
                 _txInfo.lpid,
                 _txInfo.chainID,
@@ -49,9 +41,23 @@ contract ORSpv is IORSpv, Initializable, OwnableUpgradeable {
                 _txInfo.tokenAddress,
                 _txInfo.timestamp,
                 _txInfo.responseAmount,
+                _txInfo.responseSafetyCode,
                 _txInfo.ebcid
             )
         );
+        return id;
+    }
+
+    /// @notice Transaction list of unpaid users
+    /// @param _txInfo User transaction object
+    /// @param _proof Transaction proof path
+    /// @return Exist or fail to verify
+    function verifyUserTxProof(OperationsLib.txInfo calldata _txInfo, bytes32[] calldata _proof)
+        public
+        view
+        returns (bool)
+    {
+        bytes32 _leaf = getSpvTxId(_txInfo);
         return verify(userTxTree[_txInfo.chainID], _leaf, _proof);
     }
 
@@ -64,21 +70,7 @@ contract ORSpv is IORSpv, Initializable, OwnableUpgradeable {
         view
         returns (bool)
     {
-        bytes32 _leaf = keccak256(
-            abi.encodePacked(
-                _txInfo.lpid,
-                _txInfo.chainID,
-                _txInfo.txHash,
-                _txInfo.sourceAddress,
-                _txInfo.destAddress,
-                _txInfo.nonce,
-                _txInfo.amount,
-                _txInfo.tokenAddress,
-                _txInfo.timestamp,
-                _txInfo.responseAmount,
-                _txInfo.ebcid
-            )
-        );
+        bytes32 _leaf = getSpvTxId(_txInfo);
         return verify(makerTxTree[_txInfo.chainID], _leaf, _proof);
     }
 

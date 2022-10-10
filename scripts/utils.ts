@@ -20,7 +20,7 @@ export function loadOrDeployContract<T = any>(
   if (process.env[name]) {
     return ethers.getContractAt(name, String(process.env[name])) as T;
   }
-  return deploy(isProxy, name, ...params);
+  return deploy(isProxy, name, ...params) as T;
 }
 export async function deploy<T = any>(
   deployProxy: boolean,

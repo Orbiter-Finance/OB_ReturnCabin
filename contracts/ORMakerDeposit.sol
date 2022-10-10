@@ -9,7 +9,6 @@ import "./interface/IERC20.sol";
 import "./interface/IORSpv.sol";
 import "./interface/IORMakerV1Factory.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
@@ -247,8 +246,15 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
     // User Initiates Arbitration Request
     function userChanllenge(OperationsLib.txInfo memory _txinfo, bytes32[] memory _txproof) external payable {
         address ebcAddress = getEBCAddress(_txinfo.ebcid);
+        // Determine whether sourceAddress in txinfo is consistent with the caller's address
+        require(_txinfo.sourceAddress == _msgSender(), "UCE_SENDER");
+        // Determine whether destAddress in txinfo is an MDC address
+        require(_txinfo.destAddress == owner(), "UCE_4");
+        // Verify whether it is within the period of appeal
+        require(block.timestamp > _txinfo.timestamp + getChainInfoByChainID(_txinfo.chainID).maxReceiptTime, "UCE_5");
+
         // txinfo and txproof are provided to EBC and verified to pass
-        require(IORProtocal(ebcAddress).checkUserChallenge(_txinfo, _txproof, msg.sender), "UC_ERROR");
+        require(IORProtocal(ebcAddress).checkUserChallenge(_txinfo, _txproof), "UC_ERROR");
         // Get the corresponding chanllengeID through txinfo.
         bytes32 chanllengeID = OperationsLib.getChanllengeID(_txinfo);
         // The corresponding chanllengeInfo is required to be in an unused state.
@@ -268,7 +274,13 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
             getChainInfoByChainID(_txinfo.chainID).maxDisputeTime;
         // The pledge transferred by the user is included in the total pledge.
         chanllengePleged += msg.value;
-        emit LogChanllengeInfo(_txinfo.chainID, chanllengeState.ACTION, chanllengeID, _txinfo);
+        emit LogChanllengeInfo(
+            _txinfo.chainID,
+            chanllengeState.ACTION,
+            chanllengeID,
+            _txinfo,
+            chanllengeInfos[chanllengeID]
+        );
     }
 
     // LPStop
@@ -334,12 +346,20 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         }
         // Subtract the pledge money transferred by the user challenge from the total pledge money.
         chanllengePleged -= chanllengeInfos[chanllengeID].pledgeAmount;
-        emit LogChanllengeInfo(_userTx.chainID, chanllengeState.WITHDRAWED, chanllengeID, _userTx);
+
+        emit LogChanllengeInfo(
+            _userTx.chainID,
+            chanllengeState.WITHDRAWED,
+            chanllengeID,
+            _userTx,
+            chanllengeInfos[chanllengeID]
+        );
         if (_userTx.tokenAddress != address(0)) {
             uint256 withDrawPledge = chanllengeInfos[chanllengeID].pledgeAmount;
             IERC20(_userTx.tokenAddress).transfer(msg.sender, withDrawAmount);
             payable(msg.sender).transfer(withDrawPledge);
         } else {
+            require(address(this).balance > withDrawAmount, "Insufficient balance");
             payable(msg.sender).transfer(withDrawAmount);
         }
     }
@@ -359,6 +379,8 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         // Change the corresponding chanllengeInfos state to maker success
         chanllengeInfos[chanllengeID].chanllengeState = 2;
         address ebcAddress = IORManager(manager).getEBC(chanllengeInfos[chanllengeID].ebcid);
+        // Determine whether sourceAddress in txinfo is an MDC address
+        require(_makerTx.sourceAddress == msg.sender, "MC_SENDER");
         // userTx,makerTx and makerProof are provided to EBC and verified to pass
         require(IORProtocal(ebcAddress).checkMakerChallenge(_userTx, _makerTx, _makerProof), "MC_ERROR");
         // Obtaining _makerTx Validity Proof by EBC
@@ -369,6 +391,7 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
                 _makerTx.sourceAddress,
                 _makerTx.destAddress,
                 _makerTx.responseAmount,
+                _makerTx.responseSafetyCode,
                 _makerTx.tokenAddress
             )
         );
@@ -376,6 +399,12 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         require(chanllengeInfos[chanllengeID].responseTxinfo == makerResponse, "MCE_UNMATCH");
         // Subtract the pledge money transferred by the user challenge from the total pledge money.
         chanllengePleged -= chanllengeInfos[chanllengeID].pledgeAmount;
-        emit LogChanllengeInfo(_makerTx.chainID, chanllengeState.RESPONSED, chanllengeID, _makerTx);
+        emit LogChanllengeInfo(
+            _makerTx.chainID,
+            chanllengeState.RESPONSED,
+            chanllengeID,
+            _makerTx,
+            chanllengeInfos[chanllengeID]
+        );
     }
 }

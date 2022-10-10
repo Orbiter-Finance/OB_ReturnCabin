@@ -73,6 +73,7 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
 
     function getETHPunish(uint256 amount) external view returns (uint256) {
         (uint256 securityCode, bool isSupport) = getSecuirtyCode(true, amount);
+
         require(isSupport, "GEP_AMOUNT_INVALIDATE");
         amount = amount - securityCode;
         return (amount * EthPunishCoefficient) / 100;
@@ -116,7 +117,7 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
 
         require(_txinfo.nonce < 9000, "GRH_NONCE_ERROR1");
 
-        require(nonce == _txinfo.nonce, "GRH_NONCE_ERROR2");
+        // require(nonce == _txinfo.nonce, "GRH_NONCE_ERROR2");
 
         bytes32 needRespnse = keccak256(
             abi.encodePacked(
@@ -125,27 +126,25 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
                 _txinfo.destAddress,
                 _txinfo.sourceAddress,
                 _txinfo.responseAmount,
+                _txinfo.responseSafetyCode,
                 _txinfo.tokenAddress
             )
         );
         return needRespnse;
     }
 
-    function checkUserChallenge(
-        OperationsLib.txInfo memory _txinfo,
-        bytes32[] memory _txproof,
-        address from
-    ) external view returns (bool) {
-        // Determine whether sourceAddress in txinfo is consistent with the caller's address
-        require(_txinfo.sourceAddress == from, "UCE_SENDER");
+    function checkUserChallenge(OperationsLib.txInfo memory _txinfo, bytes32[] memory _txproof)
+        external
+        view
+        returns (bool)
+    {
         // bytes32 lpid = _txinfo.lpid;
         //1. txinfo is already spv
         address spvAddress = getSpvAddress();
         // Verify that txinfo and txproof are valid
         bool txVerify = IORSpv(spvAddress).verifyUserTxProof(_txinfo, _txproof);
         require(txVerify, "UCE_1");
-        // Determine whether destAddress in txinfo is an MDC address
-        require(_txinfo.destAddress == msg.sender, "UCE_4");
+
         return true;
     }
 
@@ -155,8 +154,7 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
         bytes32[] memory _makerProof
     ) external view returns (bool) {
         address spvAddress = getSpvAddress();
-        // Determine whether sourceAddress in txinfo is an MDC address
-        require(_makerTx.sourceAddress == msg.sender, "MC_SENDER");
+
         //1. _makerTx is already spv
         bool txVerify = IORSpv(spvAddress).verifyMakerTxProof(_makerTx, _makerProof);
         require(txVerify, "MCE_UNVERIFY");

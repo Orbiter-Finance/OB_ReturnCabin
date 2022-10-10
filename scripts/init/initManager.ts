@@ -26,6 +26,7 @@ async function initChain() {
       chain.chainID,
       chain.batchLimit,
       chain.maxDisputeTime,
+      chain.maxReceiptTime,
       tokenList,
     );
     printSuccess(`Add Chain ${chain.chainID} Hash: ${tx.hash}`);
@@ -37,7 +38,8 @@ async function initChain() {
         token.pledgeToken,
       );
       printSuccess(
-        `Add Chain Token ${token.symbol} ${chain.chainID} Token:${token.address} Hash: `, tx.hash
+        `Add Chain Token ${token.symbol} ${chain.chainID} Token:${token.address} Hash: `,
+        tx.hash,
       );
     }
   }
@@ -45,10 +47,10 @@ async function initChain() {
 async function initPair() {
   const contract = await getManagerContract();
   const newPairs = pairs.map((row: any) => {
-    row.id = Buffer.from(getPairID(row), 'hex');
+    // row.id = Buffer.from(getPairID(row), 'hex');
+    row.id = getPairID(row);
     return row;
   });
-  const sortAfter = orderBy(newPairs, ['id'], ['asc']);
   const pairTree = new MerkleTree(
     newPairs.map((row) => row.id),
     keccak256,
@@ -56,6 +58,7 @@ async function initPair() {
       sort: true,
     },
   );
+  const sortAfter = orderBy(newPairs, ['id'], ['asc']);
   const leaves = pairTree.getLeaves();
   const proof = pairTree.getMultiProof(leaves);
   const proofFlag = pairTree.getProofFlags(leaves, proof);

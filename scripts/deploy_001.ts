@@ -17,33 +17,34 @@ async function main() {
     manager.address,
   );
   // // create maker
-  const [owner, maker] = await ethers.getSigners();
+  const accounts = await ethers.getSigners();
+  const [owner, maker] = accounts;
   printAddress('owner wallet:', owner.address);
   printAddress('maker wallet:', maker.address);
-  const tx = await makerV1factory.connect(maker).createMaker();
-  printHash('Create Maker Tx:', tx.hash);
-  tx.wait()
-    .then((rawTx) => {
-      const makerMapEvent = rawTx.events?.find(
-        (row) => row.event == 'MakerCreated',
-      );
-      if (makerMapEvent && makerMapEvent.args) {
-        printAddress('First Maker User:', makerMapEvent.args[0]);
-        printAddress('First Maker User Pool:', makerMapEvent.args[1]);
-      }
-    })
-    .catch((error) => {
-      console.error('Create Maker Error:', error);
-    });
+  // const tx = await makerV1factory.connect(maker).createMaker();
+  // printHash('Create Maker Tx:', tx.hash);
+  // tx.wait()
+  //   .then((rawTx) => {
+  //     const makerMapEvent = rawTx.events?.find(
+  //       (row) => row.event == 'MakerCreated',
+  //     );
+  //     if (makerMapEvent && makerMapEvent.args) {
+  //       printAddress('First Maker User:', makerMapEvent.args[0]);
+  //       printAddress('First Maker User Pool:', makerMapEvent.args[1]);
+  //     }
+  //   })
+  //   .catch((error) => {
+  //     console.error('Create Maker Error:', error);
+  //   });
   // deplory ORProtocalV1
   const protocalV1 = await deploy<ORProtocalV1>(
     true,
     'ORProtocalV1',
     manager.address,
-    ethers.utils.parseEther('0.05'),
-    110,
-    110,
-    110,
+    ethers.utils.parseEther('0.1'),
+    100,
+    100,
+    100,
   );
   // // set spv
   const tx1 = await manager.setSPV(spv.address);
@@ -55,6 +56,7 @@ async function main() {
   printHash('setEBC', tx2.hash);
   // init manager();
   require('./init/initManager');
+  // require('./init/initMaker');
 }
 
 main().catch((error) => {

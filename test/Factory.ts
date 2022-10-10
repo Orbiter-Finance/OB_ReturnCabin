@@ -70,6 +70,7 @@ describe('Factory.spec.ts', () => {
         chainInfo_main.chainID,
         chainInfo_main.batchLimit,
         chainInfo_main.maxDisputeTime,
+        chainInfo_main.maxReceiptTime,
         chainInfo_main.tokenList,
       );
 
@@ -77,18 +78,21 @@ describe('Factory.spec.ts', () => {
         chainInfo_arbitrum.chainID,
         chainInfo_arbitrum.batchLimit,
         chainInfo_arbitrum.maxDisputeTime,
+        chainInfo_arbitrum.maxReceiptTime,
         chainInfo_arbitrum.tokenList,
       );
       await userFactory.setChainInfo(
         chainInfo_zksync.chainID,
         chainInfo_zksync.batchLimit,
         chainInfo_zksync.maxDisputeTime,
+        chainInfo_zksync.maxReceiptTime,
         chainInfo_zksync.tokenList,
       );
       await userFactory.setChainInfo(
         chainInfo_op.chainID,
         chainInfo_op.batchLimit,
         chainInfo_op.maxDisputeTime,
+        chainInfo_op.maxReceiptTime,
         chainInfo_op.tokenList,
       );
 
@@ -97,12 +101,12 @@ describe('Factory.spec.ts', () => {
       expect((await userFactory.chainList(1)).isUsed).true;
       expect((await userFactory.chainList(1)).chainid).equal(1);
       expect((await userFactory.chainList(1)).batchLimit).equal(100);
-      expect((await userFactory.chainList(1)).maxDisputeTime).equal(24 * 3600);
+      expect((await userFactory.chainList(1)).maxDisputeTime).equal(1200);
 
       expect((await userFactory.chainList(2)).isUsed).true;
       expect((await userFactory.chainList(2)).chainid).equal(2);
       expect((await userFactory.chainList(2)).batchLimit).equal(100);
-      expect((await userFactory.chainList(2)).maxDisputeTime).equal(24 * 3600);
+      expect((await userFactory.chainList(2)).maxDisputeTime).equal(1200);
 
       expect((await userFactory.chainList(9999999)).isUsed).false;
     });
@@ -115,12 +119,12 @@ describe('Factory.spec.ts', () => {
       expect(ethInfo.isUsed).true;
       expect(ethInfo.chainid).equal(1);
       expect(ethInfo.batchLimit).equal(100);
-      expect(ethInfo.maxDisputeTime).equal(24 * 3600);
+      expect(ethInfo.maxDisputeTime).equal(1200);
 
       expect(arInfo.isUsed).true;
       expect(arInfo.chainid).equal(2);
       expect(arInfo.batchLimit).equal(100);
-      expect(arInfo.maxDisputeTime).equal(24 * 3600);
+      expect(arInfo.maxDisputeTime).equal(1200);
     });
   });
 

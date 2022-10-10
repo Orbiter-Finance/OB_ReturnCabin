@@ -54,9 +54,17 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable {
         uint256 chainID,
         uint256 batchLimit,
         uint256 maxDisputeTime,
+        uint256 maxReceiptTime,
         address[] memory tokenList
     ) external onlyOwner {
-        chainList[chainID] = OperationsLib.chainInfo(chainID, batchLimit, maxDisputeTime, tokenList, true);
+        chainList[chainID] = OperationsLib.chainInfo(
+            chainID,
+            batchLimit,
+            maxDisputeTime,
+            maxReceiptTime,
+            tokenList,
+            true
+        );
         emit ChangeChain(chainID, chainList[chainID]);
     }
 

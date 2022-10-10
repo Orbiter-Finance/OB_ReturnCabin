@@ -22,6 +22,7 @@ library OperationsLib {
         uint256 chainid;
         uint256 batchLimit;
         uint256 maxDisputeTime;
+        uint256 maxReceiptTime;
         address[] tokenList;
         bool isUsed;
     }
@@ -37,6 +38,7 @@ library OperationsLib {
         uint256 nonce;
         uint256 timestamp;
         uint256 responseAmount;
+        uint256 responseSafetyCode;
         uint256 ebcid;
     }
 
