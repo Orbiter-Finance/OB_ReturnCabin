@@ -106,11 +106,11 @@ library OperationsLib {
     }
 
     function getLpID(address maker, OperationsLib.lpInfo memory _lpinfo) internal pure returns (bytes32) {
-        bytes32 lpId = getPairID(_lpinfo);
+        bytes32 pairId = getPairID(_lpinfo);
         bytes32 rootHash = keccak256(
             abi.encodePacked(
                 maker,
-                lpId,
+                pairId,
                 _lpinfo.sourcePresion,
                 _lpinfo.destPresion,
                 _lpinfo.minPrice,

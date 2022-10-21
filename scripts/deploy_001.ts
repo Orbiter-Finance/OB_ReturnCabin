@@ -41,10 +41,11 @@ async function main() {
     true,
     'ORProtocalV1',
     manager.address,
-    ethers.utils.parseEther('0.1'),
-    100,
-    100,
-    100,
+    ethers.utils.parseEther('0.5'),
+    110,
+    110,
+    110,
+    300,
   );
   // // set spv
   const tx1 = await manager.setSPV(spv.address);

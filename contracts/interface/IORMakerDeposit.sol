@@ -36,10 +36,10 @@ interface IORMakerDeposit {
     function LPPause(OperationsLib.lpInfo[] calldata _lpinfos) external;
 
     // LPStop
-    function LPStop(OperationsLib.lpInfo memory) external;
+    function LPStop(OperationsLib.lpInfo[] calldata _lpinfos) external;
 
     // LPUpdate
-    function LPUpdate(OperationsLib.lpInfo calldata _lpinfo) external;
+    function LPUpdate(OperationsLib.lpInfo[] calldata _lpinfos) external;
 
     // withDrawAssert()
     function withDrawAssert(uint256, address) external;

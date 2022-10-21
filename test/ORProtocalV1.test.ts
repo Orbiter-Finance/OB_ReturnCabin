@@ -22,6 +22,7 @@ describe('ORProtocalV1.test.ts', () => {
       110,
       110,
       110,
+      300,
     );
   }
 

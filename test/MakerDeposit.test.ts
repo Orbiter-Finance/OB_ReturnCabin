@@ -124,7 +124,7 @@ describe('MakerDeposit.test.ts', () => {
   });
   it('LPStop not time', async () => {
     const lpInfo = getLpInfo(LP_LIST[0]);
-    const response = mdc.connect(maker).LPStop(lpInfo);
+    const response = mdc.connect(maker).LPStop([lpInfo]);
     await expect(response).to.be.revertedWith('LPSTOP_LPID_TIMEUNABLE');
   });
   it('After a day of simulation', async () => {
@@ -132,7 +132,7 @@ describe('MakerDeposit.test.ts', () => {
   });
   it('LPStop is time', async () => {
     const lpInfo = getLpInfo(LP_LIST[0]);
-    const response = await mdc.connect(maker).LPStop(lpInfo);
+    const response = await mdc.connect(maker).LPStop([lpInfo]);
     await expect(response)
       .to.emit(mdc, 'LogLpInfo')
       .withArgs(anyValue, anyValue, 3, anyValue);
