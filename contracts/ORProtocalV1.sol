@@ -10,17 +10,18 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     address _managerAddress;
     uint256 public ChanllengePledgeAmountCoefficient;
-    uint256 public DepositAmountCoefficient;
-    uint256 public EthPunishCoefficient;
-    uint256 public TokenPunishCoefficient;
+    uint16 public DepositAmountCoefficient;
+    uint16 public EthPunishCoefficient;
+    uint16 public TokenPunishCoefficient;
     uint32 public PauseAfterStopInterval;
+    uint32 public ChangeLpEffectInterval;
 
     function initialize(
         address managerAddress,
         uint256 _chanllengePledgeAmountCoefficient,
-        uint256 _depositAmountCoefficient,
-        uint256 _ethPunishCoefficient,
-        uint256 _tokenPunishCoefficie,
+        uint16 _depositAmountCoefficient,
+        uint16 _ethPunishCoefficient,
+        uint16 _tokenPunishCoefficie,
         uint32 _pauseAfterStopInterval
     ) public initializer {
         require(managerAddress != address(0), "Owner address error");
@@ -31,7 +32,24 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
         EthPunishCoefficient = _ethPunishCoefficient;
         TokenPunishCoefficient = _tokenPunishCoefficie;
         PauseAfterStopInterval = _pauseAfterStopInterval;
+        ChangeLpEffectInterval = 60 * 60 * 1;
         __Ownable_init();
+    }
+
+    function setPauseAfterStopInterval(uint32 value) external onlyOwner {
+        PauseAfterStopInterval = value;
+    }
+
+    function getPauseAfterStopInterval() external view returns (uint256) {
+        return PauseAfterStopInterval;
+    }
+
+    function getChangeLpAfterEffectInterval() external view returns (uint256) {
+        return ChangeLpEffectInterval;
+    }
+
+    function setChangeLpAfterEffectInterval(uint32 value) external onlyOwner {
+        ChangeLpEffectInterval = value;
     }
 
     // The parameter here is the user challenge pledge factor in wei.
@@ -44,7 +62,7 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     }
 
     // The parameter is a number of percentile precision, for example: When tenDigits is 110, it represents 1.1
-    function setDepositAmountCoefficient(uint256 hundredDigits) external onlyOwner {
+    function setDepositAmountCoefficient(uint16 hundredDigits) external onlyOwner {
         DepositAmountCoefficient = hundredDigits;
     }
 
@@ -53,12 +71,8 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     }
 
     // The parameter is a number of percentile precision, for example: When tenDigits is 110, it represents 1.1
-    function setETHPunishCoefficient(uint256 hundredDigits) external onlyOwner {
+    function setETHPunishCoefficient(uint16 hundredDigits) external onlyOwner {
         EthPunishCoefficient = hundredDigits;
-    }
-
-    function setPauseAfterStopInterval(uint32 value) external onlyOwner {
-        PauseAfterStopInterval = value;
     }
 
     function getETHPunishCoefficient() external view returns (uint256) {
@@ -66,7 +80,7 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     }
 
     // The parameter is a number of percentile precision, for example: When tenDigits is 110, it represents 1.1
-    function setTokenPunishCoefficient(uint256 hundredDigits) external onlyOwner {
+    function setTokenPunishCoefficient(uint16 hundredDigits) external onlyOwner {
         TokenPunishCoefficient = hundredDigits;
     }
 

@@ -4,6 +4,7 @@ import '@nomiclabs/hardhat-web3';
 import '@openzeppelin/hardhat-upgrades';
 import 'hardhat-contract-sizer';
 import "@nomiclabs/hardhat-etherscan";
+import 'solidity-docgen';
 import { HardhatUserConfig, task } from 'hardhat/config';
 const { INFURA_API_KEY, ETHERSCAN_API_KEY, NETWORK,ACCOUNTS} = process.env;
 task('accounts', 'Prints accounts', async (taskArgs, hre) => {
@@ -16,6 +17,8 @@ task('accounts', 'Prints accounts', async (taskArgs, hre) => {
 const accounts = ACCOUNTS?.split(',');
 const config: HardhatUserConfig = {
   defaultNetwork: NETWORK,
+  docgen: {
+  },
   solidity: {
     version: '0.8.9',
     settings: {
@@ -51,14 +54,15 @@ const config: HardhatUserConfig = {
     },
     goerli: {
       url: `https://goerli.infura.io/v3/${INFURA_API_KEY}`,
-      accounts
+      // chainId: 5,
+      // gasPrice:20 * 10**9,
+      timeout: 1000 * 60 * 60 * 5,
+      gas: 2100000,
+      gasPrice: 1000000000,
+      accounts,
     },
     kovan: {
       url: `https://kovan.infura.io/v3/${INFURA_API_KEY}`,
-      accounts
-    },
-    arbitrumRinkeby: {
-      url: `https://arbitrum-rinkeby.infura.io/v3/${INFURA_API_KEY}`,
       accounts
     },
     arbitrum: {
@@ -88,7 +92,7 @@ const config: HardhatUserConfig = {
     apiKey: ETHERSCAN_API_KEY,
   },
   mocha: {
-    timeout: 40000 * 10
+    // timeout: 40000 * 10
   }
 };
 
