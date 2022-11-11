@@ -18,15 +18,15 @@ interface IORProtocal {
 
     function setChangeLpAfterEffectInterval(uint32 value) external;
 
-    function getDepositAmountCoefficient() external view returns (uint256);
+    function getDepositAmountCoefficient() external view returns (uint16);
 
     function setTokenPunishCoefficient(uint16 hundredDigits) external;
 
-    function getTokenPunishCoefficient() external view returns (uint256);
+    function getTokenPunishCoefficient() external view returns (uint16);
 
     function setETHPunishCoefficient(uint16 hundredDigits) external;
 
-    function getETHPunishCoefficient() external view returns (uint256);
+    function getETHPunishCoefficient() external view returns (uint16);
 
     function getDepositAmount(uint256 batchLimit, uint256 maxPrice) external view returns (uint256);
 

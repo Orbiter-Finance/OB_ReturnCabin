@@ -66,7 +66,7 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
         DepositAmountCoefficient = hundredDigits;
     }
 
-    function getDepositAmountCoefficient() external view returns (uint256) {
+    function getDepositAmountCoefficient() external view returns (uint16) {
         return DepositAmountCoefficient;
     }
 
@@ -75,7 +75,7 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
         EthPunishCoefficient = hundredDigits;
     }
 
-    function getETHPunishCoefficient() external view returns (uint256) {
+    function getETHPunishCoefficient() external view returns (uint16) {
         return EthPunishCoefficient;
     }
 
@@ -84,7 +84,7 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
         TokenPunishCoefficient = hundredDigits;
     }
 
-    function getTokenPunishCoefficient() external view returns (uint256) {
+    function getTokenPunishCoefficient() external view returns (uint16) {
         return TokenPunishCoefficient;
     }
 
