@@ -258,6 +258,12 @@ describe('Factory.spec.ts', () => {
       const tx = await makerV1Factory.setManager(factory.address);
       expect(tx.blockNumber).gt(0);
     });
+    it('MakerV1Factory Set setMakerLimit', async () => {
+      const maxLimit = 4;
+      await makerV1Factory.setMakerMaxLimit(maxLimit);
+      const result = await makerV1Factory.MakerMaxLimit();
+      expect(result).eq(maxLimit);
+    });
     it('CREATE_MDC', async () => {
       // create mdc
       const response = await makerV1Factory.connect(address1).createMaker();
