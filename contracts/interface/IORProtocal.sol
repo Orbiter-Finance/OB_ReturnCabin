@@ -8,17 +8,21 @@ interface IORProtocal {
 
     function getChanllengePledgeAmountCoefficient() external view returns (uint256);
 
-    function setDepositAmountCoefficient(uint256 hundredDigits) external;
+    function setDepositAmountCoefficient(uint16 hundredDigits) external;
 
-    function getDepositAmountCoefficient() external view returns (uint256);
+    function setPauseAfterStopInterval(uint32 value) external;
 
-    function setTokenPunishCoefficient(uint256 hundredDigits) external;
+    function getPauseAfterStopInterval() external view returns (uint256);
 
-    function getTokenPunishCoefficient() external view returns (uint256);
+    function getDepositAmountCoefficient() external view returns (uint16);
 
-    function setETHPunishCoefficient(uint256 hundredDigits) external;
+    function setTokenPunishCoefficient(uint16 hundredDigits) external;
 
-    function getETHPunishCoefficient() external view returns (uint256);
+    function getTokenPunishCoefficient() external view returns (uint16);
+
+    function setETHPunishCoefficient(uint16 hundredDigits) external;
+
+    function getETHPunishCoefficient() external view returns (uint16);
 
     function getDepositAmount(uint256 batchLimit, uint256 maxPrice) external view returns (uint256);
 

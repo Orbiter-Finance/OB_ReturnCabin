@@ -56,6 +56,16 @@ library OperationsLib {
         uint256 tradingFee;
         uint256 startTime;
     }
+    struct lpChange {
+        bytes32 pid;
+        bytes32 lpid;
+        uint256 gasFee;
+        uint256 tradingFee;
+    }
+    struct lpRestart {
+        bytes32 pid;
+        bytes32 lpid;
+    }
 
     struct lpPairInfo {
         bytes32 lpId;
@@ -105,21 +115,15 @@ library OperationsLib {
             );
     }
 
-    function getLpID(address maker, OperationsLib.lpInfo memory _lpinfo) internal pure returns (bytes32) {
-        bytes32 lpId = getPairID(_lpinfo);
-        bytes32 rootHash = keccak256(
-            abi.encodePacked(
-                maker,
-                lpId,
-                _lpinfo.sourcePresion,
-                _lpinfo.destPresion,
-                _lpinfo.minPrice,
-                _lpinfo.maxPrice,
-                _lpinfo.gasFee,
-                _lpinfo.tradingFee,
-                _lpinfo.startTime
-            )
-        );
+    function getLpID(
+        bytes32 pairId,
+        address makerId,
+        uint256 startTime,
+        uint256 minPrice,
+        uint256 maxPrice
+    ) internal pure returns (bytes32) {
+        // bytes32 pairId = getPairID(_lpinfo);
+        bytes32 rootHash = keccak256(abi.encodePacked(pairId, makerId, startTime, minPrice, maxPrice));
         return rootHash;
     }
 

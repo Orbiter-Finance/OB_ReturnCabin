@@ -8,6 +8,7 @@ import { PAIR_LIST } from './lib/Config';
 import { expect } from 'chai';
 import { getPairID, getPairLPID, getLeaf } from './lib/Utils';
 import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
+import { BigNumber } from 'ethers';
 let mdc: ORMakerDeposit;
 let supportPairTree: MerkleTree;
 let owner: SignerWithAddress;
@@ -50,17 +51,13 @@ describe('MakerDeposit.test.ts', () => {
   }
 
   before(getFactoryInfo);
-  function getLpInfo(LPLIST: typeof LP_LIST[0]) {
+  function getLpInfo(LPLIST: typeof LP_LIST[0]): typeof LP_LIST[0] {
     let lpInfo: any = LPLIST;
     const lpId = getPairLPID(lpInfo);
-    const pairInfo = Object.entries(PAIR_LIST).find(
-      (item) => item[1].id == lpInfo.pairId,
-    );
+    const pairInfo = PAIR_LIST.find((item) => item.id == lpInfo.pairId);
     if (pairInfo !== undefined) {
-      lpInfo = Object.assign(lpInfo, pairInfo[1]);
+      lpInfo = Object.assign(lpInfo, pairInfo);
       lpInfo.id = lpId;
-    } else {
-      return;
     }
     return lpInfo;
   }
@@ -104,10 +101,16 @@ describe('MakerDeposit.test.ts', () => {
     };
     const response = await mdc
       .connect(maker)
-      .LPAction([lpInfo], pairProof, overrides);
+      .LPAction([lpInfo] as any, pairProof, overrides);
     await expect(response)
-      .to.emit(mdc, 'LogLpInfo')
-      .withArgs(anyValue, anyValue, 0, anyValue);
+      .to.emit(mdc, 'LogLpAction')
+      .withArgs(anyValue, anyValue, anyValue);
+    const { events } = await response.wait();
+    const LogLpInfo = events?.find((ev) => ev.event == 'LogLpAction');
+    if (LogLpInfo) {
+      const args = LogLpInfo.args[2];
+      lpInfo.startTime = Number(args.startTime);
+    }
     const chainDeposit = await mdc.chainDeposit(
       lpInfo.sourceChain,
       lpInfo.sourceTAddress,
@@ -119,12 +122,46 @@ describe('MakerDeposit.test.ts', () => {
     const lpInfo = getLpInfo(LP_LIST[0]);
     const response = await mdc.connect(maker).LPPause([lpInfo]);
     await expect(response)
-      .to.emit(mdc, 'LogLpInfo')
-      .withArgs(anyValue, anyValue, 2, anyValue);
+      .to.emit(mdc, 'LogLPPause')
+      .withArgs(anyValue, anyValue, anyValue);
+  });
+  it('LPUpdate', async () => {
+    const lpInfo = getLpInfo(LP_LIST[0]);
+    expect(lpInfo).not.empty;
+    const pid = `0x${lpInfo.pairId}`;
+    const lpid = `0x${lpInfo.id}`;
+    const updateData = {
+      tradingFee: BigNumber.from(0.0005 * 10 ** 18),
+      gasFee: lpInfo.gasFee,
+    };
+    const response = await mdc.connect(maker).LPUpdate([
+      {
+        pid: `0x${lpInfo.pairId}`,
+        lpid: `0x${lpInfo.id}`,
+        ...updateData,
+      },
+    ]);
+    await expect(response)
+      .to.emit(mdc, 'LogLpUpdate')
+      .withArgs(pid, lpid, updateData.gasFee, updateData.tradingFee);
+  });
+  it('LPRestart', async () => {
+    const lpInfo = getLpInfo(LP_LIST[0]);
+    const pid = `0x${lpInfo.pairId}`;
+    const lpid = `0x${lpInfo.id}`;
+    const response = await mdc.connect(maker).LPRestart([{ pid, lpid }]);
+    await expect(response).to.emit(mdc, 'LogLpRestart').withArgs(pid, lpid);
+  });
+  it('LPRestart After Pause', async () => {
+    const lpInfo = getLpInfo(LP_LIST[0]);
+    const response = await mdc.connect(maker).LPPause([lpInfo]);
+    await expect(response)
+      .to.emit(mdc, 'LogLPPause')
+      .withArgs(anyValue, anyValue, anyValue);
   });
   it('LPStop not time', async () => {
     const lpInfo = getLpInfo(LP_LIST[0]);
-    const response = mdc.connect(maker).LPStop(lpInfo);
+    const response = mdc.connect(maker).LPStop([lpInfo]);
     await expect(response).to.be.revertedWith('LPSTOP_LPID_TIMEUNABLE');
   });
   it('After a day of simulation', async () => {
@@ -132,10 +169,10 @@ describe('MakerDeposit.test.ts', () => {
   });
   it('LPStop is time', async () => {
     const lpInfo = getLpInfo(LP_LIST[0]);
-    const response = await mdc.connect(maker).LPStop(lpInfo);
+    const response = await mdc.connect(maker).LPStop([lpInfo]);
     await expect(response)
-      .to.emit(mdc, 'LogLpInfo')
-      .withArgs(anyValue, anyValue, 3, anyValue);
+      .to.emit(mdc, 'LogLPStop')
+      .withArgs(anyValue, anyValue, anyValue);
   });
   it('Maker withDraw is time and no chanllenge', async () => {
     const beforeAmount = await maker.getBalance();
@@ -170,8 +207,8 @@ describe('MakerDeposit.test.ts', () => {
       .connect(maker)
       .LPAction([lpInfo], pairProof, overrides);
     await expect(response)
-      .to.emit(mdc, 'LogLpInfo')
-      .withArgs(anyValue, anyValue, 0, anyValue);
+      .to.emit(mdc, 'LogLpAction')
+      .withArgs(anyValue, anyValue, anyValue);
     const chainDeposit = await mdc.chainDeposit(
       lpInfo.sourceChain,
       lpInfo.sourceTAddress,
@@ -265,8 +302,8 @@ describe('MakerDeposit.test.ts', () => {
       .connect(maker)
       .LPAction([lpInfo], pairProof, overrides);
     await expect(response)
-      .to.emit(mdc, 'LogLpInfo')
-      .withArgs(anyValue, anyValue, 0, anyValue);
+      .to.emit(mdc, 'LogLpAction')
+      .withArgs(anyValue, anyValue, anyValue);
     const chainDeposit = await mdc.chainDeposit(
       lpInfo.sourceChain,
       lpInfo.sourceTAddress,
@@ -319,7 +356,7 @@ describe('MakerDeposit.test.ts', () => {
     if (tx.events !== undefined) {
       expect(
         tx.events?.findIndex(
-          (row: { event: string }) => row.event === 'LogLPStop',
+          (row: { event: string }) => row.event === 'LogLPUserStop',
         ) >= 0,
       ).true;
       expect(

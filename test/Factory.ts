@@ -272,7 +272,7 @@ describe('Factory.spec.ts', () => {
         (row) => row.event == 'MakerCreated',
       );
       if (makerMapEvent && makerMapEvent.args) {
-        process.env['MDC'] = makerMapEvent.args[1];
+        process.env['MDC'] = makerMapEvent.args[1].toLowerCase();
         process.env['MDCFactory'] = makerV1Factory.address;
       }
     });
