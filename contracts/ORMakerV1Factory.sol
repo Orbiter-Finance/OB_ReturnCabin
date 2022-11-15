@@ -7,6 +7,8 @@ import "./interface/IORMakerV1Factory.sol";
 
 contract ORMakerV1Factory is IORMakerV1Factory, OwnableUpgradeable {
     address private manager;
+    uint256 public MakerMaxLimit;
+    uint256 public MakerLimitUsed;
     mapping(address => address) public getMaker;
 
     function initialize(address _manager) public initializer {
@@ -23,7 +25,13 @@ contract ORMakerV1Factory is IORMakerV1Factory, OwnableUpgradeable {
         return manager;
     }
 
+    // Set the Maker maximum to create an upper limit.
+    function setMakerMaxLimit(uint256 maxLimit) external onlyOwner {
+        MakerMaxLimit = maxLimit;
+    }
+
     function createMaker() external returns (address pool) {
+        require(MakerLimitUsed < MakerMaxLimit, "Exceeded the Maker limit");
         require(getMaker[msg.sender] == address(0), "Exists Maker");
         ORMakerDeposit makerContract = new ORMakerDeposit{
             salt: keccak256(abi.encodePacked(address(this), msg.sender))
@@ -31,6 +39,7 @@ contract ORMakerV1Factory is IORMakerV1Factory, OwnableUpgradeable {
         makerContract.initialize(msg.sender, address(this));
         pool = address(makerContract);
         getMaker[msg.sender] = pool;
+        MakerLimitUsed++;
         emit MakerCreated(msg.sender, pool);
     }
 }
