@@ -14,10 +14,6 @@ interface IORProtocal {
 
     function getPauseAfterStopInterval() external view returns (uint256);
 
-    function getChangeLpAfterEffectInterval() external view returns (uint256);
-
-    function setChangeLpAfterEffectInterval(uint32 value) external;
-
     function getDepositAmountCoefficient() external view returns (uint16);
 
     function setTokenPunishCoefficient(uint16 hundredDigits) external;

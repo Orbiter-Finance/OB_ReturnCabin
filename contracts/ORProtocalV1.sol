@@ -14,7 +14,6 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     uint16 public EthPunishCoefficient;
     uint16 public TokenPunishCoefficient;
     uint32 public PauseAfterStopInterval;
-    uint32 public ChangeLpEffectInterval;
 
     function initialize(
         address managerAddress,
@@ -32,7 +31,6 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
         EthPunishCoefficient = _ethPunishCoefficient;
         TokenPunishCoefficient = _tokenPunishCoefficie;
         PauseAfterStopInterval = _pauseAfterStopInterval;
-        ChangeLpEffectInterval = 60 * 60 * 1;
         __Ownable_init();
     }
 
@@ -42,14 +40,6 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
 
     function getPauseAfterStopInterval() external view returns (uint256) {
         return PauseAfterStopInterval;
-    }
-
-    function getChangeLpAfterEffectInterval() external view returns (uint256) {
-        return ChangeLpEffectInterval;
-    }
-
-    function setChangeLpAfterEffectInterval(uint32 value) external onlyOwner {
-        ChangeLpEffectInterval = value;
     }
 
     // The parameter here is the user challenge pledge factor in wei.
