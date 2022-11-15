@@ -9,6 +9,8 @@ interface IORManager {
         DELETE
     }
     event PairLogEvent(PairEventType indexed opType, OperationsLib.pairChainInfo[] pairs);
+    event ChangeChain(uint256 indexed chainId, OperationsLib.chainInfo chain);
+    event ChangeToken(uint256 indexed chainId, address indexed tokenAddress, OperationsLib.tokenInfo token);
 
     function setSPV(address spvAddress) external returns (bool);
 
@@ -24,6 +26,7 @@ interface IORManager {
         uint256,
         uint256,
         uint256,
+        uint256,
         address[] memory
     ) external;
 
@@ -34,7 +37,7 @@ interface IORManager {
         address,
         uint256,
         address
-    ) external returns (bool);
+    ) external;
 
     function getTokenInfo(uint256, address) external view returns (OperationsLib.tokenInfo memory);
 
@@ -51,6 +54,8 @@ interface IORManager {
         bool[] calldata proofFlags,
         bytes32 rootHash
     ) external;
+
+    function isSupportChain(uint256 chainID, address token) external view returns (bool);
 
     function isSupportPair(bytes32 pair, bytes32[] memory proof) external view returns (bool);
 

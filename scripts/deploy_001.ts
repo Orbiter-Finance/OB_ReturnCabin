@@ -1,54 +1,62 @@
-import { ethers, upgrades } from 'hardhat';
-import { ORManager } from '../typechain-types/contracts/ORManager';
+import { ORManager } from './../typechain-types/contracts/ORManager';
+import { ORSpv } from './../typechain-types/contracts/ORSpv';
+import { ethers } from 'hardhat';
 import { ORMakerV1Factory } from '../typechain-types/contracts/ORMakerV1Factory';
+import { ORProtocalV1 } from '../typechain-types';
+import { deploy, printAddress, printHash } from './utils';
 
 async function main() {
   // deploy spv
-  const ORSpv = await ethers.getContractFactory('ORSpv');
-  const spv = await upgrades.deployProxy(ORSpv);
-  await spv.deployed();
-  console.log('ORSpv deployed to:', spv.address);
-
+  const spv = await deploy<ORSpv>(true, 'ORSpv');
   // deploy factory
-  const ORManager = await ethers.getContractFactory('ORManager');
-  const factoryProxy = await upgrades.deployProxy(ORManager);
-  await factoryProxy.deployed();
-  console.log('ORManager deployed to:', factoryProxy.address);
-  const factory = factoryProxy as ORManager;
-  const ORMakerV1Factory = await ethers.getContractFactory('ORMakerV1Factory');
-  const makerfactoryProxy = await upgrades.deployProxy(ORMakerV1Factory, [
-    factory.address,
-  ]);
-  await makerfactoryProxy.deployed();
-  console.log('ORMakerV1Factory deployed to:', makerfactoryProxy.address);
-  const makerV1factory = makerfactoryProxy as ORMakerV1Factory;
+  const manager = await deploy<ORManager>(true, 'ORManager');
 
-  // create maker
-  const [owner, maker] = await ethers.getSigners();
-  console.log('owner wallet:', owner.address);
-  console.log('maker wallet:', maker.address);
-  const tx = await makerV1factory.connect(maker).createMaker();
-  console.log('Create Maker Tx:', tx.hash);
-  tx.wait()
-    .then((rawTx) => {
-      const makerMapEvent = rawTx.events?.find(
-        (row) => row.event == 'MakerCreated',
-      );
-      if (makerMapEvent && makerMapEvent.args) {
-        console.log('First Maker User:', makerMapEvent.args[0]);
-        console.log('First Maker User Pool:', makerMapEvent.args[1]);
-      }
-    })
-    .catch((error) => {
-      console.error('Create Maker Error:', error);
-    });
+  const makerV1factory = await deploy<ORMakerV1Factory>(
+    true,
+    'ORMakerV1Factory',
+    manager.address,
+  );
+  // // create maker
+  const accounts = await ethers.getSigners();
+  const [owner, maker] = accounts;
+  printAddress('owner wallet:', owner.address);
+  printAddress('maker wallet:', maker.address);
+  // const tx = await makerV1factory.connect(maker).createMaker();
+  // printHash('Create Maker Tx:', tx.hash);
+  // tx.wait()
+  //   .then((rawTx) => {
+  //     const makerMapEvent = rawTx.events?.find(
+  //       (row) => row.event == 'MakerCreated',
+  //     );
+  //     if (makerMapEvent && makerMapEvent.args) {
+  //       printAddress('First Maker User:', makerMapEvent.args[0]);
+  //       printAddress('First Maker User Pool:', makerMapEvent.args[1]);
+  //     }
+  //   })
+  //   .catch((error) => {
+  //     console.error('Create Maker Error:', error);
+  //   });
   // deplory ORProtocalV1
-  const ORProtocalV1 = await ethers.getContractFactory('ORProtocalV1');
-  const protocalV1 = await upgrades.deployProxy(ORProtocalV1, [
-    factory.address,
-  ]);
-  await protocalV1.deployed();
-  console.log('ORProtocalV1 deployed to:', protocalV1.address);
+  const protocalV1 = await deploy<ORProtocalV1>(
+    true,
+    'ORProtocalV1',
+    manager.address,
+    ethers.utils.parseEther('0.1'),
+    100,
+    100,
+    100,
+  );
+  // // set spv
+  const tx1 = await manager.setSPV(spv.address);
+  await tx1.wait();
+  printHash('setSPV', tx1.hash);
+  // set ebc
+  const tx2 = await manager.setEBC(protocalV1.address);
+  await tx2.wait();
+  printHash('setEBC', tx2.hash);
+  // init manager();
+  require('./init/initManager');
+  // require('./init/initMaker');
 }
 
 main().catch((error) => {

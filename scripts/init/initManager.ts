@@ -1,45 +1,78 @@
 import { ethers } from 'hardhat';
-import { ORManager } from '../../typechain-types';
-import { MerkleTree } from 'merkletreejs';
 import keccak256 from 'keccak256';
-import { PAIR_LIST } from '../../test/lib/Config';
-const leafs = PAIR_LIST.map((row) => {
-  return Buffer.from(row.id, 'hex');
-});
-const pairTree = new MerkleTree(leafs, keccak256, {
-  sort: true,
-});
-async function main() {
-  const managerContract: ORManager = await ethers.getContractAt(
-    'ORManager',
-    String(process.env['ManagerContract']),
-  );
-  // create Pair
-  const proof = await pairTree.getMultiProof(leafs);
-  const proofFlags = pairTree.getProofFlags(leafs, proof);
-  const addPairObj = leafs.map((hashBuf) => {
-    const leaf = PAIR_LIST.find((pair) => {
-      return pair.id.toString() === hashBuf.toString('hex');
-    });
-    return leaf;
+import { orderBy } from 'lodash';
+import MerkleTree from 'merkletreejs';
+import { getPairID } from '../../test/lib/Utils';
+import { ORManager } from '../../typechain-types';
+import { deploy, printContract, printSuccess } from '../utils';
+import { chains, pairs } from './georli.data.json';
+let contractAddress = process.env['ORManager'] || '';
+async function getManagerContract(): Promise<ORManager> {
+  if (contractAddress) {
+    const manager = await ethers.getContractAt('ORManager', contractAddress);
+    printContract('load manager contract:', manager.address.toString());
+    return manager;
+  } else {
+    const manager = await deploy<ORManager>(true, 'ORManager');
+    contractAddress = manager.address;
+    return manager;
+  }
+}
+async function initChain() {
+  const contract = await getManagerContract();
+  for (const chain of chains) {
+    const tokenList = chain.tokenList.map((row) => row.address);
+    const tx = await contract.setChainInfo(
+      chain.chainID,
+      chain.batchLimit,
+      chain.maxDisputeTime,
+      chain.maxReceiptTime,
+      tokenList,
+    );
+    printSuccess(`Add Chain ${chain.chainID} Hash: ${tx.hash}`);
+    for (const token of chain.tokenList) {
+      const tx = await contract.setTokenInfo(
+        chain.chainID,
+        token.address,
+        token.decimals,
+        token.pledgeToken,
+      );
+      printSuccess(
+        `Add Chain Token ${token.symbol} ${chain.chainID} Token:${token.address} Hash: `,
+        tx.hash,
+      );
+    }
+  }
+}
+async function initPair() {
+  const contract = await getManagerContract();
+  const newPairs = pairs.map((row: any) => {
+    // row.id = Buffer.from(getPairID(row), 'hex');
+    row.id = getPairID(row);
+    return row;
   });
-  const tx = await managerContract.createPair(
-    <any>addPairObj,
+  const pairTree = new MerkleTree(
+    newPairs.map((row) => row.id),
+    keccak256,
+    {
+      sort: true,
+    },
+  );
+  const sortAfter = orderBy(newPairs, ['id'], ['asc']);
+  const leaves = pairTree.getLeaves();
+  const proof = pairTree.getMultiProof(leaves);
+  const proofFlag = pairTree.getProofFlags(leaves, proof);
+  const tx = await contract.createPair(
+    sortAfter,
     pairTree.getHexRoot(),
     proof,
-    proofFlags,
+    proofFlag,
   );
-  console.log('Create Pair tx:', tx.hash);
-  console.log(`\n${pairTree.toString()}\n`);
-  // set chain
-  // for (const row of chainInfoList) {
-  //   await managerContract.setChainInfo(
-  //     row.chainID,
-  //     row.batchLimit,
-  //     row.maxDisputeTime,
-  //     row.tokenList,
-  //   );
-  // }
+  printSuccess(`Multiple CreatePair Hash:${tx.hash}`);
+}
+export async function main() {
+  await initChain();
+  await initPair();
 }
 main().catch((error) => {
   console.error(error);

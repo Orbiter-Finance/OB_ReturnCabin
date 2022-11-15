@@ -1,13 +1,14 @@
 import { expect } from 'chai';
-import { ethers, upgrades } from 'hardhat';
+import { ethers } from 'hardhat';
 import { ORManager } from '../typechain-types/contracts/ORManager';
 import { ORMakerV1Factory } from '../typechain-types/contracts/ORMakerV1Factory';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { MerkleTree } from 'merkletreejs';
 import { PAIR_LIST } from './lib/Config';
 import keccak256 from 'keccak256';
-import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
+// import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { CHAIN_INFO_LIST as chainInfoList, TOKEN_LIST } from './lib/Config';
+import { deploy } from '../scripts/utils';
 let factory: ORManager;
 let makerV1Factory: ORMakerV1Factory;
 const chainInfo_main = chainInfoList[0];
@@ -24,26 +25,11 @@ const tokeninfo_usdt_arb = TOKEN_LIST[5];
 
 async function deployFactoryFixture() {
   const [owner, addr1, addr2] = await ethers.getSigners();
-
-  const ORManager = await ethers.getContractFactory('ORManager', {
-    libraries: {},
-  });
-  const managerProxy = await upgrades.deployProxy(ORManager);
-  await managerProxy.deployed();
-  factory = managerProxy as ORManager;
-  // makerV1Factory
-  const ORMakerV1Factory = await ethers.getContractFactory('ORMakerV1Factory', {
-    libraries: {},
-  });
-  const makerFactoryProxy = await upgrades.deployProxy(ORMakerV1Factory, [
-    factory.address,
-  ]);
-  await makerFactoryProxy.deployed();
-  makerV1Factory = makerFactoryProxy as ORMakerV1Factory;
-
-  console.log(`ManagerContract Address:`, factory.address);
-  process.env['ManagerContract'] = factory.address;
-  return { managerProxy, factory, owner, addr1, addr2 };
+  factory = await deploy<ORManager>(false, 'ORManager');
+  await factory.initialize();
+  makerV1Factory = await deploy<ORMakerV1Factory>(false, 'ORMakerV1Factory');
+  await makerV1Factory.initialize(factory.address.toString());
+  return { factory, owner, addr1, addr2 };
 }
 
 describe('Factory.spec.ts', () => {
@@ -52,7 +38,7 @@ describe('Factory.spec.ts', () => {
   let address2: SignerWithAddress;
 
   async function getFactoryInfo() {
-    const { factory, addr1, addr2 } = await loadFixture(deployFactoryFixture);
+    const { factory, addr1, addr2 } = await deployFactoryFixture();
     userFactory = factory;
     address1 = addr1;
     address2 = addr2;
@@ -72,7 +58,6 @@ describe('Factory.spec.ts', () => {
     it('UPDATE EBC', async () => {
       expect(await userFactory.getEBCids()).equal(1);
       expect(await userFactory.getEBC(1)).equal(address1.address);
-
       await userFactory.updateEBC(1, address2.address);
       expect(await userFactory.getEBCids()).equal(1);
       expect(await userFactory.getEBC(1)).equal(address2.address);
@@ -85,6 +70,7 @@ describe('Factory.spec.ts', () => {
         chainInfo_main.chainID,
         chainInfo_main.batchLimit,
         chainInfo_main.maxDisputeTime,
+        chainInfo_main.maxReceiptTime,
         chainInfo_main.tokenList,
       );
 
@@ -92,18 +78,21 @@ describe('Factory.spec.ts', () => {
         chainInfo_arbitrum.chainID,
         chainInfo_arbitrum.batchLimit,
         chainInfo_arbitrum.maxDisputeTime,
+        chainInfo_arbitrum.maxReceiptTime,
         chainInfo_arbitrum.tokenList,
       );
       await userFactory.setChainInfo(
         chainInfo_zksync.chainID,
         chainInfo_zksync.batchLimit,
         chainInfo_zksync.maxDisputeTime,
+        chainInfo_zksync.maxReceiptTime,
         chainInfo_zksync.tokenList,
       );
       await userFactory.setChainInfo(
         chainInfo_op.chainID,
         chainInfo_op.batchLimit,
         chainInfo_op.maxDisputeTime,
+        chainInfo_op.maxReceiptTime,
         chainInfo_op.tokenList,
       );
 
@@ -112,12 +101,12 @@ describe('Factory.spec.ts', () => {
       expect((await userFactory.chainList(1)).isUsed).true;
       expect((await userFactory.chainList(1)).chainid).equal(1);
       expect((await userFactory.chainList(1)).batchLimit).equal(100);
-      expect((await userFactory.chainList(1)).maxDisputeTime).equal(24 * 3600);
+      expect((await userFactory.chainList(1)).maxDisputeTime).equal(1200);
 
       expect((await userFactory.chainList(2)).isUsed).true;
       expect((await userFactory.chainList(2)).chainid).equal(2);
       expect((await userFactory.chainList(2)).batchLimit).equal(100);
-      expect((await userFactory.chainList(2)).maxDisputeTime).equal(24 * 3600);
+      expect((await userFactory.chainList(2)).maxDisputeTime).equal(1200);
 
       expect((await userFactory.chainList(9999999)).isUsed).false;
     });
@@ -130,58 +119,25 @@ describe('Factory.spec.ts', () => {
       expect(ethInfo.isUsed).true;
       expect(ethInfo.chainid).equal(1);
       expect(ethInfo.batchLimit).equal(100);
-      expect(ethInfo.maxDisputeTime).equal(24 * 3600);
+      expect(ethInfo.maxDisputeTime).equal(1200);
 
       expect(arInfo.isUsed).true;
       expect(arInfo.chainid).equal(2);
       expect(arInfo.batchLimit).equal(100);
-      expect(arInfo.maxDisputeTime).equal(24 * 3600);
+      expect(arInfo.maxDisputeTime).equal(1200);
     });
   });
 
   describe('Factory_TOKENINFO_TEST', () => {
     it('SET TOKENINFO', async () => {
-      await userFactory.setTokenInfo(
-        tokeninfo_eth_main.chainID,
-        tokeninfo_eth_main.tokenAddress,
-        tokeninfo_eth_main.tokenPresion,
-        tokeninfo_eth_main.mainAddress,
-      );
-
-      await userFactory.setTokenInfo(
-        tokeninfo_usdc_main.chainID,
-        tokeninfo_usdc_main.tokenAddress,
-        tokeninfo_usdc_main.tokenPresion,
-        tokeninfo_usdc_main.mainAddress,
-      );
-
-      await userFactory.setTokenInfo(
-        tokeninfo_usdt_main.chainID,
-        tokeninfo_usdt_main.tokenAddress,
-        tokeninfo_usdt_main.tokenPresion,
-        tokeninfo_usdt_main.mainAddress,
-      );
-
-      await userFactory.setTokenInfo(
-        tokeninfo_eth_arb.chainID,
-        tokeninfo_eth_arb.tokenAddress,
-        tokeninfo_eth_arb.tokenPresion,
-        tokeninfo_eth_arb.mainAddress,
-      );
-
-      await userFactory.setTokenInfo(
-        tokeninfo_usdc_arb.chainID,
-        tokeninfo_usdc_arb.tokenAddress,
-        tokeninfo_usdc_arb.tokenPresion,
-        tokeninfo_usdc_arb.mainAddress,
-      );
-
-      await userFactory.setTokenInfo(
-        tokeninfo_usdt_arb.chainID,
-        tokeninfo_usdt_arb.tokenAddress,
-        tokeninfo_usdt_arb.tokenPresion,
-        tokeninfo_usdt_arb.mainAddress,
-      );
+      for (const token of TOKEN_LIST) {
+        await userFactory.setTokenInfo(
+          token.chainID,
+          token.tokenAddress,
+          token.tokenPresion,
+          token.mainAddress,
+        );
+      }
     });
     describe('GET TOKENINFO', () => {
       it('Main_ETH', async () => {

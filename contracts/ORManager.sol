@@ -5,12 +5,12 @@ import "./interface/IORManager.sol";
 import "./ORMakerDeposit.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "hardhat/console.sol";
 
 contract ORManager is IORManager, Initializable, OwnableUpgradeable {
     mapping(uint256 => address) ebcPair;
     mapping(uint256 => OperationsLib.chainInfo) public chainList;
-    mapping(uint256 => mapping(address => OperationsLib.tokenInfo)) public tokenInfos;
+    // chainId => tokenAddress
+    mapping(uint256 => mapping(address => OperationsLib.tokenInfo)) private tokenInfos;
     uint256 ebcids;
     bytes32 public pairsRoot;
     address public spv;
@@ -54,10 +54,18 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable {
         uint256 chainID,
         uint256 batchLimit,
         uint256 maxDisputeTime,
+        uint256 maxReceiptTime,
         address[] memory tokenList
     ) external onlyOwner {
-        require(chainList[chainID].isUsed == false, "CHAININFO_INSTALL_ALREADY");
-        chainList[chainID] = OperationsLib.chainInfo(chainID, batchLimit, maxDisputeTime, tokenList, true);
+        chainList[chainID] = OperationsLib.chainInfo(
+            chainID,
+            batchLimit,
+            maxDisputeTime,
+            maxReceiptTime,
+            tokenList,
+            true
+        );
+        emit ChangeChain(chainID, chainList[chainID]);
     }
 
     function getChainInfoByChainID(uint256 chainID) public view returns (OperationsLib.chainInfo memory) {
@@ -71,7 +79,7 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable {
         address tokenAddress,
         uint256 tokenPresion,
         address mainAddress
-    ) external onlyOwner returns (bool) {
+    ) external onlyOwner {
         require(chainList[chainID].tokenList.length != 0, "SETTOKENINFO_UNSUPPORTTOKEN");
         for (uint256 i = 0; i < chainList[chainID].tokenList.length; i++) {
             address supportTokenAddress = chainList[chainID].tokenList[i];
@@ -83,8 +91,8 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable {
                     mainAddress
                 );
             }
+            emit ChangeToken(chainID, tokenAddress, tokenInfos[chainID][tokenAddress]);
         }
-        return false;
     }
 
     function getTokenInfo(uint256 chainID, address tokenAddress)
@@ -120,6 +128,7 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable {
         bytes32[] calldata proof,
         bool[] calldata proofFlags
     ) external {
+        // is support chain
         bool isSupport = pairMultiProofVerifyCalldata(pairs, rootHash, proof, proofFlags);
         require(isSupport, "Hash Inconsistent");
         pairsRoot = rootHash;
@@ -147,14 +156,14 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable {
         view
         returns (bool)
     {
-        bytes32 leaf = OperationsLib.getLpID(pair);
-        return MerkleProof.verifyCalldata(proof, pairsRoot, leaf);
+        bytes32 pairId = OperationsLib.getPairID(pair);
+        return isSupportPair(pairId, proof);
     }
 
     function pairObjectToHash(OperationsLib.pairChainInfo[] calldata pairs) internal pure returns (bytes32[] memory) {
         bytes32[] memory leaves = new bytes32[](pairs.length);
         for (uint256 i = 0; i < pairs.length; i++) {
-            leaves[i] = OperationsLib.getLpID(pairs[i]);
+            leaves[i] = OperationsLib.getPairID(pairs[i]);
         }
         return leaves;
     }

@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
-import { ethers, upgrades } from 'hardhat';
-import { ORProtocalV1 } from '../typechain-types';
+import { ethers } from 'hardhat';
+import { deploy, loadOrDeployContract } from '../scripts/utils';
+import { ORManager, ORProtocalV1 } from '../typechain-types';
 import { USER_TX_LIST } from './lib/Config';
 import { getLeaf } from './lib/Utils';
 let ebc: ORProtocalV1;
@@ -10,25 +11,21 @@ let ebcOwner: SignerWithAddress;
 let managerContractAddress: string;
 describe('ORProtocalV1.test.ts', () => {
   async function createEbcInfo() {
-    const accounts = await ethers.getSigners();
-    ebcOwner = accounts[accounts.length - 2];
-    managerContractAddress = String(process.env['ManagerContract']);
-    const ORProtocalV1 = (
-      await ethers.getContractFactory('ORProtocalV1', {
-        libraries: {},
-      })
-    ).connect(ebcOwner);
-    const ORProtocalV1Proxy = await upgrades.deployProxy(ORProtocalV1, [
-      managerContractAddress,
-    ]);
-    await ORProtocalV1Proxy.deployed();
-    ebc = ORProtocalV1Proxy as ORProtocalV1;
+    [ebcOwner] = await ethers.getSigners();
+    const manager = await loadOrDeployContract<ORManager>('ORManager');
+    managerContractAddress = manager.address;
+    ebc = await deploy<ORProtocalV1>(
+      true,
+      'ORProtocalV1',
+      manager.address,
+      ethers.utils.parseEther('0.05'),
+      110,
+      110,
+      110,
+    );
   }
 
   before(createEbcInfo);
-  it('Create EBC', async () => {
-    console.log('EBC address', ebc.address);
-  });
   it('Update EBC and SPV factory', async () => {
     const spvAddress = process.env['SPV'] || '';
     !expect(managerContractAddress).not.empty;
@@ -80,7 +77,15 @@ describe('ORProtocalV1.test.ts', () => {
   it('getRespnseHash', async () => {
     const { leaf } = getLeaf(USER_TX_LIST[0], true);
     const expectResponce = ethers.utils.solidityKeccak256(
-      ['bytes32', 'uint256', 'address', 'address', 'uint256', 'address'],
+      [
+        'bytes32',
+        'uint256',
+        'address',
+        'address',
+        'uint256',
+        'uint256',
+        'address',
+      ],
       [
         leaf.lpid,
         ethers.BigNumber.from(leaf.amount)
@@ -89,6 +94,7 @@ describe('ORProtocalV1.test.ts', () => {
         leaf.destAddress,
         leaf.sourceAddress,
         leaf.responseAmount,
+        leaf.responseSafetyCode,
         leaf.tokenAddress,
       ],
     );

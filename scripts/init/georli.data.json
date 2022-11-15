@@ -1,0 +1,146 @@
+{
+  "chains": [
+    {
+      "chainID": 599,
+      "batchLimit": 100,
+      "maxDisputeTime": 300,
+      "maxReceiptTime": 120,
+      "tokenList": [
+        {
+          "address": "0x0000000000000000000000000000000000000000",
+          "symbol": "ETH",
+          "decimals": 18,
+          "pledgeToken": "0x0000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "chainID": 5,
+      "batchLimit": 100,
+      "maxDisputeTime": 300,
+      "maxReceiptTime": 120,
+      "tokenList": [
+        {
+          "address": "0x0000000000000000000000000000000000000000",
+          "symbol": "ETH",
+          "decimals": 18,
+          "pledgeToken": "0x0000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "chainID": 33,
+      "batchLimit": 100,
+      "maxDisputeTime": 300,
+      "maxReceiptTime": 120,
+      "tokenList": [
+        {
+          "address": "0x0000000000000000000000000000000000000000",
+          "symbol": "ETH",
+          "decimals": 18,
+          "pledgeToken": "0x0000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "chainID": 516,
+      "batchLimit": 100,
+      "maxDisputeTime": 300,
+      "maxReceiptTime": 120,
+      "tokenList": [
+        {
+          "address": "0x0000000000000000000000000000000000000000",
+          "symbol": "ETH",
+          "decimals": 18,
+          "pledgeToken": "0x0000000000000000000000000000000000000000"
+        }
+      ]
+    }
+  ],
+  "pairs": [
+    {
+      "sourceChain": 5,
+      "destChain": 33,
+      "sourceTAddress": "0x0000000000000000000000000000000000000000",
+      "destTAddress": "0x0000000000000000000000000000000000000000",
+      "ebcid": 1
+    },
+    {
+      "sourceChain": 5,
+      "destChain": 516,
+      "sourceTAddress": "0x0000000000000000000000000000000000000000",
+      "destTAddress": "0x0000000000000000000000000000000000000000",
+      "ebcid": 1
+    },
+    {
+      "sourceChain": 5,
+      "destChain": 599,
+      "sourceTAddress": "0x0000000000000000000000000000000000000000",
+      "destTAddress": "0x0000000000000000000000000000000000000000",
+      "ebcid": 1
+    },
+    {
+      "sourceChain": 33,
+      "destChain": 5,
+      "sourceTAddress": "0x0000000000000000000000000000000000000000",
+      "destTAddress": "0x0000000000000000000000000000000000000000",
+      "ebcid": 1
+    },
+    {
+      "sourceChain": 33,
+      "destChain": 516,
+      "sourceTAddress": "0x0000000000000000000000000000000000000000",
+      "destTAddress": "0x0000000000000000000000000000000000000000",
+      "ebcid": 1
+    },
+    {
+      "sourceChain": 33,
+      "destChain": 599,
+      "sourceTAddress": "0x0000000000000000000000000000000000000000",
+      "destTAddress": "0x0000000000000000000000000000000000000000",
+      "ebcid": 1
+    },
+    {
+      "sourceChain": 516,
+      "destChain": 5,
+      "sourceTAddress": "0x0000000000000000000000000000000000000000",
+      "destTAddress": "0x0000000000000000000000000000000000000000",
+      "ebcid": 1
+    },
+    {
+      "sourceChain": 516,
+      "destChain": 33,
+      "sourceTAddress": "0x0000000000000000000000000000000000000000",
+      "destTAddress": "0x0000000000000000000000000000000000000000",
+      "ebcid": 1
+    },
+    {
+      "sourceChain": 516,
+      "destChain": 599,
+      "sourceTAddress": "0x0000000000000000000000000000000000000000",
+      "destTAddress": "0x0000000000000000000000000000000000000000",
+      "ebcid": 1
+    },
+    {
+      "sourceChain": 599,
+      "destChain": 5,
+      "sourceTAddress": "0x0000000000000000000000000000000000000000",
+      "destTAddress": "0x0000000000000000000000000000000000000000",
+      "ebcid": 1
+    },
+    {
+      "sourceChain": 599,
+      "destChain": 33,
+      "sourceTAddress": "0x0000000000000000000000000000000000000000",
+      "destTAddress": "0x0000000000000000000000000000000000000000",
+      "ebcid": 1
+    },
+    {
+      "sourceChain": 599,
+      "destChain": 516,
+      "sourceTAddress": "0x0000000000000000000000000000000000000000",
+      "destTAddress": "0x0000000000000000000000000000000000000000",
+      "ebcid": 1
+    }
+  ]
+}

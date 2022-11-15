@@ -15,9 +15,11 @@ export const getPairID = (pair: PairStruct): string => {
   return lpId.replace('0x', '');
   // return Buffer.from(lpId.replace('0x', ''), 'hex');
 };
+
 export const getPairLPID = (lp: LpInfoStruct): string => {
   const lpId = solidityKeccak256(
     [
+      'address',
       'bytes32',
       'uint256',
       'uint256',
@@ -26,21 +28,21 @@ export const getPairLPID = (lp: LpInfoStruct): string => {
       'uint256',
       'uint256',
       'uint256',
-      'uint256',
+      // 'uint256',
     ],
     [
+      '0xba47e2bd934907a2c2bc7B3c70E9AE41135Fa40E',
       `0x${lp.pairId}`,
-      ethers.BigNumber.from(lp.maxPrice),
+      ethers.BigNumber.from(lp.sourcePresion),
+      ethers.BigNumber.from(lp.destPresion),
       ethers.BigNumber.from(lp.minPrice),
+      ethers.BigNumber.from(lp.maxPrice),
       ethers.BigNumber.from(lp.gasFee),
       ethers.BigNumber.from(lp.tradingFee),
       ethers.BigNumber.from(lp.startTime),
-      ethers.BigNumber.from(lp.stopTime || 0),
-      ethers.BigNumber.from(lp.sourcePresion),
-      ethers.BigNumber.from(lp.destPresion),
+      // ethers.BigNumber.from(lp.stopTime || 0),
     ],
   );
-
   return lpId.replace('0x', '');
   // return Buffer.from(lpId.replace('0x', ''), 'hex');
 };
@@ -51,10 +53,10 @@ export const getPairLPID = (lp: LpInfoStruct): string => {
  * @returns
  */
 export const getLeaf = (tx: typeof USER_TX_LIST[0], status: boolean) => {
-  const mdcContractAddress = process.env['MDC'] || '';
-  status === true
-    ? (tx.to = mdcContractAddress)
-    : (tx.from = mdcContractAddress);
+  // const mdcContractAddress = process.env['MDC'] || '';
+  // status === true
+  //   ? (tx.to = mdcContractAddress)
+  //   : (tx.from = mdcContractAddress);
   const lpid = tx.lpid.toLowerCase();
   const txHash = tx.id.toLowerCase();
   const sourceAddress = tx.from.toLowerCase();
@@ -65,6 +67,7 @@ export const getLeaf = (tx: typeof USER_TX_LIST[0], status: boolean) => {
   const tokenAddress = tx.token;
   const timestamp = tx.timestamp;
   const responseAmount = tx.responseAmount;
+  const responseSafetyCode = tx.responseSafetyCode;
   const ebcid = tx.ebcid;
   const hex = ethers.utils.solidityKeccak256(
     [
@@ -76,6 +79,7 @@ export const getLeaf = (tx: typeof USER_TX_LIST[0], status: boolean) => {
       'uint256',
       'uint256',
       'address',
+      'uint256',
       'uint256',
       'uint256',
       'uint256',
@@ -91,6 +95,7 @@ export const getLeaf = (tx: typeof USER_TX_LIST[0], status: boolean) => {
       tokenAddress,
       timestamp,
       responseAmount,
+      responseSafetyCode,
       ebcid,
     ],
   );
@@ -105,6 +110,7 @@ export const getLeaf = (tx: typeof USER_TX_LIST[0], status: boolean) => {
     tokenAddress,
     timestamp,
     responseAmount,
+    responseSafetyCode,
     ebcid,
   };
   return { hex, leaf };
