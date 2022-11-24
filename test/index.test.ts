@@ -134,7 +134,7 @@ export const getLpId = (makerPool: string, lp: any): string => {
   );
   return lpId;
 };
-export const getTxLeaf = (tx:any) => {
+export const getTxLeaf = (tx: any) => {
   const lpid = tx.lpid.toLowerCase();
   const txHash = tx.id.toLowerCase();
   const sourceAddress = tx.from.toLowerCase();
@@ -142,7 +142,7 @@ export const getTxLeaf = (tx:any) => {
   const nonce = tx.nonce;
   const amount = tx.value;
   const chainID = tx.chainId || tx.chainID;
-  
+
   const tokenAddress = tx.token;
   const timestamp = tx.timestamp;
   const responseAmount = tx.responseAmount;
@@ -194,7 +194,6 @@ export const getTxLeaf = (tx:any) => {
   };
   return { hex, leaf };
 };
-
 
 export class DataInit {
   public chains: Array<any> = [];

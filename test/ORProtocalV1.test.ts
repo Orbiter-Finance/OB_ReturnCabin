@@ -2,10 +2,11 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
-import { deploy, loadOrDeployContract } from '../scripts/utils';
+import { loadOrDeployContract } from '../scripts/utils';
 import { ORManager, ORProtocalV1 } from '../typechain-types';
-import { USER_TX_LIST } from './lib/Config';
-import { getLeaf } from './lib/Utils';
+import { getORProtocalV1Contract, getORSPVContract } from './index.test';
+import USER_TX_LIST from '././userTx.data.json';
+import { getTxLeaf } from './index.test';
 let ebc: ORProtocalV1;
 let ebcOwner: SignerWithAddress;
 let managerContractAddress: string;
@@ -14,32 +15,23 @@ describe('ORProtocalV1.test.ts', () => {
     [ebcOwner] = await ethers.getSigners();
     const manager = await loadOrDeployContract<ORManager>('ORManager');
     managerContractAddress = manager.address;
-    ebc = await deploy<ORProtocalV1>(
-      true,
-      'ORProtocalV1',
-      manager.address,
-      ethers.utils.parseEther('0.05'),
-      110,
-      110,
-      110,
-      300,
-    );
+    ebc = await getORProtocalV1Contract();
   }
 
   before(createEbcInfo);
   it('Update EBC and SPV factory', async () => {
-    const spvAddress = process.env['SPV'] || '';
+    const spvContract = await getORSPVContract();
     !expect(managerContractAddress).not.empty;
-    !expect(spvAddress).not.empty;
+    !expect(spvContract.address).not.empty;
     const factoryContract = await ethers.getContractAt(
       'ORManager',
       managerContractAddress,
     );
     await factoryContract.updateEBC(1, ebc.address);
-    await factoryContract.setSPV(spvAddress);
+    await factoryContract.setSPV(spvContract.address);
     expect(await factoryContract.getEBCids()).equal(1);
     expect(await factoryContract.getEBC(1)).equal(ebc.address);
-    expect(await factoryContract.getSPV()).equal(spvAddress);
+    expect(await factoryContract.getSPV()).equal(spvContract.address);
   });
   it('setAndGetChanllengePledgeAmountCoefficient', async () => {
     const value = ethers.utils.parseEther('0.05');
@@ -76,7 +68,7 @@ describe('ORProtocalV1.test.ts', () => {
     expect(response).gt(ethers.BigNumber.from(value));
   });
   it('getRespnseHash', async () => {
-    const { leaf } = getLeaf(USER_TX_LIST[0], true);
+    const { leaf } = getTxLeaf(USER_TX_LIST[0]);
     const expectResponce = ethers.utils.solidityKeccak256(
       [
         'bytes32',

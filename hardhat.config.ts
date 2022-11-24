@@ -33,10 +33,12 @@ const config: HardhatUserConfig = {
       allowUnlimitedContractSize: true,
     },
     ganache: {
-      url: 'http://127.0.0.1:8545',
+      chainId: 5777,
+      url: 'http://127.0.0.1:7545',
       accounts
     },
     test: {
+      chainId: 599,
       url: 'http://ec2-54-178-23-104.ap-northeast-1.compute.amazonaws.com:8545',
       accounts
     },

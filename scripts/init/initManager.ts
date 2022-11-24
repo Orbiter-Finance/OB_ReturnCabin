@@ -2,10 +2,10 @@ import { ethers } from 'hardhat';
 import keccak256 from 'keccak256';
 import { orderBy } from 'lodash';
 import MerkleTree from 'merkletreejs';
-import { getPairID } from '../../test/lib/Utils';
 import { ORManager } from '../../typechain-types';
 import { deploy, printContract, printSuccess } from '../utils';
-import { chains, pairs } from './georli.data.json';
+import { chains, pairs } from '../../test/georli.data.json';
+import { getPairID } from '../../test/index.test';
 let contractAddress = process.env['ORManager'] || '';
 async function getManagerContract(): Promise<ORManager> {
   if (contractAddress) {

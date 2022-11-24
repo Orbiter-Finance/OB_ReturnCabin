@@ -3,7 +3,7 @@
   "scripts": {
     "compile": "hardhat compile",
     "coverage": "env COVERAGE=true hardhat coverage",
-    "test": "hardhat test ./test/Factory.ts ./test/ORSpv.spec.ts ./test/ORProtocalV1.test.ts ./test/MakerDeposit.test.ts --network hardhat",
+    "test": "hardhat test  ./test/ORManager.test.ts ./test/ORSpv.spec.ts ./test/ORProtocalV1.test.ts ./test/ORMakerV1Factory.test.ts ./test/MakerDeposit.test.ts  --network hardhat",
     "lint": "npm run lint:ts && npm run lint:sol",
     "lint:fix": "npm run lint:ts:fix && npm run lint:sol:fix",
     "lint:ts": "eslint --ext .ts,.js ./",

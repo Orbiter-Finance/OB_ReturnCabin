@@ -15,6 +15,7 @@ async function main() {
     true,
     'ORMakerV1Factory',
     manager.address,
+    100,
   );
   // // create maker
   const accounts = await ethers.getSigners();

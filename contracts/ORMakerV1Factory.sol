@@ -11,9 +11,10 @@ contract ORMakerV1Factory is IORMakerV1Factory, OwnableUpgradeable {
     uint256 public MakerLimitUsed;
     mapping(address => address) public getMaker;
 
-    function initialize(address _manager) public initializer {
+    function initialize(address _manager, uint256 _makerMaxLimit) public initializer {
         __Ownable_init();
         manager = _manager;
+        MakerMaxLimit = _makerMaxLimit;
     }
 
     function setManager(address value) external onlyOwner {

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
+import "hardhat/console.sol";
 
 import "./interface/IORManager.sol";
 import "./ORMakerDeposit.sol";
@@ -68,9 +69,9 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable {
         emit ChangeChain(chainID, chainList[chainID]);
     }
 
-    function getChainInfoByChainID(uint256 chainID) public view returns (OperationsLib.chainInfo memory) {
-        require(chainList[chainID].isUsed == true, "MANAGER_CHAININFO_UNINSTALL");
-        OperationsLib.chainInfo memory info = chainList[chainID];
+    function getChainInfoByChainID(uint256 chainId) public view returns (OperationsLib.chainInfo memory) {
+        require(chainList[chainId].isUsed == true, "MANAGER_CHAININFO_UNINSTALL");
+        OperationsLib.chainInfo memory info = chainList[chainId];
         return info;
     }
 

@@ -10,10 +10,11 @@ import "./interface/IORSpv.sol";
 import "./interface/IORMakerV1Factory.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-
-// import "hardhat/console.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
+import "hardhat/console.sol";
 
 contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
+    using EnumerableMap for EnumerableMap.Bytes32ToUintMap;
     address public makerFactory;
     // pairId->lpPairInfo
     mapping(bytes32 => OperationsLib.lpPairInfo) public lpInfo;
@@ -32,6 +33,8 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
 
     // chanllenge pleged eth amount
     uint256 chanllengePleged;
+    // chaionId => tokenAddress => amount
+    mapping(uint16 => EnumerableMap.AddressToUintMap) private pledgeBalances;
 
     function initialize(address _owner, address _makerFactory) public initializer {
         require(_owner != address(0), "Owner address error");
@@ -91,6 +94,19 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         address spvAddress = IORManager(manager).getSPV();
         require(spvAddress != address(0), "SPV_NOT_INSTALL");
         return spvAddress;
+    }
+
+    function calcLpNeedPledgeAmount(OperationsLib.lpInfo[] calldata _lpinfos) external view returns (uint256 amount) {
+        address manager = getManagerAddress();
+        for (uint256 i = 0; i < _lpinfos.length; i++) {
+            OperationsLib.lpInfo memory _lpinfo = _lpinfos[i];
+            address ebcAddress = IORManager(manager).getEBC(_lpinfo.ebcid);
+            OperationsLib.chainInfo memory souceChainInfo = IORManager(manager).getChainInfoByChainID(
+                _lpinfo.sourceChain
+            );
+            amount = IORProtocal(ebcAddress).getDepositAmount(souceChainInfo.batchLimit, _lpinfo.maxPrice);
+        }
+        // amount = 0;
     }
 
     function LPAction(OperationsLib.lpInfo[] calldata _lpinfos, bytes32[][] calldata pairProof)
