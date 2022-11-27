@@ -10,47 +10,30 @@ import "hardhat/console.sol";
 
 contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     address controlContract;
-    uint256 public ChanllengePledgeAmountCoefficient;
-    // * 100
+    uint256 public challengePledgedAmount;
     uint32 public pledgeAmountSafeRate;
-    // uint16 public DepositAmountCoefficient;
-    uint16 public EthPunishCoefficient;
-    uint16 public TokenPunishCoefficient;
-    uint32 public PauseAfterStopInterval;
+    uint16 public mainCoinPunishRate;
+    uint16 public tokenPunishRate;
 
     function initialize(
         address _controlContract,
-        uint256 _chanllengePledgeAmountCoefficient,
+        uint256 _challengePledgedAmount,
         uint32 _pledgeAmountSafeRate,
-        uint16 _ethPunishCoefficient,
-        uint16 _tokenPunishCoefficie,
-        uint32 _pauseAfterStopInterval
+        uint16 _mainCoinPunishRate,
+        uint16 _tokenPunishRate
     ) public initializer {
         require(_controlContract != address(0), "Owner address error");
         controlContract = _controlContract;
-        ChanllengePledgeAmountCoefficient = _chanllengePledgeAmountCoefficient;
+        challengePledgedAmount = _challengePledgedAmount;
         pledgeAmountSafeRate = _pledgeAmountSafeRate;
-        EthPunishCoefficient = _ethPunishCoefficient;
-        TokenPunishCoefficient = _tokenPunishCoefficie;
-        PauseAfterStopInterval = _pauseAfterStopInterval;
+        mainCoinPunishRate = _mainCoinPunishRate;
+        tokenPunishRate = _tokenPunishRate;
         __Ownable_init();
     }
 
-    function setPauseAfterStopInterval(uint32 value) external onlyOwner {
-        PauseAfterStopInterval = value;
-    }
-
-    function getPauseAfterStopInterval() external view returns (uint256) {
-        return PauseAfterStopInterval;
-    }
-
     // The parameter here is the user challenge pledge factor in wei.
-    function setChanllengePledgeAmountCoefficient(uint256 _wei) external onlyOwner {
-        ChanllengePledgeAmountCoefficient = _wei;
-    }
-
-    function getChanllengePledgeAmountCoefficient() external view returns (uint256) {
-        return ChanllengePledgeAmountCoefficient;
+    function setChallengePledgedAmount(uint256 _wei) external onlyOwner {
+        challengePledgedAmount = _wei;
     }
 
     // The parameter is a number of percentile precision, for example: When tenDigits is 110, it represents 1.1
@@ -63,21 +46,13 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     }
 
     // The parameter is a number of percentile precision, for example: When tenDigits is 110, it represents 1.1
-    function setETHPunishCoefficient(uint16 hundredDigits) external onlyOwner {
-        EthPunishCoefficient = hundredDigits;
-    }
-
-    function getETHPunishCoefficient() external view returns (uint16) {
-        return EthPunishCoefficient;
+    function setMainCoinPunishRate(uint16 value) external onlyOwner {
+        mainCoinPunishRate = value;
     }
 
     // The parameter is a number of percentile precision, for example: When tenDigits is 110, it represents 1.1
-    function setTokenPunishCoefficient(uint16 hundredDigits) external onlyOwner {
-        TokenPunishCoefficient = hundredDigits;
-    }
-
-    function getTokenPunishCoefficient() external view returns (uint16) {
-        return TokenPunishCoefficient;
+    function setTokenPunishRate(uint16 value) external onlyOwner {
+        tokenPunishRate = value;
     }
 
     function getPledgeAmount(uint256 batchLimit, uint256 maxPrice)
@@ -97,21 +72,10 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     {
         baseValue = value;
         if (token == address(0)) {
-            additiveValue = (baseValue * EthPunishCoefficient) / 100 / 100;
+            additiveValue = (baseValue * mainCoinPunishRate) / 100 / 100;
         } else {
-            additiveValue = (baseValue * TokenPunishCoefficient) / 100 / 100;
+            additiveValue = (baseValue * tokenPunishRate) / 100 / 100;
         }
-    }
-
-    function getStartDealyTime(uint256 chainID) external pure returns (uint256) {
-        require(chainID != 0, "CHAINID_ERROR");
-        return 500;
-    }
-
-    function getStopDealyTime(uint256 chainID) external view returns (uint256) {
-        require(chainID != 0, "CHAINID_ERROR");
-        return PauseAfterStopInterval;
-        // return 60 * 60 * 1;
     }
 
     function getSecuirtyCode(bool isSource, uint256 amount) public pure returns (uint256, bool) {
@@ -193,7 +157,7 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     }
 
     function getSpvAddress() internal view returns (address) {
-        address spvAddress = IORManager(controlContract).getSPV();
+        address spvAddress = IORManager(controlContract).spv();
         require(spvAddress != address(0), "SPV_NOT_INSTALL");
         return spvAddress;
     }

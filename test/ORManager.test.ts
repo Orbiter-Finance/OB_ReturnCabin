@@ -18,6 +18,7 @@ async function initChain() {
       chain.batchLimit,
       chain.maxDisputeTime,
       chain.maxReceiptTime,
+      chain.stopDelay,
       tokenList,
     );
     printSuccess(`Add Chain ${chain.chainID} Hash: ${tx.hash}`);
@@ -93,14 +94,21 @@ describe('ORManager.test.ts => Chain', () => {
   });
   it('Manager Change Chain batchLimit', async () => {
     const manager = await getManagerContract();
-    const { chainID, batchLimit, maxDisputeTime, maxReceiptTime, tokenList } =
-      chains[0];
+    const {
+      chainID,
+      batchLimit,
+      stopDelay,
+      maxDisputeTime,
+      maxReceiptTime,
+      tokenList,
+    } = chains[0];
     const tokenAddressList = tokenList.map((row: any) => row.address);
     await manager.setChainInfo(
       chainID,
       batchLimit * 2,
       maxDisputeTime,
       maxReceiptTime,
+      stopDelay,
       tokenAddressList,
     );
     expect((await manager.chainList(chainID)).batchLimit).equal(batchLimit * 2);
@@ -144,6 +152,6 @@ describe('Manager EBC', () => {
     await manager.setEBC(ebc.address);
     //ERROR TEST
     // await userFactory.setEBC('0x0000000000000000000000000000000000000000');
-    expect(await manager.getEBC(1)).equal(ebc.address);
+    expect(await manager.ebc(1)).equal(ebc.address);
   });
 });

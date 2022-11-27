@@ -60,6 +60,7 @@
     "chalk": "^4.1.2",
     "dotenv": "^16.0.1",
     "ethereumjs-util": "^7.1.5",
+    "generate-contract-interface": "^0.1.13",
     "hardhat-contract-sizer": "^2.6.1",
     "hardhat-etherscan": "^1.0.1",
     "keccak256": "^1.0.6",

@@ -90,7 +90,6 @@ export async function getORProtocalV1Contract(): Promise<ORProtocalV1> {
       10 * 100,
       10 * 100,
       10 * 100,
-      10 * 100,
     );
     process.env[name] = contract.address;
     return contract;

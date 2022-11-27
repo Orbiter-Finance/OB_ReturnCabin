@@ -11,11 +11,11 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable {
     mapping(uint256 => OperationsLib.chainInfo) public chainList;
 
     // chainId => tokenAddress
-    mapping(uint256 => mapping(address => OperationsLib.tokenInfo)) private tokenInfos;
-    uint256 private ebcId;
-    mapping(uint256 => address) private ebc;
+    mapping(uint256 => mapping(address => OperationsLib.tokenInfo)) public tokenInfos;
+    uint256 public ebcId;
+    mapping(uint256 => address) public ebc;
     bytes32 public pairsRoot;
-    address private spv;
+    address public spv;
 
     function initialize() public initializer {
         __Ownable_init();
@@ -23,10 +23,6 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable {
 
     function setSPV(address spvAddress) external onlyOwner {
         spv = spvAddress;
-    }
-
-    function getSPV() external view returns (address) {
-        return spv;
     }
 
     function setEBC(address addr) external onlyOwner {
@@ -49,6 +45,7 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable {
         uint256 batchLimit,
         uint256 maxDisputeTime,
         uint256 maxReceiptTime,
+        uint256 stopDelay,
         address[] memory tokenList
     ) external onlyOwner {
         chainList[chainID] = OperationsLib.chainInfo(
@@ -56,6 +53,7 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable {
             batchLimit,
             maxDisputeTime,
             maxReceiptTime,
+            stopDelay,
             tokenList,
             true
         );

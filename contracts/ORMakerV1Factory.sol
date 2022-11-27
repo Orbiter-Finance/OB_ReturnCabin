@@ -6,15 +6,15 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./interface/IORMakerV1Factory.sol";
 
 contract ORMakerV1Factory is IORMakerV1Factory, OwnableUpgradeable {
-    address private manager;
-    uint256 public MakerMaxLimit;
-    uint256 public MakerLimitUsed;
+    address public manager;
+    uint256 public makerMaxLimit;
+    uint256 public makerLimitUsed;
     mapping(address => address) public getMaker;
 
     function initialize(address _manager, uint256 _makerMaxLimit) public initializer {
         __Ownable_init();
         manager = _manager;
-        MakerMaxLimit = _makerMaxLimit;
+        makerMaxLimit = _makerMaxLimit;
     }
 
     function setManager(address value) external onlyOwner {
@@ -22,17 +22,13 @@ contract ORMakerV1Factory is IORMakerV1Factory, OwnableUpgradeable {
         manager = value;
     }
 
-    function getManager() external view returns (address) {
-        return manager;
-    }
-
     // Set the Maker maximum to create an upper limit.
     function setMakerMaxLimit(uint256 maxLimit) external onlyOwner {
-        MakerMaxLimit = maxLimit;
+        makerMaxLimit = maxLimit;
     }
 
     function createMaker() external returns (address pool) {
-        require(MakerLimitUsed < MakerMaxLimit, "Exceeded the Maker limit");
+        require(makerLimitUsed < makerMaxLimit, "Exceeded the Maker limit");
         require(getMaker[msg.sender] == address(0), "Exists Maker");
         ORMakerDeposit makerContract = new ORMakerDeposit{
             salt: keccak256(abi.encodePacked(address(this), msg.sender))
@@ -40,7 +36,7 @@ contract ORMakerV1Factory is IORMakerV1Factory, OwnableUpgradeable {
         getMaker[msg.sender] = address(makerContract);
         makerContract.initialize(msg.sender, address(this));
         pool = address(makerContract);
-        MakerLimitUsed++;
+        makerLimitUsed++;
         emit MakerCreated(msg.sender, pool);
     }
 }

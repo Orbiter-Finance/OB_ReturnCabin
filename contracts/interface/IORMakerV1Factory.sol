@@ -12,5 +12,5 @@ interface IORMakerV1Factory {
 
     function setManager(address) external;
 
-    function getManager() external view returns (address);
+    function manager() external view returns (address);
 }

@@ -25,19 +25,19 @@ describe('MakerV1Factory', () => {
   });
   it('SetManager', async () => {
     const contract = await getORMakerV1FactoryContract();
-    const oldManagerAddress = await contract.getManager();
+    const oldManagerAddress = await contract.manager();
     await contract.setManager('0x0000000000000000000000000000000000000001');
-    expect(await contract.getManager()).equal(
+    expect(await contract.manager()).equal(
       '0x0000000000000000000000000000000000000001',
     );
     await contract.setManager(oldManagerAddress);
-    expect(await contract.getManager()).equal(oldManagerAddress);
+    expect(await contract.manager()).equal(oldManagerAddress);
   });
   it('Set setMakerLimit', async () => {
     const maxLimit = 4;
     const contract = await getORMakerV1FactoryContract();
     await contract.setMakerMaxLimit(maxLimit);
-    const result = await contract.MakerMaxLimit();
+    const result = await contract.makerMaxLimit();
     expect(result).eq(maxLimit);
   });
   it('Create Maker', async () => {

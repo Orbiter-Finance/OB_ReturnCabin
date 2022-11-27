@@ -29,13 +29,13 @@ describe('ORProtocalV1.test.ts', () => {
     );
     await factoryContract.updateEBC(1, ebc.address);
     await factoryContract.setSPV(spvContract.address);
-    expect(await factoryContract.getEBC(1)).equal(ebc.address);
-    expect(await factoryContract.getSPV()).equal(spvContract.address);
+    expect(await factoryContract.ebc(1)).equal(ebc.address);
+    expect(await factoryContract.spv()).equal(spvContract.address);
   });
   it('setAndGetChanllengePledgeAmountCoefficient', async () => {
     const value = ethers.utils.parseEther('0.05');
-    await ebc.connect(ebcOwner).setChanllengePledgeAmountCoefficient(value);
-    const result = await ebc.getChanllengePledgeAmountCoefficient();
+    await ebc.connect(ebcOwner).setChallengePledgedAmount(value);
+    const result = await ebc.challengePledgedAmount();
     expect(result).eq(value);
   });
   it('setAndGetDepositAmountCoefficient', async () => {
@@ -52,14 +52,14 @@ describe('ORProtocalV1.test.ts', () => {
   });
   it('setAndGetETHPunishCoefficient', async () => {
     const value = 100;
-    await ebc.connect(ebcOwner).setETHPunishCoefficient(value);
-    const result = await ebc.getETHPunishCoefficient();
+    await ebc.connect(ebcOwner).setMainCoinPunishRate(value);
+    const result = await ebc.mainCoinPunishRate();
     expect(result).eq(value);
   });
   it('setAndGetTokenPunishCoefficient', async () => {
     const value = 100;
-    await ebc.connect(ebcOwner).setTokenPunishCoefficient(value);
-    const result = await ebc.getTokenPunishCoefficient();
+    await ebc.connect(ebcOwner).setTokenPunishRate(value);
+    const result = await ebc.tokenPunishRate();
     expect(result).eq(value);
   });
   it('getETHPunish', async () => {
