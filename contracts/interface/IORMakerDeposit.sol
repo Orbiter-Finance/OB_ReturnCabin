@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.17;
 
 import "../library/Operation.sol";
 
@@ -14,14 +14,13 @@ interface IORMakerDeposit {
     event LogLpRestart(bytes32 indexed pairId, bytes32 indexed lpId);
     event LogLPStop(bytes32 indexed pairId, bytes32 lpId, OperationsLib.lpInfo lpinfo);
     event LogLPUserStop(bytes32 indexed pairId, bytes32 lpId);
-    event ChainDepositChange(address indexed makerId, address token, uint256 amount, uint256 useLimit, bytes32[] pairs);
     event LogChanllengeInfo(
-        uint256 indexed chainId,
-        chanllengeState indexed opType,
-        bytes32 chanllengeId,
-        OperationsLib.txInfo txInfo,
-        OperationsLib.chanllengeInfo chanllenge
+        address indexed makerPool,
+        bytes32 id,
+        OperationsLib.chanllengeInfo chanllenge,
+        OperationsLib.txInfo txInfo
     );
+    event LogChanllengerMakeGood(address indexed makerPool, bytes32 id, OperationsLib.chanllengeInfo chanllenge);
 
     event LogLpUpdate(bytes32 indexed pairId, bytes32 indexed lpId, uint256 gasFee, uint256 tradingFee);
 

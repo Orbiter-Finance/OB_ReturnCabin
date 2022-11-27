@@ -16,7 +16,7 @@
     },
     {
       "chainID": 5,
-      "batchLimit": 100,
+      "batchLimit": 200,
       "maxDisputeTime": 300,
       "maxReceiptTime": 120,
       "tokenList": [
@@ -30,7 +30,7 @@
     },
     {
       "chainID": 33,
-      "batchLimit": 100,
+      "batchLimit": 300,
       "maxDisputeTime": 300,
       "maxReceiptTime": 120,
       "tokenList": [
@@ -44,7 +44,7 @@
     },
     {
       "chainID": 516,
-      "batchLimit": 100,
+      "batchLimit": 400,
       "maxDisputeTime": 300,
       "maxReceiptTime": 120,
       "tokenList": [

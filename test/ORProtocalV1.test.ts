@@ -29,7 +29,6 @@ describe('ORProtocalV1.test.ts', () => {
     );
     await factoryContract.updateEBC(1, ebc.address);
     await factoryContract.setSPV(spvContract.address);
-    expect(await factoryContract.getEBCids()).equal(1);
     expect(await factoryContract.getEBC(1)).equal(ebc.address);
     expect(await factoryContract.getSPV()).equal(spvContract.address);
   });
@@ -40,32 +39,48 @@ describe('ORProtocalV1.test.ts', () => {
     expect(result).eq(value);
   });
   it('setAndGetDepositAmountCoefficient', async () => {
-    const value = 110;
-    await ebc.connect(ebcOwner).setDepositAmountCoefficient(value);
-    const result = await ebc.getDepositAmountCoefficient();
-    expect(result).eq(value);
+    const value = 1000;
+    await ebc.connect(ebcOwner).setPledgeAmountSafeRate(value);
+    const result = await ebc.getPledgeAmountSafeRate();
+    console.log(result, 'rate');
+    const batchLimit = ethers.BigNumber.from(100),
+      maxPrice = ethers.BigNumber.from('100000000000000000');
+    const pledgeAmount = await ebc.getPledgeAmount(batchLimit, maxPrice);
+    expect(pledgeAmount.baseValue.add(pledgeAmount.additiveValue)).eq(
+      ethers.BigNumber.from('11000000000000000000'),
+    );
   });
   it('setAndGetETHPunishCoefficient', async () => {
-    const value = 110;
+    const value = 100;
     await ebc.connect(ebcOwner).setETHPunishCoefficient(value);
     const result = await ebc.getETHPunishCoefficient();
     expect(result).eq(value);
   });
   it('setAndGetTokenPunishCoefficient', async () => {
-    const value = 110;
+    const value = 100;
     await ebc.connect(ebcOwner).setTokenPunishCoefficient(value);
     const result = await ebc.getTokenPunishCoefficient();
     expect(result).eq(value);
   });
   it('getETHPunish', async () => {
     const value = USER_TX_LIST[0].value;
-    const response = await ebc.getETHPunish(value);
-    expect(response).gt(ethers.BigNumber.from(value));
+    const response = await ebc.calculateCompensation(
+      USER_TX_LIST[0].token,
+      value,
+    );
+    expect(response.baseValue.add(response.additiveValue)).gt(
+      ethers.BigNumber.from(value),
+    );
   });
   it('getTokenPunish', async () => {
     const value = USER_TX_LIST[0].value;
-    const response = await ebc.getTokenPunish(value);
-    expect(response).gt(ethers.BigNumber.from(value));
+    const response = await ebc.calculateCompensation(
+      '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0',
+      value,
+    );
+    expect(response.baseValue.add(response.additiveValue)).gt(
+      ethers.BigNumber.from(value),
+    );
   });
   it('getRespnseHash', async () => {
     const { leaf } = getTxLeaf(USER_TX_LIST[0]);

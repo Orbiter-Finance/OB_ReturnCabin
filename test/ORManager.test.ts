@@ -144,7 +144,6 @@ describe('Manager EBC', () => {
     await manager.setEBC(ebc.address);
     //ERROR TEST
     // await userFactory.setEBC('0x0000000000000000000000000000000000000000');
-    expect(await manager.getEBCids()).equal(1);
     expect(await manager.getEBC(1)).equal(ebc.address);
   });
 });

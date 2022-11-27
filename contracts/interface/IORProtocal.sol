@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.17;
 
 import "../library/Operation.sol";
 
@@ -8,13 +8,13 @@ interface IORProtocal {
 
     function getChanllengePledgeAmountCoefficient() external view returns (uint256);
 
-    function setDepositAmountCoefficient(uint16 hundredDigits) external;
+    // function setDepositAmountCoefficient(uint16 hundredDigits) external;
 
     function setPauseAfterStopInterval(uint32 value) external;
 
     function getPauseAfterStopInterval() external view returns (uint256);
 
-    function getDepositAmountCoefficient() external view returns (uint16);
+    // function getDepositAmountCoefficient() external view returns (uint16);
 
     function setTokenPunishCoefficient(uint16 hundredDigits) external;
 
@@ -24,11 +24,18 @@ interface IORProtocal {
 
     function getETHPunishCoefficient() external view returns (uint16);
 
-    function getDepositAmount(uint256 batchLimit, uint256 maxPrice) external view returns (uint256);
+    function getPledgeAmount(uint256 batchLimit, uint256 maxPrice)
+        external
+        view
+        returns (uint256 baseValue, uint256 additiveValue);
 
-    function getTokenPunish(uint256 amount) external view returns (uint256);
+    // function getTokenPunish(uint256 amount) external view returns (uint256 baseValue, uint256 additiveValue);
 
-    function getETHPunish(uint256 amount) external view returns (uint256);
+    // function getETHPunish(uint256 amount) external view returns (uint256 baseValue, uint256 additiveValue);
+    function calculateCompensation(address token, uint256 value)
+        external
+        view
+        returns (uint256 baseValue, uint256 additiveValue);
 
     function getStartDealyTime(uint256 chainID) external view returns (uint256);
 

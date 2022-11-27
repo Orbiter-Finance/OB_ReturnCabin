@@ -1,8 +1,21 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.17;
 
 library OperationsLib {
-    /// pairChainInfo
+    struct lpPledgeCalculate {
+        uint256 chainId;
+        uint256 baseValue;
+        uint256 additiveValue;
+        uint256 pledged;
+        uint256 pledgeValue;
+    }
+    struct calcLpNeedPledgeAmountParams {
+        bytes32 pairId;
+        uint256 fromChain;
+        address fromToken;
+        uint256 ebcId;
+        uint256 maxPrice;
+    }
     struct pairChainInfo {
         uint256 sourceChain;
         uint256 destChain;
@@ -73,19 +86,14 @@ library OperationsLib {
         uint256 startTime;
     }
 
-    struct chainDeposit {
-        address tokenAddress; // mainNetTokenAddress
-        uint256 depositAmount;
-        uint256 useLimit; //
-        bytes32[] pairs;
-    }
-
     struct chanllengeInfo {
         uint256 chanllengeState; // 0:unused   1:watting for maker  2.maker success   3.maker failed   4.ma
         bytes32 responseTxinfo;
         uint256 stopTime;
         uint256 endTime;
-        uint256 pledgeAmount;
+        address token;
+        uint256 value;
+        uint256 pledged;
         uint256 ebcid;
     }
 

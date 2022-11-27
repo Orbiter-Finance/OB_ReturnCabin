@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.17;
 
 import "./interface/IORProtocal.sol";
 import "./interface/IORManager.sol";
@@ -9,26 +9,27 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "hardhat/console.sol";
 
 contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
-    address _managerAddress;
+    address controlContract;
     uint256 public ChanllengePledgeAmountCoefficient;
-    uint16 public DepositAmountCoefficient;
+    // * 100
+    uint32 public pledgeAmountSafeRate;
+    // uint16 public DepositAmountCoefficient;
     uint16 public EthPunishCoefficient;
     uint16 public TokenPunishCoefficient;
     uint32 public PauseAfterStopInterval;
 
     function initialize(
-        address managerAddress,
+        address _controlContract,
         uint256 _chanllengePledgeAmountCoefficient,
-        uint16 _depositAmountCoefficient,
+        uint32 _pledgeAmountSafeRate,
         uint16 _ethPunishCoefficient,
         uint16 _tokenPunishCoefficie,
         uint32 _pauseAfterStopInterval
     ) public initializer {
-        require(managerAddress != address(0), "Owner address error");
-        _managerAddress = managerAddress;
+        require(_controlContract != address(0), "Owner address error");
+        controlContract = _controlContract;
         ChanllengePledgeAmountCoefficient = _chanllengePledgeAmountCoefficient;
-
-        DepositAmountCoefficient = _depositAmountCoefficient;
+        pledgeAmountSafeRate = _pledgeAmountSafeRate;
         EthPunishCoefficient = _ethPunishCoefficient;
         TokenPunishCoefficient = _tokenPunishCoefficie;
         PauseAfterStopInterval = _pauseAfterStopInterval;
@@ -53,12 +54,12 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     }
 
     // The parameter is a number of percentile precision, for example: When tenDigits is 110, it represents 1.1
-    function setDepositAmountCoefficient(uint16 hundredDigits) external onlyOwner {
-        DepositAmountCoefficient = hundredDigits;
+    function setPledgeAmountSafeRate(uint32 value) external onlyOwner {
+        pledgeAmountSafeRate = value;
     }
 
-    function getDepositAmountCoefficient() external view returns (uint16) {
-        return DepositAmountCoefficient;
+    function getPledgeAmountSafeRate() external view returns (uint32) {
+        return pledgeAmountSafeRate;
     }
 
     // The parameter is a number of percentile precision, for example: When tenDigits is 110, it represents 1.1
@@ -79,24 +80,27 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
         return TokenPunishCoefficient;
     }
 
-    function getDepositAmount(uint256 batchLimit, uint256 maxPrice) external view returns (uint256) {
-        require(batchLimit != 0 && maxPrice != 0 && DepositAmountCoefficient != 0, "GET_DEPOSITCOEFFICIENT_ERROR");
-        return (batchLimit * maxPrice * DepositAmountCoefficient) / 100;
+    function getPledgeAmount(uint256 batchLimit, uint256 maxPrice)
+        external
+        view
+        returns (uint256 baseValue, uint256 additiveValue)
+    {
+        require(batchLimit != 0 && maxPrice != 0 && pledgeAmountSafeRate != 0, "GET_DEPOSITCOEFFICIENT_ERROR");
+        baseValue = (batchLimit * maxPrice);
+        additiveValue = (baseValue * pledgeAmountSafeRate) / 100 / 100;
     }
 
-    function getETHPunish(uint256 amount) external view returns (uint256) {
-        (uint256 securityCode, bool isSupport) = getSecuirtyCode(true, amount);
-
-        require(isSupport, "GEP_AMOUNT_INVALIDATE");
-        amount = amount - securityCode;
-        return (amount * EthPunishCoefficient) / 100;
-    }
-
-    function getTokenPunish(uint256 amount) external view returns (uint256) {
-        (uint256 securityCode, bool isSupport) = getSecuirtyCode(true, amount);
-        require(isSupport, "GTP_AMOUNT_INVALIDATE");
-        amount = amount - securityCode;
-        return (amount * TokenPunishCoefficient) / 100;
+    function calculateCompensation(address token, uint256 value)
+        external
+        view
+        returns (uint256 baseValue, uint256 additiveValue)
+    {
+        baseValue = value;
+        if (token == address(0)) {
+            additiveValue = (baseValue * EthPunishCoefficient) / 100 / 100;
+        } else {
+            additiveValue = (baseValue * TokenPunishCoefficient) / 100 / 100;
+        }
     }
 
     function getStartDealyTime(uint256 chainID) external pure returns (uint256) {
@@ -114,7 +118,6 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
         uint256 securityCode = 0;
         bool isSupport = true;
         if (isSource) {
-            // TODO  securityCode is support?
             securityCode = (amount % 10000) - 9000;
         } else {
             securityCode = amount % 10000;
@@ -172,7 +175,7 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
         bool txVerify = IORSpv(spvAddress).verifyMakerTxProof(_makerTx, _makerProof);
         require(txVerify, "MCE_UNVERIFY");
 
-        OperationsLib.chainInfo memory souceChainInfo = IORManager(_managerAddress).getChainInfoByChainID(
+        OperationsLib.chainInfo memory souceChainInfo = IORManager(controlContract).getChainInfoByChainID(
             _userTx.chainID
         );
         // The transaction time of maker is required to be later than that of user.
@@ -190,7 +193,7 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     }
 
     function getSpvAddress() internal view returns (address) {
-        address spvAddress = IORManager(_managerAddress).getSPV();
+        address spvAddress = IORManager(controlContract).getSPV();
         require(spvAddress != address(0), "SPV_NOT_INSTALL");
         return spvAddress;
     }

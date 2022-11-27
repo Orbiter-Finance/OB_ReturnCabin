@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.17;
 
 import "../library/Operation.sol";
 
@@ -12,11 +12,11 @@ interface IORManager {
     event ChangeChain(uint256 indexed chainId, OperationsLib.chainInfo chain);
     event ChangeToken(uint256 indexed chainId, address indexed tokenAddress, OperationsLib.tokenInfo token);
 
-    function setSPV(address spvAddress) external returns (bool);
+    function setSPV(address spvAddress) external;
 
     function getSPV() external view returns (address);
 
-    function setEBC(address ebcAddress) external returns (bool);
+    function setEBC(address ebcAddress) external;
 
     function getEBC(uint256 ebcid) external view returns (address);
 

@@ -87,10 +87,10 @@ export async function getORProtocalV1Contract(): Promise<ORProtocalV1> {
       name,
       managerContractAddress,
       ethers.utils.parseEther('0.05'),
-      110,
-      110,
-      110,
-      300,
+      10 * 100,
+      10 * 100,
+      10 * 100,
+      10 * 100,
     );
     process.env[name] = contract.address;
     return contract;
@@ -213,6 +213,16 @@ export class DataInit {
         '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
         '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC',
       );
+  }
+  getChain(chainId: number) {
+    return this.chains.find((row) => row.chainID == chainId);
+  }
+  getChainToken(chainId: number, token: string) {
+    const chain = this.getChain(chainId);
+    if (!chain) {
+      throw new Error(`${chainId} chain not found`);
+    }
+    return chain.tokenList.find((t) => t.address == token);
   }
   initChains() {
     this.chains = chains;

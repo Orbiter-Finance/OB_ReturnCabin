@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.17;
 import "hardhat/console.sol";
 
 import "./interface/IORManager.sol";
@@ -8,46 +8,39 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 contract ORManager is IORManager, Initializable, OwnableUpgradeable {
-    mapping(uint256 => address) ebcPair;
     mapping(uint256 => OperationsLib.chainInfo) public chainList;
+
     // chainId => tokenAddress
     mapping(uint256 => mapping(address => OperationsLib.tokenInfo)) private tokenInfos;
-    uint256 ebcids;
+    uint256 private ebcId;
+    mapping(uint256 => address) private ebc;
     bytes32 public pairsRoot;
-    address public spv;
+    address private spv;
 
     function initialize() public initializer {
         __Ownable_init();
     }
 
-    function getEBCids() external view returns (uint256) {
-        return ebcids;
-    }
-
-    function setSPV(address spvAddress) external onlyOwner returns (bool) {
-        require(spvAddress != address(0), "SPV_INVALIDATE");
+    function setSPV(address spvAddress) external onlyOwner {
         spv = spvAddress;
-        return true;
     }
 
     function getSPV() external view returns (address) {
-        require(spv != address(0), "SPV_NOT_INSTALL");
         return spv;
     }
 
-    function setEBC(address ebcAddress) external onlyOwner returns (bool) {
-        ebcPair[++ebcids] = ebcAddress;
-        return true;
+    function setEBC(address addr) external onlyOwner {
+        ebc[++ebcId] = addr;
     }
 
-    function updateEBC(uint256 ebcid, address ebcAddress) external onlyOwner {
-        require(ebcPair[ebcid] != address(0), "UPDATEEBC_ERROR");
-        ebcPair[ebcid] = ebcAddress;
+    function updateEBC(uint256 id, address addr) external onlyOwner {
+        require(ebc[id] != address(0), "UPDATEEBC_ERROR");
+        ebc[id] = addr;
     }
 
-    function getEBC(uint256 ebcid) external view returns (address) {
-        require(ebcPair[ebcid] != address(0), "EBC_UNINSTALL");
-        address ebcAddress = ebcPair[ebcid];
+    function getEBC(uint256 id) external view returns (address) {
+        require(ebc[id] != address(0), "EBC_UNINSTALL");
+        address ebcAddress = ebc[id];
         return ebcAddress;
     }
 
