@@ -17,7 +17,8 @@ interface IORMakerDeposit {
     event LogLPStop(bytes32 indexed pairId, bytes32 lpId, OperationsLib.lpInfo lpinfo);
     event LogLPUpdate(bytes32 indexed pairId, bytes32 indexed lpId, uint256 gasFee, uint256 tradingFee);
     event LogLPUserStop(bytes32 indexed pairId, bytes32 lpId);
-    event Deposit(address caller,uint amount);
+    event Deposit(address caller, uint256 amount);
+
     function calcLpPledgeAmount(OperationsLib.calcLpNeedPledgeAmountParams[] memory _lpinfos)
         external
         view

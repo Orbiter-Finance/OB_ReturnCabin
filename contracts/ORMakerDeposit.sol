@@ -114,9 +114,11 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         return spvAddress;
     }
 
-    function calcLpPledgeAmount(
-        OperationsLib.calcLpNeedPledgeAmountParams[] calldata _lpinfos
-    ) external view returns (OperationsLib.lpPledgeCalculate[] memory, uint256 totalPledgeValue) {
+    function calcLpPledgeAmount(OperationsLib.calcLpNeedPledgeAmountParams[] calldata _lpinfos)
+        external
+        view
+        returns (OperationsLib.lpPledgeCalculate[] memory, uint256 totalPledgeValue)
+    {
         OperationsLib.tokenInfo memory depositToken = getDepositTokenInfo(_lpinfos[0].fromChain, _lpinfos[0].fromToken);
         address manager = getManagerAddress();
         uint256 maxNum = 0;
@@ -171,10 +173,11 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         return (returnPledgeData, totalPledgeValue);
     }
 
-    function lpAction(
-        OperationsLib.lpInfo[] calldata _lpinfos,
-        bytes32[][] calldata pairProof
-    ) external payable onlyOwner {
+    function lpAction(OperationsLib.lpInfo[] calldata _lpinfos, bytes32[][] calldata pairProof)
+        external
+        payable
+        onlyOwner
+    {
         require(_lpinfos.length > 0, "Inconsistent Array Length");
         require(_lpinfos.length == pairProof.length, "Inconsistent Array Length");
         OperationsLib.tokenInfo memory depositToken = getDepositTokenInfo(
@@ -396,7 +399,11 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
     }
 
     // LPStop
-    function lpUserStop(uint256 sourceChain, address sourceToken, uint256 ebcid) internal {
+    function lpUserStop(
+        uint256 sourceChain,
+        address sourceToken,
+        uint256 ebcid
+    ) internal {
         address manager = getManagerAddress();
         OperationsLib.tokenInfo memory tokenInfo = getDepositTokenInfo(sourceChain, sourceToken);
         address ebcAddress = IORManager(manager).ebc(ebcid);
