@@ -560,4 +560,8 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         challengePleged -= challengeInfos[challengeID].pledged;
         emit LogChallengeInfo(address(this), challengeID, challengeInfos[challengeID], _makerTx);
     }
+
+    receive() external payable {
+        emit Deposit(msg.sender, msg.value);
+    }
 }
