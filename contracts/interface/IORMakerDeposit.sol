@@ -4,38 +4,38 @@ pragma solidity ^0.8.17;
 import "../library/Operation.sol";
 
 interface IORMakerDeposit {
-    event LogChanllengeInfo(
+    event LogChallengeInfo(
         address indexed makerPool,
         bytes32 id,
-        OperationsLib.chanllengeInfo chanllenge,
+        OperationsLib.challengeInfo challenge,
         OperationsLib.txInfo txInfo
     );
-    event LogChanllengerMakeGood(address indexed makerPool, bytes32 id, OperationsLib.chanllengeInfo chanllenge);
+    event LogChallengerMakeGood(address indexed makerPool, bytes32 id, OperationsLib.challengeInfo challenge);
     event LogLPPause(bytes32 indexed pairId, bytes32 lpId, OperationsLib.lpInfo lpinfo);
     event LogLPStop(bytes32 indexed pairId, bytes32 lpId, OperationsLib.lpInfo lpinfo);
     event LogLPUserStop(bytes32 indexed pairId, bytes32 lpId);
-    event LogLpAction(bytes32 indexed pairId, bytes32 lpId, OperationsLib.lpInfo lpinfo);
-    event LogLpRestart(bytes32 indexed pairId, bytes32 indexed lpId);
-    event LogLpUpdate(bytes32 indexed pairId, bytes32 indexed lpId, uint256 gasFee, uint256 tradingFee);
+    event LogLPAction(bytes32 indexed pairId, bytes32 lpId, OperationsLib.lpInfo lpinfo);
+    event LogLPRestart(bytes32 indexed pairId, bytes32 indexed lpId, uint256 gasFee, uint256 tradingFee);
+    event LogLPUpdate(bytes32 indexed pairId, bytes32 indexed lpId, uint256 gasFee, uint256 tradingFee);
 
-    function LPAction(OperationsLib.lpInfo[] memory _lpinfos, bytes32[][] memory pairProof) external payable;
+    function lpAction(OperationsLib.lpInfo[] memory _lpinfos, bytes32[][] memory pairProof) external payable;
 
-    function LPPause(OperationsLib.lpInfo[] memory _lpinfos) external;
+    function lpPause(OperationsLib.lpInfo[] memory _lpinfos) external;
 
-    function LPRestart(OperationsLib.lpRestart[] memory _lps) external;
+    function lpRestart(OperationsLib.lpRestart[] memory _lps) external;
 
-    function LPStop(OperationsLib.lpInfo[] memory _lpinfos) external;
+    function lpStop(OperationsLib.lpInfo[] memory _lpinfos) external;
 
-    function LPUpdate(OperationsLib.lpChange[] memory _lpinfos) external;
+    function lpUpdate(OperationsLib.lpChange[] memory _lpinfos) external;
 
-    function USER_LPStopDelayTime(address) external view returns (uint256);
+    function pledgeTokenLPStopDealyTime(address) external view returns (uint256);
 
     function calcLpPledgeAmount(OperationsLib.calcLpNeedPledgeAmountParams[] memory _lpinfos)
         external
         view
         returns (OperationsLib.lpPledgeCalculate[] memory, uint256 totalPledgeValue);
 
-    function chanllengerMakeGood(bytes32 chanllengeID) external;
+    function challengerMakeGood(bytes32 challengeID) external;
 
     function getPairsByChain(uint256 _chainId) external view returns (bytes32[] memory);
 
@@ -58,7 +58,7 @@ interface IORMakerDeposit {
             uint256 startTime
         );
 
-    function makerChanllenger(
+    function makerChallenger(
         OperationsLib.txInfo memory _userTx,
         OperationsLib.txInfo memory _makerTx,
         bytes32[] memory _makerProof
@@ -70,7 +70,7 @@ interface IORMakerDeposit {
 
     function pairExist(address pledgeToken, bytes32 pairId) external view returns (bool);
 
-    function userChanllenge(OperationsLib.txInfo memory _txinfo, bytes32[] memory _txproof) external payable;
+    function userChallenge(OperationsLib.txInfo memory _txinfo, bytes32[] memory _txproof) external payable;
 
     function userWithDraw(OperationsLib.txInfo memory _userTx, OperationsLib.lpInfo memory _lpinfo) external;
 

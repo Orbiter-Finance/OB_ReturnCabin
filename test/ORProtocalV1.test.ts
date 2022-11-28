@@ -32,7 +32,7 @@ describe('ORProtocalV1.test.ts', () => {
     expect(await factoryContract.ebc(1)).equal(ebc.address);
     expect(await factoryContract.spv()).equal(spvContract.address);
   });
-  it('setAndGetChanllengePledgeAmountCoefficient', async () => {
+  it('setAndGetChallengePledgeAmountCoefficient', async () => {
     const value = ethers.utils.parseEther('0.05');
     await ebc.connect(ebcOwner).setChallengePledgedAmount(value);
     const result = await ebc.challengePledgedAmount();

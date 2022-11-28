@@ -109,7 +109,6 @@ describe('MakerDeposit.test.ts', () => {
     const idleAmount1 = await makerDeposit.idleAmount(
       '0x0000000000000000000000000000000000000000',
     );
-    console.log(idleAmount1, '==idleAmount1');
     const addLpInfo1 = testLPList[0];
     const addLpInfo2 = testLPList[3];
     // calc calcLpNeedPledgeAmount
@@ -144,13 +143,13 @@ describe('MakerDeposit.test.ts', () => {
     const actionLps = [addLpInfo1, addLpInfo2];
     const response = await makerDeposit
       .connect(makerAccount)
-      .LPAction(actionLps, [pairProof1, pairProof2], overrides);
+      .lpAction(actionLps, [pairProof1, pairProof2], overrides);
 
     await expect(response)
-      .to.emit(makerDeposit, 'LogLpAction')
+      .to.emit(makerDeposit, 'LogLPAction')
       .withArgs(anyValue, anyValue, anyValue);
     const { events } = await response.wait();
-    for (const event of events?.filter((e) => e.event === 'LogLpAction')) {
+    for (const event of events?.filter((e) => e.event === 'LogLPAction')) {
       const pairId = event.args[0];
       const lpId = event.args[1];
       const args = event.args[2];
@@ -183,7 +182,6 @@ describe('MakerDeposit.test.ts', () => {
       addLpInfo1.sourceTAddress,
     );
     const idleAmount = await makerDeposit.idleAmount(token.pledgeToken);
-    console.log(idleAmount, '==idleAmount');
     expect(contractBalance).gte(needPledgeQuantity);
   });
   it('LPAction OK (Check Pairs)', async () => {
@@ -253,6 +251,7 @@ describe('MakerDeposit.test.ts', () => {
         ebcId: addLpInfo2.ebcid,
       },
     ]);
+    console.log('pledgeResult--', pledgeResult);
     const needPledgeQuantity = pledgeResult.totalPledgeValue;
     const addPair1 = dataInit.pairs.find((row) => row.id == addLpInfo1.pairId);
     const addPair2 = dataInit.pairs.find((row) => row.id == addLpInfo2.pairId);
@@ -265,12 +264,12 @@ describe('MakerDeposit.test.ts', () => {
     const actionLps = [addLpInfo1, addLpInfo2];
     const response = await makerDeposit
       .connect(makerAccount)
-      .LPAction(actionLps, [pairProof1, pairProof2], overrides);
+      .lpAction(actionLps, [pairProof1, pairProof2], overrides);
     await expect(response)
-      .to.emit(makerDeposit, 'LogLpAction')
+      .to.emit(makerDeposit, 'LogLPAction')
       .withArgs(anyValue, anyValue, anyValue);
     const { events } = await response.wait();
-    for (const event of events?.filter((e) => e.event === 'LogLpAction')) {
+    for (const event of events?.filter((e) => e.event === 'LogLPAction')) {
       const pairId = event.args[0];
       const lpId = event.args[1];
       const args = event.args[2];
@@ -291,7 +290,7 @@ describe('MakerDeposit.test.ts', () => {
         (row) => Number(row.chainId) == Number(lp.sourceChain),
       );
       expect(row).not.empty;
-      expect(row?.pledgeValue).eq(needPledgeQuantity);
+      expect(row?.pledgeValue.sub(row.pledged)).eq(needPledgeQuantity);
     }
     const contractBalance = await ethers.provider.getBalance(
       makerDeposit.address,
@@ -302,7 +301,7 @@ describe('MakerDeposit.test.ts', () => {
   it('LPPause', async () => {
     const response = await makerDeposit
       .connect(makerAccount)
-      .LPPause([testLPList[0], testLPList[1]]);
+      .lpPause([testLPList[0], testLPList[1]]);
     await expect(response)
       .to.emit(makerDeposit, 'LogLPPause')
       .withArgs(anyValue, anyValue, anyValue);
@@ -313,7 +312,7 @@ describe('MakerDeposit.test.ts', () => {
       tradingFee: BigNumber.from(0.0005 * 10 ** 18),
       gasFee: changeLpInfo.gasFee,
     };
-    const response = await makerDeposit.connect(makerAccount).LPUpdate([
+    const response = await makerDeposit.connect(makerAccount).lpUpdate([
       {
         pid: changeLpInfo.pairId,
         lpid: changeLpInfo.id,
@@ -321,7 +320,7 @@ describe('MakerDeposit.test.ts', () => {
       },
     ]);
     await expect(response)
-      .to.emit(makerDeposit, 'LogLpUpdate')
+      .to.emit(makerDeposit, 'LogLPUpdate')
       .withArgs(
         changeLpInfo.pairId,
         changeLpInfo.id,
@@ -331,25 +330,35 @@ describe('MakerDeposit.test.ts', () => {
   });
   it('LPRestart', async () => {
     const restartLpInfo = testLPList[0];
-    const response = await makerDeposit
-      .connect(makerAccount)
-      .LPRestart([{ pid: restartLpInfo.pairId, lpid: restartLpInfo.id }]);
+    const response = await makerDeposit.connect(makerAccount).lpRestart([
+      {
+        pid: restartLpInfo.pairId,
+        lpid: restartLpInfo.id,
+        gasFee: restartLpInfo.gasFee,
+        tradingFee: restartLpInfo.tradingFee,
+      },
+    ]);
     await expect(response)
-      .to.emit(makerDeposit, 'LogLpRestart')
-      .withArgs(restartLpInfo.pairId, restartLpInfo.id);
+      .to.emit(makerDeposit, 'LogLPRestart')
+      .withArgs(
+        restartLpInfo.pairId,
+        restartLpInfo.id,
+        restartLpInfo.gasFee,
+        restartLpInfo.tradingFee,
+      );
   });
   it('LPRestart After Pause', async () => {
     const restartLpInfo = testLPList[0];
     const response = await makerDeposit
       .connect(makerAccount)
-      .LPPause([restartLpInfo]);
+      .lpPause([restartLpInfo]);
     await expect(response)
       .to.emit(makerDeposit, 'LogLPPause')
       .withArgs(anyValue, anyValue, anyValue);
   });
   it('LPStop not time', async () => {
     const lpInfo = testLPList[0];
-    const response = makerDeposit.connect(makerAccount).LPStop([lpInfo]);
+    const response = makerDeposit.connect(makerAccount).lpStop([lpInfo]);
     await expect(response).to.be.revertedWith('LPSTOP_LPID_TIMEUNABLE');
   });
 
@@ -360,7 +369,7 @@ describe('MakerDeposit.test.ts', () => {
     const lpInfo = testLPList[0];
     const pairs1 = await makerDeposit.getPairsByChain(lpInfo.sourceChain);
     expect(pairs1).includes(lpInfo.pairId);
-    const response = await makerDeposit.connect(makerAccount).LPStop([lpInfo]);
+    const response = await makerDeposit.connect(makerAccount).lpStop([lpInfo]);
     await expect(response)
       .to.emit(makerDeposit, 'LogLPStop')
       .withArgs(anyValue, anyValue, anyValue);
@@ -371,7 +380,7 @@ describe('MakerDeposit.test.ts', () => {
     const lpInfo = testLPList[1];
     const pairs1 = await makerDeposit.getPairsByChain(lpInfo.sourceChain);
     expect(pairs1).includes(lpInfo.pairId);
-    const response = await makerDeposit.connect(makerAccount).LPStop([lpInfo]);
+    const response = await makerDeposit.connect(makerAccount).lpStop([lpInfo]);
     await expect(response)
       .to.emit(makerDeposit, 'LogLPStop')
       .withArgs(anyValue, anyValue, anyValue);
@@ -419,7 +428,7 @@ describe('MakerDeposit.test.ts', () => {
       await makerDeposit.getPledgeBalanceByChainToken(33, token.pledgeToken);
     expect(pledgeValue).eq(chainTokenPledgeValue);
   });
-  it('Maker withDraw is time and no chanllenge', async () => {
+  it('Maker withDraw is time and no challenge', async () => {
     const lpInfo = testLPList[0];
     const chain = dataInit.chains.find(
       (row) => row.chainID === lpInfo['sourceChain'],
@@ -489,13 +498,13 @@ describe('MakerDeposit.test.ts', () => {
     const actionLps = [addLpInfo1];
     const response = await makerDeposit
       .connect(makerAccount)
-      .LPAction(actionLps, [pairProof1], overrides);
+      .lpAction(actionLps, [pairProof1], overrides);
 
     await expect(response)
-      .to.emit(makerDeposit, 'LogLpAction')
+      .to.emit(makerDeposit, 'LogLPAction')
       .withArgs(anyValue, anyValue, anyValue);
     const { events } = await response.wait();
-    for (const event of events?.filter((e) => e.event === 'LogLpAction')) {
+    for (const event of events?.filter((e) => e.event === 'LogLPAction')) {
       const pairId = event.args[0];
       const lpId = event.args[1];
       const args = event.args[2];
@@ -525,7 +534,7 @@ describe('MakerDeposit.test.ts', () => {
     );
     expect(contractBalance).gte(needPledgeQuantity);
   });
-  it('userChanllenge for maker not send', async () => {
+  it('userChallenge for maker not send', async () => {
     const { leaf, hex } = getTxLeaf(USER_TX_LIST[0]);
     const txProof = userTxTree.getHexProof(hex);
     const overrides = {
@@ -533,12 +542,12 @@ describe('MakerDeposit.test.ts', () => {
     };
     const response = await makerDeposit
       .connect(UserTx1Account)
-      .userChanllenge(leaf, txProof, overrides);
+      .userChallenge(leaf, txProof, overrides);
     await expect(response)
-      .to.emit(makerDeposit, 'LogChanllengeInfo')
+      .to.emit(makerDeposit, 'LogChallengeInfo')
       .withArgs(anyValue, anyValue, anyValue, anyValue);
   });
-  it('userChanllenge for maker already send', async () => {
+  it('userChallenge for maker already send', async () => {
     // User
     const { leaf: userLeaf, hex: userHex } = getTxLeaf(USER_TX_LIST[4]);
     const userProof = userTxTree.getHexProof(userHex);
@@ -547,9 +556,9 @@ describe('MakerDeposit.test.ts', () => {
     };
     const userResponse = await makerDeposit
       .connect(UserTx1Account)
-      .userChanllenge(userLeaf, userProof, overrides);
+      .userChallenge(userLeaf, userProof, overrides);
     await expect(userResponse)
-      .to.emit(makerDeposit, 'LogChanllengeInfo')
+      .to.emit(makerDeposit, 'LogChallengeInfo')
       .withArgs(anyValue, anyValue, anyValue, anyValue);
     // Maker
     const { leaf: makerLeaf, hex: makerHex } = getTxLeaf(MAKER_TX_LIST[2]);
@@ -557,9 +566,9 @@ describe('MakerDeposit.test.ts', () => {
 
     const makerResponce = await makerDeposit
       .connect(makerAccount)
-      .makerChanllenger(userLeaf, makerLeaf, makerProof);
+      .makerChallenger(userLeaf, makerLeaf, makerProof);
     await expect(makerResponce)
-      .to.emit(makerDeposit, 'LogChanllengeInfo')
+      .to.emit(makerDeposit, 'LogChallengeInfo')
       .withArgs(anyValue, anyValue, anyValue, anyValue);
   });
   it('After a day of simulation', async () => {
@@ -597,7 +606,7 @@ describe('MakerDeposit.test.ts', () => {
       .userWithDraw(userLeaf, lpInfo);
     await expect(response).to.be.revertedWith('UW_WITHDRAW');
   });
-  it('userChanllenge for maker not send (Second time)', async () => {
+  it('userChallenge for maker not send (Second time)', async () => {
     const { leaf, hex } = getTxLeaf(USER_TX_LIST[1]);
     const txProof = userTxTree.getHexProof(hex);
     const overrides = {
@@ -605,9 +614,9 @@ describe('MakerDeposit.test.ts', () => {
     };
     const response = await makerDeposit
       .connect(UserTx1Account)
-      .userChanllenge(leaf, txProof, overrides);
+      .userChallenge(leaf, txProof, overrides);
     await expect(response)
-      .to.emit(makerDeposit, 'LogChanllengeInfo')
+      .to.emit(makerDeposit, 'LogChallengeInfo')
       .withArgs(anyValue, anyValue, anyValue, anyValue);
   });
   it('After a day of simulation', async () => {
@@ -644,7 +653,7 @@ describe('MakerDeposit.test.ts', () => {
       const events = tx.events || [];
       const eventNames = events.map((e) => e.event);
       expect(eventNames).includes('LogLPUserStop');
-      expect(eventNames).includes('LogChanllengeInfo');
+      expect(eventNames).includes('LogChallengeInfo');
     }
   });
   it('Maker withDraw not time', async () => {

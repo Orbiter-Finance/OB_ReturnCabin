@@ -79,6 +79,8 @@ library OperationsLib {
     struct lpRestart {
         bytes32 pid;
         bytes32 lpid;
+        uint256 gasFee;
+        uint256 tradingFee;
     }
 
     struct lpPairInfo {
@@ -87,8 +89,8 @@ library OperationsLib {
         uint256 startTime;
     }
 
-    struct chanllengeInfo {
-        uint256 chanllengeState; // 0:unused   1:watting for maker  2.maker success   3.maker failed   4.ma
+    struct challengeInfo {
+        uint256 challengeState; // 0:unused   1:watting for maker  2.maker success   3.maker failed   4.ma
         bytes32 responseTxinfo;
         uint256 stopTime;
         uint256 endTime;
@@ -136,7 +138,7 @@ library OperationsLib {
         return rootHash;
     }
 
-    function getChanllengeID(txInfo memory _txinfo) internal pure returns (bytes32) {
+    function getChallengeID(txInfo memory _txinfo) internal pure returns (bytes32) {
         return
             keccak256(
                 abi.encodePacked(
