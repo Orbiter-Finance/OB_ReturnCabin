@@ -29,6 +29,7 @@ contract ORMakerV1Factory is IORMakerV1Factory, OwnableUpgradeable {
 
     function createMaker() external returns (address pool) {
         require(makerLimitUsed < makerMaxLimit, "Exceeded the Maker limit");
+        makerLimitUsed++;
         require(getMaker[msg.sender] == address(0), "Exists Maker");
         ORMakerDeposit makerContract = new ORMakerDeposit{
             salt: keccak256(abi.encodePacked(address(this), msg.sender))
@@ -36,7 +37,6 @@ contract ORMakerV1Factory is IORMakerV1Factory, OwnableUpgradeable {
         getMaker[msg.sender] = address(makerContract);
         makerContract.initialize(msg.sender, address(this));
         pool = address(makerContract);
-        makerLimitUsed++;
         emit MakerCreated(msg.sender, pool);
     }
 }

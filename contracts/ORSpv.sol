@@ -3,7 +3,6 @@ pragma solidity ^0.8.17;
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./interface/IORSpv.sol";
-import "hardhat/console.sol";
 
 /// @title Simplified payment verification
 /// @notice SPV proves that Source Tx has occurred in the Source Network.

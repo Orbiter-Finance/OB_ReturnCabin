@@ -70,12 +70,6 @@ library OperationsLib {
         uint256 tradingFee;
         uint256 startTime;
     }
-    struct lpChange {
-        bytes32 pid;
-        bytes32 lpid;
-        uint256 gasFee;
-        uint256 tradingFee;
-    }
     struct lpRestart {
         bytes32 pid;
         bytes32 lpid;
@@ -97,6 +91,7 @@ library OperationsLib {
         address token;
         uint256 value;
         uint256 pledged;
+        uint256 compensate;
         uint256 ebcid;
     }
 

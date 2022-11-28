@@ -6,7 +6,7 @@ import "./interface/IORManager.sol";
 import "./interface/IORSpv.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "hardhat/console.sol";
+// import "hardhat/console.sol";
 
 contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     address controlContract;
@@ -32,8 +32,8 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     }
 
     // The parameter here is the user challenge pledge factor in wei.
-    function setChallengePledgedAmount(uint256 _wei) external onlyOwner {
-        challengePledgedAmount = _wei;
+    function setChallengePledgedAmount(uint256 value) external onlyOwner {
+        challengePledgedAmount = value;
     }
 
     // The parameter is a number of percentile precision, for example: When tenDigits is 110, it represents 1.1

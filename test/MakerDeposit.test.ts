@@ -251,7 +251,6 @@ describe('MakerDeposit.test.ts', () => {
         ebcId: addLpInfo2.ebcid,
       },
     ]);
-    console.log('pledgeResult--', pledgeResult);
     const needPledgeQuantity = pledgeResult.totalPledgeValue;
     const addPair1 = dataInit.pairs.find((row) => row.id == addLpInfo1.pairId);
     const addPair2 = dataInit.pairs.find((row) => row.id == addLpInfo2.pairId);
