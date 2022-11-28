@@ -45,8 +45,7 @@ async function main() {
     ethers.utils.parseEther('0.1'),
     100 * 100,
     10 * 100,
-    10 * 100,
-    300,
+    10 * 100
   );
   // // set spv
   const tx1 = await manager.setSPV(spv.address);

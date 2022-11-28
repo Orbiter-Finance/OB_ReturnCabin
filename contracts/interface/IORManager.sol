@@ -20,7 +20,7 @@ interface IORManager {
             uint256 batchLimit,
             uint256 maxDisputeTime,
             uint256 maxReceiptTime,
-            uint256 stopDelay,
+            uint256 stopDelayTime,
             bool isUsed
         );
 
@@ -66,7 +66,7 @@ interface IORManager {
         uint256 batchLimit,
         uint256 maxDisputeTime,
         uint256 maxReceiptTime,
-        uint256 stopDelay,
+        uint256 stopDelayTime,
         address[] memory tokenList
     ) external;
 

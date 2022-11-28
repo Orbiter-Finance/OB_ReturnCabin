@@ -36,7 +36,7 @@ library OperationsLib {
         uint256 batchLimit;
         uint256 maxDisputeTime;
         uint256 maxReceiptTime;
-        uint256 stopDelay;
+        uint256 stopDelayTime;
         address[] tokenList;
         bool isUsed;
     }

@@ -278,7 +278,7 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
             require(lpInfo[pairId].startTime != 0 && lpInfo[pairId].stopTime == 0, "LPPAUSE_LPID_UNACTION");
             address ebcAddress = IORManager(manager).ebc(_lpinfo.ebcid);
             require(ebcAddress != address(0), "LPPAUSE_EBCADDRESS_0");
-            uint256 stopDelayTime = getChainInfoByChainID(_lpinfo.sourceChain).stopDelay;
+            uint256 stopDelayTime = getChainInfoByChainID(_lpinfo.sourceChain).stopDelayTime;
             lpInfo[pairId].stopTime = block.timestamp + stopDelayTime;
             lpInfo[pairId].startTime = 0;
             emit LogLPPause(pairId, lpInfo[pairId].lpId, _lpinfo);
@@ -415,7 +415,7 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         address ebcAddress = IORManager(manager).ebc(ebcid);
         require(ebcAddress != address(0), "USER_LPStop_EBCADDRESS_0");
         address pledgedToken = tokenInfo.mainTokenAddress;
-        uint256 stopDelayTime = getChainInfoByChainID(sourceChain).stopDelay;
+        uint256 stopDelayTime = getChainInfoByChainID(sourceChain).stopDelayTime;
         // is exists
         if (chainPairs[sourceChain].length() > 0) {
             bytes32[] memory pairs = this.getPairsByChain(sourceChain);

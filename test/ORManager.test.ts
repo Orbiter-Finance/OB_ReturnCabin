@@ -18,7 +18,7 @@ async function initChain() {
       chain.batchLimit,
       chain.maxDisputeTime,
       chain.maxReceiptTime,
-      chain.stopDelay,
+      chain.stopDelayTime,
       tokenList,
     );
     printSuccess(`Add Chain ${chain.chainID} Hash: ${tx.hash}`);
@@ -97,7 +97,7 @@ describe('ORManager.test.ts => Chain', () => {
     const {
       chainID,
       batchLimit,
-      stopDelay,
+      stopDelayTime,
       maxDisputeTime,
       maxReceiptTime,
       tokenList,
@@ -108,7 +108,7 @@ describe('ORManager.test.ts => Chain', () => {
       batchLimit * 2,
       maxDisputeTime,
       maxReceiptTime,
-      stopDelay,
+      stopDelayTime,
       tokenAddressList,
     );
     expect((await manager.chainList(chainID)).batchLimit).equal(batchLimit * 2);

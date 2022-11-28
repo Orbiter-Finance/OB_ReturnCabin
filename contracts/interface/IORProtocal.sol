@@ -33,7 +33,6 @@ interface IORProtocal {
 
     function getSecuirtyCode(bool isSource, uint256 amount) external pure returns (uint256, bool);
 
-
     function initialize(
         address _controlContract,
         uint256 _challengePledgedAmount,

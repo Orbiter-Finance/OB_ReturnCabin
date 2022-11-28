@@ -29,6 +29,7 @@ async function initChain() {
       chain.batchLimit,
       chain.maxDisputeTime,
       chain.maxReceiptTime,
+      chain.stopDelayTime,
       tokenList,
     );
     printSuccess(`Add Chain ${chain.chainID} Hash: ${tx.hash}`);

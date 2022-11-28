@@ -5,7 +5,7 @@
       "batchLimit": 100,
       "maxDisputeTime": 300,
       "maxReceiptTime": 120,
-      "stopDelay":3600,
+      "stopDelayTime":300,
       "tokenList": [
         {
           "address": "0x0000000000000000000000000000000000000000",
@@ -20,7 +20,7 @@
       "batchLimit": 200,
       "maxDisputeTime": 300,
       "maxReceiptTime": 120,
-      "stopDelay":3600,
+      "stopDelayTime":300,
       "tokenList": [
         {
           "address": "0x0000000000000000000000000000000000000000",
@@ -35,7 +35,7 @@
       "batchLimit": 300,
       "maxDisputeTime": 300,
       "maxReceiptTime": 120,
-      "stopDelay":3600,
+      "stopDelayTime":300,
       "tokenList": [
         {
           "address": "0x0000000000000000000000000000000000000000",
@@ -50,7 +50,7 @@
       "batchLimit": 400,
       "maxDisputeTime": 300,
       "maxReceiptTime": 120,
-      "stopDelay":3600,
+      "stopDelayTime":300,
       "tokenList": [
         {
           "address": "0x0000000000000000000000000000000000000000",
