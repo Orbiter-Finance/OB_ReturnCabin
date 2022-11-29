@@ -1,6 +1,6 @@
 import { ORSpv } from './../typechain-types/contracts/ORSpv';
 import { ethers } from 'hardhat';
-import { chains, pairs } from './georli.data.json';
+import { chains, pairs } from './goerli.data.json';
 import { printContract, deploy } from '../scripts/utils';
 import userListData from '././userTx.data.json';
 import makerListData from '././makerTx.data.json';

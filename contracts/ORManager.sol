@@ -5,6 +5,7 @@ import "./interface/IORManager.sol";
 import "./ORMakerDeposit.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "hardhat/console.sol";
 
 contract ORManager is IORManager, Initializable, OwnableUpgradeable {
     mapping(uint256 => OperationsLib.chainInfo) public chainList;
@@ -39,6 +40,22 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable {
         return ebcAddress;
     }
 
+    function setChainInfos(OperationsLib.chainInfo[] calldata chains) external onlyOwner {
+        for (uint256 i = 0; i < chains.length; i++) {
+            OperationsLib.chainInfo calldata chain = chains[i];
+            chainList[chain.chainid] = OperationsLib.chainInfo(
+                chain.chainid,
+                chain.batchLimit,
+                chain.maxDisputeTime,
+                chain.maxReceiptTime,
+                chain.stopDelayTime,
+                chain.tokenList,
+                true
+            );
+            emit ChangeChain(chain.chainid, chainList[chain.chainid]);
+        }
+    }
+
     function setChainInfo(
         uint256 chainID,
         uint256 batchLimit,
@@ -63,6 +80,28 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable {
         require(chainList[chainId].isUsed == true, "MANAGER_CHAININFO_UNINSTALL");
         OperationsLib.chainInfo memory info = chainList[chainId];
         return info;
+    }
+
+    function setTokenInfos(OperationsLib.tokenInfo[] calldata tokens) external onlyOwner {
+        for (uint256 k = 0; k < tokens.length; k++) {
+            uint256 chainID = tokens[k].chainID;
+            uint256 tokenPresion = tokens[k].tokenPresion;
+            address tokenAddress = tokens[k].tokenAddress;
+            address mainAddress = tokens[k].mainTokenAddress;
+            require(chainList[chainID].tokenList.length != 0, "SETTOKENINFO_UNSUPPORTTOKEN");
+            for (uint256 i = 0; i < chainList[chainID].tokenList.length; i++) {
+                address supportTokenAddress = chainList[chainID].tokenList[i];
+                if (supportTokenAddress == tokenAddress) {
+                    tokenInfos[chainID][tokenAddress] = OperationsLib.tokenInfo(
+                        chainID,
+                        tokenAddress,
+                        tokenPresion,
+                        mainAddress
+                    );
+                }
+                emit ChangeToken(chainID, tokenAddress, tokenInfos[chainID][tokenAddress]);
+            }
+        }
     }
 
     function setTokenInfo(

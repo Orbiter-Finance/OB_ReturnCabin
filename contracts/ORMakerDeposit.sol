@@ -438,7 +438,7 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         pledgeTokenLPStopDealyTime[pledgedToken] = block.timestamp + stopDelayTime;
     }
 
-    function makerChallengeFail(bytes32 challengeID) private onlyOwner returns (bool) {
+    function makerChallengeFail(bytes32 challengeID) private returns (bool) {
         OperationsLib.challengeInfo storage challengeInfo = challengeInfos[challengeID];
         address manager = getManagerAddress();
         address ebcAddress = IORManager(manager).ebc(challengeInfo.ebcid);
@@ -527,7 +527,7 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         challengeInfos[challengeID].challengeState = 3;
         bool success = makerChallengeFail(challengeID);
         require(success, "MakerChallenge Fail");
-        // emit LogChallengerMakeGood(makerFactory, challengeID, challengeInfos[challengeID]);
+        emit LogChallengerMakeGood(makerFactory, challengeID, challengeInfos[challengeID]);
     }
 
     // maker responds to arbitration request

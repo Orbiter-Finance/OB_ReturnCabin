@@ -56,11 +56,10 @@ const config: HardhatUserConfig = {
     },
     goerli: {
       url: `https://goerli.infura.io/v3/${INFURA_API_KEY}`,
-      // chainId: 5,
-      // gasPrice:20 * 10**9,
       timeout: 1000 * 60 * 60 * 5,
-      gas: 2100000,
-      gasPrice: 1000000000,
+      // gas: 643356,
+      // blockGasLimit:,
+      gasPrice: 200000000000,
       accounts,
     },
     kovan: {

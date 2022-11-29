@@ -85,7 +85,9 @@ describe('ORManager.test.ts => Chain', () => {
       expect(chainRes.maxReceiptTime).equal(maxReceiptTime);
       for (const tokenItem of tokenList) {
         const token = await manager.getTokenInfo(chainID, tokenItem.address);
-        expect(token.tokenAddress).equal(tokenItem.address);
+        expect(token.tokenAddress.toLowerCase()).equal(
+          String(tokenItem.address).toLowerCase(),
+        );
         expect(token.tokenPresion).equal(tokenItem.decimals);
         expect(token.mainTokenAddress).equal(tokenItem.pledgeToken);
         expect(token.chainID).equal(chainID);

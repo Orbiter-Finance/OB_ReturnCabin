@@ -36,15 +36,19 @@ describe('MakerDeposit.test.ts', () => {
     // init lp list
     makerDeposit = await getORMakerDepositContract();
     dataInit.initLps(makerDeposit.address);
-    testLPList = dataInit.lps.map((row) => {
-      const pair = dataInit.pairs.find((p) => p.id === row.pairId);
-      row.sourceChain = pair.sourceChain;
-      row.destChain = pair.destChain;
-      row.sourceTAddress = pair.sourceTAddress;
-      row.destTAddress = pair.destTAddress;
-      row.ebcid = pair.ebcid;
-      return row;
-    });
+    testLPList = dataInit.lps
+      .map((row) => {
+        const pair = dataInit.pairs.find((p) => p.id === row.pairId);
+        if (pair) {
+          row.sourceChain = pair.sourceChain;
+          row.destChain = pair.destChain;
+          row.sourceTAddress = pair.sourceTAddress;
+          row.destTAddress = pair.destTAddress;
+          row.ebcid = pair.ebcid;
+          return row;
+        }
+      })
+      .filter((row) => row);
     makerV1Factory = await getORMakerV1FactoryContract();
     [owner, makerAccount, UserTx1Account, UserTx3Account] =
       await ethers.getSigners();
