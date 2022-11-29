@@ -32,6 +32,7 @@ async function initChain() {
       chain.stopDelayTime,
       tokenList,
     );
+    await tx.wait();
     printSuccess(`Add Chain ${chain.chainID} Hash: ${tx.hash}`);
     for (const token of chain.tokenList) {
       const tx = await contract.setTokenInfo(
@@ -40,6 +41,7 @@ async function initChain() {
         token.decimals,
         token.pledgeToken,
       );
+      await tx.wait();
       printSuccess(
         `Add Chain Token ${token.symbol} ${chain.chainID} Token:${token.address} Hash: `,
         tx.hash,

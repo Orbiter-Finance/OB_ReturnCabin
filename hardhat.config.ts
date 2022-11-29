@@ -59,7 +59,7 @@ const config: HardhatUserConfig = {
       timeout: 1000 * 60 * 60 * 5,
       // gas: 643356,
       // blockGasLimit:,
-      gasPrice: 200000000000,
+      gasPrice: 20000000000,
       accounts,
     },
     kovan: {
