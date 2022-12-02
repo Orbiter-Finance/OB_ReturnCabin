@@ -7,10 +7,10 @@ import "./interface/IORSpv.sol";
 /// @title Simplified payment verification
 /// @notice SPV proves that Source Tx has occurred in the Source Network.
 contract ORSpv is IORSpv, Initializable, OwnableUpgradeable {
-    mapping(uint256 => bytes32) public makerTxTree;
-    mapping(uint256 => bytes32) public userTxTree;
+    mapping(uint256 => bytes32) public getMakerTxHash;
+    mapping(uint256 => bytes32) public getUserTxHash;
 
-    function initialize() public initializer {
+    function initialize() external initializer {
         __Ownable_init();
     }
 
@@ -18,14 +18,14 @@ contract ORSpv is IORSpv, Initializable, OwnableUpgradeable {
     /// @param chain Public chain ID
     /// @param root New root hash
     function setUserTxTreeRoot(uint256 chain, bytes32 root) external onlyOwner {
-        userTxTree[chain] = root;
+        getUserTxHash[chain] = root;
     }
 
     /// @notice Set the list of transactions for the market maker to delay payment collection roothash
     /// @param chain Public chain ID
     /// @param root New root hash
     function setMakerTxTreeRoot(uint256 chain, bytes32 root) external onlyOwner {
-        makerTxTree[chain] = root;
+        getMakerTxHash[chain] = root;
     }
 
     function getSpvTxId(OperationsLib.txInfo calldata _txInfo) internal pure returns (bytes32) {
@@ -58,7 +58,7 @@ contract ORSpv is IORSpv, Initializable, OwnableUpgradeable {
         returns (bool)
     {
         bytes32 _leaf = getSpvTxId(_txInfo);
-        return verify(userTxTree[_txInfo.chainID], _leaf, _proof);
+        return verify(getUserTxHash[_txInfo.chainID], _leaf, _proof);
     }
 
     /// @notice List of merchant transactions with delayed payment
@@ -71,7 +71,7 @@ contract ORSpv is IORSpv, Initializable, OwnableUpgradeable {
         returns (bool)
     {
         bytes32 _leaf = getSpvTxId(_txInfo);
-        return verify(makerTxTree[_txInfo.chainID], _leaf, _proof);
+        return verify(getMakerTxHash[_txInfo.chainID], _leaf, _proof);
     }
 
     /// @notice Validation exists in the merkle tree

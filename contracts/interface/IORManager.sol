@@ -12,17 +12,10 @@ interface IORManager {
     event ChangeToken(uint256 indexed chainId, address indexed tokenAddress, OperationsLib.tokenInfo token);
     event PairLogEvent(PairEventType indexed opType, OperationsLib.pairChainInfo[] pairs);
 
-    function chainList(uint256)
+    function calcLpPledgeAmount(OperationsLib.calcLpNeedPledgeAmountParams[] memory _lpinfos)
         external
         view
-        returns (
-            uint256 chainid,
-            uint256 batchLimit,
-            uint256 maxDisputeTime,
-            uint256 maxReceiptTime,
-            uint256 stopDelayTime,
-            bool isUsed
-        );
+        returns (address pledgedToken, OperationsLib.lpPledgeCalculate[] memory);
 
     function createPair(
         OperationsLib.pairChainInfo[] memory pairs,
@@ -38,13 +31,23 @@ interface IORManager {
         bytes32 rootHash
     ) external;
 
-    function ebc(uint256) external view returns (address);
-
     function ebcId() external view returns (uint256);
 
-    function getChainInfoByChainID(uint256 chainId) external view returns (OperationsLib.chainInfo memory);
+    function getChain(uint256)
+        external
+        view
+        returns (
+            uint256 chainid,
+            uint256 batchLimit,
+            uint256 maxDisputeTime,
+            uint256 maxReceiptTime,
+            uint256 stopDelayTime,
+            bool isUsed
+        );
 
-    function getEBC(uint256 id) external view returns (address);
+    function getEBC(uint256) external view returns (address);
+
+    function getSPV() external view returns (address);
 
     function getTokenInfo(uint256 chainID, address tokenAddress) external view returns (OperationsLib.tokenInfo memory);
 
@@ -70,9 +73,11 @@ interface IORManager {
         address[] memory tokenList
     ) external;
 
-    function setEBC(address addr) external;
+    // function setChainInfos(OperationsLib.chainInfo[] memory chains) external;
 
-    function setSPV(address spvAddress) external;
+    function setEBC(address ebc) external;
+
+    function setSPV(address spv) external;
 
     function setTokenInfo(
         uint256 chainID,
@@ -81,7 +86,7 @@ interface IORManager {
         address mainAddress
     ) external;
 
-    function spv() external view returns (address);
+    // function setTokenInfos(OperationsLib.tokenInfo[] memory tokens) external;
 
     function tokenInfos(uint256, address)
         external

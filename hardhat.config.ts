@@ -32,13 +32,12 @@ const config: HardhatUserConfig = {
     hardhat: {
       allowUnlimitedContractSize: true,
     },
-    ganache: {
-      chainId: 5777,
-      url: 'http://127.0.0.1:7545',
+    develop: {
+      chainId: 599,
+      url: 'http://127.0.0.1:8545',
       accounts
     },
     test: {
-      chainId: 599,
       url: 'http://ec2-54-178-23-104.ap-northeast-1.compute.amazonaws.com:8545',
       accounts
     },
@@ -57,8 +56,6 @@ const config: HardhatUserConfig = {
     goerli: {
       url: `https://goerli.infura.io/v3/${INFURA_API_KEY}`,
       timeout: 1000 * 60 * 60 * 5,
-      // gas: 643356,
-      // blockGasLimit:,
       gasPrice: 20000000000,
       accounts,
     },

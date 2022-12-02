@@ -76,8 +76,7 @@ describe('ORManager.test.ts => Chain', () => {
     for (const chain of chains) {
       const { chainID, batchLimit, maxDisputeTime, maxReceiptTime, tokenList } =
         chain;
-      const chainRes = await manager.chainList(chainID);
-
+      const chainRes = await manager.getChain(chainID);
       expect(chainRes.isUsed).true;
       expect(chainRes.chainid).equal(chainID);
       expect(chainRes.batchLimit).equal(batchLimit);
@@ -113,7 +112,7 @@ describe('ORManager.test.ts => Chain', () => {
       stopDelayTime,
       tokenAddressList,
     );
-    expect((await manager.chainList(chainID)).batchLimit).equal(batchLimit * 2);
+    expect((await manager.getChain(chainID)).batchLimit).equal(batchLimit * 2);
   });
   it('Manager Change Token tokenPresion', async () => {
     const manager = await getManagerContract();
@@ -154,6 +153,6 @@ describe('Manager EBC', () => {
     await manager.setEBC(ebc.address);
     //ERROR TEST
     // await userFactory.setEBC('0x0000000000000000000000000000000000000000');
-    expect(await manager.ebc(1)).equal(ebc.address);
+    expect(await manager.getEBC(1)).equal(ebc.address);
   });
 });

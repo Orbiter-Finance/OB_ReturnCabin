@@ -25,19 +25,19 @@ describe('MakerV1Factory', () => {
   });
   it('SetManager', async () => {
     const contract = await getORMakerV1FactoryContract();
-    const oldManagerAddress = await contract.manager();
+    const oldManagerAddress = await contract.getManager();
     await contract.setManager('0x0000000000000000000000000000000000000001');
-    expect(await contract.manager()).equal(
+    expect(await contract.getManager()).equal(
       '0x0000000000000000000000000000000000000001',
     );
     await contract.setManager(oldManagerAddress);
-    expect(await contract.manager()).equal(oldManagerAddress);
+    expect(await contract.getManager()).equal(oldManagerAddress);
   });
   it('Set setMakerLimit', async () => {
     const maxLimit = 4;
     const contract = await getORMakerV1FactoryContract();
     await contract.setMakerMaxLimit(maxLimit);
-    const result = await contract.makerMaxLimit();
+    const result = await contract.getMakerMaxLimit();
     expect(result).eq(maxLimit);
   });
   it('Create Maker', async () => {
@@ -48,7 +48,6 @@ describe('MakerV1Factory', () => {
     const tx = await response.wait();
     const makerMapEvent = tx.events?.find((row) => row.event == 'MakerCreated');
     if (makerMapEvent && makerMapEvent.args) {
-      process.env['MDC'] = makerMapEvent.args[1].toLowerCase();
       process.env['MAKER:POOL'] = makerMapEvent.args[1].toLowerCase();
       process.env['MAKER:OWNER'] = makerAccount.address;
       process.env['ORMakerDeposit'] = makerMapEvent.args[1].toLowerCase();

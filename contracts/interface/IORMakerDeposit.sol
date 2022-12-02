@@ -10,7 +10,14 @@ interface IORMakerDeposit {
         OperationsLib.challengeInfo challenge,
         OperationsLib.txInfo txInfo
     );
-    event LogChallengerMakeGood(address indexed factory, bytes32 id, OperationsLib.challengeInfo challenge);
+    event LogChallengerCompensation(
+        address indexed factory,
+        bytes32 challengeId,
+        uint256 refund,
+        uint256 refundPledged,
+        uint256 compensate
+    );
+    // event LogChallengerMakeGood(address indexed factory, bytes32 id, OperationsLib.challengeInfo challenge);
     event LogLPAction(bytes32 indexed pairId, bytes32 lpId, OperationsLib.lpInfo lpinfo);
     event LogLPPause(bytes32 indexed pairId, bytes32 lpId, OperationsLib.lpInfo lpinfo);
     event LogLPRestart(bytes32 indexed pairId, bytes32 indexed lpId, uint256 gasFee, uint256 tradingFee);
@@ -19,10 +26,10 @@ interface IORMakerDeposit {
     event LogLPUserStop(bytes32 indexed pairId, bytes32 lpId);
     event Deposit(address caller, uint256 amount);
 
-    function calcLpPledgeAmount(OperationsLib.calcLpNeedPledgeAmountParams[] memory _lpinfos)
-        external
-        view
-        returns (OperationsLib.lpPledgeCalculate[] memory, uint256 totalPledgeValue);
+    // function calcLpPledgeAmount(OperationsLib.calcLpNeedPledgeAmountParams[] memory _lpinfos)
+    //     external
+    //     view
+    //     returns (OperationsLib.lpPledgeCalculate[] memory, uint256 totalPledgeValue);
 
     function challengePleged() external view returns (uint256);
 
@@ -65,7 +72,7 @@ interface IORMakerDeposit {
         bytes32[] memory _makerProof
     ) external;
 
-    function makerFactory() external view returns (address);
+    function getMakerFactory() external view returns (address);
 
     function pairExist(uint256 chainId, bytes32 pairId) external view returns (bool);
 

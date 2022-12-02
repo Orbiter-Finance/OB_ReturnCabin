@@ -80,7 +80,7 @@ describe('MakerDeposit.test.ts', () => {
     await ethers.provider.send('evm_mine', [timestampBefore + ms]);
   }
   it('Get MakerFactory', async () => {
-    const result = await makerDeposit.makerFactory();
+    const result = await makerDeposit.getMakerFactory();
     expect(result).equal(makerV1Factory.address);
   });
   it('Calculation of pledge quantity', async () => {
@@ -171,7 +171,7 @@ describe('MakerDeposit.test.ts', () => {
         lp.sourceChain,
         token.address,
       );
-      const row = pledgeResult[0].find(
+      const row = pledgeResult.pledgeListData.find(
         (row) => Number(row.chainId) == Number(lp.sourceChain),
       );
       expect(row).not.empty;
@@ -289,7 +289,7 @@ describe('MakerDeposit.test.ts', () => {
       //   lp.sourceChain,
       //   lp.sourceTAddress,
       // );
-      const row = pledgeResult[0].find(
+      const row = pledgeResult.pledgeListData.find(
         (row) => Number(row.chainId) == Number(lp.sourceChain),
       );
       expect(row).not.empty;
@@ -525,7 +525,7 @@ describe('MakerDeposit.test.ts', () => {
         lp.sourceChain,
         token.address,
       );
-      const row = pledgeResult[0].find(
+      const row = pledgeResult.pledgeListData.find(
         (row) => Number(row.chainId) == Number(lp.sourceChain),
       );
       expect(row).not.empty;
@@ -656,7 +656,7 @@ describe('MakerDeposit.test.ts', () => {
       const events = tx.events || [];
       const eventNames = events.map((e) => e.event);
       expect(eventNames).includes('LogLPUserStop');
-      expect(eventNames).includes('LogChallengeInfo');
+      expect(eventNames).includes('LogChallengerCompensation');
     }
   });
   it('Maker withDraw not time', async () => {

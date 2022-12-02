@@ -4,6 +4,9 @@ pragma solidity ^0.8.17;
 import "../library/Operation.sol";
 
 interface IORProtocal {
+    event ChangeChallengePledgedAmount(uint256 value);
+    event ChangePledgeAmountSafeRate(uint256 value);
+
     function calculateCompensation(address token, uint256 value)
         external
         view
@@ -42,8 +45,6 @@ interface IORProtocal {
     ) external;
 
     function mainCoinPunishRate() external view returns (uint16);
-
-    function maxWithdrawTime() external pure returns (uint256);
 
     function pledgeAmountSafeRate() external view returns (uint32);
 

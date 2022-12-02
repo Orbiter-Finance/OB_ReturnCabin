@@ -7,24 +7,22 @@ import "./interface/IORSpv.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-// import "hardhat/console.sol";
-
 contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
-    address controlContract;
+    IORManager public getManager;
     uint256 public challengePledgedAmount;
     uint32 public pledgeAmountSafeRate;
     uint16 public mainCoinPunishRate;
     uint16 public tokenPunishRate;
 
     function initialize(
-        address _controlContract,
+        address _manager,
         uint256 _challengePledgedAmount,
         uint32 _pledgeAmountSafeRate,
         uint16 _mainCoinPunishRate,
         uint16 _tokenPunishRate
-    ) public initializer {
-        require(_controlContract != address(0), "Owner address error");
-        controlContract = _controlContract;
+    ) external initializer {
+        require(_manager != address(0), "Owner address error");
+        getManager = IORManager(_manager);
         challengePledgedAmount = _challengePledgedAmount;
         pledgeAmountSafeRate = _pledgeAmountSafeRate;
         mainCoinPunishRate = _mainCoinPunishRate;
@@ -35,11 +33,13 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     // The parameter here is the user challenge pledge factor in wei.
     function setChallengePledgedAmount(uint256 value) external onlyOwner {
         challengePledgedAmount = value;
+        emit ChangeChallengePledgedAmount(value);
     }
 
     // The parameter is a number of percentile precision, for example: When tenDigits is 110, it represents 1.1
     function setPledgeAmountSafeRate(uint32 value) external onlyOwner {
         pledgeAmountSafeRate = value;
+        emit ChangePledgeAmountSafeRate(value);
     }
 
     function getPledgeAmountSafeRate() external view returns (uint32) {
@@ -92,7 +92,7 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
 
     function getRespnseHash(OperationsLib.txInfo memory _txinfo) external pure returns (bytes32) {
         (uint256 securityCode, bool sourceIsSupport) = getSecuirtyCode(true, _txinfo.amount);
-        (uint256 nonce, bool responseIsSupport) = getSecuirtyCode(false, _txinfo.responseAmount);
+        (, bool responseIsSupport) = getSecuirtyCode(false, _txinfo.responseAmount);
 
         require(sourceIsSupport && responseIsSupport, "GRH_ERROR");
 
@@ -121,7 +121,7 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     {
         // bytes32 lpid = _txinfo.lpid;
         //1. txinfo is already spv
-        address spvAddress = getSpvAddress();
+        address spvAddress = getManager.getSPV();
         // Verify that txinfo and txproof are valid
         bool txVerify = IORSpv(spvAddress).verifyUserTxProof(_txinfo, _txproof);
         require(txVerify, "UCE_1");
@@ -134,32 +134,18 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
         OperationsLib.txInfo memory _makerTx,
         bytes32[] memory _makerProof
     ) external view returns (bool) {
-        address spvAddress = getSpvAddress();
+        address spvAddress = getManager.getSPV();
 
         //1. _makerTx is already spv
         bool txVerify = IORSpv(spvAddress).verifyMakerTxProof(_makerTx, _makerProof);
         require(txVerify, "MCE_UNVERIFY");
-
-        OperationsLib.chainInfo memory souceChainInfo = IORManager(controlContract).getChainInfoByChainID(
-            _userTx.chainID
-        );
+        (, , uint256 maxDisputeTime, , , ) = getManager.getChain(_userTx.chainID);
         // The transaction time of maker is required to be later than that of user.
         // At the same time, the time difference between the above two times is required to be less than the maxDisputeTime.
         require(
-            _makerTx.timestamp - _userTx.timestamp > 0 &&
-                _makerTx.timestamp - _userTx.timestamp < souceChainInfo.maxDisputeTime,
+            _makerTx.timestamp - _userTx.timestamp > 0 && _makerTx.timestamp - _userTx.timestamp < maxDisputeTime,
             "MCE_TIMEINVALIDATE"
         );
         return true;
-    }
-
-    function maxWithdrawTime() external pure returns (uint256) {
-        return 1;
-    }
-
-    function getSpvAddress() internal view returns (address) {
-        address spvAddress = IORManager(controlContract).spv();
-        require(spvAddress != address(0), "SPV_NOT_INSTALL");
-        return spvAddress;
     }
 }

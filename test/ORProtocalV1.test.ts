@@ -29,8 +29,8 @@ describe('ORProtocalV1.test.ts', () => {
     );
     await factoryContract.updateEBC(1, ebc.address);
     await factoryContract.setSPV(spvContract.address);
-    expect(await factoryContract.ebc(1)).equal(ebc.address);
-    expect(await factoryContract.spv()).equal(spvContract.address);
+    expect(await factoryContract.getEBC(1)).equal(ebc.address);
+    expect(await factoryContract.getSPV()).equal(spvContract.address);
   });
   it('setAndGetChallengePledgeAmountCoefficient', async () => {
     const value = ethers.utils.parseEther('0.05');
@@ -42,7 +42,6 @@ describe('ORProtocalV1.test.ts', () => {
     const value = 1000;
     await ebc.connect(ebcOwner).setPledgeAmountSafeRate(value);
     const result = await ebc.getPledgeAmountSafeRate();
-    console.log(result, 'rate');
     const batchLimit = ethers.BigNumber.from(100),
       maxPrice = ethers.BigNumber.from('100000000000000000');
     const pledgeAmount = await ebc.getPledgeAmount(batchLimit, maxPrice);

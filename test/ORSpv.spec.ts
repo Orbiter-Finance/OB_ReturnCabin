@@ -52,7 +52,7 @@ describe('ORSpv.spec.ts', () => {
     });
     it('Get Root', async () => {
       const root = userTxTree.getHexRoot();
-      const chainRoot = await spv.userTxTree(fromChainId);
+      const chainRoot = await spv.getUserTxHash(fromChainId);
       expect(chainRoot).equals(root);
     });
     it('Local VerifyProof', () => {
@@ -92,7 +92,7 @@ describe('ORSpv.spec.ts', () => {
     });
     it('Get Root', async () => {
       const root = makerTxTree.getHexRoot();
-      const chainRoot = await spv.makerTxTree(toChainId);
+      const chainRoot = await spv.getMakerTxHash(toChainId);
       expect(chainRoot).equals(root);
     });
     it('Local VerifyProof', () => {

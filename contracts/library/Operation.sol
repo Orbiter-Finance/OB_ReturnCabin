@@ -91,7 +91,6 @@ library OperationsLib {
         address token;
         uint256 value;
         uint256 pledged;
-        uint256 compensate;
         uint256 ebcid;
     }
 
