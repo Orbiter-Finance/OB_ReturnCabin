@@ -87,7 +87,7 @@ describe('ORManager.test.ts => Chain', () => {
         expect(token.tokenAddress.toLowerCase()).equal(
           String(tokenItem.address).toLowerCase(),
         );
-        expect(token.tokenPresion).equal(tokenItem.decimals);
+        expect(token.decimals).equal(tokenItem.decimals);
         expect(token.mainTokenAddress).equal(tokenItem.pledgeToken);
         expect(token.chainID).equal(chainID);
       }

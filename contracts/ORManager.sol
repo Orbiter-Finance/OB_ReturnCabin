@@ -8,11 +8,11 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 contract ORManager is IORManager, Initializable, OwnableUpgradeable {
-    mapping(uint256 => OperationsLib.chainInfo) public getChain;
+    mapping(uint16 => OperationsLib.chainInfo) public getChain;
     // mapping(uint256 => EnumerableSet.AddressSet) public getChain;
     // mapping(uint256 => EnumerableSet.UintSet) tokens;
     // chainId => tokenAddress
-    mapping(uint256 => mapping(address => OperationsLib.tokenInfo)) public tokenInfos;
+    mapping(uint16 => mapping(address => OperationsLib.tokenInfo)) public tokenInfos;
     uint256 public ebcId;
     mapping(uint256 => address) public getEBC;
     bytes32 public pairsRoot;
@@ -54,7 +54,7 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable {
     }
 
     function setChainInfo(
-        uint256 chainID,
+        uint16 chainID,
         uint256 batchLimit,
         uint256 maxDisputeTime,
         uint256 maxReceiptTime,
@@ -75,8 +75,8 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable {
 
     function setTokenInfos(OperationsLib.tokenInfo[] calldata tokens) external onlyOwner {
         for (uint256 k = 0; k < tokens.length; k++) {
-            uint256 chainID = tokens[k].chainID;
-            uint256 tokenPresion = tokens[k].tokenPresion;
+            uint16 chainID = tokens[k].chainID;
+            uint8 decimals = tokens[k].decimals;
             address tokenAddress = tokens[k].tokenAddress;
             address mainAddress = tokens[k].mainTokenAddress;
             require(getChain[chainID].tokenList.length != 0, "SETTOKENINFO_UNSUPPORTTOKEN");
@@ -86,7 +86,7 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable {
                     tokenInfos[chainID][tokenAddress] = OperationsLib.tokenInfo(
                         chainID,
                         tokenAddress,
-                        tokenPresion,
+                        decimals,
                         mainAddress
                     );
                 }
@@ -96,9 +96,9 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable {
     }
 
     function setTokenInfo(
-        uint256 chainID,
+        uint16 chainID,
         address tokenAddress,
-        uint256 tokenPresion,
+        uint8 tokenPresion,
         address mainAddress
     ) external onlyOwner {
         require(getChain[chainID].tokenList.length != 0, "SETTOKENINFO_UNSUPPORTTOKEN");
@@ -116,7 +116,7 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable {
         }
     }
 
-    function getTokenInfo(uint256 chainID, address tokenAddress)
+    function getTokenInfo(uint16 chainID, address tokenAddress)
         external
         view
         returns (OperationsLib.tokenInfo memory)
@@ -132,7 +132,7 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable {
         revert("UNSUPPORTTOKEN");
     }
 
-    function isSupportChain(uint256 chainID, address token) public view returns (bool) {
+    function isSupportChain(uint16 chainID, address token) public view returns (bool) {
         bool isSupportToken = false;
         for (uint256 i = 0; i < getChain[chainID].tokenList.length; i++) {
             if (getChain[chainID].tokenList[i] == token) {

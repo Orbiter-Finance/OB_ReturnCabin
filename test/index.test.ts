@@ -106,7 +106,7 @@ export async function getUserAccount() {
 }
 export const getPairID = (pair: any): string => {
   const lpId = solidityKeccak256(
-    ['uint256', 'uint256', 'address', 'address', 'uint256'],
+    ['uint16', 'uint16', 'address', 'address', 'uint256'],
     [
       pair.sourceChain,
       pair.destChain,
@@ -150,7 +150,7 @@ export const getTxLeaf = (tx: any) => {
   const hex = ethers.utils.solidityKeccak256(
     [
       'bytes32',
-      'uint256',
+      'uint16',
       'bytes32',
       'address',
       'address',

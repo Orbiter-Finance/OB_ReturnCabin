@@ -3,7 +3,7 @@ pragma solidity ^0.8.17;
 
 library OperationsLib {
     struct lpPledgeCalculate {
-        uint256 chainId;
+        uint16 chainId;
         uint256 baseValue;
         uint256 additiveValue;
         uint256 pledged;
@@ -11,28 +11,28 @@ library OperationsLib {
     }
     struct calcLpNeedPledgeAmountParams {
         bytes32 pairId;
-        uint256 fromChain;
+        uint16 fromChain;
         address fromToken;
         uint256 ebcId;
         uint256 maxPrice;
     }
     struct pairChainInfo {
-        uint256 sourceChain;
-        uint256 destChain;
+        uint16 sourceChain;
+        uint16 destChain;
         address sourceTAddress;
         address destTAddress;
         uint256 ebcid;
     }
 
     struct tokenInfo {
-        uint256 chainID;
+        uint16 chainID;
         address tokenAddress;
-        uint256 tokenPresion;
+        uint8 decimals;
         address mainTokenAddress;
     }
 
     struct chainInfo {
-        uint256 chainid;
+        uint16 chainid;
         uint256 batchLimit;
         uint256 maxDisputeTime;
         uint256 maxReceiptTime;
@@ -42,7 +42,7 @@ library OperationsLib {
     }
 
     struct txInfo {
-        uint256 chainID;
+        uint16 chainID;
         bytes32 txHash;
         bytes32 lpid;
         address sourceAddress;
@@ -57,8 +57,8 @@ library OperationsLib {
     }
 
     struct lpInfo {
-        uint256 sourceChain;
-        uint256 destChain;
+        uint16 sourceChain;
+        uint16 destChain;
         address sourceTAddress;
         address destTAddress;
         uint256 sourcePresion;

@@ -9,6 +9,7 @@ import "./interface/IORMakerV1Factory.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
+import "hardhat/console.sol";
 
 contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
     using EnumerableMap for EnumerableMap.AddressToUintMap;
@@ -408,7 +409,7 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
 
     // LPStop
     function lpUserStop(
-        uint256 sourceChain,
+        uint16 sourceChain,
         address sourceToken,
         uint256 ebcid
     ) internal {
@@ -557,7 +558,7 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         bytes32 makerResponse = keccak256(
             abi.encodePacked(
                 _makerTx.lpid,
-                _makerTx.chainID,
+                uint256(_makerTx.chainID),
                 _makerTx.sourceAddress,
                 _makerTx.destAddress,
                 _makerTx.responseAmount,

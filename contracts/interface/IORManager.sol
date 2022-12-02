@@ -33,11 +33,11 @@ interface IORManager {
 
     function ebcId() external view returns (uint256);
 
-    function getChain(uint256)
+    function getChain(uint16)
         external
         view
         returns (
-            uint256 chainid,
+            uint16 chainid,
             uint256 batchLimit,
             uint256 maxDisputeTime,
             uint256 maxReceiptTime,
@@ -49,11 +49,11 @@ interface IORManager {
 
     function getSPV() external view returns (address);
 
-    function getTokenInfo(uint256 chainID, address tokenAddress) external view returns (OperationsLib.tokenInfo memory);
+    function getTokenInfo(uint16 chainID, address tokenAddress) external view returns (OperationsLib.tokenInfo memory);
 
     function initialize() external;
 
-    function isSupportChain(uint256 chainID, address token) external view returns (bool);
+    function isSupportChain(uint16 chainID, address token) external view returns (bool);
 
     function isSupportPair(bytes32 pair, bytes32[] memory proof) external view returns (bool);
 
@@ -65,7 +65,7 @@ interface IORManager {
     function pairsRoot() external view returns (bytes32);
 
     function setChainInfo(
-        uint256 chainID,
+        uint16 chainID,
         uint256 batchLimit,
         uint256 maxDisputeTime,
         uint256 maxReceiptTime,
@@ -80,21 +80,21 @@ interface IORManager {
     function setSPV(address spv) external;
 
     function setTokenInfo(
-        uint256 chainID,
+        uint16 chainID,
         address tokenAddress,
-        uint256 tokenPresion,
+        uint8 tokenPresion,
         address mainAddress
     ) external;
 
     // function setTokenInfos(OperationsLib.tokenInfo[] memory tokens) external;
 
-    function tokenInfos(uint256, address)
+    function tokenInfos(uint16, address)
         external
         view
         returns (
-            uint256 chainID,
+            uint16 chainID,
             address tokenAddress,
-            uint256 tokenPresion,
+            uint8 tokenPresion,
             address mainTokenAddress
         );
 
