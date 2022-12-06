@@ -10,16 +10,16 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     IORManager public getManager;
     uint256 public challengePledgedAmount;
-    uint32 public pledgeAmountSafeRate;
-    uint16 public mainCoinPunishRate;
-    uint16 public tokenPunishRate;
+    uint256 public pledgeAmountSafeRate;
+    uint256 public mainCoinPunishRate;
+    uint256 public tokenPunishRate;
 
     function initialize(
         address _manager,
         uint256 _challengePledgedAmount,
-        uint32 _pledgeAmountSafeRate,
-        uint16 _mainCoinPunishRate,
-        uint16 _tokenPunishRate
+        uint256 _pledgeAmountSafeRate,
+        uint256 _mainCoinPunishRate,
+        uint256 _tokenPunishRate
     ) external initializer {
         require(_manager != address(0), "Owner address error");
         getManager = IORManager(_manager);
@@ -37,22 +37,22 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     }
 
     // The parameter is a number of percentile precision, for example: When tenDigits is 110, it represents 1.1
-    function setPledgeAmountSafeRate(uint32 value) external onlyOwner {
+    function setPledgeAmountSafeRate(uint256 value) external onlyOwner {
         pledgeAmountSafeRate = value;
         emit ChangePledgeAmountSafeRate(value);
     }
 
-    function getPledgeAmountSafeRate() external view returns (uint32) {
-        return pledgeAmountSafeRate;
-    }
+    // function getPledgeAmountSafeRate() external view returns (uint256) {
+    //     return pledgeAmountSafeRate;
+    // }
 
     // The parameter is a number of percentile precision, for example: When tenDigits is 110, it represents 1.1
-    function setMainCoinPunishRate(uint16 value) external onlyOwner {
+    function setMainCoinPunishRate(uint256 value) external onlyOwner {
         mainCoinPunishRate = value;
     }
 
     // The parameter is a number of percentile precision, for example: When tenDigits is 110, it represents 1.1
-    function setTokenPunishRate(uint16 value) external onlyOwner {
+    function setTokenPunishRate(uint256 value) external onlyOwner {
         tokenPunishRate = value;
     }
 

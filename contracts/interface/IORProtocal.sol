@@ -30,7 +30,7 @@ interface IORProtocal {
         view
         returns (uint256 baseValue, uint256 additiveValue);
 
-    function getPledgeAmountSafeRate() external view returns (uint32);
+    // function getPledgeAmountSafeRate() external view returns (uint256);
 
     function getRespnseHash(OperationsLib.txInfo memory _txinfo) external pure returns (bytes32);
 
@@ -39,22 +39,22 @@ interface IORProtocal {
     function initialize(
         address _controlContract,
         uint256 _challengePledgedAmount,
-        uint32 _pledgeAmountSafeRate,
-        uint16 _mainCoinPunishRate,
-        uint16 _tokenPunishRate
+        uint256 _pledgeAmountSafeRate,
+        uint256 _mainCoinPunishRate,
+        uint256 _tokenPunishRate
     ) external;
 
-    function mainCoinPunishRate() external view returns (uint16);
+    function mainCoinPunishRate() external view returns (uint256);
 
-    function pledgeAmountSafeRate() external view returns (uint32);
+    function pledgeAmountSafeRate() external view returns (uint256);
 
     function setChallengePledgedAmount(uint256 _wei) external;
 
-    function setMainCoinPunishRate(uint16 value) external;
+    function setMainCoinPunishRate(uint256 value) external;
 
-    function setPledgeAmountSafeRate(uint32 value) external;
+    function setPledgeAmountSafeRate(uint256 value) external;
 
-    function setTokenPunishRate(uint16 value) external;
+    function setTokenPunishRate(uint256 value) external;
 
-    function tokenPunishRate() external view returns (uint16);
+    function tokenPunishRate() external view returns (uint256);
 }

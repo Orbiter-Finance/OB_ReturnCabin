@@ -41,7 +41,7 @@ describe('ORProtocalV1.test.ts', () => {
   it('setAndGetDepositAmountCoefficient', async () => {
     const value = 1000;
     await ebc.connect(ebcOwner).setPledgeAmountSafeRate(value);
-    const result = await ebc.getPledgeAmountSafeRate();
+    // const result = await ebc.getPledgeAmountSafeRate();
     const batchLimit = ethers.BigNumber.from(100),
       maxPrice = ethers.BigNumber.from('100000000000000000');
     const pledgeAmount = await ebc.getPledgeAmount(batchLimit, maxPrice);
