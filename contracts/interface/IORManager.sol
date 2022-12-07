@@ -57,11 +57,6 @@ interface IORManager {
 
     function isSupportPair(bytes32 pair, bytes32[] memory proof) external view returns (bool);
 
-    function isSupportPair(OperationsLib.pairChainInfo memory pair, bytes32[] memory proof)
-        external
-        view
-        returns (bool);
-
     function pairsRoot() external view returns (bytes32);
 
     function setChainInfo(

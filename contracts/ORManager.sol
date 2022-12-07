@@ -9,8 +9,6 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 contract ORManager is IORManager, Initializable, OwnableUpgradeable {
     mapping(uint16 => OperationsLib.chainInfo) public getChain;
-    // mapping(uint256 => EnumerableSet.AddressSet) public getChain;
-    // mapping(uint256 => EnumerableSet.UintSet) tokens;
     // chainId => tokenAddress
     mapping(uint16 => mapping(address => OperationsLib.tokenInfo)) public tokenInfos;
     uint256 public ebcId;
@@ -167,16 +165,7 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable {
     function isSupportPair(bytes32 pair, bytes32[] calldata proof) public view returns (bool) {
         return MerkleProof.verifyCalldata(proof, pairsRoot, pair);
     }
-
-    function isSupportPair(OperationsLib.pairChainInfo calldata pair, bytes32[] calldata proof)
-        public
-        view
-        returns (bool)
-    {
-        bytes32 pairId = OperationsLib.getPairID(pair);
-        return isSupportPair(pairId, proof);
-    }
-
+ 
     function pairObjectToHash(OperationsLib.pairChainInfo[] calldata pairs) internal pure returns (bytes32[] memory) {
         bytes32[] memory leaves = new bytes32[](pairs.length);
         for (uint256 i = 0; i < pairs.length; i++) {

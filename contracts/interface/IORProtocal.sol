@@ -30,7 +30,6 @@ interface IORProtocal {
         view
         returns (uint256 baseValue, uint256 additiveValue);
 
-    // function getPledgeAmountSafeRate() external view returns (uint256);
 
     function getRespnseHash(OperationsLib.txInfo memory _txinfo) external pure returns (bytes32);
 

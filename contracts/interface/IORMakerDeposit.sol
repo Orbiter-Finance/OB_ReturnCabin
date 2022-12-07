@@ -26,11 +26,6 @@ interface IORMakerDeposit {
     event LogLPUserStop(bytes32 indexed pairId, bytes32 lpId);
     event Deposit(address caller, uint256 amount);
 
-    // function calcLpPledgeAmount(OperationsLib.calcLpNeedPledgeAmountParams[] memory _lpinfos)
-    //     external
-    //     view
-    //     returns (OperationsLib.lpPledgeCalculate[] memory, uint256 totalPledgeValue);
-
     function challengePleged() external view returns (uint256);
 
     function challengerMakeGood(bytes32 challengeID) external;

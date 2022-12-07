@@ -42,10 +42,6 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
         emit ChangePledgeAmountSafeRate(value);
     }
 
-    // function getPledgeAmountSafeRate() external view returns (uint256) {
-    //     return pledgeAmountSafeRate;
-    // }
-
     // The parameter is a number of percentile precision, for example: When tenDigits is 110, it represents 1.1
     function setMainCoinPunishRate(uint256 value) external onlyOwner {
         mainCoinPunishRate = value;
