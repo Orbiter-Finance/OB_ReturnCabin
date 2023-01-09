@@ -4,9 +4,11 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "./interface/IORMakerV1Factory.sol";
-interface  IMakerImplementation {
+
+interface IMakerImplementation {
     function initialize(address _owner) external;
 }
+
 contract ORMakerV1Factory is IORMakerV1Factory, OwnableUpgradeable {
     IORManager public getManager;
     uint256 public getMakerMaxLimit;
@@ -14,7 +16,11 @@ contract ORMakerV1Factory is IORMakerV1Factory, OwnableUpgradeable {
     address public implementation;
     mapping(address => address) public getMaker;
 
-    function initialize(address _manager, uint256 _makerMaxLimit,address _implementation) external initializer {
+    function initialize(
+        address _manager,
+        uint256 _makerMaxLimit,
+        address _implementation
+    ) external initializer {
         require(_manager != address(0), "Zero Check");
         __Ownable_init();
         getManager = IORManager(_manager);
@@ -32,10 +38,14 @@ contract ORMakerV1Factory is IORMakerV1Factory, OwnableUpgradeable {
         getMakerMaxLimit = maxLimit;
         emit ChangeMakerMaxLimit(maxLimit);
     }
+
     function createMaker() external {
         require(getMakerLimitUsed < getMakerMaxLimit, "Maker Max limit");
         require(getMaker[msg.sender] == address(0), "Exist Maker");
-        address makerPoolAddr = Clones.cloneDeterministic(implementation, keccak256(abi.encodePacked(address(this), msg.sender)));
+        address makerPoolAddr = Clones.cloneDeterministic(
+            implementation,
+            keccak256(abi.encodePacked(address(this), msg.sender))
+        );
         getMaker[msg.sender] = makerPoolAddr;
         getMakerLimitUsed++;
         emit MakerCreated(msg.sender, makerPoolAddr);

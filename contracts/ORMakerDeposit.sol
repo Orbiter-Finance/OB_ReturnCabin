@@ -14,7 +14,8 @@ contract ORMakerDeposit is IORMakerDeposit {
 
     // challenge pleged eth amount
     uint256 public challengePleged;
-    address public getMakerFactory;
+    IORMakerV1Factory public getMakerFactory;
+    address public owner;
     // pairId->lpPairInfo
     mapping(bytes32 => OperationsLib.lpPairInfo) public lpInfo;
     // challengeInfos
@@ -29,15 +30,14 @@ contract ORMakerDeposit is IORMakerDeposit {
     mapping(address => EnumerableSet.Bytes32Set) private pledgeTokenPairs;
     // chainID => pairs
     mapping(uint256 => EnumerableSet.Bytes32Set) private chainPairs;
-    address public owner;
+    
     modifier onlyOwner() {
         require(msg.sender == owner, "Ownable: caller is not the owner");
         _;
     }
-
     function initialize(address _owner) public {
         require(_owner != address(0), "Owner address error");
-        getMakerFactory = msg.sender;
+        getMakerFactory = IORMakerV1Factory(msg.sender);
         owner = _owner;
     }
 
@@ -64,7 +64,7 @@ contract ORMakerDeposit is IORMakerDeposit {
     }
 
     function getManager() private view returns (IORManager manager) {
-        manager = IORMakerV1Factory(getMakerFactory).getManager();
+        manager = getMakerFactory.getManager();
     }
 
     function idleAmount(address tokenAddress) public view returns (uint256) {
@@ -80,9 +80,7 @@ contract ORMakerDeposit is IORMakerDeposit {
         return idleamount;
     }
 
-    function calcLpPledgeAmount(
-        OperationsLib.calcLpNeedPledgeAmountParams[] calldata _lpinfos
-    )
+    function calcLpPledgeAmount(OperationsLib.calcLpNeedPledgeAmountParams[] calldata _lpinfos)
         external
         view
         returns (
@@ -103,10 +101,11 @@ contract ORMakerDeposit is IORMakerDeposit {
         }
     }
 
-    function lpAction(
-        OperationsLib.lpInfo[] calldata _lpinfos,
-        bytes32[][] calldata pairProof
-    ) external payable onlyOwner {
+    function lpAction(OperationsLib.lpInfo[] calldata _lpinfos, bytes32[][] calldata pairProof)
+        external
+        payable
+        onlyOwner
+    {
         require(_lpinfos.length > 0, "Inconsistent Array Length");
         require(_lpinfos.length == pairProof.length, "Inconsistent Array Length");
         IORManager manager = getManager();
@@ -355,11 +354,15 @@ contract ORMakerDeposit is IORMakerDeposit {
 
         // The pledge transferred by the user is included in the total pledge.
         challengePleged += msg.value;
-        emit LogChallengeInfo(getMakerFactory, challengeID, challengeInfos[challengeID], _txinfo);
+        emit LogChallengeInfo(address(getMakerFactory), challengeID, challengeInfos[challengeID], _txinfo);
     }
 
     // LPStop
-    function lpUserStop(uint256 sourceChain, address sourceToken, uint256 ebcid) internal {
+    function lpUserStop(
+        uint256 sourceChain,
+        address sourceToken,
+        uint256 ebcid
+    ) internal {
         IORManager manager = getManager();
         OperationsLib.tokenInfo memory tokenInfo = manager.getTokenInfo(sourceChain, sourceToken);
         address ebcAddress = manager.getEBC(ebcid);
@@ -425,7 +428,7 @@ contract ORMakerDeposit is IORMakerDeposit {
         uint256 pledgeAmount = challengeInfo.pledged;
         require(challengePleged >= pledgeAmount, "ChallengePleged Insufficient balance");
         challengePleged -= pledgeAmount;
-        emit LogChallengerCompensation(getMakerFactory, challengeID, baseValue, challengeInfo.pledged, additiveValue);
+        emit LogChallengerCompensation(address(getMakerFactory), challengeID, baseValue, challengeInfo.pledged, additiveValue);
         // Subtract the pledge money transferred by the user challenge from the total pledge money.
         if (challengeInfo.token != address(0)) {
             if (withDrawAmount > unUsedAmount) {
@@ -470,7 +473,7 @@ contract ORMakerDeposit is IORMakerDeposit {
         require(challengePleged > challengeInfo.pledged, "challengePleged Insufficient balance");
         challengePleged -= challengeInfo.pledged;
         // Subtract the pledge money transferred by the user challenge from the total pledge money.
-        emit LogChallengerCompensation(getMakerFactory, challengeID, baseValue, challengeInfo.pledged, additiveValue);
+        emit LogChallengerCompensation(address(getMakerFactory), challengeID, baseValue, challengeInfo.pledged, additiveValue);
         if (challengeInfo.token != address(0)) {
             require(unUsedAmount >= withDrawAmount, "Insufficient balance");
             bool success = IERC20(challengeInfo.token).transfer(msg.sender, withDrawAmount);

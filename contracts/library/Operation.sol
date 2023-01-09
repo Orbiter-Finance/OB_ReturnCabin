@@ -69,7 +69,6 @@ library OperationsLib {
         uint256 gasFee;
         uint256 tradingFee;
         uint256 startTime;
-    
     }
     struct lpRestart {
         bytes32 pid;

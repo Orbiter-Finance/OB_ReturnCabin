@@ -6,7 +6,11 @@ interface IORMakerV1Factory {
     event MakerCreated(address maker, address pool);
     event ChangeMakerMaxLimit(uint256 max);
 
-    function initialize(address _manager, uint256 _makerMaxLimit,address _implementation) external;
+    function initialize(
+        address _manager,
+        uint256 _makerMaxLimit,
+        address _implementation
+    ) external;
 
     function createMaker() external;
 

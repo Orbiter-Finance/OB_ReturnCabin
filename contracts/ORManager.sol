@@ -8,13 +8,12 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 contract ORManager is IORManager, Initializable, OwnableUpgradeable {
-    mapping(uint256 => OperationsLib.chainInfo) public getChain;
-    // chainId => tokenAddress
-    mapping(uint256 => mapping(address => OperationsLib.tokenInfo)) public tokenInfos;
     uint256 public ebcId;
-    mapping(uint256 => address) public getEBC;
     bytes32 public pairsRoot;
     address public getSPV;
+    mapping(uint256 => address) public getEBC;
+    mapping(uint256 => mapping(address => OperationsLib.tokenInfo)) public tokenInfos;
+    mapping(uint256 => OperationsLib.chainInfo) public getChain;
 
     function initialize() external initializer {
         __Ownable_init();

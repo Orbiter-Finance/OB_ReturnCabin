@@ -66,7 +66,7 @@ interface IORMakerDeposit {
         bytes32[] memory _makerProof
     ) external;
 
-    function getMakerFactory() external view returns (address);
+    // function getMakerFactory() external view returns (address);
 
     function pairExist(uint256 chainId, bytes32 pairId) external view returns (bool);
 
