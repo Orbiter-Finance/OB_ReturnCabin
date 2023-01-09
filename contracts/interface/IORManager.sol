@@ -81,7 +81,6 @@ interface IORManager {
         address mainAddress
     ) external;
 
-
     function tokenInfos(uint256, address)
         external
         view

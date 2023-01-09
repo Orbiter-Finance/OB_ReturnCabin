@@ -128,7 +128,7 @@ describe('ORManager.test.ts => Chain', () => {
     expect(contractToken.mainTokenAddress).equal(
       '0x0000000000000000000000000000000000000001',
     );
-    await manager.setTokenInfo(chainID,decimals, address , pledgeToken);
+    await manager.setTokenInfo(chainID, decimals, address, pledgeToken);
     contractToken = await manager.getTokenInfo(chainID, address);
     expect(contractToken.mainTokenAddress).equal(pledgeToken);
   });

@@ -79,10 +79,11 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable {
         }
     }
 
-    function getTokenInfo(
-        uint256 chainID,
-        address tokenAddress
-    ) external view returns (OperationsLib.tokenInfo memory) {
+    function getTokenInfo(uint256 chainID, address tokenAddress)
+        external
+        view
+        returns (OperationsLib.tokenInfo memory)
+    {
         require(getChain[chainID].isUsed == true, "CHAINID_NOTINSTALL");
         require(getChain[chainID].tokenList.length != 0, "CHAINID_UNSUPPORTTOKEN");
         for (uint256 i = 0; i < getChain[chainID].tokenList.length; ) {
@@ -161,9 +162,11 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable {
         return MerkleProof.multiProofVerifyCalldata(proof, proofFlags, root, leaves);
     }
 
-    function calcLpPledgeAmount(
-        OperationsLib.calcLpNeedPledgeAmountParams[] calldata _lpinfos
-    ) external view returns (address pledgedToken, OperationsLib.lpPledgeCalculate[] memory) {
+    function calcLpPledgeAmount(OperationsLib.calcLpNeedPledgeAmountParams[] calldata _lpinfos)
+        external
+        view
+        returns (address pledgedToken, OperationsLib.lpPledgeCalculate[] memory)
+    {
         OperationsLib.tokenInfo memory depositToken = this.getTokenInfo(_lpinfos[0].fromChain, _lpinfos[0].fromToken);
         uint256 maxNum = 0;
         pledgedToken = depositToken.mainTokenAddress;

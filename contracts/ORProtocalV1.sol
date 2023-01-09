@@ -71,17 +71,20 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
         if (token == address(0)) {
             additiveValue = (baseValue * mainCoinPunishRate) / 10000;
         } else {
-            additiveValue = (baseValue * tokenPunishRate) /10000;
+            additiveValue = (baseValue * tokenPunishRate) / 10000;
         }
     }
-    function getSourceTxSecuirtyCode(uint256 value) public pure returns(uint256) {
+
+    function getSourceTxSecuirtyCode(uint256 value) public pure returns (uint256) {
         uint256 code = (value % 10000) - 9000;
         return code;
     }
-    function getTargetTxSecuirtyCode(uint256 value) public pure returns(uint256) {
+
+    function getTargetTxSecuirtyCode(uint256 value) public pure returns (uint256) {
         uint256 code = (value % 10000);
         return code;
     }
+
     function getSecuirtyCode(bool isSource, uint256 amount) public pure returns (uint256, bool) {
         uint256 securityCode = 0;
         bool isSupport = true;

@@ -80,9 +80,7 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         return idleamount;
     }
 
-    function calcLpPledgeAmount(
-        OperationsLib.calcLpNeedPledgeAmountParams[] calldata _lpinfos
-    )
+    function calcLpPledgeAmount(OperationsLib.calcLpNeedPledgeAmountParams[] calldata _lpinfos)
         external
         view
         returns (
@@ -103,10 +101,11 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         }
     }
 
-    function lpAction(
-        OperationsLib.lpInfo[] calldata _lpinfos,
-        bytes32[][] calldata pairProof
-    ) external payable onlyOwner {
+    function lpAction(OperationsLib.lpInfo[] calldata _lpinfos, bytes32[][] calldata pairProof)
+        external
+        payable
+        onlyOwner
+    {
         require(_lpinfos.length > 0, "Inconsistent Array Length");
         require(_lpinfos.length == pairProof.length, "Inconsistent Array Length");
         IORManager manager = getManager();
@@ -359,7 +358,11 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
     }
 
     // LPStop
-    function lpUserStop(uint256 sourceChain, address sourceToken, uint256 ebcid) internal {
+    function lpUserStop(
+        uint256 sourceChain,
+        address sourceToken,
+        uint256 ebcid
+    ) internal {
         IORManager manager = getManager();
         OperationsLib.tokenInfo memory tokenInfo = manager.getTokenInfo(sourceChain, sourceToken);
         address ebcAddress = manager.getEBC(ebcid);
