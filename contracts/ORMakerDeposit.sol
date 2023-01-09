@@ -113,17 +113,17 @@ contract ORMakerDeposit is IORMakerDeposit {
             _lpinfos[0].sourceChain,
             _lpinfos[0].sourceTAddress
         );
+        require(depositToken.chainID>0, "Chain Not Supported");
         // address pledgedToken = depositToken.mainTokenAddress;
-
         OperationsLib.calcLpNeedPledgeAmountParams[]
             memory calcLpNeedPledgeAmountParams = new OperationsLib.calcLpNeedPledgeAmountParams[](_lpinfos.length);
         for (uint256 i = 0; i < _lpinfos.length; ) {
             calcLpNeedPledgeAmountParams[i] = OperationsLib.calcLpNeedPledgeAmountParams(
                 "",
-                _lpinfos[i].sourceTAddress,
                 _lpinfos[i].sourceChain,
                 _lpinfos[i].ebcid,
-                _lpinfos[i].maxPrice
+                _lpinfos[i].maxPrice,
+                _lpinfos[i].sourceTAddress
             );
             unchecked {
                 ++i;
@@ -135,13 +135,13 @@ contract ORMakerDeposit is IORMakerDeposit {
             OperationsLib.lpInfo memory _lpinfo = _lpinfos[i];
             require(_lpinfo.minPrice <= _lpinfo.maxPrice, "Illegal minPrice maxPrice value");
             bytes32 pairId = OperationsLib.getPairID(_lpinfo);
-            require(manager.isSupportChain(_lpinfo.sourceChain, _lpinfo.sourceTAddress), "Chain Not Supported");
             require(manager.isSupportPair(pairId, pairProof[i]), "Pair Not Supported");
             require(!this.pairExist(_lpinfo.sourceChain, pairId), "Pair already exists");
             // first init lpPair
             require(lpInfo[pairId].startTime == 0 && lpInfo[pairId].stopTime == 0, "LPACTION_LPID_UNSTOP");
             uint256 sourceChain = _lpinfo.sourceChain;
             depositToken = manager.getTokenInfo(_lpinfo.sourceChain, _lpinfo.sourceTAddress);
+            require(depositToken.chainID>0, "Chain Not Supported");
             require(depositToken.mainTokenAddress == pledgedToken, "LP that does not support multiple pledge tokens");
             address ebcAddress = IORManager(manager).getEBC(_lpinfo.ebcid);
             require(ebcAddress != address(0), "LPACTION_EBCADDRESS_0");
@@ -209,7 +209,7 @@ contract ORMakerDeposit is IORMakerDeposit {
             address ebcAddress = manager.getEBC(_lpinfo.ebcid);
             require(ebcAddress != address(0), "LPPAUSE_EBCADDRESS_0");
             // uint256 stopDelayTime = getChainInfoByChainID(_lpinfo.sourceChain).stopDelayTime;
-            (, , , , uint256 stopDelayTime, ) = getManager().getChain(_lpinfo.sourceChain);
+            (, , , , uint256 stopDelayTime) = getManager().getChain(_lpinfo.sourceChain);
             lpInfo[pairId].stopTime = block.timestamp + stopDelayTime;
             lpInfo[pairId].startTime = 0;
             emit LogLPPause(pairId, lpInfo[pairId].lpId, _lpinfo);
@@ -326,7 +326,7 @@ contract ORMakerDeposit is IORMakerDeposit {
         // Determine whether destAddress in txinfo is an MDC address
         require(_txinfo.destAddress == owner, "UCE_4");
         // Verify whether it is within the period of appeal
-        (, , , uint256 maxReceiptTime, , ) = getManager().getChain(_txinfo.chainID);
+        (, , , uint256 maxReceiptTime,) = getManager().getChain(_txinfo.chainID);
 
         require(block.timestamp > _txinfo.timestamp + maxReceiptTime, "UCE_5");
 
@@ -348,7 +348,7 @@ contract ORMakerDeposit is IORMakerDeposit {
         // Change the corresponding challengeInfos state to waiting for maker
         challengeInfos[challengeID].challengeState = 1;
         // challengeInfos's stopTime is the current time plus the maxDisputeTime.
-        (, , uint256 maxDisputeTime, , , ) = getManager().getChain(_txinfo.chainID);
+        (, , uint256 maxDisputeTime, ,) = getManager().getChain(_txinfo.chainID);
         challengeInfos[challengeID].stopTime = block.timestamp + maxDisputeTime;
         challengeInfos[challengeID].endTime = block.timestamp + maxDisputeTime + maxDisputeTime;
 
@@ -368,7 +368,7 @@ contract ORMakerDeposit is IORMakerDeposit {
         address ebcAddress = manager.getEBC(ebcid);
         require(ebcAddress != address(0), "USER_LPStop_EBCADDRESS_0");
         address pledgedToken = tokenInfo.mainTokenAddress;
-        (, , , , uint256 stopDelayTime, ) = getManager().getChain(sourceChain);
+        (, , , , uint256 stopDelayTime) = getManager().getChain(sourceChain);
         // is exists
         if (chainPairs[sourceChain].length() > 0) {
             bytes32[] memory pairs = this.getPairsByChain(sourceChain);

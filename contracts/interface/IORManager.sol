@@ -4,18 +4,13 @@ pragma solidity ^0.8.17;
 import "../library/Operation.sol";
 
 interface IORManager {
-    enum PairEventType {
-        CREATE,
-        DELETE
-    }
     event ChangeChain(uint256 indexed chainId, OperationsLib.chainInfo chain);
     event ChangeToken(uint256 indexed chainId, address indexed tokenAddress, OperationsLib.tokenInfo token);
-    event PairLogEvent(PairEventType indexed opType, OperationsLib.pairChainInfo[] pairs);
+    event PairLogEvent(uint8 indexed opType, OperationsLib.pairChainInfo[] pairs);
 
-    function calcLpPledgeAmount(OperationsLib.calcLpNeedPledgeAmountParams[] memory _lpinfos)
-        external
-        view
-        returns (address pledgedToken, OperationsLib.lpPledgeCalculate[] memory);
+    function calcLpPledgeAmount(
+        OperationsLib.calcLpNeedPledgeAmountParams[] memory _lpinfos
+    ) external view returns (address pledgedToken, OperationsLib.lpPledgeCalculate[] memory);
 
     function createPair(
         OperationsLib.pairChainInfo[] memory pairs,
@@ -33,7 +28,9 @@ interface IORManager {
 
     function ebcId() external view returns (uint256);
 
-    function getChain(uint256)
+    function getChain(
+        uint256
+    )
         external
         view
         returns (
@@ -41,8 +38,7 @@ interface IORManager {
             uint256 batchLimit,
             uint256 maxDisputeTime,
             uint256 maxReceiptTime,
-            uint256 stopDelayTime,
-            bool isUsed
+            uint256 stopDelayTime
         );
 
     function getEBC(uint256) external view returns (address);
@@ -53,8 +49,6 @@ interface IORManager {
 
     function initialize() external;
 
-    function isSupportChain(uint256 chainID, address token) external view returns (bool);
-
     function isSupportPair(bytes32 pair, bytes32[] memory proof) external view returns (bool);
 
     function pairsRoot() external view returns (bytes32);
@@ -64,32 +58,14 @@ interface IORManager {
         uint256 batchLimit,
         uint256 maxDisputeTime,
         uint256 maxReceiptTime,
-        uint256 stopDelayTime,
-        address[] memory tokenList
+        uint256 stopDelayTime
     ) external;
-
-    // function setChainInfos(OperationsLib.chainInfo[] memory chains) external;
 
     function setEBC(address ebc) external;
 
     function setSPV(address spv) external;
 
-    function setTokenInfo(
-        uint256 chainID,
-        uint256 tokenPresion,
-        address tokenAddress,
-        address mainAddress
-    ) external;
-
-    function tokenInfos(uint256, address)
-        external
-        view
-        returns (
-            uint16 chainID,
-            uint8 tokenPresion,
-            address tokenAddress,
-            address mainTokenAddress
-        );
+    function setTokenInfo(uint256 chainID, uint256 tokenPresion, address tokenAddress, address mainAddress) external;
 
     function updateEBC(uint256 id, address addr) external;
 }

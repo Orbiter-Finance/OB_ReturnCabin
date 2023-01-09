@@ -11,17 +11,17 @@ library OperationsLib {
     }
     struct calcLpNeedPledgeAmountParams {
         bytes32 pairId;
-        address fromToken;
         uint16 fromChain;
         uint256 ebcId;
         uint256 maxPrice;
+        address fromToken;
     }
     struct pairChainInfo {
-        address sourceTAddress;
-        address destTAddress;
         uint16 sourceChain;
         uint16 destChain;
         uint256 ebcid;
+        address sourceTAddress;
+        address destTAddress;
     }
 
     struct tokenInfo {
@@ -37,8 +37,6 @@ library OperationsLib {
         uint256 maxDisputeTime;
         uint256 maxReceiptTime;
         uint256 stopDelayTime;
-        address[] tokenList;
-        bool isUsed;
     }
 
     struct txInfo {

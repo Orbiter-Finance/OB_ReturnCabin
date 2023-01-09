@@ -145,7 +145,7 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
         //1. _makerTx is already spv
         bool txVerify = IORSpv(spvAddress).verifyMakerTxProof(_makerTx, _makerProof);
         require(txVerify, "MCE_UNVERIFY");
-        (, , uint256 maxDisputeTime, , , ) = getManager.getChain(_userTx.chainID);
+        (, , uint256 maxDisputeTime, ,) = getManager.getChain(_userTx.chainID);
         // The transaction time of maker is required to be later than that of user.
         // At the same time, the time difference between the above two times is required to be less than the maxDisputeTime.
         require(

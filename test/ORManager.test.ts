@@ -19,7 +19,6 @@ async function initChain() {
       chain.maxDisputeTime,
       chain.maxReceiptTime,
       chain.stopDelayTime,
-      tokenList,
     );
     printSuccess(`Add Chain ${chain.chainID} Hash: ${tx.hash}`);
     for (const token of chain.tokenList) {
@@ -77,7 +76,6 @@ describe('ORManager.test.ts => Chain', () => {
       const { chainID, batchLimit, maxDisputeTime, maxReceiptTime, tokenList } =
         chain;
       const chainRes = await manager.getChain(chainID);
-      expect(chainRes.isUsed).true;
       expect(chainRes.chainid).equal(chainID);
       expect(chainRes.batchLimit).equal(batchLimit);
       expect(chainRes.maxDisputeTime).equal(maxDisputeTime);
@@ -101,18 +99,29 @@ describe('ORManager.test.ts => Chain', () => {
       stopDelayTime,
       maxDisputeTime,
       maxReceiptTime,
-      tokenList,
     } = chains[0];
-    const tokenAddressList = tokenList.map((row: any) => row.address);
     await manager.setChainInfo(
       chainID,
       batchLimit * 2,
       maxDisputeTime,
       maxReceiptTime,
       stopDelayTime,
-      tokenAddressList,
     );
     expect((await manager.getChain(chainID)).batchLimit).equal(batchLimit * 2);
+  });
+  it('isSupportChain Token', async () => {
+    const manager = await getManagerContract();
+    const { chainID } = chains[0];
+    let tokenInfo = await manager.getTokenInfo(
+      chainID,
+      '0x0000000000000000000000000000000000000000',
+    );
+    expect(tokenInfo.chainID).gt(0);
+    tokenInfo = await manager.getTokenInfo(
+      chainID,
+      '0x0000000000000000000000000000000000000001',
+    );
+    expect(tokenInfo.chainID).eq(0);
   });
   it('Manager Change Token tokenPresion', async () => {
     const manager = await getManagerContract();

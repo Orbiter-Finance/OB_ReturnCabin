@@ -46,8 +46,8 @@ contract ORMakerV1Factory is IORMakerV1Factory, OwnableUpgradeable {
             implementation,
             keccak256(abi.encodePacked(address(this), msg.sender))
         );
+        ++getMakerLimitUsed;
         getMaker[msg.sender] = makerPoolAddr;
-        getMakerLimitUsed++;
         emit MakerCreated(msg.sender, makerPoolAddr);
         IMakerImplementation(makerPoolAddr).initialize(msg.sender);
     }
