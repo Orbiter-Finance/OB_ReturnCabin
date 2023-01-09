@@ -86,8 +86,8 @@ interface IORManager {
         view
         returns (
             uint16 chainID,
-            address tokenAddress,
             uint8 tokenPresion,
+            address tokenAddress,
             address mainTokenAddress
         );
 

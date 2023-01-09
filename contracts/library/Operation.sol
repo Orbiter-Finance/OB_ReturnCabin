@@ -11,23 +11,23 @@ library OperationsLib {
     }
     struct calcLpNeedPledgeAmountParams {
         bytes32 pairId;
-        uint16 fromChain;
         address fromToken;
+        uint16 fromChain;
         uint256 ebcId;
         uint256 maxPrice;
     }
     struct pairChainInfo {
-        uint16 sourceChain;
-        uint16 destChain;
         address sourceTAddress;
         address destTAddress;
+        uint16 sourceChain;
+        uint16 destChain;
         uint256 ebcid;
     }
 
     struct tokenInfo {
         uint16 chainID;
-        address tokenAddress;
         uint8 decimals;
+        address tokenAddress;
         address mainTokenAddress;
     }
 
@@ -57,10 +57,10 @@ library OperationsLib {
     }
 
     struct lpInfo {
-        uint16 sourceChain;
-        uint16 destChain;
         address sourceTAddress;
         address destTAddress;
+        uint16 sourceChain;
+        uint16 destChain;
         uint256 sourcePresion;
         uint256 destPresion;
         uint256 ebcid;
@@ -69,6 +69,7 @@ library OperationsLib {
         uint256 gasFee;
         uint256 tradingFee;
         uint256 startTime;
+    
     }
     struct lpRestart {
         bytes32 pid;
@@ -85,13 +86,13 @@ library OperationsLib {
 
     struct challengeInfo {
         uint256 challengeState; // 0:unused   1:watting for maker  2.maker success   3.maker failed   4.ma
-        bytes32 responseTxinfo;
         uint256 stopTime;
         uint256 endTime;
-        address token;
         uint256 value;
         uint256 pledged;
         uint256 ebcid;
+        address token;
+        bytes32 responseTxinfo;
     }
 
     function getPairID(pairChainInfo memory _lpinfo) internal pure returns (bytes32) {

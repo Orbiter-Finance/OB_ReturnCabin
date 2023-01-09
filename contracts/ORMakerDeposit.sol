@@ -6,13 +6,9 @@ import "./interface/IORManager.sol";
 import "./interface/IORProtocal.sol";
 import "./interface/IERC20.sol";
 import "./interface/IORMakerV1Factory.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 
-// import "hardhat/console.sol";
-
-contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
+contract ORMakerDeposit is IORMakerDeposit {
     using EnumerableMap for EnumerableMap.AddressToUintMap;
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
@@ -33,12 +29,16 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
     mapping(address => EnumerableSet.Bytes32Set) private pledgeTokenPairs;
     // chainID => pairs
     mapping(uint256 => EnumerableSet.Bytes32Set) private chainPairs;
+    address public owner;
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Ownable: caller is not the owner");
+        _;
+    }
 
-    function initialize(address _owner, address _makerFactory) public initializer {
+    function initialize(address _owner) public {
         require(_owner != address(0), "Owner address error");
-        require(_makerFactory != address(0), "makerFactory address error");
-        getMakerFactory = _makerFactory;
-        _transferOwnership(_owner);
+        getMakerFactory = msg.sender;
+        owner = _owner;
     }
 
     function getPledgeBalanceByChainToken(uint256 _chainId, address _tokenAddress) external view returns (uint256) {
@@ -80,7 +80,9 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         return idleamount;
     }
 
-    function calcLpPledgeAmount(OperationsLib.calcLpNeedPledgeAmountParams[] calldata _lpinfos)
+    function calcLpPledgeAmount(
+        OperationsLib.calcLpNeedPledgeAmountParams[] calldata _lpinfos
+    )
         external
         view
         returns (
@@ -101,11 +103,10 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         }
     }
 
-    function lpAction(OperationsLib.lpInfo[] calldata _lpinfos, bytes32[][] calldata pairProof)
-        external
-        payable
-        onlyOwner
-    {
+    function lpAction(
+        OperationsLib.lpInfo[] calldata _lpinfos,
+        bytes32[][] calldata pairProof
+    ) external payable onlyOwner {
         require(_lpinfos.length > 0, "Inconsistent Array Length");
         require(_lpinfos.length == pairProof.length, "Inconsistent Array Length");
         IORManager manager = getManager();
@@ -120,8 +121,8 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
         for (uint256 i = 0; i < _lpinfos.length; ) {
             calcLpNeedPledgeAmountParams[i] = OperationsLib.calcLpNeedPledgeAmountParams(
                 "",
-                _lpinfos[i].sourceChain,
                 _lpinfos[i].sourceTAddress,
+                _lpinfos[i].sourceChain,
                 _lpinfos[i].ebcid,
                 _lpinfos[i].maxPrice
             );
@@ -322,9 +323,9 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
     function userChallenge(OperationsLib.txInfo memory _txinfo, bytes32[] memory _txproof) external payable {
         address ebcAddress = getManager().getEBC(_txinfo.ebcid);
         // Determine whether sourceAddress in txinfo is consistent with the caller's address
-        require(_txinfo.sourceAddress == _msgSender(), "UCE_SENDER");
+        require(_txinfo.sourceAddress == msg.sender, "UCE_SENDER");
         // Determine whether destAddress in txinfo is an MDC address
-        require(_txinfo.destAddress == owner(), "UCE_4");
+        require(_txinfo.destAddress == owner, "UCE_4");
         // Verify whether it is within the period of appeal
         (, , , uint256 maxReceiptTime, , ) = getManager().getChain(_txinfo.chainID);
 
@@ -358,11 +359,7 @@ contract ORMakerDeposit is IORMakerDeposit, Initializable, OwnableUpgradeable {
     }
 
     // LPStop
-    function lpUserStop(
-        uint256 sourceChain,
-        address sourceToken,
-        uint256 ebcid
-    ) internal {
+    function lpUserStop(uint256 sourceChain, address sourceToken, uint256 ebcid) internal {
         IORManager manager = getManager();
         OperationsLib.tokenInfo memory tokenInfo = manager.getTokenInfo(sourceChain, sourceToken);
         address ebcAddress = manager.getEBC(ebcid);

@@ -32,11 +32,20 @@ export async function getORMakerV1FactoryContract(): Promise<ORMakerV1Factory> {
     printContract(`load ${name} contract:`, contract.address.toString());
     return contract;
   } else {
+    let makerImplementationAddr = process.env['makerImplementation'];
+    if (!makerImplementationAddr) {
+      const contract = await ethers.getContractFactory('ORMakerDeposit');
+      const makerImplementation = await contract.deploy();
+      await makerImplementation.deployed();
+      makerImplementationAddr = makerImplementation.address.toString();
+      console.log('makerImplementationAddr:', makerImplementationAddr);
+    }
     const contract = await deploy<ORMakerV1Factory>(
       true,
       name,
       managerContract.address,
       100,
+      makerImplementationAddr,
     );
     process.env[name] = contract.address;
     return contract;

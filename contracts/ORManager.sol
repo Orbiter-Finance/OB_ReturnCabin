@@ -67,8 +67,8 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable {
             if (supportTokenAddress == tokenAddress) {
                 tokenInfos[chainID][tokenAddress] = OperationsLib.tokenInfo(
                     uint16(chainID),
-                    tokenAddress,
                     uint8(tokenPresion),
+                    tokenAddress,
                     mainAddress
                 );
             }

@@ -17,7 +17,6 @@ interface IORMakerDeposit {
         uint256 refundPledged,
         uint256 compensate
     );
-    // event LogChallengerMakeGood(address indexed factory, bytes32 id, OperationsLib.challengeInfo challenge);
     event LogLPAction(bytes32 indexed pairId, bytes32 lpId, OperationsLib.lpInfo lpinfo);
     event LogLPPause(bytes32 indexed pairId, bytes32 lpId, OperationsLib.lpInfo lpinfo);
     event LogLPRestart(bytes32 indexed pairId, bytes32 indexed lpId, uint256 gasFee, uint256 tradingFee);
@@ -40,7 +39,7 @@ interface IORMakerDeposit {
 
     function idleAmount(address tokenAddress) external view returns (uint256);
 
-    function initialize(address _owner, address _makerFactory) external;
+    function initialize(address _owner) external;
 
     function lpAction(OperationsLib.lpInfo[] memory _lpinfos, bytes32[][] memory pairProof) external payable;
 

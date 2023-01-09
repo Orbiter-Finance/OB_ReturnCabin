@@ -40,7 +40,8 @@ describe('MakerV1Factory', () => {
     const result = await contract.getMakerMaxLimit();
     expect(result).eq(maxLimit);
   });
-  it('Create Maker', async () => {
+
+  it('Create Maker1', async () => {
     // create mdc
     const [_, makerAccount] = await ethers.getSigners();
     const contract = await getORMakerV1FactoryContract();
