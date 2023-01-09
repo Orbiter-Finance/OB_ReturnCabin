@@ -59,7 +59,7 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     {
         require(batchLimit != 0 && maxPrice != 0 && pledgeAmountSafeRate != 0, "GET_DEPOSITCOEFFICIENT_ERROR");
         baseValue = (batchLimit * maxPrice);
-        additiveValue = (baseValue * pledgeAmountSafeRate) / 100 / 100;
+        additiveValue = (baseValue * pledgeAmountSafeRate) / 10000;
     }
 
     function calculateCompensation(address token, uint256 value)
@@ -69,12 +69,19 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     {
         baseValue = value;
         if (token == address(0)) {
-            additiveValue = (baseValue * mainCoinPunishRate) / 100 / 100;
+            additiveValue = (baseValue * mainCoinPunishRate) / 10000;
         } else {
-            additiveValue = (baseValue * tokenPunishRate) / 100 / 100;
+            additiveValue = (baseValue * tokenPunishRate) /10000;
         }
     }
-
+    function getSourceTxSecuirtyCode(uint256 value) public pure returns(uint256) {
+        uint256 code = (value % 10000) - 9000;
+        return code;
+    }
+    function getTargetTxSecuirtyCode(uint256 value) public pure returns(uint256) {
+        uint256 code = (value % 10000);
+        return code;
+    }
     function getSecuirtyCode(bool isSource, uint256 amount) public pure returns (uint256, bool) {
         uint256 securityCode = 0;
         bool isSupport = true;

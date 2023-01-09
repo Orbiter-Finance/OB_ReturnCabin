@@ -27,13 +27,13 @@ interface IORManager {
     function deletePair(
         OperationsLib.pairChainInfo[] memory pairs,
         bytes32[] memory proof,
-        bool[] memory proofFlags,
-        bytes32 rootHash
+        bytes32 rootHash,
+        bool[] memory proofFlags
     ) external;
 
     function ebcId() external view returns (uint256);
 
-    function getChain(uint16)
+    function getChain(uint256)
         external
         view
         returns (
@@ -49,18 +49,18 @@ interface IORManager {
 
     function getSPV() external view returns (address);
 
-    function getTokenInfo(uint16 chainID, address tokenAddress) external view returns (OperationsLib.tokenInfo memory);
+    function getTokenInfo(uint256 chainID, address tokenAddress) external view returns (OperationsLib.tokenInfo memory);
 
     function initialize() external;
 
-    function isSupportChain(uint16 chainID, address token) external view returns (bool);
+    function isSupportChain(uint256 chainID, address token) external view returns (bool);
 
     function isSupportPair(bytes32 pair, bytes32[] memory proof) external view returns (bool);
 
     function pairsRoot() external view returns (bytes32);
 
     function setChainInfo(
-        uint16 chainID,
+        uint256 chainID,
         uint256 batchLimit,
         uint256 maxDisputeTime,
         uint256 maxReceiptTime,
@@ -75,15 +75,14 @@ interface IORManager {
     function setSPV(address spv) external;
 
     function setTokenInfo(
-        uint16 chainID,
+        uint256 chainID,
+        uint256 tokenPresion,
         address tokenAddress,
-        uint8 tokenPresion,
         address mainAddress
     ) external;
 
-    // function setTokenInfos(OperationsLib.tokenInfo[] memory tokens) external;
 
-    function tokenInfos(uint16, address)
+    function tokenInfos(uint256, address)
         external
         view
         returns (

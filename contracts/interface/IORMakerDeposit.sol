@@ -71,7 +71,7 @@ interface IORMakerDeposit {
 
     function pairExist(uint256 chainId, bytes32 pairId) external view returns (bool);
 
-    function pairExist(address pledgeToken, bytes32 pairId) external view returns (bool);
+    // function pairExist(address pledgeToken, bytes32 pairId) external view returns (bool);
 
     function pledgeTokenLPStopDealyTime(address) external view returns (uint256);
 

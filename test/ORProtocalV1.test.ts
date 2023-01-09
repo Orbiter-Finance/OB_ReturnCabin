@@ -32,6 +32,14 @@ describe('ORProtocalV1.test.ts', () => {
     expect(await factoryContract.getEBC(1)).equal(ebc.address);
     expect(await factoryContract.getSPV()).equal(spvContract.address);
   });
+  it('getSourceTxSecuirtyCode', async () => {
+    const result = await ebc.getSourceTxSecuirtyCode('1100000000009005');
+    expect(result).equal(5);
+  });
+  it('getTargetTxSecuirtyCode', async () => {
+    const result = await ebc.getTargetTxSecuirtyCode('9980000000000148');
+    expect(result).equal(148);
+  });
   it('setAndGetChallengePledgeAmountCoefficient', async () => {
     const value = ethers.utils.parseEther('0.05');
     await ebc.connect(ebcOwner).setChallengePledgedAmount(value);

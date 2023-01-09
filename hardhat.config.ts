@@ -6,7 +6,7 @@ import 'hardhat-contract-sizer';
 import "@nomiclabs/hardhat-etherscan";
 import 'solidity-docgen';
 import { HardhatUserConfig, task } from 'hardhat/config';
-const { INFURA_API_KEY, ETHERSCAN_API_KEY, NETWORK,ACCOUNTS} = process.env;
+const { INFURA_API_KEY, ETHERSCAN_API_KEY,ALCHEMY_KEY, NETWORK,ACCOUNTS} = process.env;
 task('accounts', 'Prints accounts', async (taskArgs, hre) => {
   const accounts = await hre.ethers.getSigners();
   for (const account of accounts) {
@@ -61,6 +61,10 @@ const config: HardhatUserConfig = {
     },
     kovan: {
       url: `https://kovan.infura.io/v3/${INFURA_API_KEY}`,
+      accounts
+    },
+    arbitrumGoerli: {
+      url: `https://arb-goerli.g.alchemy.com/v2/${ALCHEMY_KEY}`,
       accounts
     },
     arbitrum: {

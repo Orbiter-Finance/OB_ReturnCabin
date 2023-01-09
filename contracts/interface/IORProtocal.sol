@@ -30,7 +30,6 @@ interface IORProtocal {
         view
         returns (uint256 baseValue, uint256 additiveValue);
 
-
     function getRespnseHash(OperationsLib.txInfo memory _txinfo) external pure returns (bytes32);
 
     function getSecuirtyCode(bool isSource, uint256 amount) external pure returns (uint256, bool);

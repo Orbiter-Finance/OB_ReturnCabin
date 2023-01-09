@@ -1,0 +1,346 @@
+<?xml version="1.0" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="974pt" height="1274pt" viewBox="0.00 0.00 974.31 1273.64">
+<g id="graph0" class="graph" transform="translate(7.351766462783871,1265.106340325428) scale(0.9917167307382945)" data-name="G">
+
+<polygon fill="#2e3e56" stroke="none" points="-4,4 -4,-1269.64 970.31,-1269.64 970.31,4 -4,4" style=""/>
+<g id="clust1" class="cluster" data-name="clusterORManager">
+
+<path fill="#445773" stroke="#445773" d="M20,-395.64C20,-395.64 719.82,-395.64 719.82,-395.64 725.82,-395.64 731.82,-401.64 731.82,-407.64 731.82,-407.64 731.82,-1108.64 731.82,-1108.64 731.82,-1114.64 725.82,-1120.64 719.82,-1120.64 719.82,-1120.64 20,-1120.64 20,-1120.64 14,-1120.64 8,-1114.64 8,-1108.64 8,-1108.64 8,-407.64 8,-407.64 8,-401.64 14,-395.64 20,-395.64" style=""/>
+<text text-anchor="middle" x="369.91" y="-1104.04" font-family="Times,serif" font-size="14.00" fill="#f0f0f0" style="">ORManager</text>
+</g>
+<g id="clust2" class="cluster" data-name="clusterOperationsLib">
+
+<path fill="#3b4b63" stroke="#e8726d" stroke-dasharray="5,2" d="M791.72,-91.64C791.72,-91.64 946.31,-91.64 946.31,-91.64 952.31,-91.64 958.31,-97.64 958.31,-103.64 958.31,-103.64 958.31,-318.64 958.31,-318.64 958.31,-324.64 952.31,-330.64 946.31,-330.64 946.31,-330.64 791.72,-330.64 791.72,-330.64 785.72,-330.64 779.72,-324.64 779.72,-318.64 779.72,-318.64 779.72,-103.64 779.72,-103.64 779.72,-97.64 785.72,-91.64 791.72,-91.64" style=""/>
+<text text-anchor="middle" x="869.02" y="-314.04" font-family="Times,serif" font-size="14.00" fill="#f0f0f0" style="">OperationsLib</text>
+</g>
+<g id="clust3" class="cluster" data-name="clusterMerkleProof">
+
+<path fill="#3b4b63" stroke="#e8726d" stroke-dasharray="5,2" d="M535.19,-256.64C535.19,-256.64 747.72,-256.64 747.72,-256.64 753.72,-256.64 759.72,-262.64 759.72,-268.64 759.72,-268.64 759.72,-375.64 759.72,-375.64 759.72,-381.64 753.72,-387.64 747.72,-387.64 747.72,-387.64 535.19,-387.64 535.19,-387.64 529.19,-387.64 523.19,-381.64 523.19,-375.64 523.19,-375.64 523.19,-268.64 523.19,-268.64 523.19,-262.64 529.19,-256.64 535.19,-256.64" style=""/>
+<text text-anchor="middle" x="641.46" y="-371.04" font-family="Times,serif" font-size="14.00" fill="#f0f0f0" style="">MerkleProof</text>
+</g>
+<g id="clust4" class="cluster" data-name="cluster_01">
+
+<polygon fill="#2e3e56" stroke="black" points="38.24,-1128.64 38.24,-1257.64 403.84,-1257.64 403.84,-1128.64 38.24,-1128.64" style=""/>
+<text text-anchor="middle" x="221.04" y="-1241.04" font-family="Times,serif" font-size="14.00" style="">Legend</text>
+</g>
+<!-- ORManager.initialize -->
+<g id="node1" class="node" pointer-events="visible" data-name="ORManager.initialize">
+
+<ellipse fill="#ffbdb9" stroke="#ffbdb9" stroke-width="3" cx="111.24" cy="-1069.64" rx="44.64" ry="18" style=""/>
+<text text-anchor="middle" x="111.24" y="-1065.44" font-family="Times,serif" font-size="14.00" style="">initialize</text>
+</g>
+<!-- ORManager.__Ownable_init -->
+<g id="node17" class="node" pointer-events="visible" data-name="ORManager.__Ownable_init">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="368.84" cy="-1069.64" rx="73.02" ry="18" style=""/>
+<text text-anchor="middle" x="368.84" y="-1065.44" font-family="Times,serif" font-size="14.00" style="">__Ownable_init</text>
+</g>
+<!-- ORManager.initialize&#45;&gt;ORManager.__Ownable_init -->
+<g id="edge1" class="edge" data-name="ORManager.initialize-&gt;ORManager.__Ownable_init">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M157.35,-1069.64C191.63,-1069.64 239.82,-1069.64 281.44,-1069.64" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="281.38,-1073.14 291.38,-1069.64 281.38,-1066.14 281.38,-1073.14" style=""/>
+</g>
+<!-- ORManager.setSPV -->
+<g id="node2" class="node" pointer-events="visible" data-name="ORManager.setSPV">
+
+<ellipse fill="#ffbdb9" stroke="#ffbdb9" stroke-width="3" cx="111.24" cy="-1015.64" rx="39.46" ry="18" style=""/>
+<text text-anchor="middle" x="111.24" y="-1011.44" font-family="Times,serif" font-size="14.00" style="">setSPV</text>
+</g>
+<!-- ORManager.setEBC -->
+<g id="node3" class="node" pointer-events="visible" data-name="ORManager.setEBC">
+
+<ellipse fill="#ffbdb9" stroke="#ffbdb9" stroke-width="3" cx="111.24" cy="-961.64" rx="40.59" ry="18" style=""/>
+<text text-anchor="middle" x="111.24" y="-957.44" font-family="Times,serif" font-size="14.00" style="">setEBC</text>
+</g>
+<!-- ORManager.updateEBC -->
+<g id="node4" class="node" pointer-events="visible" data-name="ORManager.updateEBC">
+
+<ellipse fill="#ffbdb9" stroke="#ffbdb9" stroke-width="3" cx="111.24" cy="-907.64" rx="55.62" ry="18" style=""/>
+<text text-anchor="middle" x="111.24" y="-903.44" font-family="Times,serif" font-size="14.00" style="">updateEBC</text>
+</g>
+<!-- ORManager.setChainInfos -->
+<g id="node5" class="node" pointer-events="visible" data-name="ORManager.setChainInfos">
+
+<ellipse fill="#ffbdb9" stroke="#ffbdb9" stroke-width="3" cx="111.24" cy="-691.64" rx="64.86" ry="18" style=""/>
+<text text-anchor="middle" x="111.24" y="-687.44" font-family="Times,serif" font-size="14.00" style="">setChainInfos</text>
+</g>
+<!-- ORManager.ChangeChain -->
+<g id="node18" class="node" pointer-events="visible" data-name="ORManager.ChangeChain">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="368.84" cy="-610.64" rx="63.71" ry="18" style=""/>
+<text text-anchor="middle" x="368.84" y="-606.44" font-family="Times,serif" font-size="14.00" style="">ChangeChain</text>
+</g>
+<!-- ORManager.setChainInfos&#45;&gt;ORManager.ChangeChain -->
+<g id="edge3" class="edge" data-name="ORManager.setChainInfos-&gt;ORManager.ChangeChain">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M159.82,-678.45C174.8,-674.18 191.37,-669.34 206.48,-664.64 242.47,-653.47 282.66,-640.03 313.93,-629.35" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="314.69,-632.79 323.01,-626.23 312.42,-626.16 314.69,-632.79" style=""/>
+</g>
+<!-- OperationsLib.chainInfo -->
+<g id="node22" class="node" pointer-events="visible" data-name="OperationsLib.chainInfo">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="869.02" cy="-171.64" rx="48.08" ry="18" style=""/>
+<text text-anchor="middle" x="869.02" y="-167.44" font-family="Times,serif" font-size="14.00" style="">chainInfo</text>
+</g>
+<!-- ORManager.setChainInfos&#45;&gt;OperationsLib.chainInfo -->
+<g id="edge2" class="edge" data-name="ORManager.setChainInfos-&gt;OperationsLib.chainInfo">
+
+<path fill="none" stroke="white" stroke-width="2" d="M173.85,-685.37C186.34,-681.26 198.18,-674.78 206.48,-664.64 268.95,-588.42 172.8,-292.33 242.48,-222.64 262.29,-202.84 653.88,-181.95 807.2,-174.49" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="807.14,-178 816.96,-174.02 806.8,-171.01 807.14,-178" style=""/>
+</g>
+<!-- ORManager.setChainInfo -->
+<g id="node6" class="node" pointer-events="visible" data-name="ORManager.setChainInfo">
+
+<ellipse fill="#ffbdb9" stroke="#ffbdb9" stroke-width="3" cx="111.24" cy="-583.64" rx="60.84" ry="18" style=""/>
+<text text-anchor="middle" x="111.24" y="-579.44" font-family="Times,serif" font-size="14.00" style="">setChainInfo</text>
+</g>
+<!-- ORManager.setChainInfo&#45;&gt;ORManager.ChangeChain -->
+<g id="edge5" class="edge" data-name="ORManager.setChainInfo-&gt;ORManager.ChangeChain">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M170.24,-589.77C207.11,-593.67 255.16,-598.74 294.64,-602.91" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="294.08,-606.37 304.39,-603.94 294.82,-599.41 294.08,-606.37" style=""/>
+</g>
+<!-- ORManager.setChainInfo&#45;&gt;OperationsLib.chainInfo -->
+<g id="edge4" class="edge" data-name="ORManager.setChainInfo-&gt;OperationsLib.chainInfo">
+
+<path fill="none" stroke="white" stroke-width="2" d="M170.81,-578.19C184.36,-574.16 197.45,-567.5 206.48,-556.64 259.61,-492.81 181.58,-241.11 242.48,-184.64 283.23,-146.88 658.32,-161.17 807.37,-168.44" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="807.05,-171.92 817.21,-168.92 807.39,-164.93 807.05,-171.92" style=""/>
+</g>
+<!-- ORManager.setTokenInfos -->
+<g id="node7" class="node" pointer-events="visible" data-name="ORManager.setTokenInfos">
+
+<ellipse fill="#ffbdb9" stroke="#ffbdb9" stroke-width="3" cx="111.24" cy="-475.64" rx="66.06" ry="18" style=""/>
+<text text-anchor="middle" x="111.24" y="-471.44" font-family="Times,serif" font-size="14.00" style="">setTokenInfos</text>
+</g>
+<!-- ORManager.ChangeToken -->
+<g id="node19" class="node" pointer-events="visible" data-name="ORManager.ChangeToken">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="368.84" cy="-448.64" rx="65.41" ry="18" style=""/>
+<text text-anchor="middle" x="368.84" y="-444.44" font-family="Times,serif" font-size="14.00" style="">ChangeToken</text>
+</g>
+<!-- ORManager.setTokenInfos&#45;&gt;ORManager.ChangeToken -->
+<g id="edge7" class="edge" data-name="ORManager.setTokenInfos-&gt;ORManager.ChangeToken">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M174.77,-469.04C210.46,-465.27 255.44,-460.52 293.01,-456.55" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="293.37,-460.03 302.95,-455.5 292.64,-453.07 293.37,-460.03" style=""/>
+</g>
+<!-- OperationsLib.tokenInfo -->
+<g id="node23" class="node" pointer-events="visible" data-name="OperationsLib.tokenInfo">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="869.02" cy="-117.64" rx="48.66" ry="18" style=""/>
+<text text-anchor="middle" x="869.02" y="-113.44" font-family="Times,serif" font-size="14.00" style="">tokenInfo</text>
+</g>
+<!-- ORManager.setTokenInfos&#45;&gt;OperationsLib.tokenInfo -->
+<g id="edge6" class="edge" data-name="ORManager.setTokenInfos-&gt;OperationsLib.tokenInfo">
+
+<path fill="none" stroke="white" stroke-width="2" d="M173.06,-468.06C185.44,-464 197.42,-457.87 206.48,-448.64 249.99,-404.33 205.04,-363.18 242.48,-313.64 330.03,-197.85 384.96,-190.97 523.19,-146.64 618.72,-116.01 736.35,-113 806.59,-114.61" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="806.44,-118.11 816.54,-114.89 806.64,-111.11 806.44,-118.11" style=""/>
+</g>
+<!-- ORManager.setTokenInfo -->
+<g id="node8" class="node" pointer-events="visible" data-name="ORManager.setTokenInfo">
+
+<ellipse fill="#ffbdb9" stroke="#ffbdb9" stroke-width="3" cx="111.24" cy="-421.64" rx="62.55" ry="18" style=""/>
+<text text-anchor="middle" x="111.24" y="-417.44" font-family="Times,serif" font-size="14.00" style="">setTokenInfo</text>
+</g>
+<!-- ORManager.setTokenInfo&#45;&gt;ORManager.ChangeToken -->
+<g id="edge9" class="edge" data-name="ORManager.setTokenInfo-&gt;ORManager.ChangeToken">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M171.85,-427.94C208.03,-431.76 254.52,-436.67 293.14,-440.75" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="292.59,-444.21 302.9,-441.78 293.33,-437.25 292.59,-444.21" style=""/>
+</g>
+<!-- ORManager.setTokenInfo&#45;&gt;OperationsLib.tokenInfo -->
+<g id="edge8" class="edge" data-name="ORManager.setTokenInfo-&gt;OperationsLib.tokenInfo">
+
+<path fill="none" stroke="white" stroke-width="2" d="M112.4,-402.39C114.07,-341.09 128.56,-149.88 242.48,-70.64 431.21,60.62 534.64,-23.91 759.72,-70.64 783.6,-75.6 808.67,-86.1 828.68,-95.93" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="826.92,-98.96 837.42,-100.37 830.09,-92.72 826.92,-98.96" style=""/>
+</g>
+<!-- ORManager.getTokenInfo -->
+<g id="node9" class="node" pointer-events="visible" data-name="ORManager.getTokenInfo">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="368.84" cy="-691.64" rx="63.69" ry="18" style=""/>
+<text text-anchor="middle" x="368.84" y="-687.44" font-family="Times,serif" font-size="14.00" style="">getTokenInfo</text>
+</g>
+<!-- ORManager.isSupportChain -->
+<g id="node10" class="node" pointer-events="visible" data-name="ORManager.isSupportChain">
+
+<ellipse fill="#ff9797" stroke="#ff9797" stroke-width="3" cx="111.24" cy="-637.64" rx="71.26" ry="18" style=""/>
+<text text-anchor="middle" x="111.24" y="-633.44" font-family="Times,serif" font-size="14.00" style="">isSupportChain</text>
+</g>
+<!-- ORManager.createPair -->
+<g id="node11" class="node" pointer-events="visible" data-name="ORManager.createPair">
+
+<ellipse fill="#ffbdb9" stroke="#ffbdb9" stroke-width="3" cx="111.24" cy="-853.64" rx="49.77" ry="18" style=""/>
+<text text-anchor="middle" x="111.24" y="-849.44" font-family="Times,serif" font-size="14.00" style="">createPair</text>
+</g>
+<!-- ORManager.pairMultiProofVerifyCalldata -->
+<g id="node15" class="node" pointer-events="visible" data-name="ORManager.pairMultiProofVerifyCalldata">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="368.84" cy="-799.64" rx="126.21" ry="18" style=""/>
+<text text-anchor="middle" x="368.84" y="-795.44" font-family="Times,serif" font-size="14.00" style="">pairMultiProofVerifyCalldata</text>
+</g>
+<!-- ORManager.createPair&#45;&gt;ORManager.pairMultiProofVerifyCalldata -->
+<g id="edge10" class="edge" data-name="ORManager.createPair-&gt;ORManager.pairMultiProofVerifyCalldata">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M156.18,-844.36C190.4,-837.13 238.99,-826.87 280.98,-817.99" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="281.47,-821.47 290.53,-815.98 280.02,-814.62 281.47,-821.47" style=""/>
+</g>
+<!-- ORManager.PairLogEvent -->
+<g id="node20" class="node" pointer-events="visible" data-name="ORManager.PairLogEvent">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="368.84" cy="-853.64" rx="64.85" ry="18" style=""/>
+<text text-anchor="middle" x="368.84" y="-849.44" font-family="Times,serif" font-size="14.00" style="">PairLogEvent</text>
+</g>
+<!-- ORManager.createPair&#45;&gt;ORManager.PairLogEvent -->
+<g id="edge11" class="edge" data-name="ORManager.createPair-&gt;ORManager.PairLogEvent">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M162.44,-853.64C198.72,-853.64 248.44,-853.64 289.87,-853.64" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="289.7,-857.14 299.7,-853.64 289.7,-850.14 289.7,-857.14" style=""/>
+</g>
+<!-- ORManager.deletePair -->
+<g id="node12" class="node" pointer-events="visible" data-name="ORManager.deletePair">
+
+<ellipse fill="#ffbdb9" stroke="#ffbdb9" stroke-width="3" cx="111.24" cy="-799.64" rx="49.79" ry="18" style=""/>
+<text text-anchor="middle" x="111.24" y="-795.44" font-family="Times,serif" font-size="14.00" style="">deletePair</text>
+</g>
+<!-- ORManager.deletePair&#45;&gt;ORManager.pairMultiProofVerifyCalldata -->
+<g id="edge12" class="edge" data-name="ORManager.deletePair-&gt;ORManager.pairMultiProofVerifyCalldata">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M162.44,-799.64C181.72,-799.64 204.8,-799.64 228.42,-799.64" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="228.16,-803.14 238.16,-799.64 228.16,-796.14 228.16,-803.14" style=""/>
+</g>
+<!-- ORManager.deletePair&#45;&gt;ORManager.PairLogEvent -->
+<g id="edge13" class="edge" data-name="ORManager.deletePair-&gt;ORManager.PairLogEvent">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M156.18,-808.93C196.36,-817.42 256.35,-830.09 302.22,-839.78" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="301.28,-843.16 311.79,-841.8 302.73,-836.31 301.28,-843.16" style=""/>
+</g>
+<!-- ORManager.isSupportPair -->
+<g id="node13" class="node" pointer-events="visible" data-name="ORManager.isSupportPair">
+
+<ellipse fill="#ff9797" stroke="#ff9797" stroke-width="3" cx="111.24" cy="-529.64" rx="63.73" ry="18" style=""/>
+<text text-anchor="middle" x="111.24" y="-525.44" font-family="Times,serif" font-size="14.00" style="">isSupportPair</text>
+</g>
+<!-- MerkleProof.verifyCalldata -->
+<g id="node26" class="node" pointer-events="visible" data-name="MerkleProof.verifyCalldata">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="641.46" cy="-282.64" rx="66.04" ry="18" style=""/>
+<text text-anchor="middle" x="641.46" y="-278.44" font-family="Times,serif" font-size="14.00" style="">verifyCalldata</text>
+</g>
+<!-- ORManager.isSupportPair&#45;&gt;MerkleProof.verifyCalldata -->
+<g id="edge14" class="edge" data-name="ORManager.isSupportPair-&gt;MerkleProof.verifyCalldata">
+
+<path fill="none" stroke="white" stroke-width="2" d="M170.06,-521.58C183.15,-517.57 196.21,-511.58 206.48,-502.64 236.21,-476.79 214.1,-448.96 242.48,-421.64 339.28,-328.51 394.99,-349.72 523.19,-309.64 539.16,-304.65 556.62,-300.14 573.06,-296.3" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="573.48,-299.79 582.45,-294.17 571.92,-292.97 573.48,-299.79" style=""/>
+</g>
+<!-- ORManager.pairObjectToHash -->
+<g id="node14" class="node" pointer-events="visible" data-name="ORManager.pairObjectToHash">
+
+<ellipse fill="#f2c383" stroke="#f2c383" stroke-width="3" cx="641.46" cy="-610.64" rx="82.23" ry="18" style=""/>
+<text text-anchor="middle" x="641.46" y="-606.44" font-family="Times,serif" font-size="14.00" style="">pairObjectToHash</text>
+</g>
+<!-- OperationsLib.getPairID -->
+<g id="node24" class="node" pointer-events="visible" data-name="OperationsLib.getPairID">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="869.02" cy="-279.64" rx="48.66" ry="18" style=""/>
+<text text-anchor="middle" x="869.02" y="-275.44" font-family="Times,serif" font-size="14.00" style="">getPairID</text>
+</g>
+<!-- ORManager.pairObjectToHash&#45;&gt;OperationsLib.getPairID -->
+<g id="edge15" class="edge" data-name="ORManager.pairObjectToHash-&gt;OperationsLib.getPairID">
+
+<path fill="none" stroke="white" stroke-width="2" d="M655.23,-591.9C692.76,-536.83 802.89,-375.22 848.2,-308.73" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="850.94,-310.92 853.68,-300.68 845.16,-306.98 850.94,-310.92" style=""/>
+</g>
+<!-- ORManager.pairMultiProofVerifyCalldata&#45;&gt;ORManager.pairObjectToHash -->
+<g id="edge16" class="edge" data-name="ORManager.pairMultiProofVerifyCalldata-&gt;ORManager.pairObjectToHash">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M463.03,-786.5C474.28,-782.93 485.28,-778.4 495.19,-772.64 551.74,-739.82 598.23,-677.32 622.41,-640.28" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="625.13,-642.53 627.56,-632.22 619.23,-638.76 625.13,-642.53" style=""/>
+</g>
+<!-- MerkleProof.multiProofVerifyCalldata -->
+<g id="node27" class="node" pointer-events="visible" data-name="MerkleProof.multiProofVerifyCalldata">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="641.46" cy="-336.64" rx="110.03" ry="18" style=""/>
+<text text-anchor="middle" x="641.46" y="-332.44" font-family="Times,serif" font-size="14.00" style="">multiProofVerifyCalldata</text>
+</g>
+<!-- ORManager.pairMultiProofVerifyCalldata&#45;&gt;MerkleProof.multiProofVerifyCalldata -->
+<g id="edge17" class="edge" data-name="ORManager.pairMultiProofVerifyCalldata-&gt;MerkleProof.multiProofVerifyCalldata">
+
+<path fill="none" stroke="white" stroke-width="2" d="M474.48,-788.76C482.27,-784.64 489.35,-779.36 495.19,-772.64 550.92,-708.6 475.06,-461.58 523.19,-391.64 533.5,-376.67 548.99,-365.67 565.36,-357.62" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="566.33,-361.03 574.03,-353.75 563.47,-354.64 566.33,-361.03" style=""/>
+</g>
+<!-- ORManager.calcLpPledgeAmount -->
+<g id="node16" class="node" pointer-events="visible" data-name="ORManager.calcLpPledgeAmount">
+
+<ellipse fill="#ff9797" stroke="#ff9797" stroke-width="3" cx="111.24" cy="-745.64" rx="95.49" ry="18" style=""/>
+<text text-anchor="middle" x="111.24" y="-741.44" font-family="Times,serif" font-size="14.00" style="">calcLpPledgeAmount</text>
+</g>
+<!-- ORManager.calcLpPledgeAmount&#45;&gt;ORManager.getTokenInfo -->
+<g id="edge18" class="edge" data-name="ORManager.calcLpPledgeAmount-&gt;ORManager.getTokenInfo">
+
+<path fill="none" stroke="#80e097" stroke-width="2" d="M163.66,-729.24C201.44,-719.89 253.3,-708.73 295.29,-700.82" style=""/>
+<polygon fill="#80e097" stroke="#80e097" stroke-width="2" points="295.81,-704.28 305.01,-699.02 294.54,-697.4 295.81,-704.28" style=""/>
+</g>
+<!-- ORManager.calcLpPledgeAmount&#45;&gt;ORManager.getTokenInfo -->
+<g id="edge19" class="edge" data-name="ORManager.calcLpPledgeAmount-&gt;ORManager.getTokenInfo">
+
+<path fill="none" stroke="#80e097" stroke-width="2" d="M192.41,-735.02C231.4,-727.53 277.29,-717.62 312.35,-709.05" style=""/>
+<polygon fill="#80e097" stroke="#80e097" stroke-width="2" points="312.95,-712.5 321.81,-706.69 311.26,-705.71 312.95,-712.5" style=""/>
+</g>
+<!-- ORManager.IORProtocal -->
+<g id="node21" class="node" pointer-events="visible" data-name="ORManager.IORProtocal">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="368.84" cy="-745.64" rx="59.7" ry="18" style=""/>
+<text text-anchor="middle" x="368.84" y="-741.44" font-family="Times,serif" font-size="14.00" style="">IORProtocal</text>
+</g>
+<!-- ORManager.calcLpPledgeAmount&#45;&gt;ORManager.IORProtocal -->
+<g id="edge20" class="edge" data-name="ORManager.calcLpPledgeAmount-&gt;ORManager.IORProtocal">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M208.14,-745.64C236.87,-745.64 267.9,-745.64 294.9,-745.64" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="294.77,-749.14 304.77,-745.64 294.77,-742.14 294.77,-749.14" style=""/>
+</g>
+<!-- OperationsLib.lpPledgeCalculate -->
+<g id="node25" class="node" pointer-events="visible" data-name="OperationsLib.lpPledgeCalculate">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="869.02" cy="-225.64" rx="81.09" ry="18" style=""/>
+<text text-anchor="middle" x="869.02" y="-221.44" font-family="Times,serif" font-size="14.00" style="">lpPledgeCalculate</text>
+</g>
+<!-- ORManager.calcLpPledgeAmount&#45;&gt;OperationsLib.lpPledgeCalculate -->
+<g id="edge21" class="edge" data-name="ORManager.calcLpPledgeAmount-&gt;OperationsLib.lpPledgeCalculate">
+
+<path fill="none" stroke="white" stroke-width="2" d="M186.83,-733.68C194.28,-729.89 201.07,-724.99 206.48,-718.64 292.77,-617.48 170.2,-533.25 242.48,-421.64 356.59,-245.47 630.96,-221.41 775.44,-221.73" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="775.11,-225.23 785.14,-221.8 775.16,-218.23 775.11,-225.23" style=""/>
+</g>
+<!-- key -->
+<g id="node28" class="node" pointer-events="visible" data-name="key">
+
+<polygon fill="#edad56" stroke="none" stroke-width="3" points="176.24,-1224.64 46.24,-1224.64 46.24,-1136.64 176.24,-1136.64 176.24,-1224.64" style=""/>
+<text text-anchor="start" x="95.88" y="-1206.04" font-family="Times,serif" font-size="14.00" style="">Internal Call</text>
+<text text-anchor="start" x="91.99" y="-1186.04" font-family="Times,serif" font-size="14.00" style="">External Call</text>
+<text text-anchor="start" x="69.45" y="-1166.04" font-family="Times,serif" font-size="14.00" style="">Defined Contract</text>
+<text text-anchor="start" x="55.84" y="-1146.04" font-family="Times,serif" font-size="14.00" style="">Undefined Contract</text>
+</g>
+<!-- key2 -->
+<g id="node29" class="node" pointer-events="visible" data-name="key2">
+
+<polygon fill="#edad56" stroke="none" stroke-width="3" points="395.84,-1224.64 341.84,-1224.64 341.84,-1136.64 395.84,-1136.64 395.84,-1224.64" style=""/>
+<text text-anchor="start" x="358.84" y="-1206.04" font-family="Times,serif" font-size="14.00" style="">   </text>
+<text text-anchor="start" x="358.84" y="-1186.04" font-family="Times,serif" font-size="14.00" style="">   </text>
+<polygon fill="#445773" stroke="none" points="356.84,-1160.64 356.84,-1180.64 381.84,-1180.64 381.84,-1160.64 356.84,-1160.64" style=""/>
+<text text-anchor="start" x="358.84" y="-1166.04" font-family="Times,serif" font-size="14.00" style="">   </text>
+<polygon fill="none" stroke="#e8726d" points="358.84,-1142.64 358.84,-1158.64 379.84,-1158.64 379.84,-1142.64 358.84,-1142.64" style=""/>
+</g>
+<!-- key&#45;&gt;key2 -->
+<g id="edge22" class="edge" data-name="key-&gt;key2">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M169.24,-1210.64C247.8,-1210.64 270.55,-1210.64 343.22,-1210.64" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="342.81,-1214.14 352.81,-1210.64 342.81,-1207.14 342.81,-1214.14" style=""/>
+</g>
+<!-- key&#45;&gt;key2 -->
+<g id="edge23" class="edge" data-name="key-&gt;key2">
+
+<path fill="none" stroke="white" stroke-width="2" d="M169.24,-1190.64C247.8,-1190.64 270.55,-1190.64 343.22,-1190.64" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="342.81,-1194.14 352.81,-1190.64 342.81,-1187.14 342.81,-1194.14" style=""/>
+</g>
+</g>
+</svg>

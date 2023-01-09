@@ -1,0 +1,944 @@
+<?xml version="1.0" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1083pt" height="2010pt" viewBox="0.00 0.00 1082.68 2009.62">
+<g id="graph0" class="graph" transform="translate(4,2005.6199951171875) scale(1)" data-name="G">
+
+<polygon fill="#2e3e56" stroke="none" points="-4,4 -4,-2005.62 1078.68,-2005.62 1078.68,4 -4,4" style=""/>
+<g id="clust1" class="cluster" data-name="clusterORMakerDeposit">
+
+<path fill="#445773" stroke="#445773" d="M20,-803.62C20,-803.62 1054.68,-803.62 1054.68,-803.62 1060.68,-803.62 1066.68,-809.62 1066.68,-815.62 1066.68,-815.62 1066.68,-1844.62 1066.68,-1844.62 1066.68,-1850.62 1060.68,-1856.62 1054.68,-1856.62 1054.68,-1856.62 20,-1856.62 20,-1856.62 14,-1856.62 8,-1850.62 8,-1844.62 8,-1844.62 8,-815.62 8,-815.62 8,-809.62 14,-803.62 20,-803.62" style=""/>
+<text text-anchor="middle" x="537.34" y="-1840.02" font-family="Times,serif" font-size="14.00" fill="#f0f0f0" style="">ORMakerDeposit</text>
+</g>
+<g id="clust2" class="cluster" data-name="clusterEnumerableMap.AddressToUintMap">
+
+<path fill="#3b4b63" stroke="#e8726d" stroke-dasharray="5,2" d="M590.3,-502.62C590.3,-502.62 790.28,-502.62 790.28,-502.62 796.28,-502.62 802.28,-508.62 802.28,-514.62 802.28,-514.62 802.28,-783.62 802.28,-783.62 802.28,-789.62 796.28,-795.62 790.28,-795.62 790.28,-795.62 590.3,-795.62 590.3,-795.62 584.3,-795.62 578.3,-789.62 578.3,-783.62 578.3,-783.62 578.3,-514.62 578.3,-514.62 578.3,-508.62 584.3,-502.62 590.3,-502.62" style=""/>
+<text text-anchor="middle" x="690.29" y="-779.02" font-family="Times,serif" font-size="14.00" fill="#f0f0f0" style="">EnumerableMap.AddressToUintMap</text>
+</g>
+<g id="clust3" class="cluster" data-name="clusterIERC20">
+
+<path fill="#3b4b63" stroke="#e8726d" stroke-dasharray="5,2" d="M643.58,-1864.62C643.58,-1864.62 737,-1864.62 737,-1864.62 743,-1864.62 749,-1870.62 749,-1876.62 749,-1876.62 749,-1929.62 749,-1929.62 749,-1935.62 743,-1941.62 737,-1941.62 737,-1941.62 643.58,-1941.62 643.58,-1941.62 637.58,-1941.62 631.58,-1935.62 631.58,-1929.62 631.58,-1929.62 631.58,-1876.62 631.58,-1876.62 631.58,-1870.62 637.58,-1864.62 643.58,-1864.62" style=""/>
+<text text-anchor="middle" x="690.29" y="-1925.02" font-family="Times,serif" font-size="14.00" fill="#f0f0f0" style="">IERC20</text>
+</g>
+<g id="clust4" class="cluster" data-name="clusterIORManager">
+
+<path fill="#3b4b63" stroke="#e8726d" stroke-dasharray="5,2" d="M623.16,-255.62C623.16,-255.62 757.42,-255.62 757.42,-255.62 763.42,-255.62 769.42,-261.62 769.42,-267.62 769.42,-267.62 769.42,-482.62 769.42,-482.62 769.42,-488.62 763.42,-494.62 757.42,-494.62 757.42,-494.62 623.16,-494.62 623.16,-494.62 617.16,-494.62 611.16,-488.62 611.16,-482.62 611.16,-482.62 611.16,-267.62 611.16,-267.62 611.16,-261.62 617.16,-255.62 623.16,-255.62" style=""/>
+<text text-anchor="middle" x="690.29" y="-478.02" font-family="Times,serif" font-size="14.00" fill="#f0f0f0" style="">IORManager</text>
+</g>
+<g id="clust5" class="cluster" data-name="clusterOperationsLib">
+
+<path fill="#3b4b63" stroke="#e8726d" stroke-dasharray="5,2" d="M550.24,-8.62C550.24,-8.62 830.34,-8.62 830.34,-8.62 836.34,-8.62 842.34,-14.62 842.34,-20.62 842.34,-20.62 842.34,-235.62 842.34,-235.62 842.34,-241.62 836.34,-247.62 830.34,-247.62 830.34,-247.62 550.24,-247.62 550.24,-247.62 544.24,-247.62 538.24,-241.62 538.24,-235.62 538.24,-235.62 538.24,-20.62 538.24,-20.62 538.24,-14.62 544.24,-8.62 550.24,-8.62" style=""/>
+<text text-anchor="middle" x="690.29" y="-231.02" font-family="Times,serif" font-size="14.00" fill="#f0f0f0" style="">OperationsLib</text>
+</g>
+<g id="clust6" class="cluster" data-name="cluster_01">
+
+<polygon fill="#2e3e56" stroke="black" points="47.37,-1864.62 47.37,-1993.62 420.49,-1993.62 420.49,-1864.62 47.37,-1864.62" style=""/>
+<text text-anchor="middle" x="233.93" y="-1977.02" font-family="Times,serif" font-size="14.00" style="">Legend</text>
+</g>
+<!-- ORMakerDeposit.initialize -->
+<g id="node1" class="node" pointer-events="visible" data-name="ORMakerDeposit.initialize">
+
+<ellipse fill="#ff9797" stroke="#ff9797" stroke-width="3" cx="120.37" cy="-1805.62" rx="44.64" ry="18" style=""/>
+<text text-anchor="middle" x="120.37" y="-1801.42" font-family="Times,serif" font-size="14.00" style="">initialize</text>
+</g>
+<!-- ORMakerDeposit._transferOwnership -->
+<g id="node22" class="node" pointer-events="visible" data-name="ORMakerDeposit._transferOwnership">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="385.49" cy="-1805.62" rx="87.96" ry="18" style=""/>
+<text text-anchor="middle" x="385.49" y="-1801.42" font-family="Times,serif" font-size="14.00" style="">_transferOwnership</text>
+</g>
+<!-- ORMakerDeposit.initialize&#45;&gt;ORMakerDeposit._transferOwnership -->
+<g id="edge1" class="edge" data-name="ORMakerDeposit.initialize-&gt;ORMakerDeposit._transferOwnership">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M166.3,-1805.62C198.36,-1805.62 242.76,-1805.62 283.14,-1805.62" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="283.07,-1809.12 293.07,-1805.62 283.07,-1802.12 283.07,-1809.12" style=""/>
+</g>
+<!-- ORMakerDeposit.getPledgeBalanceByChainToken -->
+<g id="node2" class="node" pointer-events="visible" data-name="ORMakerDeposit.getPledgeBalanceByChainToken">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="690.29" cy="-1374.62" rx="139.44" ry="18" style=""/>
+<text text-anchor="middle" x="690.29" y="-1370.42" font-family="Times,serif" font-size="14.00" style="">getPledgeBalanceByChainToken</text>
+</g>
+<!-- ORMakerDeposit.pairExist -->
+<g id="node3" class="node" pointer-events="visible" data-name="ORMakerDeposit.pairExist">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="690.29" cy="-1266.62" rx="45.8" ry="18" style=""/>
+<text text-anchor="middle" x="690.29" y="-1262.42" font-family="Times,serif" font-size="14.00" style="">pairExist</text>
+</g>
+<!-- ORMakerDeposit.getPledgeBalance -->
+<g id="node4" class="node" pointer-events="visible" data-name="ORMakerDeposit.getPledgeBalance">
+
+<ellipse fill="#ffbdb9" stroke="#ffbdb9" stroke-width="3" cx="690.29" cy="-1590.62" rx="80.43" ry="18" style=""/>
+<text text-anchor="middle" x="690.29" y="-1586.42" font-family="Times,serif" font-size="14.00" style="">getPledgeBalance</text>
+</g>
+<!-- EnumerableMap.AddressToUintMap.tryGet -->
+<g id="node39" class="node" pointer-events="visible" data-name="EnumerableMap.AddressToUintMap.tryGet">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="690.29" cy="-528.62" rx="35.92" ry="18" style=""/>
+<text text-anchor="middle" x="690.29" y="-524.42" font-family="Times,serif" font-size="14.00" style="">tryGet</text>
+</g>
+<!-- ORMakerDeposit.getPledgeBalance&#45;&gt;EnumerableMap.AddressToUintMap.tryGet -->
+<g id="edge2" class="edge" data-name="ORMakerDeposit.getPledgeBalance-&gt;EnumerableMap.AddressToUintMap.tryGet">
+
+<path fill="none" stroke="white" stroke-width="2" d="M639.74,-1575.41C600.28,-1560.54 548.25,-1533.6 524.24,-1489.62 511.93,-1467.06 511.93,-587.17 524.24,-564.62 545.82,-525.1 600.68,-519.91 641.48,-522.16" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="641.18,-525.64 651.42,-522.91 641.71,-518.66 641.18,-525.64" style=""/>
+</g>
+<!-- ORMakerDeposit.getPairsByPledgeToken -->
+<g id="node5" class="node" pointer-events="visible" data-name="ORMakerDeposit.getPairsByPledgeToken">
+
+<ellipse fill="#ffbdb9" stroke="#ffbdb9" stroke-width="3" cx="120.37" cy="-1751.62" rx="104.24" ry="18" style=""/>
+<text text-anchor="middle" x="120.37" y="-1747.42" font-family="Times,serif" font-size="14.00" style="">getPairsByPledgeToken</text>
+</g>
+<!-- ORMakerDeposit.getPairsByChain -->
+<g id="node6" class="node" pointer-events="visible" data-name="ORMakerDeposit.getPairsByChain">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="690.29" cy="-1320.62" rx="76.47" ry="18" style=""/>
+<text text-anchor="middle" x="690.29" y="-1316.42" font-family="Times,serif" font-size="14.00" style="">getPairsByChain</text>
+</g>
+<!-- ORMakerDeposit.getManager -->
+<g id="node7" class="node" pointer-events="visible" data-name="ORMakerDeposit.getManager">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="690.29" cy="-1156.62" rx="57.3" ry="18" style=""/>
+<text text-anchor="middle" x="690.29" y="-1152.42" font-family="Times,serif" font-size="14.00" style="">getManager</text>
+</g>
+<!-- ORMakerDeposit.IORMakerV1Factory -->
+<g id="node23" class="node" pointer-events="visible" data-name="ORMakerDeposit.IORMakerV1Factory">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="964.51" cy="-1156.62" rx="94.34" ry="18" style=""/>
+<text text-anchor="middle" x="964.51" y="-1152.42" font-family="Times,serif" font-size="14.00" style="">IORMakerV1Factory</text>
+</g>
+<!-- ORMakerDeposit.getManager&#45;&gt;ORMakerDeposit.IORMakerV1Factory -->
+<g id="edge3" class="edge" data-name="ORMakerDeposit.getManager-&gt;ORMakerDeposit.IORMakerV1Factory">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M749.02,-1156.62C780.15,-1156.62 819.58,-1156.62 856.12,-1156.62" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="855.88,-1160.12 865.88,-1156.62 855.88,-1153.12 855.88,-1160.12" style=""/>
+</g>
+<!-- ORMakerDeposit.idleAmount -->
+<g id="node8" class="node" pointer-events="visible" data-name="ORMakerDeposit.idleAmount">
+
+<ellipse fill="#ff9797" stroke="#ff9797" stroke-width="3" cx="385.49" cy="-1623.62" rx="57.34" ry="18" style=""/>
+<text text-anchor="middle" x="385.49" y="-1619.42" font-family="Times,serif" font-size="14.00" style="">idleAmount</text>
+</g>
+<!-- ORMakerDeposit.idleAmount&#45;&gt;ORMakerDeposit.getPledgeBalance -->
+<g id="edge6" class="edge" data-name="ORMakerDeposit.idleAmount-&gt;ORMakerDeposit.getPledgeBalance">
+
+<path fill="none" stroke="#80e097" stroke-width="2" d="M441.33,-1617.64C486.34,-1612.74 550.9,-1605.7 602.86,-1600.04" style=""/>
+<polygon fill="#80e097" stroke="#80e097" stroke-width="2" points="603.2,-1603.52 612.77,-1598.96 602.45,-1596.56 603.2,-1603.52" style=""/>
+</g>
+<!-- ORMakerDeposit.IERC20 -->
+<g id="node24" class="node" pointer-events="visible" data-name="ORMakerDeposit.IERC20">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="690.29" cy="-1471.62" rx="42.88" ry="18" style=""/>
+<text text-anchor="middle" x="690.29" y="-1467.42" font-family="Times,serif" font-size="14.00" style="">IERC20</text>
+</g>
+<!-- ORMakerDeposit.idleAmount&#45;&gt;ORMakerDeposit.IERC20 -->
+<g id="edge4" class="edge" data-name="ORMakerDeposit.idleAmount-&gt;ORMakerDeposit.IERC20">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M439.73,-1616.28C462.52,-1611.55 488.76,-1603.89 510.24,-1591.62 525.52,-1582.88 524.41,-1574.49 538.24,-1563.62 573.67,-1535.77 618.11,-1509.62 649.6,-1492.37" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="651.19,-1495.48 658.32,-1487.65 647.86,-1489.33 651.19,-1495.48" style=""/>
+</g>
+<!-- IERC20.balanceOf -->
+<g id="node44" class="node" pointer-events="visible" data-name="IERC20.balanceOf">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="690.29" cy="-1890.62" rx="50.92" ry="18" style=""/>
+<text text-anchor="middle" x="690.29" y="-1886.42" font-family="Times,serif" font-size="14.00" style="">balanceOf</text>
+</g>
+<!-- ORMakerDeposit.idleAmount&#45;&gt;IERC20.balanceOf -->
+<g id="edge5" class="edge" data-name="ORMakerDeposit.idleAmount-&gt;IERC20.balanceOf">
+
+<path fill="none" stroke="white" stroke-width="2" d="M439.53,-1631.12C464.69,-1637.45 492.97,-1649.12 510.24,-1670.62 563.72,-1737.14 479.41,-1798.78 538.24,-1860.62 560.58,-1884.09 595.62,-1892.06 626.32,-1893.95" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="626.03,-1897.44 636.15,-1894.3 626.28,-1890.44 626.03,-1897.44" style=""/>
+</g>
+<!-- ORMakerDeposit.calcLpPledgeAmount -->
+<g id="node9" class="node" pointer-events="visible" data-name="ORMakerDeposit.calcLpPledgeAmount">
+
+<ellipse fill="#ffbdb9" stroke="#ffbdb9" stroke-width="3" cx="385.49" cy="-1341.62" rx="95.49" ry="18" style=""/>
+<text text-anchor="middle" x="385.49" y="-1337.42" font-family="Times,serif" font-size="14.00" style="">calcLpPledgeAmount</text>
+</g>
+<!-- ORMakerDeposit.calcLpPledgeAmount&#45;&gt;ORMakerDeposit.getPledgeBalanceByChainToken -->
+<g id="edge8" class="edge" data-name="ORMakerDeposit.calcLpPledgeAmount-&gt;ORMakerDeposit.getPledgeBalanceByChainToken">
+
+<path fill="none" stroke="#80e097" stroke-width="2" d="M470.84,-1350.81C500.5,-1354.04 534.46,-1357.74 566.63,-1361.25" style=""/>
+<polygon fill="#80e097" stroke="#80e097" stroke-width="2" points="566,-1364.7 576.32,-1362.31 566.76,-1357.74 566,-1364.7" style=""/>
+</g>
+<!-- ORMakerDeposit.calcLpPledgeAmount&#45;&gt;ORMakerDeposit.getManager -->
+<g id="edge7" class="edge" data-name="ORMakerDeposit.calcLpPledgeAmount-&gt;ORMakerDeposit.getManager">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M455.46,-1328.21C475.55,-1321.22 495.92,-1310.63 510.24,-1294.62 543.59,-1257.33 501.8,-1219.88 538.24,-1185.62 559.84,-1165.32 591.1,-1157.17 619.59,-1154.45" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="619.69,-1157.95 629.42,-1153.77 619.21,-1150.97 619.69,-1157.95" style=""/>
+</g>
+<!-- ORMakerDeposit.lpAction -->
+<g id="node10" class="node" pointer-events="visible" data-name="ORMakerDeposit.lpAction">
+
+<ellipse fill="#ffbdb9" stroke="brown" stroke-width="3" cx="120.37" cy="-829.62" rx="44.66" ry="18" style=""/>
+<text text-anchor="middle" x="120.37" y="-825.42" font-family="Times,serif" font-size="14.00" style="">lpAction</text>
+</g>
+<!-- ORMakerDeposit.lpAction&#45;&gt;ORMakerDeposit.pairExist -->
+<g id="edge16" class="edge" data-name="ORMakerDeposit.lpAction-&gt;ORMakerDeposit.pairExist">
+
+<path fill="none" stroke="#80e097" stroke-width="2" d="M126.97,-848.84C152.39,-936.14 256,-1291.09 260.74,-1294.62 305.22,-1327.72 454.97,-1298.91 510.24,-1294.62 552.57,-1291.33 600.02,-1283.73 635.43,-1277.27" style=""/>
+<polygon fill="#80e097" stroke="#80e097" stroke-width="2" points="635.73,-1280.78 644.92,-1275.51 634.45,-1273.9 635.73,-1280.78" style=""/>
+</g>
+<!-- ORMakerDeposit.lpAction&#45;&gt;ORMakerDeposit.getManager -->
+<g id="edge9" class="edge" data-name="ORMakerDeposit.lpAction-&gt;ORMakerDeposit.getManager">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M122.39,-849.02C126.7,-909 148.9,-1091.84 260.74,-1166.62 289.82,-1186.06 507.32,-1171.55 620.81,-1162.47" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="620.74,-1165.99 630.43,-1161.69 620.18,-1159.01 620.74,-1165.99" style=""/>
+</g>
+<!-- ORMakerDeposit.lpAction&#45;&gt;ORMakerDeposit.calcLpPledgeAmount -->
+<g id="edge12" class="edge" data-name="ORMakerDeposit.lpAction-&gt;ORMakerDeposit.calcLpPledgeAmount">
+
+<path fill="none" stroke="#80e097" stroke-width="2" d="M126.9,-848.71C152.71,-937.88 260.19,-1309.08 260.74,-1309.62 268.72,-1317.37 278.33,-1323.31 288.61,-1327.85" style=""/>
+<polygon fill="#80e097" stroke="#80e097" stroke-width="2" points="287.04,-1331 297.63,-1331.32 289.55,-1324.47 287.04,-1331" style=""/>
+</g>
+<!-- ORMakerDeposit.lpAction&#45;&gt;ORMakerDeposit.IERC20 -->
+<g id="edge25" class="edge" data-name="ORMakerDeposit.lpAction-&gt;ORMakerDeposit.IERC20">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M128.98,-848.69C147.16,-901.17 193.87,-1050.65 224.74,-1177.62 244.23,-1257.74 203.07,-1300.68 260.74,-1359.62 340.16,-1440.78 399.93,-1387.69 510.24,-1414.62 557.93,-1426.26 612.34,-1441.07 648.55,-1453.04" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="647.09,-1456.24 657.69,-1456.16 649.36,-1449.62 647.09,-1456.24" style=""/>
+</g>
+<!-- ORMakerDeposit.lpAction&#45;&gt;ORMakerDeposit.IERC20 -->
+<g id="edge26" class="edge" data-name="ORMakerDeposit.lpAction-&gt;ORMakerDeposit.IERC20">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M126.28,-848.58C142.04,-902.87 192.19,-1061.76 224.74,-1195.62 244.23,-1275.74 203.07,-1318.68 260.74,-1377.62 340.16,-1458.78 399.93,-1405.69 510.24,-1432.62 552.29,-1442.88 599.57,-1455.61 634.98,-1464.07" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="633.98,-1467.43 644.51,-1466.3 635.57,-1460.62 633.98,-1467.43" style=""/>
+</g>
+<!-- ORMakerDeposit.IORManager -->
+<g id="node25" class="node" pointer-events="visible" data-name="ORMakerDeposit.IORManager">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="385.49" cy="-991.62" rx="61.97" ry="18" style=""/>
+<text text-anchor="middle" x="385.49" y="-987.42" font-family="Times,serif" font-size="14.00" style="">IORManager</text>
+</g>
+<!-- ORMakerDeposit.lpAction&#45;&gt;ORMakerDeposit.IORManager -->
+<g id="edge18" class="edge" data-name="ORMakerDeposit.lpAction-&gt;ORMakerDeposit.IORManager">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M134.55,-847.74C156.97,-877.16 205.52,-935.01 260.74,-964.62 276.65,-973.15 295.08,-978.98 312.77,-982.97" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="312.02,-986.39 322.52,-984.96 313.42,-979.53 312.02,-986.39" style=""/>
+</g>
+<!-- ORMakerDeposit.LogLPAction -->
+<g id="node26" class="node" pointer-events="visible" data-name="ORMakerDeposit.LogLPAction">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="385.49" cy="-1045.62" rx="64.29" ry="18" style=""/>
+<text text-anchor="middle" x="385.49" y="-1041.42" font-family="Times,serif" font-size="14.00" style="">LogLPAction</text>
+</g>
+<!-- ORMakerDeposit.lpAction&#45;&gt;ORMakerDeposit.LogLPAction -->
+<g id="edge20" class="edge" data-name="ORMakerDeposit.lpAction-&gt;ORMakerDeposit.LogLPAction">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M129.56,-848.44C147.38,-887.01 193.52,-975.04 260.74,-1018.62 275.29,-1028.05 292.62,-1034.23 309.64,-1038.27" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="308.46,-1041.6 318.97,-1040.23 309.9,-1034.75 308.46,-1041.6" style=""/>
+</g>
+<!-- ORMakerDeposit.lpAction&#45;&gt;EnumerableMap.AddressToUintMap.tryGet -->
+<g id="edge21" class="edge" data-name="ORMakerDeposit.lpAction-&gt;EnumerableMap.AddressToUintMap.tryGet">
+
+<path fill="none" stroke="white" stroke-width="2" d="M127.03,-810.51C142.3,-768.11 188.17,-667.61 260.74,-618.62 354.94,-555.03 404.29,-603.71 510.24,-562.62 523.61,-557.43 524.77,-551.5 538.24,-546.62 571.51,-534.55 610.92,-527.73 641.15,-525.23" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="641.14,-528.74 650.89,-524.59 640.68,-521.75 641.14,-528.74" style=""/>
+</g>
+<!-- ORMakerDeposit.lpAction&#45;&gt;EnumerableMap.AddressToUintMap.tryGet -->
+<g id="edge22" class="edge" data-name="ORMakerDeposit.lpAction-&gt;EnumerableMap.AddressToUintMap.tryGet">
+
+<path fill="none" stroke="white" stroke-width="2" d="M130.86,-810.92C149.14,-771.71 193.47,-682.03 260.74,-636.62 354.94,-573.03 404.29,-621.71 510.24,-580.62 523.61,-575.43 524.77,-569.5 538.24,-564.62 572.97,-552.02 614.4,-545.15 645.08,-540.06" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="645.25,-543.58 654.54,-538.48 644.1,-536.68 645.25,-543.58" style=""/>
+</g>
+<!-- EnumerableMap.AddressToUintMap.set -->
+<g id="node40" class="node" pointer-events="visible" data-name="EnumerableMap.AddressToUintMap.set">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="690.29" cy="-582.62" rx="27" ry="18" style=""/>
+<text text-anchor="middle" x="690.29" y="-578.42" font-family="Times,serif" font-size="14.00" style="">set</text>
+</g>
+<!-- ORMakerDeposit.lpAction&#45;&gt;EnumerableMap.AddressToUintMap.set -->
+<g id="edge23" class="edge" data-name="ORMakerDeposit.lpAction-&gt;EnumerableMap.AddressToUintMap.set">
+
+<path fill="none" stroke="white" stroke-width="2" d="M145.91,-813.44C207.93,-778.9 375.63,-696.62 510.24,-618.62 523.04,-611.2 524.47,-606.02 538.24,-600.62 574.53,-586.37 618.69,-579.59 649.86,-578.07" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="649.85,-581.58 659.76,-577.82 649.67,-574.58 649.85,-581.58" style=""/>
+</g>
+<!-- ORMakerDeposit.lpAction&#45;&gt;EnumerableMap.AddressToUintMap.set -->
+<g id="edge24" class="edge" data-name="ORMakerDeposit.lpAction-&gt;EnumerableMap.AddressToUintMap.set">
+
+<path fill="none" stroke="white" stroke-width="2" d="M156.81,-817.69C225.88,-788.06 382.88,-710.43 510.24,-636.62 523.04,-629.2 524.47,-624.02 538.24,-618.62 575.35,-604.05 620.68,-597.29 651.94,-592.39" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="652.11,-595.9 661.43,-590.86 651,-588.99 652.11,-595.9" style=""/>
+</g>
+<!-- IORManager.getTokenInfo -->
+<g id="node45" class="node" pointer-events="visible" data-name="IORManager.getTokenInfo">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="690.29" cy="-389.62" rx="63.69" ry="18" style=""/>
+<text text-anchor="middle" x="690.29" y="-385.42" font-family="Times,serif" font-size="14.00" style="">getTokenInfo</text>
+</g>
+<!-- ORMakerDeposit.lpAction&#45;&gt;IORManager.getTokenInfo -->
+<g id="edge10" class="edge" data-name="ORMakerDeposit.lpAction-&gt;IORManager.getTokenInfo">
+
+<path fill="none" stroke="white" stroke-width="2" d="M126.18,-810.28C140.4,-762.38 186,-638.34 260.74,-562.62 349.92,-472.28 399.69,-486 510.24,-423.62 522.73,-416.57 524.77,-412.5 538.24,-407.62 561.81,-399.07 588.45,-393.16 612.73,-389.55" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="613.12,-393.02 622.56,-388.22 612.19,-386.09 613.12,-393.02" style=""/>
+</g>
+<!-- ORMakerDeposit.lpAction&#45;&gt;IORManager.getTokenInfo -->
+<g id="edge17" class="edge" data-name="ORMakerDeposit.lpAction-&gt;IORManager.getTokenInfo">
+
+<path fill="none" stroke="white" stroke-width="2" d="M129.07,-810.75C145.96,-765.72 190.47,-651.81 260.74,-580.62 349.92,-490.28 399.69,-504 510.24,-441.62 522.73,-434.57 524.77,-430.5 538.24,-425.62 566.56,-415.34 599.34,-408.88 627.11,-404.08" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="627.62,-407.55 636.9,-402.43 626.46,-400.64 627.62,-407.55" style=""/>
+</g>
+<!-- IORManager.isSupportChain -->
+<g id="node46" class="node" pointer-events="visible" data-name="IORManager.isSupportChain">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="690.29" cy="-335.62" rx="71.26" ry="18" style=""/>
+<text text-anchor="middle" x="690.29" y="-331.42" font-family="Times,serif" font-size="14.00" style="">isSupportChain</text>
+</g>
+<!-- ORMakerDeposit.lpAction&#45;&gt;IORManager.isSupportChain -->
+<g id="edge14" class="edge" data-name="ORMakerDeposit.lpAction-&gt;IORManager.isSupportChain">
+
+<path fill="none" stroke="white" stroke-width="2" d="M122.03,-810.48C125.29,-746.56 144.78,-538.53 260.74,-432.62 311.15,-386.58 500.53,-357.5 609.94,-344.17" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="610.35,-347.65 619.86,-342.99 609.52,-340.7 610.35,-347.65" style=""/>
+</g>
+<!-- IORManager.isSupportPair -->
+<g id="node47" class="node" pointer-events="visible" data-name="IORManager.isSupportPair">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="690.29" cy="-281.62" rx="63.73" ry="18" style=""/>
+<text text-anchor="middle" x="690.29" y="-277.42" font-family="Times,serif" font-size="14.00" style="">isSupportPair</text>
+</g>
+<!-- ORMakerDeposit.lpAction&#45;&gt;IORManager.isSupportPair -->
+<g id="edge15" class="edge" data-name="ORMakerDeposit.lpAction-&gt;IORManager.isSupportPair">
+
+<path fill="none" stroke="white" stroke-width="2" d="M124.28,-810.34C136.88,-729.37 189.39,-418.1 260.74,-354.62 359.7,-266.58 524.38,-264.94 618.16,-272.62" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="617.63,-276.08 627.9,-273.48 618.25,-269.11 617.63,-276.08" style=""/>
+</g>
+<!-- OperationsLib.calcLpNeedPledgeAmountParams -->
+<g id="node49" class="node" pointer-events="visible" data-name="OperationsLib.calcLpNeedPledgeAmountParams">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="690.29" cy="-34.62" rx="144.09" ry="18" style=""/>
+<text text-anchor="middle" x="690.29" y="-30.42" font-family="Times,serif" font-size="14.00" style="">calcLpNeedPledgeAmountParams</text>
+</g>
+<!-- ORMakerDeposit.lpAction&#45;&gt;OperationsLib.calcLpNeedPledgeAmountParams -->
+<g id="edge11" class="edge" data-name="ORMakerDeposit.lpAction-&gt;OperationsLib.calcLpNeedPledgeAmountParams">
+
+<path fill="none" stroke="white" stroke-width="2" d="M121.84,-810.46C124.9,-702.37 145.71,-170.04 260.74,-66.62 355.69,18.75 515.2,4.28 610.53,-14.69" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="609.79,-18.11 620.29,-16.71 611.21,-11.26 609.79,-18.11" style=""/>
+</g>
+<!-- OperationsLib.getPairID -->
+<g id="node50" class="node" pointer-events="visible" data-name="OperationsLib.getPairID">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="690.29" cy="-142.62" rx="48.66" ry="18" style=""/>
+<text text-anchor="middle" x="690.29" y="-138.42" font-family="Times,serif" font-size="14.00" style="">getPairID</text>
+</g>
+<!-- ORMakerDeposit.lpAction&#45;&gt;OperationsLib.getPairID -->
+<g id="edge13" class="edge" data-name="ORMakerDeposit.lpAction-&gt;OperationsLib.getPairID">
+
+<path fill="none" stroke="white" stroke-width="2" d="M123.7,-810.28C134.78,-721.2 184.81,-351.25 260.74,-267.62 355.93,-162.78 533.54,-143.92 627.43,-141.71" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="627.42,-145.21 637.36,-141.55 627.3,-138.21 627.42,-145.21" style=""/>
+</g>
+<!-- OperationsLib.getLpID -->
+<g id="node51" class="node" pointer-events="visible" data-name="OperationsLib.getLpID">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="690.29" cy="-88.62" rx="43.5" ry="18" style=""/>
+<text text-anchor="middle" x="690.29" y="-84.42" font-family="Times,serif" font-size="14.00" style="">getLpID</text>
+</g>
+<!-- ORMakerDeposit.lpAction&#45;&gt;OperationsLib.getLpID -->
+<g id="edge19" class="edge" data-name="ORMakerDeposit.lpAction-&gt;OperationsLib.getLpID">
+
+<path fill="none" stroke="white" stroke-width="2" d="M122.42,-810.37C128.31,-709.6 160.69,-243.76 260.74,-149.62 363.66,-52.77 546.62,-65.29 636.49,-78.76" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="635.9,-82.21 646.33,-80.31 636.99,-75.29 635.9,-82.21" style=""/>
+</g>
+<!-- ORMakerDeposit.lpPause -->
+<g id="node11" class="node" pointer-events="visible" data-name="ORMakerDeposit.lpPause">
+
+<ellipse fill="#ffbdb9" stroke="#ffbdb9" stroke-width="3" cx="385.49" cy="-1139.62" rx="41.16" ry="18" style=""/>
+<text text-anchor="middle" x="385.49" y="-1135.42" font-family="Times,serif" font-size="14.00" style="">lpPause</text>
+</g>
+<!-- ORMakerDeposit.lpPause&#45;&gt;ORMakerDeposit.pairExist -->
+<g id="edge29" class="edge" data-name="ORMakerDeposit.lpPause-&gt;ORMakerDeposit.pairExist">
+
+<path fill="none" stroke="#80e097" stroke-width="2" d="M425.13,-1146.77C451.63,-1153.34 486.22,-1165.38 510.24,-1186.62 530.2,-1204.26 516.73,-1223.9 538.24,-1239.62 564.57,-1258.85 600.25,-1265.86 630.32,-1267.94" style=""/>
+<polygon fill="#80e097" stroke="#80e097" stroke-width="2" points="630.07,-1271.44 640.23,-1268.42 630.41,-1264.44 630.07,-1271.44" style=""/>
+</g>
+<!-- ORMakerDeposit.lpPause&#45;&gt;ORMakerDeposit.getManager -->
+<g id="edge27" class="edge" data-name="ORMakerDeposit.lpPause-&gt;ORMakerDeposit.getManager">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M427.64,-1137.12C478.26,-1137.69 564.79,-1142.27 624.39,-1147.32" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="623.77,-1150.78 634.04,-1148.17 624.39,-1143.8 623.77,-1150.78" style=""/>
+</g>
+<!-- ORMakerDeposit.lpPause&#45;&gt;ORMakerDeposit.getManager -->
+<g id="edge31" class="edge" data-name="ORMakerDeposit.lpPause-&gt;ORMakerDeposit.getManager">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M425.15,-1146.47C473.94,-1151.52 558.78,-1156.66 619.14,-1158.48" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="618.89,-1161.97 628.98,-1158.74 619.08,-1154.97 618.89,-1161.97" style=""/>
+</g>
+<!-- ORMakerDeposit.LogLPPause -->
+<g id="node27" class="node" pointer-events="visible" data-name="ORMakerDeposit.LogLPPause">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="690.29" cy="-1102.62" rx="60.28" ry="18" style=""/>
+<text text-anchor="middle" x="690.29" y="-1098.42" font-family="Times,serif" font-size="14.00" style="">LogLPPause</text>
+</g>
+<!-- ORMakerDeposit.lpPause&#45;&gt;ORMakerDeposit.LogLPPause -->
+<g id="edge32" class="edge" data-name="ORMakerDeposit.lpPause-&gt;ORMakerDeposit.LogLPPause">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M426.7,-1134.7C475.94,-1128.69 560.13,-1118.4 619.9,-1111.1" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="620.14,-1114.59 629.64,-1109.91 619.29,-1107.64 620.14,-1114.59" style=""/>
+</g>
+<!-- IORManager.getEBC -->
+<g id="node48" class="node" pointer-events="visible" data-name="IORManager.getEBC">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="690.29" cy="-443.62" rx="41.73" ry="18" style=""/>
+<text text-anchor="middle" x="690.29" y="-439.42" font-family="Times,serif" font-size="14.00" style="">getEBC</text>
+</g>
+<!-- ORMakerDeposit.lpPause&#45;&gt;IORManager.getEBC -->
+<g id="edge30" class="edge" data-name="ORMakerDeposit.lpPause-&gt;IORManager.getEBC">
+
+<path fill="none" stroke="white" stroke-width="2" d="M423.12,-1130.43C452.12,-1121.07 490.86,-1103.43 510.24,-1072.62 578.26,-964.53 462.47,-601.42 538.24,-498.62 560.63,-468.24 601.52,-454.61 635.1,-448.51" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="635.25,-452.03 644.58,-447 634.15,-445.11 635.25,-452.03" style=""/>
+</g>
+<!-- ORMakerDeposit.lpPause&#45;&gt;OperationsLib.getPairID -->
+<g id="edge28" class="edge" data-name="ORMakerDeposit.lpPause-&gt;OperationsLib.getPairID">
+
+<path fill="none" stroke="white" stroke-width="2" d="M422.97,-1130.62C452.08,-1121.33 491.07,-1103.7 510.24,-1072.62 562.95,-987.19 472.63,-245.58 538.24,-169.62 560.36,-144.01 597.71,-137.17 629.73,-136.77" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="629.54,-140.27 639.58,-136.9 629.63,-133.27 629.54,-140.27" style=""/>
+</g>
+<!-- ORMakerDeposit.lpRestart -->
+<g id="node12" class="node" pointer-events="visible" data-name="ORMakerDeposit.lpRestart">
+
+<ellipse fill="#ffbdb9" stroke="#ffbdb9" stroke-width="3" cx="120.37" cy="-1697.62" rx="45.8" ry="18" style=""/>
+<text text-anchor="middle" x="120.37" y="-1693.42" font-family="Times,serif" font-size="14.00" style="">lpRestart</text>
+</g>
+<!-- ORMakerDeposit.LogLPRestart -->
+<g id="node28" class="node" pointer-events="visible" data-name="ORMakerDeposit.LogLPRestart">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="385.49" cy="-1751.62" rx="65.43" ry="18" style=""/>
+<text text-anchor="middle" x="385.49" y="-1747.42" font-family="Times,serif" font-size="14.00" style="">LogLPRestart</text>
+</g>
+<!-- ORMakerDeposit.lpRestart&#45;&gt;ORMakerDeposit.LogLPRestart -->
+<g id="edge33" class="edge" data-name="ORMakerDeposit.lpRestart-&gt;ORMakerDeposit.LogLPRestart">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M162.77,-1706.11C204.36,-1714.65 269.09,-1727.93 317.9,-1737.95" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="317.11,-1741.36 327.61,-1739.94 318.52,-1734.5 317.11,-1741.36" style=""/>
+</g>
+<!-- ORMakerDeposit.lpStop -->
+<g id="node13" class="node" pointer-events="visible" data-name="ORMakerDeposit.lpStop">
+
+<ellipse fill="#ffbdb9" stroke="#ffbdb9" stroke-width="3" cx="385.49" cy="-829.62" rx="36.02" ry="18" style=""/>
+<text text-anchor="middle" x="385.49" y="-825.42" font-family="Times,serif" font-size="14.00" style="">lpStop</text>
+</g>
+<!-- ORMakerDeposit.lpStop&#45;&gt;ORMakerDeposit.pairExist -->
+<g id="edge37" class="edge" data-name="ORMakerDeposit.lpStop-&gt;ORMakerDeposit.pairExist">
+
+<path fill="none" stroke="#80e097" stroke-width="2" d="M422.6,-826.85C450.89,-826.85 488.92,-832.03 510.24,-856.62 566.16,-921.08 481.12,-1176.22 538.24,-1239.62 561.36,-1265.27 599.8,-1271.87 632.11,-1272.13" style=""/>
+<polygon fill="#80e097" stroke="#80e097" stroke-width="2" points="632.1,-1275.63 642.04,-1271.96 631.98,-1268.63 632.1,-1275.63" style=""/>
+</g>
+<!-- ORMakerDeposit.lpStop&#45;&gt;ORMakerDeposit.getManager -->
+<g id="edge34" class="edge" data-name="ORMakerDeposit.lpStop-&gt;ORMakerDeposit.getManager">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M422.41,-827.02C450.59,-827.11 488.56,-832.35 510.24,-856.62 591.5,-947.58 455.28,-1040.21 538.24,-1129.62 559,-1151.98 591.42,-1159.74 620.92,-1161.48" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="620.64,-1164.98 630.75,-1161.79 620.86,-1157.98 620.64,-1164.98" style=""/>
+</g>
+<!-- ORMakerDeposit.LogLPStop -->
+<g id="node29" class="node" pointer-events="visible" data-name="ORMakerDeposit.LogLPStop">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="690.29" cy="-829.62" rx="55.65" ry="18" style=""/>
+<text text-anchor="middle" x="690.29" y="-825.42" font-family="Times,serif" font-size="14.00" style="">LogLPStop</text>
+</g>
+<!-- ORMakerDeposit.lpStop&#45;&gt;ORMakerDeposit.LogLPStop -->
+<g id="edge43" class="edge" data-name="ORMakerDeposit.lpStop-&gt;ORMakerDeposit.LogLPStop">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M422.72,-829.62C471.45,-829.62 559.08,-829.62 620.52,-829.62" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="620.19,-833.12 630.19,-829.62 620.19,-826.12 620.19,-833.12" style=""/>
+</g>
+<!-- ORMakerDeposit.lpStop&#45;&gt;EnumerableMap.AddressToUintMap.tryGet -->
+<g id="edge41" class="edge" data-name="ORMakerDeposit.lpStop-&gt;EnumerableMap.AddressToUintMap.tryGet">
+
+<path fill="none" stroke="white" stroke-width="2" d="M422.75,-830.55C450.94,-829.16 488.75,-822.3 510.24,-797.62 581.35,-715.97 464.08,-634.5 538.24,-555.62 564.1,-528.12 607.6,-522.79 641.3,-523.51" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="640.97,-527 651.12,-523.95 641.28,-520.01 640.97,-527" style=""/>
+</g>
+<!-- ORMakerDeposit.lpStop&#45;&gt;EnumerableMap.AddressToUintMap.set -->
+<g id="edge42" class="edge" data-name="ORMakerDeposit.lpStop-&gt;EnumerableMap.AddressToUintMap.set">
+
+<path fill="none" stroke="white" stroke-width="2" d="M422.82,-830.34C450.86,-828.82 488.42,-821.86 510.24,-797.62 566.76,-734.82 479.38,-670.21 538.24,-609.62 566.67,-580.35 615.15,-576.44 649.52,-578.02" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="649.14,-581.5 659.35,-578.69 649.61,-574.52 649.14,-581.5" style=""/>
+</g>
+<!-- EnumerableMap.AddressToUintMap.length -->
+<g id="node41" class="node" pointer-events="visible" data-name="EnumerableMap.AddressToUintMap.length">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="690.29" cy="-690.62" rx="35.35" ry="18" style=""/>
+<text text-anchor="middle" x="690.29" y="-686.42" font-family="Times,serif" font-size="14.00" style="">length</text>
+</g>
+<!-- ORMakerDeposit.lpStop&#45;&gt;EnumerableMap.AddressToUintMap.length -->
+<g id="edge38" class="edge" data-name="ORMakerDeposit.lpStop-&gt;EnumerableMap.AddressToUintMap.length">
+
+<path fill="none" stroke="white" stroke-width="2" d="M422.76,-829.07C450,-826.77 486.56,-819.4 510.24,-797.62 537.97,-772.12 509.57,-742.04 538.24,-717.62 566.5,-693.55 608.73,-687.68 641.36,-687.33" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="641.17,-690.83 651.21,-687.44 641.25,-683.83 641.17,-690.83" style=""/>
+</g>
+<!-- EnumerableMap.AddressToUintMap.at -->
+<g id="node42" class="node" pointer-events="visible" data-name="EnumerableMap.AddressToUintMap.at">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="690.29" cy="-636.62" rx="27" ry="18" style=""/>
+<text text-anchor="middle" x="690.29" y="-632.42" font-family="Times,serif" font-size="14.00" style="">at</text>
+</g>
+<!-- ORMakerDeposit.lpStop&#45;&gt;EnumerableMap.AddressToUintMap.at -->
+<g id="edge39" class="edge" data-name="ORMakerDeposit.lpStop-&gt;EnumerableMap.AddressToUintMap.at">
+
+<path fill="none" stroke="white" stroke-width="2" d="M422.73,-829.97C450.52,-828.22 487.8,-821.14 510.24,-797.62 552.24,-753.59 494.6,-706.01 538.24,-663.62 567.43,-635.27 615.55,-631.14 649.63,-632.41" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="649.17,-635.89 659.36,-632.99 649.58,-628.91 649.17,-635.89" style=""/>
+</g>
+<!-- EnumerableMap.AddressToUintMap.remove -->
+<g id="node43" class="node" pointer-events="visible" data-name="EnumerableMap.AddressToUintMap.remove">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="690.29" cy="-744.62" rx="39.99" ry="18" style=""/>
+<text text-anchor="middle" x="690.29" y="-740.42" font-family="Times,serif" font-size="14.00" style="">remove</text>
+</g>
+<!-- ORMakerDeposit.lpStop&#45;&gt;EnumerableMap.AddressToUintMap.remove -->
+<g id="edge40" class="edge" data-name="ORMakerDeposit.lpStop-&gt;EnumerableMap.AddressToUintMap.remove">
+
+<path fill="none" stroke="white" stroke-width="2" d="M419.41,-821.44C444.39,-815.15 479.56,-806.12 510.24,-797.62 555.65,-785.03 607.22,-769.65 643.31,-758.7" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="643.95,-762.17 652.5,-755.91 641.92,-755.47 643.95,-762.17" style=""/>
+</g>
+<!-- ORMakerDeposit.lpStop&#45;&gt;IORManager.getTokenInfo -->
+<g id="edge36" class="edge" data-name="ORMakerDeposit.lpStop-&gt;IORManager.getTokenInfo">
+
+<path fill="none" stroke="white" stroke-width="2" d="M418.9,-820.77C448.09,-810.96 489.51,-792.06 510.24,-759.62 551.43,-695.18 486.81,-473.21 538.24,-416.62 557.51,-395.42 587.24,-387.26 615.25,-384.94" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="615.13,-388.45 624.93,-384.42 614.75,-381.46 615.13,-388.45" style=""/>
+</g>
+<!-- ORMakerDeposit.lpStop&#45;&gt;OperationsLib.getPairID -->
+<g id="edge35" class="edge" data-name="ORMakerDeposit.lpStop-&gt;OperationsLib.getPairID">
+
+<path fill="none" stroke="white" stroke-width="2" d="M411.84,-816.01C441.45,-798.54 489.07,-765.23 510.24,-721.62 537.07,-666.37 497.64,-215.69 538.24,-169.62 560.53,-144.32 597.7,-137.44 629.59,-136.94" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="629.35,-140.44 639.39,-137.04 629.42,-133.44 629.35,-140.44" style=""/>
+</g>
+<!-- ORMakerDeposit.lpUpdate -->
+<g id="node14" class="node" pointer-events="visible" data-name="ORMakerDeposit.lpUpdate">
+
+<ellipse fill="#ffbdb9" stroke="#ffbdb9" stroke-width="3" cx="120.37" cy="-1643.62" rx="46.37" ry="18" style=""/>
+<text text-anchor="middle" x="120.37" y="-1639.42" font-family="Times,serif" font-size="14.00" style="">lpUpdate</text>
+</g>
+<!-- ORMakerDeposit.LogLPUpdate -->
+<g id="node30" class="node" pointer-events="visible" data-name="ORMakerDeposit.LogLPUpdate">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="385.49" cy="-1697.62" rx="66" ry="18" style=""/>
+<text text-anchor="middle" x="385.49" y="-1693.42" font-family="Times,serif" font-size="14.00" style="">LogLPUpdate</text>
+</g>
+<!-- ORMakerDeposit.lpUpdate&#45;&gt;ORMakerDeposit.LogLPUpdate -->
+<g id="edge44" class="edge" data-name="ORMakerDeposit.lpUpdate-&gt;ORMakerDeposit.LogLPUpdate">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M163.06,-1652.17C204.57,-1660.69 268.93,-1673.9 317.58,-1683.88" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="316.76,-1687.29 327.26,-1685.87 318.17,-1680.43 316.76,-1687.29" style=""/>
+</g>
+<!-- ORMakerDeposit.withDrawAssert -->
+<g id="node15" class="node" pointer-events="visible" data-name="ORMakerDeposit.withDrawAssert">
+
+<ellipse fill="#ffbdb9" stroke="#ffbdb9" stroke-width="3" cx="120.37" cy="-1589.62" rx="74.16" ry="18" style=""/>
+<text text-anchor="middle" x="120.37" y="-1585.42" font-family="Times,serif" font-size="14.00" style="">withDrawAssert</text>
+</g>
+<!-- ORMakerDeposit.withDrawAssert&#45;&gt;ORMakerDeposit.idleAmount -->
+<g id="edge45" class="edge" data-name="ORMakerDeposit.withDrawAssert-&gt;ORMakerDeposit.idleAmount">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M188.11,-1598.24C227.86,-1603.38 278.15,-1609.87 317.88,-1615.01" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="317.28,-1618.46 327.65,-1616.27 318.18,-1611.52 317.28,-1618.46" style=""/>
+</g>
+<!-- ORMakerDeposit.withDrawAssert&#45;&gt;ORMakerDeposit.IERC20 -->
+<g id="edge46" class="edge" data-name="ORMakerDeposit.withDrawAssert-&gt;ORMakerDeposit.IERC20">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M183.18,-1600.38C197.36,-1604.29 212.01,-1609.56 224.74,-1616.62 243.99,-1627.29 240.29,-1642.49 260.74,-1650.62 286.5,-1660.86 487.84,-1666.94 510.24,-1650.62 543.07,-1626.7 513.1,-1595.52 538.24,-1563.62 565.75,-1528.72 610.43,-1503.87 644.08,-1488.87" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="645.33,-1492.14 653.14,-1484.98 642.57,-1485.71 645.33,-1492.14" style=""/>
+</g>
+<!-- ORMakerDeposit.payable -->
+<g id="node31" class="node" pointer-events="visible" data-name="ORMakerDeposit.payable">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="385.49" cy="-1529.62" rx="41.13" ry="18" style=""/>
+<text text-anchor="middle" x="385.49" y="-1525.42" font-family="Times,serif" font-size="14.00" style="">payable</text>
+</g>
+<!-- ORMakerDeposit.withDrawAssert&#45;&gt;ORMakerDeposit.payable -->
+<g id="edge47" class="edge" data-name="ORMakerDeposit.withDrawAssert-&gt;ORMakerDeposit.payable">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M177.17,-1576.89C223.85,-1566.25 289.84,-1551.2 334.74,-1540.96" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="335.46,-1544.39 344.44,-1538.75 333.91,-1537.56 335.46,-1544.39" style=""/>
+</g>
+<!-- ORMakerDeposit.userChallenge -->
+<g id="node16" class="node" pointer-events="visible" data-name="ORMakerDeposit.userChallenge">
+
+<ellipse fill="#ffbdb9" stroke="brown" stroke-width="3" cx="385.49" cy="-937.62" rx="66.05" ry="18" style=""/>
+<text text-anchor="middle" x="385.49" y="-933.42" font-family="Times,serif" font-size="14.00" style="">userChallenge</text>
+</g>
+<!-- ORMakerDeposit.userChallenge&#45;&gt;ORMakerDeposit.getManager -->
+<g id="edge48" class="edge" data-name="ORMakerDeposit.userChallenge-&gt;ORMakerDeposit.getManager">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M420.86,-921.02C448.9,-917.59 487.47,-922.75 510.24,-946.62 561.6,-1000.43 485.88,-1058.79 538.24,-1111.62 561.22,-1134.79 596.79,-1141.97 627.64,-1145.13" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="627.24,-1148.61 637.51,-1146 627.86,-1141.63 627.24,-1148.61" style=""/>
+</g>
+<!-- ORMakerDeposit.userChallenge&#45;&gt;ORMakerDeposit.getManager -->
+<g id="edge51" class="edge" data-name="ORMakerDeposit.userChallenge-&gt;ORMakerDeposit.getManager">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M452.72,-937.96C473.74,-941.42 495.37,-949.03 510.24,-964.62 561.6,-1018.43 485.88,-1076.79 538.24,-1129.62 559.48,-1151.04 591.49,-1158.79 620.58,-1160.78" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="620.09,-1164.26 630.23,-1161.18 620.38,-1157.27 620.09,-1164.26" style=""/>
+</g>
+<!-- ORMakerDeposit.userChallenge&#45;&gt;ORMakerDeposit.getManager -->
+<g id="edge56" class="edge" data-name="ORMakerDeposit.userChallenge-&gt;ORMakerDeposit.getManager">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M432.88,-951.46C459.15,-955.35 490.58,-962.02 510.24,-982.62 561.6,-1036.43 485.88,-1094.79 538.24,-1147.62 566.35,-1175.97 613.31,-1180.38 647.42,-1175.55" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="647.61,-1179.07 656.82,-1173.83 646.35,-1172.19 647.61,-1179.07" style=""/>
+</g>
+<!-- ORMakerDeposit._msgSender -->
+<g id="node32" class="node" pointer-events="visible" data-name="ORMakerDeposit._msgSender">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="690.29" cy="-991.62" rx="58.56" ry="18" style=""/>
+<text text-anchor="middle" x="690.29" y="-987.42" font-family="Times,serif" font-size="14.00" style="">_msgSender</text>
+</g>
+<!-- ORMakerDeposit.userChallenge&#45;&gt;ORMakerDeposit._msgSender -->
+<g id="edge49" class="edge" data-name="ORMakerDeposit.userChallenge-&gt;ORMakerDeposit._msgSender">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M443.09,-947.71C494.75,-956.92 571.05,-970.53 625,-980.15" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="624.08,-983.54 634.54,-981.85 625.31,-976.65 624.08,-983.54" style=""/>
+</g>
+<!-- ORMakerDeposit.owner -->
+<g id="node33" class="node" pointer-events="visible" data-name="ORMakerDeposit.owner">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="690.29" cy="-937.62" rx="35.34" ry="18" style=""/>
+<text text-anchor="middle" x="690.29" y="-933.42" font-family="Times,serif" font-size="14.00" style="">owner</text>
+</g>
+<!-- ORMakerDeposit.userChallenge&#45;&gt;ORMakerDeposit.owner -->
+<g id="edge50" class="edge" data-name="ORMakerDeposit.userChallenge-&gt;ORMakerDeposit.owner">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M452.94,-937.62C509.67,-937.62 589.94,-937.62 640.79,-937.62" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="640.66,-941.12 650.66,-937.62 640.66,-934.12 640.66,-941.12" style=""/>
+</g>
+<!-- ORMakerDeposit.IORProtocal -->
+<g id="node34" class="node" pointer-events="visible" data-name="ORMakerDeposit.IORProtocal">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="690.29" cy="-1045.62" rx="59.7" ry="18" style=""/>
+<text text-anchor="middle" x="690.29" y="-1041.42" font-family="Times,serif" font-size="14.00" style="">IORProtocal</text>
+</g>
+<!-- ORMakerDeposit.userChallenge&#45;&gt;ORMakerDeposit.IORProtocal -->
+<g id="edge52" class="edge" data-name="ORMakerDeposit.userChallenge-&gt;ORMakerDeposit.IORProtocal">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M428.08,-922.54C454.04,-922.14 486.85,-928.7 510.24,-946.62 531.71,-963.06 516.47,-984.59 538.24,-1000.62 564.99,-1020.31 601.52,-1027.23 631.95,-1031.22" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="631.21,-1034.65 641.57,-1032.41 632.07,-1027.71 631.21,-1034.65" style=""/>
+</g>
+<!-- ORMakerDeposit.userChallenge&#45;&gt;ORMakerDeposit.IORProtocal -->
+<g id="edge54" class="edge" data-name="ORMakerDeposit.userChallenge-&gt;ORMakerDeposit.IORProtocal">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M451.77,-941.09C472.12,-944.85 493.57,-951.85 510.24,-964.62 531.71,-981.06 516.47,-1002.59 538.24,-1018.62 560.64,-1035.11 589.9,-1042.64 616.69,-1045.77" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="616.31,-1049.25 626.59,-1046.7 616.96,-1042.28 616.31,-1049.25" style=""/>
+</g>
+<!-- ORMakerDeposit.userChallenge&#45;&gt;ORMakerDeposit.IORProtocal -->
+<g id="edge55" class="edge" data-name="ORMakerDeposit.userChallenge-&gt;ORMakerDeposit.IORProtocal">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M426.35,-953.06C452.57,-957.85 486.33,-964.3 510.24,-982.62 531.71,-999.06 516.47,-1020.59 538.24,-1036.62 568.13,-1058.62 610.22,-1064.67 642.38,-1062.72" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="642.42,-1066.23 652.03,-1061.77 641.74,-1059.26 642.42,-1066.23" style=""/>
+</g>
+<!-- ORMakerDeposit.LogChallengeInfo -->
+<g id="node35" class="node" pointer-events="visible" data-name="ORMakerDeposit.LogChallengeInfo">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="690.29" cy="-883.62" rx="81.66" ry="18" style=""/>
+<text text-anchor="middle" x="690.29" y="-879.42" font-family="Times,serif" font-size="14.00" style="">LogChallengeInfo</text>
+</g>
+<!-- ORMakerDeposit.userChallenge&#45;&gt;ORMakerDeposit.LogChallengeInfo -->
+<g id="edge57" class="edge" data-name="ORMakerDeposit.userChallenge-&gt;ORMakerDeposit.LogChallengeInfo">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M443.09,-927.52C490.45,-919.08 558.52,-906.94 611.09,-897.56" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="611.55,-901.04 620.78,-895.84 610.32,-894.15 611.55,-901.04" style=""/>
+</g>
+<!-- OperationsLib.getChallengeID -->
+<g id="node52" class="node" pointer-events="visible" data-name="OperationsLib.getChallengeID">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="690.29" cy="-196.62" rx="72.35" ry="18" style=""/>
+<text text-anchor="middle" x="690.29" y="-192.42" font-family="Times,serif" font-size="14.00" style="">getChallengeID</text>
+</g>
+<!-- ORMakerDeposit.userChallenge&#45;&gt;OperationsLib.getChallengeID -->
+<g id="edge53" class="edge" data-name="ORMakerDeposit.userChallenge-&gt;OperationsLib.getChallengeID">
+
+<path fill="none" stroke="white" stroke-width="2" d="M452.9,-938.46C474.33,-935.17 496.16,-927.36 510.24,-910.62 557.41,-854.53 494.95,-310.75 538.24,-251.62 555.19,-228.48 582.87,-215.05 609.93,-207.27" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="610.55,-210.73 619.35,-204.84 608.8,-203.95 610.55,-210.73" style=""/>
+</g>
+<!-- ORMakerDeposit.lpUserStop -->
+<g id="node17" class="node" pointer-events="visible" data-name="ORMakerDeposit.lpUserStop">
+
+<ellipse fill="#f2c383" stroke="#f2c383" stroke-width="3" cx="385.49" cy="-1267.62" rx="54.49" ry="18" style=""/>
+<text text-anchor="middle" x="385.49" y="-1263.42" font-family="Times,serif" font-size="14.00" style="">lpUserStop</text>
+</g>
+<!-- ORMakerDeposit.lpUserStop&#45;&gt;ORMakerDeposit.pairExist -->
+<g id="edge63" class="edge" data-name="ORMakerDeposit.lpUserStop-&gt;ORMakerDeposit.pairExist">
+
+<path fill="none" stroke="#80e097" stroke-width="2" d="M441.33,-1267.44C494.7,-1267.26 575.55,-1266.99 630.3,-1266.81" style=""/>
+<polygon fill="#80e097" stroke="#80e097" stroke-width="2" points="630.26,-1270.31 640.25,-1266.78 630.24,-1263.31 630.26,-1270.31" style=""/>
+</g>
+<!-- ORMakerDeposit.lpUserStop&#45;&gt;ORMakerDeposit.getPairsByChain -->
+<g id="edge62" class="edge" data-name="ORMakerDeposit.lpUserStop-&gt;ORMakerDeposit.getPairsByChain">
+
+<path fill="none" stroke="#80e097" stroke-width="2" d="M435.48,-1276.19C483.62,-1284.62 557.76,-1297.59 613.5,-1307.35" style=""/>
+<polygon fill="#80e097" stroke="#80e097" stroke-width="2" points="612.74,-1310.77 623.19,-1309.05 613.94,-1303.88 612.74,-1310.77" style=""/>
+</g>
+<!-- ORMakerDeposit.lpUserStop&#45;&gt;ORMakerDeposit.getManager -->
+<g id="edge58" class="edge" data-name="ORMakerDeposit.lpUserStop-&gt;ORMakerDeposit.getManager">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M434.96,-1258.66C459.67,-1254.97 488.92,-1248.08 510.24,-1231.62 531.96,-1214.86 516.32,-1193.1 538.24,-1176.62 562.95,-1158.04 596.2,-1150.33 625.22,-1148.3" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="625.34,-1151.79 635.18,-1147.87 625.04,-1144.8 625.34,-1151.79" style=""/>
+</g>
+<!-- ORMakerDeposit.lpUserStop&#45;&gt;ORMakerDeposit.getManager -->
+<g id="edge61" class="edge" data-name="ORMakerDeposit.lpUserStop-&gt;ORMakerDeposit.getManager">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M437.7,-1274.48C461.81,-1272.45 489.7,-1265.47 510.24,-1249.62 531.96,-1232.86 516.32,-1211.1 538.24,-1194.62 562.21,-1176.59 594.22,-1168.8 622.6,-1164.97" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="622.81,-1168.47 632.33,-1163.83 621.99,-1161.52 622.81,-1168.47" style=""/>
+</g>
+<!-- ORMakerDeposit.LogLPUserStop -->
+<g id="node36" class="node" pointer-events="visible" data-name="ORMakerDeposit.LogLPUserStop">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="690.29" cy="-1212.62" rx="73.61" ry="18" style=""/>
+<text text-anchor="middle" x="690.29" y="-1208.42" font-family="Times,serif" font-size="14.00" style="">LogLPUserStop</text>
+</g>
+<!-- ORMakerDeposit.lpUserStop&#45;&gt;ORMakerDeposit.LogLPUserStop -->
+<g id="edge64" class="edge" data-name="ORMakerDeposit.lpUserStop-&gt;ORMakerDeposit.LogLPUserStop">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M435,-1258.59C464.79,-1253.07 503.71,-1245.89 538.24,-1239.62 563.47,-1235.04 591.07,-1230.08 615.7,-1225.69" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="616.07,-1229.18 625.3,-1223.97 614.84,-1222.29 616.07,-1229.18" style=""/>
+</g>
+<!-- ORMakerDeposit.lpUserStop&#45;&gt;EnumerableMap.AddressToUintMap.tryGet -->
+<g id="edge65" class="edge" data-name="ORMakerDeposit.lpUserStop-&gt;EnumerableMap.AddressToUintMap.tryGet">
+
+<path fill="none" stroke="white" stroke-width="2" d="M438.85,-1262C464.32,-1259.2 493.06,-1252.08 510.24,-1231.62 559.22,-1173.28 488.17,-604.02 538.24,-546.62 564.57,-516.45 612.04,-512.4 646.76,-516.02" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="645.99,-519.44 656.38,-517.33 646.94,-512.51 645.99,-519.44" style=""/>
+</g>
+<!-- ORMakerDeposit.lpUserStop&#45;&gt;EnumerableMap.AddressToUintMap.tryGet -->
+<g id="edge66" class="edge" data-name="ORMakerDeposit.lpUserStop-&gt;EnumerableMap.AddressToUintMap.tryGet">
+
+<path fill="none" stroke="white" stroke-width="2" d="M432.33,-1278.16C459.26,-1278.33 491.58,-1271.85 510.24,-1249.62 559.22,-1191.28 488.17,-622.02 538.24,-564.62 562.98,-536.26 606.4,-530.98 640.36,-530.43" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="640.3,-533.93 650.29,-530.42 640.29,-526.93 640.3,-533.93" style=""/>
+</g>
+<!-- ORMakerDeposit.lpUserStop&#45;&gt;EnumerableMap.AddressToUintMap.set -->
+<g id="edge67" class="edge" data-name="ORMakerDeposit.lpUserStop-&gt;EnumerableMap.AddressToUintMap.set">
+
+<path fill="none" stroke="white" stroke-width="2" d="M441.03,-1269.84C465.93,-1267.75 493.52,-1260.46 510.24,-1240.62 555.46,-1186.95 492.01,-662.42 538.24,-609.62 565.47,-578.52 615.19,-575.2 650.13,-577.41" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="649.44,-580.86 659.7,-578.22 650.03,-573.89 649.44,-580.86" style=""/>
+</g>
+<!-- ORMakerDeposit.lpUserStop&#45;&gt;IORManager.getTokenInfo -->
+<g id="edge59" class="edge" data-name="ORMakerDeposit.lpUserStop-&gt;IORManager.getTokenInfo">
+
+<path fill="none" stroke="white" stroke-width="2" d="M440.8,-1269.94C465.8,-1267.9 493.56,-1260.63 510.24,-1240.62 568.91,-1170.26 478.26,-485.85 538.24,-416.62 557.15,-394.79 587.13,-386.61 615.41,-384.43" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="615.39,-387.93 625.22,-383.96 615.06,-380.94 615.39,-387.93" style=""/>
+</g>
+<!-- ORMakerDeposit.lpUserStop&#45;&gt;IORManager.getEBC -->
+<g id="edge60" class="edge" data-name="ORMakerDeposit.lpUserStop-&gt;IORManager.getEBC">
+
+<path fill="none" stroke="white" stroke-width="2" d="M441.09,-1269.88C466,-1267.81 493.59,-1260.52 510.24,-1240.62 563.2,-1177.35 489.66,-565.3 538.24,-498.62 560.54,-468.02 601.63,-454.4 635.32,-448.37" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="635.5,-451.88 644.83,-446.87 634.41,-444.97 635.5,-451.88" style=""/>
+</g>
+<!-- ORMakerDeposit.userWithDraw -->
+<g id="node18" class="node" pointer-events="visible" data-name="ORMakerDeposit.userWithDraw">
+
+<ellipse fill="#ffbdb9" stroke="#ffbdb9" stroke-width="3" cx="120.37" cy="-1388.62" rx="67.77" ry="18" style=""/>
+<text text-anchor="middle" x="120.37" y="-1384.42" font-family="Times,serif" font-size="14.00" style="">userWithDraw</text>
+</g>
+<!-- ORMakerDeposit.userWithDraw&#45;&gt;ORMakerDeposit.pairExist -->
+<g id="edge71" class="edge" data-name="ORMakerDeposit.userWithDraw-&gt;ORMakerDeposit.pairExist">
+
+<path fill="none" stroke="#80e097" stroke-width="2" d="M183.75,-1396.38C280.37,-1407.02 460.32,-1420.86 510.24,-1383.62 543.82,-1358.57 506.83,-1321.33 538.24,-1293.62 563.32,-1271.49 600.14,-1264.57 631.14,-1263.27" style=""/>
+<polygon fill="#80e097" stroke="#80e097" stroke-width="2" points="631.07,-1266.77 641,-1263.08 630.93,-1259.77 631.07,-1266.77" style=""/>
+</g>
+<!-- ORMakerDeposit.userWithDraw&#45;&gt;ORMakerDeposit.getManager -->
+<g id="edge69" class="edge" data-name="ORMakerDeposit.userWithDraw-&gt;ORMakerDeposit.getManager">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M188.74,-1386.23C298.49,-1382.19 504.37,-1373.93 510.24,-1368.62 571.27,-1313.43 481.18,-1244.89 538.24,-1185.62 559.22,-1163.83 591.19,-1155.65 620.33,-1153.29" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="620.22,-1156.8 630.01,-1152.77 619.84,-1149.81 620.22,-1156.8" style=""/>
+</g>
+<!-- ORMakerDeposit.userWithDraw&#45;&gt;ORMakerDeposit.idleAmount -->
+<g id="edge73" class="edge" data-name="ORMakerDeposit.userWithDraw-&gt;ORMakerDeposit.idleAmount">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M145.9,-1406.4C167.59,-1426.96 199.61,-1461.38 224.74,-1493.62 242.48,-1516.36 239.43,-1528.18 260.74,-1547.62 285.71,-1570.39 319.82,-1588.11 345.91,-1601.02" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="344.04,-1603.99 354.55,-1605.27 347.13,-1597.71 344.04,-1603.99" style=""/>
+</g>
+<!-- ORMakerDeposit.userWithDraw&#45;&gt;ORMakerDeposit.idleAmount -->
+<g id="edge77" class="edge" data-name="ORMakerDeposit.userWithDraw-&gt;ORMakerDeposit.idleAmount">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M134.46,-1407.45C154.77,-1431.37 194.68,-1473.06 224.74,-1511.62 242.48,-1534.36 239.43,-1546.18 260.74,-1565.62 279.55,-1582.77 303.55,-1597.06 325.4,-1607.37" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="323.95,-1610.56 334.51,-1611.45 326.81,-1604.17 323.95,-1610.56" style=""/>
+</g>
+<!-- ORMakerDeposit.userWithDraw&#45;&gt;ORMakerDeposit.lpUserStop -->
+<g id="edge76" class="edge" data-name="ORMakerDeposit.userWithDraw-&gt;ORMakerDeposit.lpUserStop">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M142.21,-1370.27C169.1,-1352.1 217.57,-1325.18 260.74,-1305.62 280.85,-1296.5 303.29,-1287.61 323.49,-1280.53" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="324.52,-1283.88 332.86,-1277.35 322.27,-1277.25 324.52,-1283.88" style=""/>
+</g>
+<!-- ORMakerDeposit.userWithDraw&#45;&gt;ORMakerDeposit.lpUserStop -->
+<g id="edge80" class="edge" data-name="ORMakerDeposit.userWithDraw-&gt;ORMakerDeposit.lpUserStop">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M161.86,-1373.02C189.32,-1359.07 226.68,-1339.05 260.74,-1323.62 288.32,-1311.12 320.29,-1299.04 344.82,-1289.03" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="345.88,-1292.38 353.77,-1285.3 343.19,-1285.91 345.88,-1292.38" style=""/>
+</g>
+<!-- ORMakerDeposit.userWithDraw&#45;&gt;ORMakerDeposit.IERC20 -->
+<g id="edge78" class="edge" data-name="ORMakerDeposit.userWithDraw-&gt;ORMakerDeposit.IERC20">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M169.05,-1402.43C195.8,-1409.71 229.9,-1418.23 260.74,-1423.62 370.52,-1442.8 399.52,-1435.96 510.24,-1448.62 552.4,-1453.43 600.04,-1459.59 635.57,-1464.32" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="634.71,-1467.73 645.08,-1465.59 635.64,-1460.8 634.71,-1467.73" style=""/>
+</g>
+<!-- ORMakerDeposit.userWithDraw&#45;&gt;ORMakerDeposit.payable -->
+<g id="edge79" class="edge" data-name="ORMakerDeposit.userWithDraw-&gt;ORMakerDeposit.payable">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M144.08,-1406.49C169.83,-1430.3 214.3,-1471.17 260.74,-1493.62 284.63,-1505.16 313.49,-1511.82 337.33,-1516.58" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="336.54,-1519.99 347.02,-1518.47 337.88,-1513.12 336.54,-1519.99" style=""/>
+</g>
+<!-- ORMakerDeposit.userWithDraw&#45;&gt;ORMakerDeposit.payable -->
+<g id="edge81" class="edge" data-name="ORMakerDeposit.userWithDraw-&gt;ORMakerDeposit.payable">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M133.72,-1407.61C156.4,-1435.49 207.27,-1485.77 260.74,-1511.62 282.59,-1522.18 308.59,-1528.65 331.11,-1531.87" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="330.56,-1535.33 340.91,-1533.05 331.39,-1528.38 330.56,-1535.33" style=""/>
+</g>
+<!-- ORMakerDeposit.userWithDraw&#45;&gt;ORMakerDeposit.IORProtocal -->
+<g id="edge74" class="edge" data-name="ORMakerDeposit.userWithDraw-&gt;ORMakerDeposit.IORProtocal">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M137.86,-1369.91C160.65,-1343.1 201.58,-1291.37 224.74,-1240.62 251.95,-1180.99 211.13,-1140.44 260.74,-1097.62 302.93,-1061.21 454.95,-1079.55 510.24,-1072.62 547.72,-1067.92 589.46,-1061.68 623.2,-1056.39" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="623.4,-1059.9 632.73,-1054.88 622.3,-1052.98 623.4,-1059.9" style=""/>
+</g>
+<!-- ORMakerDeposit.LogChallengerCompensation -->
+<g id="node37" class="node" pointer-events="visible" data-name="ORMakerDeposit.LogChallengerCompensation">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="385.49" cy="-1475.62" rx="124.5" ry="18" style=""/>
+<text text-anchor="middle" x="385.49" y="-1471.42" font-family="Times,serif" font-size="14.00" style="">LogChallengerCompensation</text>
+</g>
+<!-- ORMakerDeposit.userWithDraw&#45;&gt;ORMakerDeposit.LogChallengerCompensation -->
+<g id="edge75" class="edge" data-name="ORMakerDeposit.userWithDraw-&gt;ORMakerDeposit.LogChallengerCompensation">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M158.77,-1404.83C186.58,-1416.52 225.62,-1432.19 260.74,-1443.62 274.37,-1448.05 289,-1452.28 303.26,-1456.13" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="302.16,-1459.47 312.73,-1458.64 303.96,-1452.7 302.16,-1459.47" style=""/>
+</g>
+<!-- ORMakerDeposit.userWithDraw&#45;&gt;IORManager.getEBC -->
+<g id="edge72" class="edge" data-name="ORMakerDeposit.userWithDraw-&gt;IORManager.getEBC">
+
+<path fill="none" stroke="white" stroke-width="2" d="M139.46,-1369.94C163.72,-1343.58 205.94,-1292.81 224.74,-1240.62 257.85,-1148.74 194.81,-874.67 260.74,-802.62 336.71,-719.6 433.26,-841.68 510.24,-759.62 550.16,-717.07 502.28,-544.55 538.24,-498.62 561.33,-469.13 601.71,-455.44 634.92,-449.1" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="635.44,-452.56 644.72,-447.44 634.28,-445.65 635.44,-452.56" style=""/>
+</g>
+<!-- ORMakerDeposit.userWithDraw&#45;&gt;OperationsLib.getPairID -->
+<g id="edge70" class="edge" data-name="ORMakerDeposit.userWithDraw-&gt;OperationsLib.getPairID">
+
+<path fill="none" stroke="white" stroke-width="2" d="M139.55,-1369.98C163.93,-1343.65 206.27,-1292.93 224.74,-1240.62 301.74,-1022.59 199.62,-944.61 260.74,-721.62 261.03,-720.58 537.38,-170.26 538.24,-169.62 563.73,-150.61 598.27,-143.45 627.9,-141.23" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="627.86,-144.74 637.66,-140.71 627.49,-137.75 627.86,-144.74" style=""/>
+</g>
+<!-- ORMakerDeposit.userWithDraw&#45;&gt;OperationsLib.getChallengeID -->
+<g id="edge68" class="edge" data-name="ORMakerDeposit.userWithDraw-&gt;OperationsLib.getChallengeID">
+
+<path fill="none" stroke="white" stroke-width="2" d="M139.51,-1369.96C163.84,-1343.62 206.13,-1292.87 224.74,-1240.62 260.71,-1139.64 187.9,-838.25 260.74,-759.62 336.97,-677.33 434.65,-804.48 510.24,-721.62 580.76,-644.32 475.71,-335.51 538.24,-251.62 555.38,-228.62 583.1,-215.23 610.14,-207.43" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="610.75,-210.89 619.55,-204.99 608.99,-204.11 610.75,-210.89" style=""/>
+</g>
+<!-- ORMakerDeposit.challengerMakeGood -->
+<g id="node19" class="node" pointer-events="visible" data-name="ORMakerDeposit.challengerMakeGood">
+
+<ellipse fill="#ffbdb9" stroke="#ffbdb9" stroke-width="3" cx="120.37" cy="-1529.62" rx="94.89" ry="18" style=""/>
+<text text-anchor="middle" x="120.37" y="-1525.42" font-family="Times,serif" font-size="14.00" style="">challengerMakeGood</text>
+</g>
+<!-- ORMakerDeposit.challengerMakeGood&#45;&gt;ORMakerDeposit.getManager -->
+<g id="edge82" class="edge" data-name="ORMakerDeposit.challengerMakeGood-&gt;ORMakerDeposit.getManager">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M183.44,-1544.28C207.44,-1549.25 235.23,-1554.17 260.74,-1556.62 288.34,-1559.27 489.92,-1575.47 510.24,-1556.62 570.87,-1500.4 483.22,-1247.33 538.24,-1185.62 558.6,-1162.79 590.98,-1154.58 620.55,-1152.48" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="620.58,-1155.99 630.42,-1152.06 620.28,-1148.99 620.58,-1155.99" style=""/>
+</g>
+<!-- ORMakerDeposit.challengerMakeGood&#45;&gt;ORMakerDeposit.idleAmount -->
+<g id="edge83" class="edge" data-name="ORMakerDeposit.challengerMakeGood-&gt;ORMakerDeposit.idleAmount">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M181.41,-1544.66C196.02,-1549.43 211.3,-1555.39 224.74,-1562.62 242.84,-1572.35 242.38,-1582.39 260.74,-1591.62 279.04,-1600.81 300.23,-1607.53 319.84,-1612.37" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="318.98,-1615.77 329.51,-1614.61 320.56,-1608.95 318.98,-1615.77" style=""/>
+</g>
+<!-- ORMakerDeposit.challengerMakeGood&#45;&gt;ORMakerDeposit.IERC20 -->
+<g id="edge86" class="edge" data-name="ORMakerDeposit.challengerMakeGood-&gt;ORMakerDeposit.IERC20">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M172.89,-1545.94C208.77,-1557.17 251.74,-1570.29 260.74,-1571.62 370.45,-1587.79 402.93,-1599.55 510.24,-1571.62 566.36,-1557.01 623.55,-1520.51 657.73,-1495.89" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="659.56,-1498.89 665.54,-1490.15 655.41,-1493.25 659.56,-1498.89" style=""/>
+</g>
+<!-- ORMakerDeposit.challengerMakeGood&#45;&gt;ORMakerDeposit.payable -->
+<g id="edge87" class="edge" data-name="ORMakerDeposit.challengerMakeGood-&gt;ORMakerDeposit.payable">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M211.19,-1523.18C251.32,-1522.56 297.23,-1522.86 331.71,-1524.08" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="331.18,-1527.57 341.31,-1524.48 331.46,-1520.57 331.18,-1527.57" style=""/>
+</g>
+<!-- ORMakerDeposit.challengerMakeGood&#45;&gt;ORMakerDeposit.payable -->
+<g id="edge88" class="edge" data-name="ORMakerDeposit.challengerMakeGood-&gt;ORMakerDeposit.payable">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M211.19,-1536.06C251.32,-1536.67 297.23,-1536.37 331.71,-1535.15" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="331.46,-1538.66 341.31,-1534.76 331.18,-1531.67 331.46,-1538.66" style=""/>
+</g>
+<!-- ORMakerDeposit.challengerMakeGood&#45;&gt;ORMakerDeposit.IORProtocal -->
+<g id="edge84" class="edge" data-name="ORMakerDeposit.challengerMakeGood-&gt;ORMakerDeposit.IORProtocal">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M145.24,-1511.1C169.72,-1490.63 206.69,-1455.25 224.74,-1415.62 252.85,-1353.91 212.17,-1159.93 260.74,-1112.62 300.63,-1073.77 456.7,-1104.89 510.24,-1089.62 523.62,-1085.8 525.08,-1080.12 538.24,-1075.62 564.76,-1066.54 594.9,-1059.86 621.23,-1055.15" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="621.58,-1058.64 630.84,-1053.5 620.39,-1051.74 621.58,-1058.64" style=""/>
+</g>
+<!-- ORMakerDeposit.challengerMakeGood&#45;&gt;ORMakerDeposit.LogChallengerCompensation -->
+<g id="edge85" class="edge" data-name="ORMakerDeposit.challengerMakeGood-&gt;ORMakerDeposit.LogChallengerCompensation">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M188.45,-1515.85C221.27,-1509.12 261.19,-1500.92 296.43,-1493.69" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="297.12,-1497.12 306.21,-1491.68 295.71,-1490.26 297.12,-1497.12" style=""/>
+</g>
+<!-- ORMakerDeposit.makerChallenger -->
+<g id="node20" class="node" pointer-events="visible" data-name="ORMakerDeposit.makerChallenger">
+
+<ellipse fill="#ffbdb9" stroke="#ffbdb9" stroke-width="3" cx="385.49" cy="-883.62" rx="77.56" ry="18" style=""/>
+<text text-anchor="middle" x="385.49" y="-879.42" font-family="Times,serif" font-size="14.00" style="">makerChallenger</text>
+</g>
+<!-- ORMakerDeposit.makerChallenger&#45;&gt;ORMakerDeposit.getManager -->
+<g id="edge89" class="edge" data-name="ORMakerDeposit.makerChallenger-&gt;ORMakerDeposit.getManager">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M464.05,-885.8C481.41,-889.96 498.21,-897.48 510.24,-910.62 576.52,-982.98 470.61,-1058.53 538.24,-1129.62 559.2,-1151.64 591.48,-1159.39 620.84,-1161.22" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="620.48,-1164.71 630.6,-1161.57 620.73,-1157.72 620.48,-1164.71" style=""/>
+</g>
+<!-- ORMakerDeposit.makerChallenger&#45;&gt;ORMakerDeposit.IORProtocal -->
+<g id="edge92" class="edge" data-name="ORMakerDeposit.makerChallenger-&gt;ORMakerDeposit.IORProtocal">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M463.24,-886.98C480.52,-891.12 497.49,-898.35 510.24,-910.62 545.98,-944.99 501.86,-984.93 538.24,-1018.62 559.34,-1038.15 589.48,-1046.01 617.31,-1048.57" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="617.08,-1052.06 627.28,-1049.22 617.53,-1045.08 617.08,-1052.06" style=""/>
+</g>
+<!-- ORMakerDeposit.makerChallenger&#45;&gt;ORMakerDeposit.LogChallengeInfo -->
+<g id="edge93" class="edge" data-name="ORMakerDeposit.makerChallenger-&gt;ORMakerDeposit.LogChallengeInfo">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M464.47,-883.62C504.09,-883.62 552.55,-883.62 594.32,-883.62" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="594.32,-887.12 604.32,-883.62 594.32,-880.12 594.32,-887.12" style=""/>
+</g>
+<!-- ORMakerDeposit.makerChallenger&#45;&gt;IORManager.getEBC -->
+<g id="edge91" class="edge" data-name="ORMakerDeposit.makerChallenger-&gt;IORManager.getEBC">
+
+<path fill="none" stroke="white" stroke-width="2" d="M464.19,-881.91C481.65,-877.77 498.47,-870.13 510.24,-856.62 562.68,-796.47 489.96,-562.15 538.24,-498.62 560.98,-468.7 601.57,-455.04 634.96,-448.81" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="635.52,-452.26 644.83,-447.19 634.39,-445.36 635.52,-452.26" style=""/>
+</g>
+<!-- ORMakerDeposit.makerChallenger&#45;&gt;OperationsLib.getChallengeID -->
+<g id="edge90" class="edge" data-name="ORMakerDeposit.makerChallenger-&gt;OperationsLib.getChallengeID">
+
+<path fill="none" stroke="white" stroke-width="2" d="M464.17,-882.25C481.74,-878.12 498.61,-870.4 510.24,-856.62 553.65,-805.2 498.39,-305.84 538.24,-251.62 555.23,-228.51 582.92,-215.09 609.98,-207.31" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="610.59,-210.76 619.4,-204.87 608.84,-203.99 610.59,-210.76" style=""/>
+</g>
+<!-- ORMakerDeposit.&lt;Receive Ether&gt; -->
+<g id="node21" class="node" pointer-events="visible" data-name="ORMakerDeposit.&lt;Receive Ether&gt;">
+
+<ellipse fill="#ffbdb9" stroke="brown" stroke-width="3" cx="120.37" cy="-1213.62" rx="76.21" ry="18" style=""/>
+<text text-anchor="middle" x="120.37" y="-1209.42" font-family="Times,serif" font-size="14.00" style="">&lt;Receive Ether&gt;</text>
+</g>
+<!-- ORMakerDeposit.Deposit -->
+<g id="node38" class="node" pointer-events="visible" data-name="ORMakerDeposit.Deposit">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="385.49" cy="-1213.62" rx="41.16" ry="18" style=""/>
+<text text-anchor="middle" x="385.49" y="-1209.42" font-family="Times,serif" font-size="14.00" style="">Deposit</text>
+</g>
+<!-- ORMakerDeposit.&lt;Receive Ether&gt;&#45;&gt;ORMakerDeposit.Deposit -->
+<g id="edge94" class="edge" data-name="ORMakerDeposit.&lt;Receive Ether&gt;-&gt;ORMakerDeposit.Deposit">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M197.83,-1213.62C240.18,-1213.62 291.82,-1213.62 330.05,-1213.62" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="329.94,-1217.12 339.94,-1213.62 329.94,-1210.12 329.94,-1217.12" style=""/>
+</g>
+<!-- key -->
+<g id="node53" class="node" pointer-events="visible" data-name="key">
+
+<polygon fill="#edad56" stroke="none" stroke-width="3" points="185.37,-1960.62 55.37,-1960.62 55.37,-1872.62 185.37,-1872.62 185.37,-1960.62" style=""/>
+<text text-anchor="start" x="105.01" y="-1942.02" font-family="Times,serif" font-size="14.00" style="">Internal Call</text>
+<text text-anchor="start" x="101.12" y="-1922.02" font-family="Times,serif" font-size="14.00" style="">External Call</text>
+<text text-anchor="start" x="78.57" y="-1902.02" font-family="Times,serif" font-size="14.00" style="">Defined Contract</text>
+<text text-anchor="start" x="64.97" y="-1882.02" font-family="Times,serif" font-size="14.00" style="">Undefined Contract</text>
+</g>
+<!-- key2 -->
+<g id="node54" class="node" pointer-events="visible" data-name="key2">
+
+<polygon fill="#edad56" stroke="none" stroke-width="3" points="412.49,-1960.62 358.49,-1960.62 358.49,-1872.62 412.49,-1872.62 412.49,-1960.62" style=""/>
+<text text-anchor="start" x="375.49" y="-1942.02" font-family="Times,serif" font-size="14.00" style="">   </text>
+<text text-anchor="start" x="375.49" y="-1922.02" font-family="Times,serif" font-size="14.00" style="">   </text>
+<polygon fill="#445773" stroke="none" points="373.49,-1896.62 373.49,-1916.62 398.49,-1916.62 398.49,-1896.62 373.49,-1896.62" style=""/>
+<text text-anchor="start" x="375.49" y="-1902.02" font-family="Times,serif" font-size="14.00" style="">   </text>
+<polygon fill="none" stroke="#e8726d" points="375.49,-1878.62 375.49,-1894.62 396.49,-1894.62 396.49,-1878.62 375.49,-1878.62" style=""/>
+</g>
+<!-- key&#45;&gt;key2 -->
+<g id="edge95" class="edge" data-name="key-&gt;key2">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M178.37,-1946.62C260.27,-1946.62 283.86,-1946.62 359.83,-1946.62" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="359.47,-1950.12 369.47,-1946.62 359.47,-1943.12 359.47,-1950.12" style=""/>
+</g>
+<!-- key&#45;&gt;key2 -->
+<g id="edge96" class="edge" data-name="key-&gt;key2">
+
+<path fill="none" stroke="white" stroke-width="2" d="M178.37,-1926.62C260.27,-1926.62 283.86,-1926.62 359.83,-1926.62" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="359.47,-1930.12 369.47,-1926.62 359.47,-1923.12 359.47,-1930.12" style=""/>
+</g>
+</g>
+</svg>

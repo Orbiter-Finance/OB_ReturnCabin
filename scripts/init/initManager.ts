@@ -24,21 +24,21 @@ async function initChain() {
   const contract = await getManagerContract();
   for (const chain of dataInit.chains) {
     const tokenList = chain.tokenList.map((row) => row.address);
-    const tx = await contract.setChainInfos([
+    const tx = await contract.setChainInfo(
       chain.chainID,
       chain.batchLimit,
       chain.maxDisputeTime,
       chain.maxReceiptTime,
       chain.stopDelayTime,
       tokenList,
-    ]);
+    );
     await tx.wait();
     printSuccess(`Add Chain ${chain.chainID} Hash: ${tx.hash}`);
     for (const token of chain.tokenList) {
       const tx = await contract.setTokenInfo(
         chain.chainID,
-        token.address,
         token.decimals,
+        token.address,
         token.pledgeToken,
       );
       await tx.wait();

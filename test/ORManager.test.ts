@@ -25,8 +25,8 @@ async function initChain() {
     for (const token of chain.tokenList) {
       const tx = await contract.setTokenInfo(
         chain.chainID,
-        token.address,
         token.decimals,
+        token.address,
         token.pledgeToken,
       );
       printSuccess(
@@ -120,15 +120,15 @@ describe('ORManager.test.ts => Chain', () => {
     const { address, decimals, pledgeToken } = tokenList[0];
     await manager.setTokenInfo(
       chainID,
-      address,
       decimals,
+      address,
       '0x0000000000000000000000000000000000000001',
     );
     let contractToken = await manager.getTokenInfo(chainID, address);
     expect(contractToken.mainTokenAddress).equal(
       '0x0000000000000000000000000000000000000001',
     );
-    await manager.setTokenInfo(chainID, address, decimals, pledgeToken);
+    await manager.setTokenInfo(chainID,decimals, address , pledgeToken);
     contractToken = await manager.getTokenInfo(chainID, address);
     expect(contractToken.mainTokenAddress).equal(pledgeToken);
   });
