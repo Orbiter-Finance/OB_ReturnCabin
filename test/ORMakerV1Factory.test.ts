@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
-import { getORMakerV1FactoryContract } from './index.test';
+import { getORMakerV1FactoryContract } from './utils.test';
 describe('MakerV1Factory', () => {
   it('Get Factory V1', async () => {
     const contract = await getORMakerV1FactoryContract();
@@ -11,8 +11,6 @@ describe('MakerV1Factory', () => {
     const [owner] = await ethers.getSigners();
     const contract = await getORMakerV1FactoryContract();
     expect(await contract.owner()).equal(owner.address);
-    // const tx = await contract.setManager(.address);
-    // expect(tx.blockNumber).gt(0);
   });
   it('Veify Contract transferOwnership Owner', async () => {
     const [owner, account2] = await ethers.getSigners();
@@ -39,19 +37,5 @@ describe('MakerV1Factory', () => {
     await contract.setMakerMaxLimit(maxLimit);
     const result = await contract.getMakerMaxLimit();
     expect(result).eq(maxLimit);
-  });
-
-  it('Create Maker1', async () => {
-    // create mdc
-    const [_, makerAccount] = await ethers.getSigners();
-    const contract = await getORMakerV1FactoryContract();
-    const response = await contract.connect(makerAccount).createMaker();
-    const tx = await response.wait();
-    const makerMapEvent = tx.events?.find((row) => row.event == 'MakerCreated');
-    if (makerMapEvent && makerMapEvent.args) {
-      process.env['MAKER:POOL'] = makerMapEvent.args[1].toLowerCase();
-      process.env['MAKER:OWNER'] = makerAccount.address;
-      process.env['ORMakerDeposit'] = makerMapEvent.args[1].toLowerCase();
-    }
   });
 });

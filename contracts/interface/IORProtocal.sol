@@ -15,27 +15,35 @@ interface IORProtocal {
     function challengePledgedAmount() external view returns (uint256);
 
     function checkMakerChallenge(
-        OperationsLib.txInfo memory _userTx,
-        OperationsLib.txInfo memory _makerTx,
+        OperationsLib.Transaction memory _userTx,
+        OperationsLib.Transaction memory _makerTx,
         bytes32[] memory _makerProof
     ) external view returns (bool);
 
-    function checkUserChallenge(OperationsLib.txInfo memory _txinfo, bytes32[] memory _txproof)
+    function checkUserChallenge(OperationsLib.Transaction memory _tx, bytes32[] memory _txproof)
         external
         view
         returns (bool);
+
+    function getFromTxChainId(OperationsLib.Transaction memory tx) external view returns (uint256);
+
+    // function getManager() external view returns (address);
 
     function getPledgeAmount(uint256 batchLimit, uint256 maxPrice)
         external
         view
         returns (uint256 baseValue, uint256 additiveValue);
 
-    function getRespnseHash(OperationsLib.txInfo memory _txinfo) external pure returns (bytes32);
+    function getResponseAmount(OperationsLib.Transaction memory tx) external pure returns (uint256);
 
-    function getSecuirtyCode(bool isSource, uint256 amount) external pure returns (uint256, bool);
+    function getResponseHash(OperationsLib.Transaction memory tx, bool isSource) external view returns (bytes32);
+
+    function getToTxNonceId(OperationsLib.Transaction memory tx) external view returns (uint256);
+
+    function getValueSecuirtyCode(uint256 chainKey, uint256 value) external view returns (string memory);
 
     function initialize(
-        address _controlContract,
+        address _manager,
         uint256 _challengePledgedAmount,
         uint256 _pledgeAmountSafeRate,
         uint256 _mainCoinPunishRate,
@@ -46,7 +54,7 @@ interface IORProtocal {
 
     function pledgeAmountSafeRate() external view returns (uint256);
 
-    function setChallengePledgedAmount(uint256 _wei) external;
+    function setChallengePledgedAmount(uint256 value) external;
 
     function setMainCoinPunishRate(uint256 value) external;
 

@@ -1,41 +1,13 @@
 {
   "chains": [
     {
-      "chainID": 516,
-      "batchLimit": 100,
-      "maxDisputeTime": 21600,
-      "maxReceiptTime": 7200,
-      "stopDelayTime": 3600,
-      "tokenList": [
-        {
-          "address": "0x0000000000000000000000000000000000000000",
-          "symbol": "ETH",
-          "decimals": 18,
-          "pledgeToken": "0x0000000000000000000000000000000000000000"
-        }
-      ]
-    },
-    {
-      "chainID": 33,
-      "batchLimit": 100,
-      "maxDisputeTime": 21600,
-      "maxReceiptTime": 7200,
-      "stopDelayTime": 3600,
-      "tokenList": [
-        {
-          "address": "0x0000000000000000000000000000000000000000",
-          "symbol": "ETH",
-          "decimals": 18,
-          "pledgeToken": "0x0000000000000000000000000000000000000000"
-        }
-      ]
-    },
-    {
+      "id":9005,
       "chainID": 5,
       "batchLimit": 100,
       "maxDisputeTime": 21600,
       "maxReceiptTime": 7200,
       "stopDelayTime": 3600,
+      "maxBits":256,
       "tokenList": [
         {
           "address": "0x0000000000000000000000000000000000000000",
@@ -46,11 +18,30 @@
       ]
     },
     {
-      "chainID": 77,
+      "id":9022,
+      "chainID": 421613,
       "batchLimit": 100,
       "maxDisputeTime": 21600,
       "maxReceiptTime": 7200,
       "stopDelayTime": 3600,
+      "maxBits":256,
+      "tokenList": [
+        {
+          "address": "0x0000000000000000000000000000000000000000",
+          "symbol": "ETH",
+          "decimals": 18,
+          "pledgeToken": "0x0000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    {
+      "id":9077,
+      "chainID": 420,
+      "batchLimit": 100,
+      "maxDisputeTime": 21600,
+      "maxReceiptTime": 7200,
+      "stopDelayTime": 3600,
+      "maxBits":256,
       "tokenList": [
         {
           "address": "0x0000000000000000000000000000000000000000",
@@ -63,88 +54,18 @@
   ],
   "pairs": [
     {
-      "sourceChain": 5,
-      "destChain": 33,
-      "sourceTAddress": "0x0000000000000000000000000000000000000000",
-      "destTAddress": "0x0000000000000000000000000000000000000000",
-      "ebcid": 1
+      "sourceChain": 9005,
+      "destChain": 9022,
+      "sourceToken": "0x0000000000000000000000000000000000000000",
+      "destToken": "0x0000000000000000000000000000000000000000",
+      "ebc": "0x0000000000000000000000000000000000000000"
     },
     {
-      "sourceChain": 5,
-      "destChain": 516,
-      "sourceTAddress": "0x0000000000000000000000000000000000000000",
-      "destTAddress": "0x0000000000000000000000000000000000000000",
-      "ebcid": 1
-    },
-    {
-      "sourceChain": 5,
-      "destChain": 77,
-      "sourceTAddress": "0x0000000000000000000000000000000000000000",
-      "destTAddress": "0x0000000000000000000000000000000000000000",
-      "ebcid": 1
-    },
-    {
-      "sourceChain": 33,
-      "destChain": 5,
-      "sourceTAddress": "0x0000000000000000000000000000000000000000",
-      "destTAddress": "0x0000000000000000000000000000000000000000",
-      "ebcid": 1
-    },
-    {
-      "sourceChain": 33,
-      "destChain": 516,
-      "sourceTAddress": "0x0000000000000000000000000000000000000000",
-      "destTAddress": "0x0000000000000000000000000000000000000000",
-      "ebcid": 1
-    },
-    {
-      "sourceChain": 33,
-      "destChain": 77,
-      "sourceTAddress": "0x0000000000000000000000000000000000000000",
-      "destTAddress": "0x0000000000000000000000000000000000000000",
-      "ebcid": 1
-    },
-    {
-      "sourceChain": 516,
-      "destChain": 5,
-      "sourceTAddress": "0x0000000000000000000000000000000000000000",
-      "destTAddress": "0x0000000000000000000000000000000000000000",
-      "ebcid": 1
-    },
-    {
-      "sourceChain": 516,
-      "destChain": 33,
-      "sourceTAddress": "0x0000000000000000000000000000000000000000",
-      "destTAddress": "0x0000000000000000000000000000000000000000",
-      "ebcid": 1
-    },
-    {
-      "sourceChain": 516,
-      "destChain": 77,
-      "sourceTAddress": "0x0000000000000000000000000000000000000000",
-      "destTAddress": "0x0000000000000000000000000000000000000000",
-      "ebcid": 1
-    },
-    {
-      "sourceChain": 77,
-      "destChain": 5,
-      "sourceTAddress": "0x0000000000000000000000000000000000000000",
-      "destTAddress": "0x0000000000000000000000000000000000000000",
-      "ebcid": 1
-    },
-    {
-      "sourceChain": 77,
-      "destChain": 33,
-      "sourceTAddress": "0x0000000000000000000000000000000000000000",
-      "destTAddress": "0x0000000000000000000000000000000000000000",
-      "ebcid": 1
-    },
-    {
-      "sourceChain": 77,
-      "destChain": 516,
-      "sourceTAddress": "0x0000000000000000000000000000000000000000",
-      "destTAddress": "0x0000000000000000000000000000000000000000",
-      "ebcid": 1
+      "sourceChain": 9022,
+      "destChain": 9005,
+      "sourceToken": "0x0000000000000000000000000000000000000000",
+      "destToken": "0x0000000000000000000000000000000000000000",
+      "ebc": "0x0000000000000000000000000000000000000000"
     }
   ]
 }

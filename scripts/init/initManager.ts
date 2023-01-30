@@ -1,4 +1,4 @@
-import { DataInit } from './../../test/index.test';
+import { DataInit } from '../../test/utils.test';
 import { ethers } from 'hardhat';
 import keccak256 from 'keccak256';
 import { orderBy } from 'lodash';
@@ -7,7 +7,7 @@ import { ORManager } from '../../typechain-types';
 import { deploy, printContract, printSuccess } from '../utils';
 // import { chains, pairs } from '../../test/georli.data.json';
 const dataInit = new DataInit().initChains().initPairs();
-import { getPairID } from '../../test/index.test';
+import { getPairID } from '../../test/utils.test';
 let contractAddress = process.env['ORManager'] || '';
 async function getManagerContract(): Promise<ORManager> {
   if (contractAddress) {
@@ -22,7 +22,7 @@ async function getManagerContract(): Promise<ORManager> {
 }
 async function initChain() {
   const contract = await getManagerContract();
-  for (const chain of dataInit.chains) {
+  for (const chain of DataInit.chains) {
     const tokenList = chain.tokenList.map((row) => row.address);
     const tx = await contract.setChainInfo(
       chain.chainID,
@@ -51,8 +51,7 @@ async function initChain() {
 }
 async function initPair() {
   const contract = await getManagerContract();
-  const newPairs = dataInit.pairs.map((row: any) => {
-    // row.id = Buffer.from(getPairID(row), 'hex');
+  const newPairs = DataInit.pairs.map((row: any) => {
     row.id = getPairID(row);
     return row;
   });

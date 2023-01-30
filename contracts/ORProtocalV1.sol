@@ -3,9 +3,12 @@ pragma solidity ^0.8.17;
 
 import "./interface/IORProtocal.sol";
 import "./interface/IORManager.sol";
-import "./interface/IORSpv.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
+import "hardhat/console.sol";
+
+import {StrSlice, toSlice, StrChar, StrChar__} from "./stringutils/StrSlice.sol";
 
 contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     IORManager public getManager;
@@ -13,6 +16,9 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     uint256 public pledgeAmountSafeRate;
     uint256 public mainCoinPunishRate;
     uint256 public tokenPunishRate;
+    using {toSlice} for string;
+
+    // mapping(uint16 => uint256) idChainID;
 
     function initialize(
         address _manager,
@@ -57,7 +63,7 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
         view
         returns (uint256 baseValue, uint256 additiveValue)
     {
-        require(batchLimit != 0 && maxPrice != 0 && pledgeAmountSafeRate != 0, "GET_DEPOSITCOEFFICIENT_ERROR");
+        require(batchLimit != 0 && maxPrice != 0 && pledgeAmountSafeRate != 0, "PledgeAmountSafeRate Non Set");
         baseValue = (batchLimit * maxPrice);
         additiveValue = (baseValue * pledgeAmountSafeRate) / 10000;
     }
@@ -75,77 +81,117 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
         }
     }
 
-    function getSourceTxSecuirtyCode(uint256 value) public pure returns (uint256) {
-        uint256 code = (value % 10000) - 9000;
-        return code;
-    }
-
-    function getTargetTxSecuirtyCode(uint256 value) public pure returns (uint256) {
-        uint256 code = (value % 10000);
-        return code;
-    }
-
-    function getSecuirtyCode(bool isSource, uint256 amount) public pure returns (uint256, bool) {
-        uint256 securityCode = 0;
-        bool isSupport = true;
-        if (isSource) {
-            securityCode = (amount % 10000) - 9000;
-        } else {
-            securityCode = amount % 10000;
+    function getAmountValidDigits(
+        uint256 chainId,
+        string memory value,
+        uint256 maxUint
+    ) internal pure returns (uint256) {
+        StrSlice strValue = value.toSlice();
+        uint256 maxValue = maxUint < 256 ? 2**maxUint - 1 : type(uint256).max;
+        StrSlice maxValueSlice = Strings.toString(maxValue).toSlice();
+        // // uint i = strValue.len() - 1;
+        // // StrSlice removeSidesZero;
+        uint256 valueLen = strValue.len();
+        uint256 subnum = 0;
+        for (uint256 i = 0; i < valueLen; i++) {
+            // if (removeSidesZero.isEmpty()) {
+            //     if (strValue.get(valueMaxLen - i - 1).toCodePoint() != 48) {
+            //         removeSidesZero = strValue.getSubslice(0, valueMaxLen - i);
+            //     }
+            // }
+            uint256 num1 = strValue.get(i).toCodePoint();
+            uint256 num2 = maxValueSlice.get(i).toCodePoint();
+            if (num1 != num2) {
+                subnum = num1 > num2 ? 1 : 0;
+                break;
+            }
         }
-        return (securityCode, isSupport);
+        return maxValueSlice.len() - subnum;
     }
 
-    function getRespnseHash(OperationsLib.txInfo memory _txinfo) external pure returns (bytes32) {
-        (uint256 securityCode, bool sourceIsSupport) = getSecuirtyCode(true, _txinfo.amount);
-        (, bool responseIsSupport) = getSecuirtyCode(false, _txinfo.responseAmount);
-
-        require(sourceIsSupport && responseIsSupport, "GRH_ERROR");
-
-        require(_txinfo.nonce < 9000, "GRH_NONCE_ERROR1");
-
-        // require(nonce == _txinfo.nonce, "GRH_NONCE_ERROR2");
-
-        bytes32 needRespnse = keccak256(
-            abi.encodePacked(
-                _txinfo.lpid,
-                securityCode,
-                _txinfo.destAddress,
-                _txinfo.sourceAddress,
-                _txinfo.responseAmount,
-                _txinfo.responseSafetyCode,
-                _txinfo.tokenAddress
-            )
-        );
-        return needRespnse;
+    function getValueSecuirtyCode(uint256 chainKey, uint256 value) public view returns (string memory) {
+        (, , , , , , uint256 maxUint) = getManager.getChain(chainKey);
+        require(maxUint != 0, "Maximum bits not set");
+        require(maxUint <= 256, "The maximum bits exceeds 256");
+        StrSlice strValue = Strings.toString(value).toSlice();
+        uint256 valueMaxLen = strValue.len();
+        require(valueMaxLen >= 4, "validDigit Error");
+        uint256 validDigit = getAmountValidDigits(chainKey, strValue.toString(), maxUint);
+        require(validDigit > 0, "validDigit Error");
+        if (maxUint < 256 && valueMaxLen > validDigit) {
+            strValue = strValue.getSubslice(0, validDigit);
+        }
+        strValue = strValue.getSubslice(strValue.len() - 4, strValue.len());
+        return strValue.toString();
     }
 
-    function checkUserChallenge(OperationsLib.txInfo memory _txinfo, bytes32[] memory _txproof)
+    function getFromTxChainId(OperationsLib.Transaction calldata tx) public view returns (uint256) {
+        uint256 chainKey = getManager.idChainID(tx.chainId);
+        (uint256 chainId, , , , , , ) = getManager.getChain(chainKey);
+        require(chainId != 0, "chainId not set");
+        string memory toChainId = getValueSecuirtyCode(chainId, tx.value);
+        uint256 code = OperationsLib.stringToUint(toChainId);
+        return code;
+    }
+
+    function getToTxNonceId(OperationsLib.Transaction calldata tx) public view returns (uint256) {
+        uint256 chainKey = getManager.idChainID(tx.chainId);
+        (uint256 chainId, , , , , , ) = getManager.getChain(chainKey);
+        require(chainId != 0, "chainId not set");
+        string memory toChainId = getValueSecuirtyCode(chainId, tx.value);
+        uint256 code = OperationsLib.stringToUint(toChainId);
+        return code;
+    }
+
+    function getResponseAmount(OperationsLib.Transaction calldata tx) external pure returns (uint256) {
+        return 9990000000000071;
+    }
+
+    function getResponseHash(OperationsLib.Transaction calldata tx, bool isSource) external view returns (bytes32) {
+        if (isSource) {
+            uint256 toChainId = this.getFromTxChainId(tx);
+            require(toChainId != 0, "chainId not set");
+            uint256 responseAmount = this.getResponseAmount(tx);
+            return keccak256(abi.encodePacked(tx.from, tx.to, toChainId, tx.nonce, responseAmount));
+        } else {
+            uint256 chainKey = getManager.idChainID(tx.chainId);
+            require(chainKey != 0, "chainKey not set");
+            uint256 fromNonce = this.getToTxNonceId(tx);
+            return keccak256(abi.encodePacked(tx.to, tx.from, chainKey, fromNonce, tx.value));
+        }
+    }
+
+    function checkUserChallenge(OperationsLib.Transaction memory _tx, bytes32[] memory _txproof)
         external
         view
-        returns (bool)
+        returns (
+            // Verify that txinfo and txproof are valid
+            bool
+        )
     {
         // bytes32 lpid = _txinfo.lpid;
         //1. txinfo is already spv
-        address spvAddress = getManager.getSPV();
+        // address spvAddress = getManager.getSPV();
         // Verify that txinfo and txproof are valid
-        bool txVerify = IORSpv(spvAddress).verifyUserTxProof(_txinfo, _txproof);
-        require(txVerify, "UCE_1");
+        // TODO: IProventh
+        // bool txVerify = IORSpv(spvAddress).verifyUserTxProof(_txinfo, _txproof);
+        // require(txVerify, "UCE_1");
 
         return true;
     }
 
     function checkMakerChallenge(
-        OperationsLib.txInfo memory _userTx,
-        OperationsLib.txInfo memory _makerTx,
+        OperationsLib.Transaction memory _userTx,
+        OperationsLib.Transaction memory _makerTx,
         bytes32[] memory _makerProof
     ) external view returns (bool) {
-        address spvAddress = getManager.getSPV();
+        // address spvAddress = getManager.getSPV();
 
         //1. _makerTx is already spv
-        bool txVerify = IORSpv(spvAddress).verifyMakerTxProof(_makerTx, _makerProof);
-        require(txVerify, "MCE_UNVERIFY");
-        (, , uint256 maxDisputeTime, ,) = getManager.getChain(_userTx.chainID);
+        // TODO:
+        // bool txVerify = IORSpv(spvAddress).verifyMakerTxProof(_makerTx, _makerProof);
+        // require(txVerify, "MCE_UNVERIFY");
+        (, , , uint256 maxDisputeTime, , , ) = getManager.getChain(_userTx.chainId);
         // The transaction time of maker is required to be later than that of user.
         // At the same time, the time difference between the above two times is required to be less than the maxDisputeTime.
         require(

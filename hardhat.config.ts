@@ -20,26 +20,34 @@ const config: HardhatUserConfig = {
   docgen: {
   },
   solidity: {
-    version: '0.8.17',
-    settings: {
-      optimizer: {
-        enabled: true,
-        runs: 200,
+    compilers: [
+      {
+        version: "0.8.17",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
+        },
       },
-    },
+    ],
+  },
+  gasReporter: {
+    enabled: process.env.REPORT_GAS !== undefined,
+    currency: "USD",
   },
   networks: {
     hardhat: {
       allowUnlimitedContractSize: true,
     },
     develop: {
-      chainId: 599,
-      url: 'http://127.0.0.1:8545',
+      chainId: 1167,
+      url: 'http://ec2-35-73-236-198.ap-northeast-1.compute.amazonaws.com:3002',
       accounts
     },
     test: {
       url: 'http://ec2-54-178-23-104.ap-northeast-1.compute.amazonaws.com:8545',
-      accounts
+      accounts,
     },
     mainnet: {
       url: `https://mainnet.infura.io/v3/${INFURA_API_KEY}`,
@@ -94,7 +102,7 @@ const config: HardhatUserConfig = {
     apiKey: ETHERSCAN_API_KEY,
   },
   mocha: {
-    // timeout: 40000 * 10
+    timeout: 40000 * 10
   }
 };
 

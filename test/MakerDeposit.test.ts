@@ -12,14 +12,11 @@ import {
   getORProtocalV1Contract,
   getTxLeaf,
   getUserAccount,
-} from './index.test';
-import { getPairTree } from './ORManager.test';
+} from './utils.test';
 import { BigNumber } from 'ethers';
-import { getMakerTxTree, getUserTxTree } from './ORSpv.spec';
 const dataInit = new DataInit();
-const USER_TX_LIST = dataInit.userTxList;
-const MAKER_TX_LIST = dataInit.makerTxList;
-let supportPairTree: MerkleTree;
+// const USER_TX_LIST = dataInit.userTxList;
+// const MAKER_TX_LIST = dataInit.makerTxList;
 let owner: SignerWithAddress;
 let makerAccount: SignerWithAddress;
 let UserTx1Account: SignerWithAddress;
@@ -30,49 +27,21 @@ let makerTxTree: MerkleTree;
 const { keccak256 } = ethers.utils;
 let makerDeposit: ORMakerDeposit;
 let makerV1Factory: ORMakerV1Factory;
-let testLPList: Array<any> = [];
+// let testLPList: Array<any> = [];
 describe('MakerDeposit.test.ts', () => {
   async function getFactoryInfo() {
     // init lp list
     makerDeposit = await getORMakerDepositContract();
-    dataInit.initLps(makerDeposit.address);
-    testLPList = dataInit.lps
-      .map((row) => {
-        const pair = dataInit.pairs.find((p) => p.id === row.pairId);
-        if (pair) {
-          row.sourceChain = pair.sourceChain;
-          row.destChain = pair.destChain;
-          row.sourceTAddress = pair.sourceTAddress;
-          row.destTAddress = pair.destTAddress;
-          row.ebcid = pair.ebcid;
-          return row;
-        }
-      })
-      .filter((row) => row);
     makerV1Factory = await getORMakerV1FactoryContract();
     [owner, makerAccount, UserTx1Account, UserTx3Account] =
       await ethers.getSigners();
     // tree
-    const result = getPairTree();
-    supportPairTree = result.tree;
     lpInfoTree = new MerkleTree([], keccak256, {
       sort: true,
     });
-    userTxTree = getUserTxTree(USER_TX_LIST);
-    makerTxTree = getMakerTxTree(MAKER_TX_LIST);
   }
 
   before(getFactoryInfo);
-  // function getLpInfo(LPLIST: typeof LP_LIST[0]): typeof LP_LIST[0] {
-  //   let lpInfo: any = LPLIST;
-  //   const lpId = getPairLPID(lpInfo);
-  //   const pairInfo = PAIR_LIST.find((item) => item.id == lpInfo.pairId);
-  //   if (pairInfo !== undefined) {
-  //     lpInfo = Object.assign(lpInfo, pairInfo);
-  //     lpInfo.id = lpId;
-  //   }
-  //   return lpInfo;
-  // }
   async function speedUpTime(ms: number) {
     const blockNumBefore = await ethers.provider.getBlockNumber();
     const blockBefore = await ethers.provider.getBlock(blockNumBefore);
@@ -84,22 +53,22 @@ describe('MakerDeposit.test.ts', () => {
     expect(result).equal(makerV1Factory.address);
   });
   it('Calculation of pledge quantity', async () => {
-    const data = testLPList.map((lp: any) => {
-      const pair = dataInit.pairs.find((row) => row.id === lp.pairId);
+    const data = DataInit.lps.map((lp: any) => {
+      const pair = DataInit.pairs.find((row) => row.id === lp.pairId);
       lp.sourceChain = pair.sourceChain;
       lp.destChain = pair.destChain;
-      lp.sourceTAddress = pair.sourceTAddress;
-      lp.destTAddress = pair.destTAddress;
-      lp.ebcid = pair.ebcid;
+      lp.sourceToken = pair.sourceToken;
+      lp.destToken = pair.destToken;
+      lp.ebc = pair.ebc;
       return lp;
     });
     const calcLpList = data.map((row) => {
       return {
         pairId: row.pairId,
         fromChain: row.sourceChain,
-        fromToken: row.sourceTAddress,
         maxPrice: row.maxPrice,
-        ebcId: row.ebcid,
+        fromToken: row.sourceToken,
+        ebc: row.ebc,
       };
     });
     const result = await makerDeposit.calcLpPledgeAmount([
@@ -110,33 +79,26 @@ describe('MakerDeposit.test.ts', () => {
     await expect(totalPledgeValue).gt(0);
   });
   it('LPAction pledge ETH', async () => {
-    const idleAmount1 = await makerDeposit.idleAmount(
-      '0x0000000000000000000000000000000000000000',
-    );
-    const addLpInfo1 = testLPList[0];
-    const addLpInfo2 = testLPList[3];
+    const addLpInfo1 = DataInit.lps[0];
+    const addLpInfo2 = DataInit.lps[3];
     // calc calcLpNeedPledgeAmount
     const pledgeResult = await makerDeposit.calcLpPledgeAmount([
       {
         pairId: addLpInfo1.pairId,
         fromChain: addLpInfo1.sourceChain,
-        fromToken: addLpInfo1.sourceTAddress,
+        fromToken: addLpInfo1.sourceToken,
         maxPrice: addLpInfo1.maxPrice,
-        ebcId: addLpInfo1.ebcid,
+        ebc: addLpInfo1.ebc,
       },
       {
         pairId: addLpInfo2.pairId,
         fromChain: addLpInfo2.sourceChain,
-        fromToken: addLpInfo2.sourceTAddress,
+        fromToken: addLpInfo2.sourceToken,
         maxPrice: addLpInfo2.maxPrice,
-        ebcId: addLpInfo2.ebcid,
+        ebc: addLpInfo2.ebc,
       },
     ]);
     const needPledgeQuantity = pledgeResult.totalPledgeValue;
-    const addPair1 = dataInit.pairs.find((row) => row.id == addLpInfo1.pairId);
-    const addPair2 = dataInit.pairs.find((row) => row.id == addLpInfo2.pairId);
-    const pairProof1 = supportPairTree.getHexProof(addPair1.id);
-    const pairProof2 = supportPairTree.getHexProof(addPair2.id);
     const addIdleFundsValue = ethers.BigNumber.from(
       (2 * Math.pow(10, 18)).toString(),
     );
@@ -147,7 +109,7 @@ describe('MakerDeposit.test.ts', () => {
     const actionLps = [addLpInfo1, addLpInfo2];
     const response = await makerDeposit
       .connect(makerAccount)
-      .lpAction(actionLps, [pairProof1, pairProof2], overrides);
+      .lpAction(actionLps, overrides);
 
     await expect(response)
       .to.emit(makerDeposit, 'LogLPAction')
@@ -157,7 +119,7 @@ describe('MakerDeposit.test.ts', () => {
       const pairId = event.args[0];
       const lpId = event.args[1];
       const args = event.args[2];
-      for (const row of testLPList) {
+      for (const row of DataInit.lps) {
         if (row.pairId === pairId) {
           row.id = lpId;
           row.startTime = Number(args.startTime);
@@ -166,7 +128,7 @@ describe('MakerDeposit.test.ts', () => {
       }
     }
     for (const lp of actionLps) {
-      const token = dataInit.getChainToken(lp.sourceChain, lp.sourceTAddress);
+      const token = DataInit.getChainToken(lp.sourceChain, lp.sourceToken);
       const amount = await makerDeposit.getPledgeBalanceByChainToken(
         lp.sourceChain,
         token.address,
@@ -181,30 +143,30 @@ describe('MakerDeposit.test.ts', () => {
       makerDeposit.address,
       'latest',
     );
-    const token = dataInit.getChainToken(
+    const token = DataInit.getChainToken(
       addLpInfo1.sourceChain,
-      addLpInfo1.sourceTAddress,
+      addLpInfo1.sourceToken,
     );
     const idleAmount = await makerDeposit.idleAmount(token.pledgeToken);
     expect(contractBalance).gte(needPledgeQuantity);
   });
   it('LPAction OK (Check Pairs)', async () => {
-    const addLpInfo1 = testLPList[0];
+    const addLpInfo1 = DataInit.lps[0];
     const pairs1 = await makerDeposit.getPairsByChain(addLpInfo1.sourceChain);
-    const addPair1 = dataInit.pairs.find((row) => row.id == addLpInfo1.pairId);
+    const addPair1 = DataInit.pairs.find((row) => row.id == addLpInfo1.pairId);
 
     expect(pairs1).includes(addPair1.id);
-    const addLpInfo2 = testLPList[3];
+    const addLpInfo2 = DataInit.lps[3];
     const pairs2 = await makerDeposit.getPairsByChain(addLpInfo2.sourceChain);
-    const addPair2 = dataInit.pairs.find((row) => row.id == addLpInfo2.pairId);
+    const addPair2 = DataInit.pairs.find((row) => row.id == addLpInfo2.pairId);
     expect(pairs2).includes(addPair2.id);
   });
   it('Check idleFunds', async () => {
-    const addLpInfo1 = testLPList[0];
-    const addPair1 = dataInit.pairs.find((row) => row.id == addLpInfo1.pairId);
-    const token = dataInit.getChainToken(
+    const addLpInfo1 = DataInit.lps[0];
+    const addPair1 = DataInit.pairs.find((row) => row.id == addLpInfo1.pairId);
+    const token = DataInit.getChainToken(
       addPair1.sourceChain,
-      addPair1.sourceTAddress,
+      addPair1.sourceToken,
     );
     const addIdleFundsValue = ethers.BigNumber.from(
       (2 * Math.pow(10, 18)).toString(),
@@ -213,22 +175,22 @@ describe('MakerDeposit.test.ts', () => {
     expect(idleAmount).eq(addIdleFundsValue);
   });
   it('Calculation of pledge quantity 2', async () => {
-    const data = testLPList.map((lp: any) => {
-      const pair = dataInit.pairs.find((row) => row.id === lp.pairId);
+    const data = DataInit.lps.map((lp: any) => {
+      const pair = DataInit.pairs.find((row) => row.id === lp.pairId);
       lp.sourceChain = pair.sourceChain;
       lp.destChain = pair.destChain;
-      lp.sourceTAddress = pair.sourceTAddress;
-      lp.destTAddress = pair.destTAddress;
-      lp.ebcid = pair.ebcid;
+      lp.sourceToken = pair.sourceToken;
+      lp.destToken = pair.destToken;
+      lp.ebc = pair.ebc;
       return lp;
     });
     const calcLpList = data.map((row) => {
       return {
         pairId: row.pairId,
         fromChain: row.sourceChain,
-        fromToken: row.sourceTAddress,
+        fromToken: row.sourceToken,
         maxPrice: row.maxPrice,
-        ebcId: row.ebcid,
+        ebc: row.ebc,
       };
     });
     const result = await makerDeposit.calcLpPledgeAmount([calcLpList[1]]);
@@ -236,30 +198,26 @@ describe('MakerDeposit.test.ts', () => {
     await expect(totalPledgeValue).eq(0);
   });
   it('LPAction pledge ETH（No pledge required）', async () => {
-    const addLpInfo1 = testLPList[1];
-    const addLpInfo2 = testLPList[4];
+    const addLpInfo1 = DataInit.lps[1];
+    const addLpInfo2 = DataInit.lps[4];
     // calc calcLpNeedPledgeAmount
     const pledgeResult = await makerDeposit.calcLpPledgeAmount([
       {
         pairId: addLpInfo1.pairId,
         fromChain: addLpInfo1.sourceChain,
-        fromToken: addLpInfo1.sourceTAddress,
         maxPrice: addLpInfo1.maxPrice,
-        ebcId: addLpInfo1.ebcid,
+        fromToken: addLpInfo1.sourceToken,
+        ebc: addLpInfo1.ebc,
       },
       {
         pairId: addLpInfo2.pairId,
         fromChain: addLpInfo2.sourceChain,
-        fromToken: addLpInfo2.sourceTAddress,
         maxPrice: addLpInfo2.maxPrice,
-        ebcId: addLpInfo2.ebcid,
+        fromToken: addLpInfo2.sourceToken,
+        ebc: addLpInfo2.ebc,
       },
     ]);
     const needPledgeQuantity = pledgeResult.totalPledgeValue;
-    const addPair1 = dataInit.pairs.find((row) => row.id == addLpInfo1.pairId);
-    const addPair2 = dataInit.pairs.find((row) => row.id == addLpInfo2.pairId);
-    const pairProof1 = supportPairTree.getHexProof(addPair1.id);
-    const pairProof2 = supportPairTree.getHexProof(addPair2.id);
     const addIdleFundsValue = ethers.BigNumber.from(0);
     const overrides = {
       value: needPledgeQuantity.add(addIdleFundsValue),
@@ -267,7 +225,7 @@ describe('MakerDeposit.test.ts', () => {
     const actionLps = [addLpInfo1, addLpInfo2];
     const response = await makerDeposit
       .connect(makerAccount)
-      .lpAction(actionLps, [pairProof1, pairProof2], overrides);
+      .lpAction(actionLps, overrides);
     await expect(response)
       .to.emit(makerDeposit, 'LogLPAction')
       .withArgs(anyValue, anyValue, anyValue);
@@ -276,7 +234,7 @@ describe('MakerDeposit.test.ts', () => {
       const pairId = event.args[0];
       const lpId = event.args[1];
       const args = event.args[2];
-      for (const row of testLPList) {
+      for (const row of DataInit.lps) {
         if (row.pairId === pairId) {
           row.id = lpId;
           row.startTime = Number(args.startTime);
@@ -287,7 +245,7 @@ describe('MakerDeposit.test.ts', () => {
     for (const lp of actionLps) {
       // const amount = await makerDeposit.getPledgeBalanceByChainToken(
       //   lp.sourceChain,
-      //   lp.sourceTAddress,
+      //   lp.sourceToken,
       // );
       const row = pledgeResult.pledgeListData.find(
         (row) => Number(row.chainId) == Number(lp.sourceChain),
@@ -304,13 +262,13 @@ describe('MakerDeposit.test.ts', () => {
   it('LPPause', async () => {
     const response = await makerDeposit
       .connect(makerAccount)
-      .lpPause([testLPList[0], testLPList[1]]);
+      .lpPause([DataInit.lps[0], DataInit.lps[1]]);
     await expect(response)
       .to.emit(makerDeposit, 'LogLPPause')
       .withArgs(anyValue, anyValue, anyValue);
   });
   it('LPUpdate', async () => {
-    const changeLpInfo = testLPList[0];
+    const changeLpInfo = DataInit.lps[0];
     const updateData = {
       tradingFee: BigNumber.from(0.0005 * 10 ** 18),
       gasFee: changeLpInfo.gasFee,
@@ -332,7 +290,7 @@ describe('MakerDeposit.test.ts', () => {
       );
   });
   it('LPRestart', async () => {
-    const restartLpInfo = testLPList[0];
+    const restartLpInfo = DataInit.lps[0];
     const response = await makerDeposit.connect(makerAccount).lpRestart([
       {
         pid: restartLpInfo.pairId,
@@ -351,7 +309,7 @@ describe('MakerDeposit.test.ts', () => {
       );
   });
   it('LPRestart After Pause', async () => {
-    const restartLpInfo = testLPList[0];
+    const restartLpInfo = DataInit.lps[0];
     const response = await makerDeposit
       .connect(makerAccount)
       .lpPause([restartLpInfo]);
@@ -360,7 +318,7 @@ describe('MakerDeposit.test.ts', () => {
       .withArgs(anyValue, anyValue, anyValue);
   });
   it('LPStop not time', async () => {
-    const lpInfo = testLPList[0];
+    const lpInfo = DataInit.lps[0];
     const response = makerDeposit.connect(makerAccount).lpStop([lpInfo]);
     await expect(response).to.be.revertedWith('LPSTOP_LPID_TIMEUNABLE');
   });
@@ -369,7 +327,7 @@ describe('MakerDeposit.test.ts', () => {
     await speedUpTime(3600 * 24);
   });
   it('LPStop is time(1)', async () => {
-    const lpInfo = testLPList[0];
+    const lpInfo = DataInit.lps[0];
     const pairs1 = await makerDeposit.getPairsByChain(lpInfo.sourceChain);
     expect(pairs1).includes(lpInfo.pairId);
     const response = await makerDeposit.connect(makerAccount).lpStop([lpInfo]);
@@ -380,7 +338,7 @@ describe('MakerDeposit.test.ts', () => {
     expect(pairs2).not.includes(lpInfo.pairId);
   });
   it('LPStop is time(2)', async () => {
-    const lpInfo = testLPList[1];
+    const lpInfo = DataInit.lps[1];
     const pairs1 = await makerDeposit.getPairsByChain(lpInfo.sourceChain);
     expect(pairs1).includes(lpInfo.pairId);
     const response = await makerDeposit.connect(makerAccount).lpStop([lpInfo]);
@@ -391,17 +349,17 @@ describe('MakerDeposit.test.ts', () => {
     expect(pairs2).not.includes(lpInfo.pairId);
   });
   it('LPStop After Check PledgeBalance', async () => {
-    const lpInfo1 = testLPList[0];
+    const lpInfo1 = DataInit.lps[0];
     const pairs1 = await makerDeposit.getPairsByChain(lpInfo1.sourceChain);
     expect(pairs1.length).eq(0);
-    const addPair1 = dataInit.pairs.find((row) => row.id == lpInfo1.pairId);
-    const token = dataInit.getChainToken(
+    const addPair1 = DataInit.pairs.find((row) => row.id == lpInfo1.pairId);
+    const token = DataInit.getChainToken(
       addPair1.sourceChain,
-      addPair1.sourceTAddress,
+      addPair1.sourceToken,
     );
 
-    const addLpInfo1 = testLPList[0];
-    const addLpInfo2 = testLPList[3];
+    const addLpInfo1 = DataInit.lps[0];
+    const addLpInfo2 = DataInit.lps[3];
     const addIdleFundsValue = ethers.BigNumber.from(
       (2 * Math.pow(10, 18)).toString(),
     );
@@ -409,16 +367,16 @@ describe('MakerDeposit.test.ts', () => {
       {
         pairId: addLpInfo1.pairId,
         fromChain: addLpInfo1.sourceChain,
-        fromToken: addLpInfo1.sourceTAddress,
+        fromToken: addLpInfo1.sourceToken,
         maxPrice: addLpInfo1.maxPrice,
-        ebcId: addLpInfo1.ebcid,
+        ebc: addLpInfo1.ebc,
       },
       {
         pairId: addLpInfo2.pairId,
         fromChain: addLpInfo2.sourceChain,
-        fromToken: addLpInfo2.sourceTAddress,
+        fromToken: addLpInfo2.sourceToken,
         maxPrice: addLpInfo2.maxPrice,
-        ebcId: addLpInfo2.ebcid,
+        ebc: addLpInfo2.ebc,
       },
     ]);
     // check idleAmount
@@ -432,15 +390,13 @@ describe('MakerDeposit.test.ts', () => {
     expect(pledgeValue).eq(chainTokenPledgeValue);
   });
   it('Maker withDraw is time and no challenge', async () => {
-    const lpInfo = testLPList[0];
-    const chain = dataInit.chains.find(
+    const lpInfo = DataInit.lps[0];
+    const chain = DataInit.chains.find(
       (row) => row.chainID === lpInfo['sourceChain'],
     );
     expect(chain.chainID).eq(lpInfo.sourceChain);
     expect(chain.tokenList).length.gt(0);
-    const token = chain.tokenList.find(
-      (t) => t.address === lpInfo.sourceTAddress,
-    );
+    const token = chain.tokenList.find((t) => t.address === lpInfo.sourceToken);
     expect(token).not.empty;
     let beforeAmount = await makerAccount.getBalance();
     const withDrawMax = await makerDeposit
@@ -477,21 +433,18 @@ describe('MakerDeposit.test.ts', () => {
     expect(nowWithDraw).eq(0);
   });
   it('LPAction pledge ETH (again)', async () => {
-    const addLpInfo1 = testLPList[0];
+    const addLpInfo1 = DataInit.lps[0];
     // calc calcLpNeedPledgeAmount
     const pledgeResult = await makerDeposit.calcLpPledgeAmount([
       {
         pairId: addLpInfo1.pairId,
         fromChain: addLpInfo1.sourceChain,
-        fromToken: addLpInfo1.sourceTAddress,
+        fromToken: addLpInfo1.sourceToken,
         maxPrice: addLpInfo1.maxPrice,
-        ebcId: addLpInfo1.ebcid,
+        ebc: addLpInfo1.ebc,
       },
     ]);
     const needPledgeQuantity = pledgeResult.totalPledgeValue;
-
-    const addPair1 = dataInit.pairs.find((row) => row.id == addLpInfo1.pairId);
-    const pairProof1 = supportPairTree.getHexProof(addPair1.id);
     const addIdleFundsValue = ethers.BigNumber.from(
       (2 * Math.pow(10, 18)).toString(),
     );
@@ -501,7 +454,7 @@ describe('MakerDeposit.test.ts', () => {
     const actionLps = [addLpInfo1];
     const response = await makerDeposit
       .connect(makerAccount)
-      .lpAction(actionLps, [pairProof1], overrides);
+      .lpAction(actionLps, overrides);
 
     await expect(response)
       .to.emit(makerDeposit, 'LogLPAction')
@@ -511,7 +464,7 @@ describe('MakerDeposit.test.ts', () => {
       const pairId = event.args[0];
       const lpId = event.args[1];
       const args = event.args[2];
-      for (const row of testLPList) {
+      for (const row of DataInit.lps) {
         if (row.pairId === pairId) {
           row.id = lpId;
           row.startTime = Number(args.startTime);
@@ -520,7 +473,7 @@ describe('MakerDeposit.test.ts', () => {
       }
     }
     for (const lp of actionLps) {
-      const token = dataInit.getChainToken(lp.sourceChain, lp.sourceTAddress);
+      const token = DataInit.getChainToken(lp.sourceChain, lp.sourceToken);
       const amount = await makerDeposit.getPledgeBalanceByChainToken(
         lp.sourceChain,
         token.address,
@@ -538,7 +491,7 @@ describe('MakerDeposit.test.ts', () => {
     expect(contractBalance).gte(needPledgeQuantity);
   });
   it('userChallenge for maker not send', async () => {
-    const { leaf, hex } = getTxLeaf(USER_TX_LIST[0]);
+    const { leaf, hex } = getTxLeaf(DataInit.userTxList[0]);
     const txProof = userTxTree.getHexProof(hex);
     const overrides = {
       value: ethers.utils.parseEther('1'),
@@ -552,7 +505,7 @@ describe('MakerDeposit.test.ts', () => {
   });
   it('userChallenge for maker already send', async () => {
     // User
-    const { leaf: userLeaf, hex: userHex } = getTxLeaf(USER_TX_LIST[4]);
+    const { leaf: userLeaf, hex: userHex } = getTxLeaf(DataInit.userTxList[4]);
     const userProof = userTxTree.getHexProof(userHex);
     const overrides = {
       value: ethers.utils.parseEther('1'),
@@ -564,9 +517,11 @@ describe('MakerDeposit.test.ts', () => {
       .to.emit(makerDeposit, 'LogChallengeInfo')
       .withArgs(anyValue, anyValue, anyValue, anyValue);
     // Maker
-    const { leaf: makerLeaf, hex: makerHex } = getTxLeaf(MAKER_TX_LIST[2]);
+    DataInit.makerTxList[2].lpid = DataInit.userTxList[4].lpid;
+    const { leaf: makerLeaf, hex: makerHex } = getTxLeaf(
+      DataInit.makerTxList[2],
+    );
     const makerProof = makerTxTree.getHexProof(makerHex);
-
     const makerResponce = await makerDeposit
       .connect(makerAccount)
       .makerChallenger(userLeaf, makerLeaf, makerProof);
@@ -578,8 +533,8 @@ describe('MakerDeposit.test.ts', () => {
     await speedUpTime(3600 * 24);
   });
   it('User Withdrawal under successful UserChallenge', async () => {
-    const lpInfo = dataInit.lps[0];
-    const { leaf: userLeaf } = getTxLeaf(USER_TX_LIST[0]);
+    const lpInfo = DataInit.lps[0];
+    const { leaf: userLeaf } = getTxLeaf(DataInit.userTxList[0]);
     const beforeAmount = await UserTx1Account.getBalance();
     const response = await makerDeposit
       .connect(UserTx1Account)
@@ -601,16 +556,16 @@ describe('MakerDeposit.test.ts', () => {
     expect(amount).eq(afterAmount.sub(beforeAmount));
   });
   it('User Withdrawal in failure of UserChallenge', async () => {
-    const lpInfo = dataInit.lps[0];
+    const lpInfo = DataInit.lps[0];
     const userAccount = await getUserAccount();
-    const { leaf: userLeaf } = getTxLeaf(USER_TX_LIST[4]);
+    const { leaf: userLeaf } = getTxLeaf(DataInit.userTxList[4]);
     const response = makerDeposit
       .connect(userAccount)
       .userWithDraw(userLeaf, lpInfo);
     await expect(response).to.be.revertedWith('UW_WITHDRAW');
   });
   it('userChallenge for maker not send (Second time)', async () => {
-    const { leaf, hex } = getTxLeaf(USER_TX_LIST[1]);
+    const { leaf, hex } = getTxLeaf(DataInit.userTxList[1]);
     const txProof = userTxTree.getHexProof(hex);
     const overrides = {
       value: ethers.utils.parseEther('1'),
@@ -626,8 +581,8 @@ describe('MakerDeposit.test.ts', () => {
     await speedUpTime(3600 * 24);
   });
   it('User Withdrawal under successful UserChallenge (Second time and USER_LP_STOP)', async () => {
-    const lpInfo = testLPList[0];
-    const { leaf: userLeaf } = getTxLeaf(USER_TX_LIST[1]);
+    const lpInfo = DataInit.lps[0];
+    const { leaf: userLeaf } = getTxLeaf(DataInit.userTxList[1]);
 
     const beforeAmount = await UserTx1Account.getBalance();
     const response = await makerDeposit
@@ -642,7 +597,6 @@ describe('MakerDeposit.test.ts', () => {
       '0x0000000000000000000000000000000000000000',
       userLeaf.amount,
     );
-
     const ETHPunishAmount = result.baseValue.add(result.additiveValue);
     const realAfterAmount = await UserTx1Account.getBalance();
     const expectAfterAmount = beforeAmount
@@ -660,15 +614,13 @@ describe('MakerDeposit.test.ts', () => {
     }
   });
   it('Maker withDraw not time', async () => {
-    const lpInfo = testLPList[0];
-    const chain = dataInit.chains.find(
+    const lpInfo = DataInit.lps[0];
+    const chain = DataInit.chains.find(
       (row) => row.chainID === lpInfo['sourceChain'],
     );
     expect(chain.chainID).eq(lpInfo.sourceChain);
     expect(chain.tokenList).length.gt(0);
-    const token = chain.tokenList.find(
-      (t) => t.address === lpInfo.sourceTAddress,
-    );
+    const token = chain.tokenList.find((t) => t.address === lpInfo.sourceToken);
     const withDrawMax = await makerDeposit
       .connect(makerAccount)
       .idleAmount(token.pledgeToken);
@@ -681,15 +633,13 @@ describe('MakerDeposit.test.ts', () => {
     await speedUpTime(3600 * 24);
   });
   it('Maker withDraw in time', async () => {
-    const lpInfo = testLPList[0];
-    const chain = dataInit.chains.find(
+    const lpInfo = DataInit.lps[0];
+    const chain = DataInit.chains.find(
       (row) => row.chainID === lpInfo['sourceChain'],
     );
     expect(chain.chainID).eq(lpInfo.sourceChain);
     expect(chain.tokenList).length.gt(0);
-    const token = chain.tokenList.find(
-      (t) => t.address === lpInfo.sourceTAddress,
-    );
+    const token = chain.tokenList.find((t) => t.address === lpInfo.sourceToken);
     const beforeAmount = await makerAccount.getBalance();
     const withDrawMax = await makerDeposit
       .connect(makerAccount)

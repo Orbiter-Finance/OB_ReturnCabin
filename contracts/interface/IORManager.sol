@@ -4,68 +4,85 @@ pragma solidity ^0.8.17;
 import "../library/Operation.sol";
 
 interface IORManager {
-    event ChangeChain(uint256 indexed chainId, OperationsLib.chainInfo chain);
-    event ChangeToken(uint256 indexed chainId, address indexed tokenAddress, OperationsLib.tokenInfo token);
-    event PairLogEvent(uint8 indexed opType, OperationsLib.pairChainInfo[] pairs);
+    event ChangeChain(uint256 indexed chainId, OperationsLib.ChainInfo chain);
+    event ChangeToken(uint256 indexed chainId, address indexed tokenAddress, OperationsLib.TokenInfo token);
+    event SupportPair(uint256 op, bytes32 indexed pairId);
 
-    function calcLpPledgeAmount(
-        OperationsLib.calcLpNeedPledgeAmountParams[] memory _lpinfos
-    ) external view returns (address pledgedToken, OperationsLib.lpPledgeCalculate[] memory);
+    function addEBC(address ebc) external;
 
-    function createPair(
-        OperationsLib.pairChainInfo[] memory pairs,
-        bytes32 rootHash,
-        bytes32[] memory proof,
-        bool[] memory proofFlags
-    ) external;
+    function addPair(OperationsLib.PairStruct memory pair) external;
 
-    function deletePair(
-        OperationsLib.pairChainInfo[] memory pairs,
-        bytes32[] memory proof,
-        bytes32 rootHash,
-        bool[] memory proofFlags
-    ) external;
+    function calculatePledgeAmount(OperationsLib.LPActionStruct[] memory _lps)
+        external
+        view
+        returns (address pledgedToken, OperationsLib.CalculatePledgeResponse[] memory);
 
-    function ebcId() external view returns (uint256);
-
-    function getChain(
-        uint256
-    )
+    function getChain(uint256)
         external
         view
         returns (
-            uint16 chainid,
+            uint256 id,
+            uint256 chainId,
             uint256 batchLimit,
             uint256 maxDisputeTime,
             uint256 maxReceiptTime,
-            uint256 stopDelayTime
+            uint256 stopDelayTime,
+            uint256 maxBits
         );
 
-    function getEBC(uint256) external view returns (address);
+    function getPairIds() external view returns (bytes32[] memory);
+
+    function getPairs(bytes32)
+        external
+        view
+        returns (
+            uint256 sourceChain,
+            uint256 destChain,
+            address sourceToken,
+            address destToken,
+            address ebc
+        );
 
     function getSPV() external view returns (address);
 
-    function getTokenInfo(uint256 chainID, address tokenAddress) external view returns (OperationsLib.tokenInfo memory);
+    function getTokenInfo(uint256 chainID, address tokenAddress) external view returns (OperationsLib.TokenInfo memory);
+
+    function idChainID(uint256) external view returns (uint256);
 
     function initialize() external;
 
-    function isSupportPair(bytes32 pair, bytes32[] memory proof) external view returns (bool);
+    function isSupportPair(bytes32 pairId) external view returns (bool);
 
-    function pairsRoot() external view returns (bytes32);
+    function removePair(bytes32 id) external;
+
+    function revemoEBC(address ebc) external;
 
     function setChainInfo(
-        uint256 chainID,
+        uint256 id,
+        uint256 chainId,
         uint256 batchLimit,
         uint256 maxDisputeTime,
         uint256 maxReceiptTime,
-        uint256 stopDelayTime
+        uint256 stopDelayTime,
+        uint256 maxBits
     ) external;
-
-    function setEBC(address ebc) external;
 
     function setSPV(address spv) external;
 
-    function setTokenInfo(uint256 chainID, uint256 tokenPresion, address tokenAddress, address mainAddress) external;
+    function setTokenInfo(
+        uint256 chainId,
+        uint256 tokenPresion,
+        address tokenAddress,
+        address mainAddress
+    ) external;
 
-    function updateEBC(uint256 id, address addr) external;
+    function tokenInfos(bytes32)
+        external
+        view
+        returns (
+            uint256 chainID,
+            uint8 decimals,
+            address tokenAddress,
+            address mainTokenAddress
+        );
 }
