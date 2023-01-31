@@ -25,15 +25,7 @@ interface IORMakerDeposit {
     event LogLPUpdate(bytes32 indexed pairId, bytes32 indexed lpId, uint256 gasFee, uint256 tradingFee);
     event LogLPUserStop(bytes32 indexed pairId, bytes32 lpId);
 
-    function calculatePledgeAmount(OperationsLib.LPActionStruct[] memory _lps)
-        external
-        view
-        returns (
-            address pledgedToken,
-            OperationsLib.CalculatePledgeResponse[] memory pledgeListData,
-            uint256 totalPledgeValue
-        );
-
+ 
     function challengePleged() external view returns (uint256);
 
     function challengerMakeGood(bytes32 challengeID) external;
@@ -45,7 +37,7 @@ interface IORMakerDeposit {
     //     view
     //     returns (bytes32[] memory);
 
-    function getPairsByPledgeToken(address _token) external view returns (bytes32[] memory);
+    // function getPairsByPledgeToken(address _token) external view returns (bytes32[] memory);
 
     // function getPledgeBalance(address _tokenAddress)
     //     external
@@ -85,13 +77,13 @@ interface IORMakerDeposit {
     //         uint256 startTime
     //     );
 
-    function lpPause(bytes32[] memory _lpIds) external;
+    // function lpPause(bytes32[] memory _lpIds) external;
 
-    function lpRestart(OperationsLib.LPActionStruct[] memory _lps) external;
+    // function lpRestart(OperationsLib.LPUpdateStruct[] memory _lps) external;
 
-    function lpStop(bytes32[] memory _lpIds) external;
+    // function lpStop(bytes32[] memory _lpIds) external;
 
-    function lpUpdate(OperationsLib.LPActionStruct[] memory _lpfs) external;
+    // function lpUpdate(OperationsLib.LPUpdateStruct[] memory _lpfs) external;
 
     function makerChallenger(
         OperationsLib.Transaction memory _userTx,

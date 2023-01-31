@@ -12,11 +12,6 @@ interface IORManager {
 
     function addPair(OperationsLib.PairStruct memory pair) external;
 
-    function calculatePledgeAmount(OperationsLib.LPActionStruct[] memory _lps)
-        external
-        view
-        returns (address pledgedToken, OperationsLib.CalculatePledgeResponse[] memory);
-
     function getChain(uint256)
         external
         view
@@ -42,7 +37,9 @@ interface IORManager {
             address destToken,
             address ebc
         );
-
+ function calculatePairPledgeAmount(
+        OperationsLib.LPActionStruct[] calldata _lps
+    ) external view returns (OperationsLib.CalculatePairPledgeResponse[] memory);
     function getSPV() external view returns (address);
 
     function getTokenInfo(uint256 chainID, address tokenAddress) external view returns (OperationsLib.TokenInfo memory);

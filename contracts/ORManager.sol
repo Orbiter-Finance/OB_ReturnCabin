@@ -77,11 +77,10 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable, Multicall {
         emit ChangeToken(chainId, tokenAddress, tokenInfos[tokenId]);
     }
 
-    function getTokenInfo(uint256 chainID, address tokenAddress)
-        external
-        view
-        returns (OperationsLib.TokenInfo memory)
-    {
+    function getTokenInfo(
+        uint256 chainID,
+        address tokenAddress
+    ) external view returns (OperationsLib.TokenInfo memory) {
         require(getChain[chainID].batchLimit > 0, "CHAINID_NOTINSTALL");
         return tokenInfos[keccak256(abi.encodePacked(chainID, tokenAddress))];
     }
@@ -108,69 +107,27 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable, Multicall {
         return pairs.contains(pairId);
     }
 
-    function calculatePledgeAmount(OperationsLib.LPActionStruct[] calldata _lps)
-        external
-        view
-        returns (address pledgedToken, OperationsLib.CalculatePledgeResponse[] memory)
-    {
-        OperationsLib.PairStruct memory pair = getPairs[_lps[0].pairId];
-        uint256 lastIndex = 0;
-        OperationsLib.TokenInfo memory tokenInfo = this.getTokenInfo(pair.sourceChain, pair.sourceToken);
-        pledgedToken = tokenInfo.mainTokenAddress;
-        OperationsLib.CalculatePledgeResponse[] memory pledgeListData = new OperationsLib.CalculatePledgeResponse[](
-            _lps.length
-        );
+    function calculatePairPledgeAmount(
+        OperationsLib.LPActionStruct[] calldata _lps
+    ) external view returns (OperationsLib.CalculatePairPledgeResponse[] memory) {
+        OperationsLib.CalculatePairPledgeResponse[]
+            memory pledgeListData = new OperationsLib.CalculatePairPledgeResponse[](_lps.length);
         for (uint256 i = 0; i < _lps.length; ) {
-            OperationsLib.LPActionStruct calldata _lpinfo = _lps[i];
-            require(_lpinfo.minPrice < _lpinfo.maxPrice, "Illegal minPrice maxPrice value");
-            if (i > 0) {
-                pair = getPairs[_lps[i].pairId];
-                tokenInfo = this.getTokenInfo(pair.sourceChain, pair.sourceToken);
-                require(tokenInfo.chainID > 0, "Chain Not Supported");
-            }
+            OperationsLib.LPActionStruct calldata _lp = _lps[i];
+            require(_lp.minPrice < _lp.maxPrice, "Illegal minPrice maxPrice value");
+            OperationsLib.PairStruct memory pair = getPairs[_lp.pairId];
+
             require(pair.sourceChain != 0, "ID does not exist");
             require(pair.destChain != 0, "ChainID does not exist");
             require(pair.ebc != address(0), "EBC does not exist");
-            require(tokenInfo.mainTokenAddress == pledgedToken, "pledge is not supported");
-            OperationsLib.ChainInfo memory souceChainInfo = getChain[pair.sourceChain];
-            require(souceChainInfo.chainId != 0, "chain not exist");
-            (uint256 baseValue, uint256 additiveValue) = IORProtocal(pair.ebc).getPledgeAmount(
-                souceChainInfo.batchLimit,
-                _lpinfo.maxPrice
-            );
-            bool isExists = false;
-            for (uint256 j = 0; j < pledgeListData.length; ) {
-                if (pledgeListData[j].chainId == pair.sourceChain) {
-                    isExists = true;
-                    if (baseValue + additiveValue > pledgeListData[j].pledgeValue) {
-                        pledgeListData[j].pledgeValue = baseValue + additiveValue;
-                    }
-                    break;
-                }
-                unchecked {
-                    ++j;
-                }
-            }
-            if (!isExists) {
-                pledgeListData[lastIndex] = OperationsLib.CalculatePledgeResponse(
-                    pair.sourceChain,
-                    baseValue,
-                    additiveValue,
-                    0,
-                    baseValue + additiveValue
-                );
-                lastIndex++;
-            }
+            OperationsLib.TokenInfo memory tokenInfo = this.getTokenInfo(pair.sourceChain, pair.sourceToken);
+            require(tokenInfo.chainID > 0, "Chain Not Supported");
+            uint256 pledgedValue = IORProtocal(pair.ebc).getPledgedAmount(pair.sourceChain, _lp.maxPrice);
+            pledgeListData[i] = OperationsLib.CalculatePairPledgeResponse(_lp.pairId, tokenInfo.mainTokenAddress, _lp.maxPrice, pledgedValue);
             unchecked {
                 ++i;
             }
         }
-        uint256 accordWithCount = pledgeListData.length - lastIndex;
-        if (accordWithCount > 0) {
-            assembly {
-                mstore(pledgeListData, sub(mload(pledgeListData), accordWithCount))
-            }
-        }
-        return (pledgedToken, pledgeListData);
+        return pledgeListData;
     }
 }

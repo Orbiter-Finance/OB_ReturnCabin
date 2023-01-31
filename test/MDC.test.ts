@@ -30,90 +30,66 @@ describe('MakerDeposit.test.ts', () => {
     const result = await MDC.getMakerFactory();
     expect(result).equal(makerV1Factory.address);
   });
-  it('Calculation of pledge quantity', async () => {
-    const result = await MDC.calculatePledgeAmount(DataInit.lps);
-    const totalPledgeValue = result.totalPledgeValue;
-    await expect(totalPledgeValue).gt(0);
-  });
-  // it('Test1', async () => {
-  //   const lps = DataInit.lps;
-  //   console.log('test1--------------------------------');
-  //   for (const lp of [lps[0], lps[1], lps[2]]) {
-  //     const lpId = await MDC.getLpId({
-  //       pairId: lp.pairId,
-  //       minPrice: lp.minPrice,
-  //       maxPrice: lp.maxPrice,
-  //       gasFee: lp.gasFee,
-  //       tradingFee: lp.tradingFee,
-  //       startTime: 0,
-  //     });
-  //     makerLPTree.addLeaf(lpId);
-  //   }
-  //   const leaves = makerLPTree.getHexLeaves();
-  //   console.log(leaves, '===leaves')
-  //   const lastLeaf = leaves[leaves.length - 1];
-  //   console.log(lastLeaf, '==lastLeaf')
-  //   const proof = makerLPTree.getHexProof(lastLeaf);
-  //   console.log(proof, '==getHexProof');
-  //   const isVeify = makerLPTree.verify(
-  //     proof,
-  //     lastLeaf,
-  //     makerLPTree.getHexRoot(),
-  //   );
-  //   console.log(makerLPTree.toString(), '===makerLPTree', isVeify);
-  // });
-  // it('Test2', async () => {
   describe('Action LP', () => {
-    let calcResult: any;
-    // let totalPledgeValue = ethers.BigNumber.from(0);
+    let totalPledgeValue = ethers.BigNumber.from(0);
     it('LPAction pledge ETH', async () => {
       const lps = DataInit.lps;
-      // const result = await MDC.calculatePledgeAmount(DataInit.lps);
-      const addLps = [lps[0], lps[1]].map((row) => {
-        return {
-          pairId: row.pairId,
-          minPrice: row.minPrice,
-          maxPrice: row.maxPrice,
-          gasFee: row.gasFee,
-          tradingFee: row.tradingFee,
-        };
-      });
-      // calculatePledgeAmount
-      calcResult = await MDC.calculatePledgeAmount(addLps);
-      await expect(
-        MDC.connect(makerAccount).lpAction(addLps),
-      ).to.be.revertedWith('Insufficient pledge quantity');
-      const tx = await MDC.connect(makerAccount).lpAction(addLps, {
-        value: calcResult.totalPledgeValue,
+      const result = await MDC.calculatePairPledgeAmount([lps[0], lps[1]]);
+      totalPledgeValue = result[0].pledgedValue;
+      totalPledgeValue = totalPledgeValue.mul(2);
+      await expect(MDC.connect(makerAccount).lpAction(lps)).to.be.revertedWith(
+        'Insufficient pledge quantity',
+      );
+      const tx = await MDC.connect(makerAccount).lpAction([lps[1]], {
+        value: totalPledgeValue,
       });
       await tx.wait();
+      await MDC.connect(makerAccount).lpAction([lps[0]], {
+        value: '0',
+      });
     });
+    // it('Calculation of pledge quantity', async () => {
+    //   console.log(DataInit.lps, '===DataInit.lps');
+    //   const result1 = await MDC.calculatePledgeAmount([DataInit.lps[0]]);
+    //   console.log(result1, '====result1');
+    //   const result2 = await MDC.calculatePledgeAmount([DataInit.lps[1]]);
+    //   console.log(result2, '====result2');
+    //   // const totalPledgeValue = result.totalPledgeValue;
+    //   // await expect(totalPledgeValue).gt(0);
+    // });
     it('getPairsByPledgeToken', async () => {
-      const result = await MDC.getPairsByPledgeToken(
-        '0x0000000000000000000000000000000000000000',
-      );
-      const lps = DataInit.lps;
-      expect(result.length).eq(2);
-      expect(result[0]).eq(lps[0].pairId);
-      expect(result[1]).eq(lps[1].pairId);
+      // const result = await MDC.getPairsByPledgeToken(
+      //   '0x0000000000000000000000000000000000000000',
+      // );
+      // const lps = DataInit.lps;
+      // expect(result.length).eq(2);
+      // expect(result[0]).eq(lps[0].pairId);
+      // expect(result[1]).eq(lps[1].pairId);
     });
-    it('getPledgeBalance', async () => {
+    it('get MDC Balance', async () => {
       const result = await MDC.getPledgeBalance(
         '0x0000000000000000000000000000000000000000',
       );
       const mdcETHBalance = await ethers.provider.getBalance(MDC.address);
-      expect(mdcETHBalance).eq(calcResult.totalPledgeValue);
-      expect(result).eq(calcResult.totalPledgeValue);
+      expect(mdcETHBalance).eq(totalPledgeValue);
+      expect(result).eq(totalPledgeValue.div(2));
+    });
+    it('idleAmount', async () => {
+      const result = await MDC.idleAmount(
+        '0x0000000000000000000000000000000000000000',
+      );
+      console.log('idleAmount', result);
+      expect(result).eq(totalPledgeValue.div(2));
     });
 
     it('getPledgeBalanceByChainToken', async () => {
-      for (const item of calcResult.pledgeListData) {
-        const result = await MDC.getPledgeBalanceByChainToken(
-          item.chainId,
-          '0x0000000000000000000000000000000000000000',
-        );
-        expect(item.pledgeValue).eq(result);
-      }
+      const lps = DataInit.lps;
+      const pairInfo = DataInit.pairs.find(p => p.id === lps[0].pairId);
+      const result = await MDC.getPledgeBalanceByChainToken(
+        pairInfo.sourceChain,
+        '0x0000000000000000000000000000000000000000',
+      );
+      expect(result).eq(totalPledgeValue.div(2));
     });
     it('effectivePairLP', async () => {
       const lps = DataInit.lps;
@@ -130,12 +106,7 @@ describe('MakerDeposit.test.ts', () => {
         expect(lpData.tradingFee).eq(ethers.BigNumber.from(lp.tradingFee));
       }
     });
-    it('idleAmount', async () => {
-      const result = await MDC.idleAmount(
-        '0x0000000000000000000000000000000000000000',
-      );
-      expect(result).eq(0);
-    });
+
     it('LPAction pledge ETH（Pair already exists）', async () => {
       const lps = DataInit.lps;
       await expect(
@@ -150,19 +121,83 @@ describe('MakerDeposit.test.ts', () => {
             },
           ],
           {
-            value: calcResult.totalPledgeValue,
+            value: totalPledgeValue,
           },
         ),
       ).to.be.revertedWith('Pair already exists');
     });
     it('LP Pause', async () => {
       const lps = DataInit.lps;
-      const pause1Tx = await MDC.connect(makerAccount).lpPause([lps[1].pairId]);
+      const pause1Tx = await MDC.connect(makerAccount).lpPause(lps[0].pairId);
       await pause1Tx.wait();
-      const effectivePair = await MDC.effectivePair(lps[1].pairId);
+      const effectivePair = await MDC.effectivePair(lps[0].pairId);
       expect(effectivePair.lpId).not.empty;
       expect(effectivePair.startTime).eq(0);
       expect(effectivePair.stopTime).gt(0);
+    });
+    it('LP Pause(LP not started)', async () => {
+      const lps = DataInit.lps;
+      await expect(
+        MDC.connect(makerAccount).lpPause(lps[0].pairId),
+      ).to.be.revertedWith('LP not started');
+    });
+    it('LP Update', async () => {
+      const lps = DataInit.lps;
+      const startLP = lps[0];
+      const oldDataPair = await MDC.effectivePair(startLP.pairId);
+      const oldDataLp = await MDC.lpData(oldDataPair.lpId);
+      startLP.gasFee = '20000000000000000';
+      const pause1Tx = await MDC.connect(makerAccount).lpUpdate(startLP);
+      await pause1Tx.wait();
+      const newDataPair = await MDC.effectivePair(startLP.pairId);
+      const newDataLp = await MDC.lpData(newDataPair.lpId);
+      expect(newDataPair.lpId).not.eq(oldDataPair.lpId);
+      expect(newDataLp.gasFee).eq('20000000000000000');
+    });
+    it('LP Restart', async () => {
+      const lps = DataInit.lps;
+      const startLP = lps[0];
+      const pauseTx = await MDC.connect(makerAccount).lpPause(startLP.pairId);
+      await pauseTx.wait();
+      const restartTx = await MDC.connect(makerAccount).lpRestart(
+        startLP.pairId,
+      );
+      await restartTx.wait();
+    });
+    it('LP Restart(LP not paused)', async () => {
+      const lps = DataInit.lps;
+      const startLP = lps[0];
+      // startLP.gasFee = '20000000000000000';
+      await expect(
+        MDC.connect(makerAccount).lpRestart(startLP.pairId),
+      ).to.be.revertedWith('LP not paused');
+    });
+    it('LP Stop', async () => {
+      const lps = DataInit.lps;
+      const pauseCodes = [lps[0].pairId, lps[1].pairId].map((row) => {
+        return MDC.interface.encodeFunctionData('lpPause', [row]);
+      });
+      const pause1Tx = await MDC.connect(makerAccount).multicall(pauseCodes);
+      await pause1Tx.wait();
+      const idleAmountBefore = await MDC.idleAmount(
+        '0x0000000000000000000000000000000000000000',
+      );
+      // console.log(idleAmountBefore, '==idleAmount before');
+      const effectivePair = await MDC.effectivePair(lps[0].pairId);
+      expect(effectivePair.lpId).not.empty;
+      expect(effectivePair.startTime).eq(0);
+      // console.log(effectivePair.stopTime, '====effectivePair');
+      expect(effectivePair.stopTime).gt(0);
+      // stop
+      await speedUpTime(3600);
+      const stop1Tx = await MDC.connect(makerAccount).lpStop(
+        lps[0].pairId,
+        // lps[1].pairId,
+      );
+      const idleAmountAfter = await MDC.idleAmount(
+        '0x0000000000000000000000000000000000000000',
+      );
+      console.log(idleAmountAfter, '==idleAmount after');
     });
   });
 });

@@ -57,7 +57,16 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     function setTokenPunishRate(uint256 value) external onlyOwner {
         tokenPunishRate = value;
     }
-
+    function getPledgedAmount(uint256 chainId, uint256 maxPrice)
+        external
+        view
+        returns (uint256 value)
+    {
+        require(chainId != 0, "chain not exist");
+        (, , uint256 batchLimit, , , ,) = getManager.getChain(chainId);
+        require(batchLimit != 0 && maxPrice != 0 && pledgeAmountSafeRate != 0, "PledgeAmountSafeRate Non Set");
+        return ((batchLimit * maxPrice) * pledgeAmountSafeRate) / 10000;
+    }
     function getPledgeAmount(uint256 batchLimit, uint256 maxPrice)
         external
         view

@@ -9,6 +9,17 @@ library OperationsLib {
         uint256 pledged;
         uint256 pledgeValue;
     }
+    struct CalculatePairPledgeResponse {
+        bytes32 pairId;
+        address pledgedToken;
+        uint256 maxPrice;
+        uint256 pledgedValue;
+    }
+    struct CalculatePairPledgeResponseTemp {
+        address pledgedToken;
+        uint256 chainId;
+        uint256 pledgedValue;
+    }
     struct calcLpNeedPledgeAmountParams {
         bytes32 pairId;
         uint256 fromChain;
@@ -59,6 +70,11 @@ library OperationsLib {
         bytes32 pairId;
         uint256 minPrice;
         uint256 maxPrice;
+        uint256 gasFee;
+        uint256 tradingFee;
+    }
+    struct LPUpdateStruct {
+        bytes32 pairId;
         uint256 gasFee;
         uint256 tradingFee;
     }

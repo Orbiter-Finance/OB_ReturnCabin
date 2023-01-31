@@ -26,7 +26,10 @@ interface IORProtocal {
         returns (bool);
 
     function getFromTxChainId(OperationsLib.Transaction memory tx) external view returns (uint256);
-
+    function getPledgedAmount(uint256 chainId, uint256 maxPrice)
+        external
+        view
+        returns (uint256 value);
     // function getManager() external view returns (address);
 
     function getPledgeAmount(uint256 batchLimit, uint256 maxPrice)

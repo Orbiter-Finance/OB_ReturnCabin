@@ -193,18 +193,7 @@ describe('Manager EBC', () => {
     // await userFactory.setEBC('0x0000000000000000000000000000000000000000');
     // expect(await manager.getEBC(1)).equal(ebc.address);
   });
-  it('Calculate pledge quantity', async () => {
-    const manager = await getManagerContract();
-    const lps = DataInit.lps;
-    const firstLp = lps[0];
-    const [_pledgedToken, list] = await manager.calculatePledgeAmount([lps[0]]);
-    // result
-    const ebc = await getORProtocalV1Contract();
-    // const result2 = await ebc.getPledgeAmount(100, firstLp.maxPrice);
-    // expect(result2.baseValue.add(result2.additiveValue)).equal(
-    //   list[0].pledgeValue,
-    // );
-  });
+
   it('SET SPV', async () => {
     const manager = await getManagerContract();
     const contract = await getORSPVContract();

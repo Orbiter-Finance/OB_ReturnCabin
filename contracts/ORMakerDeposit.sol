@@ -8,15 +8,15 @@ import "./interface/IERC20.sol";
 import "hardhat/console.sol";
 import "./interface/IORMakerV1Factory.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
+import "./Multicall.sol";
 
 interface IProventh {
-    function startValidate(OperationsLib.ValidateParams calldata params)
-        external
-        view
-        returns (OperationsLib.ValidateResult memory r);
+    function startValidate(
+        OperationsLib.ValidateParams calldata params
+    ) external view returns (OperationsLib.ValidateResult memory r);
 }
 
-contract ORMakerDeposit is IORMakerDeposit {
+contract ORMakerDeposit is IORMakerDeposit, Multicall {
     using EnumerableMap for EnumerableMap.AddressToUintMap;
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
@@ -31,19 +31,21 @@ contract ORMakerDeposit is IORMakerDeposit {
     // After the User forcibly stops LP, Maker delays the withdrawal time.
     mapping(address => uint256) public pledgeTokenLPStopDealyTime;
     // source chainID => pledgeToken => amount
-    mapping(uint256 => EnumerableMap.AddressToUintMap) private chainPledgeBalance;
-    // pledgeToken => pairs
-    mapping(address => EnumerableSet.Bytes32Set) private pledgeTokenPairs;
+    mapping(uint256 => EnumerableMap.AddressToUintMap) private sourceChainPledgeBalance;
     // source chainID => pairs
-    // mapping(uint256 => EnumerableSet.Bytes32Set) private chainPairs;
+    mapping(uint256 => EnumerableSet.Bytes32Set) private sourceChainPairs;
+
     // lpId  => LPStruct
     mapping(bytes32 => OperationsLib.LPStruct) public lpData;
-    // pairId => lpId
+    // pairId => EffectivePairStruct
     mapping(bytes32 => OperationsLib.EffectivePairStruct) public effectivePair;
     // lpId => lp Create timestamp
     // EnumerableMap.Bytes32ToUintMap private lpDataMapTimestamp;
     // pledgeToken=> amount
     EnumerableMap.AddressToUintMap private pledgeBalance;
+    // pledgeToken => pairs
+    mapping(uint256 => EnumerableSet.Bytes32Set) private pledgeTokenPairs;
+
     modifier onlyOwner() {
         require(msg.sender == owner, "Ownable: caller is not the owner");
         _;
@@ -69,13 +71,13 @@ contract ORMakerDeposit is IORMakerDeposit {
     }
 
     function getPledgeBalanceByChainToken(uint256 chainId, address token) external view returns (uint256) {
-        (, uint256 value) = chainPledgeBalance[chainId].tryGet(token);
+        (, uint256 value) = sourceChainPledgeBalance[chainId].tryGet(token);
         return value;
     }
 
-    function getPairsByPledgeToken(address token) external view returns (bytes32[] memory) {
-        return pledgeTokenPairs[token].values();
-    }
+    // function getPairsByPledgeToken(address token) external view returns (bytes32[] memory) {
+    //     return pledgeTokenPairs[token].values();
+    // }
 
     // function getPairsByChain(uint256 _chainId) external view returns (bytes32[] memory) {
     //     return chainPairs[_chainId].values();
@@ -98,66 +100,88 @@ contract ORMakerDeposit is IORMakerDeposit {
         return idleamount;
     }
 
-    function calculatePledgeAmount(OperationsLib.LPActionStruct[] calldata _lps)
-        external
-        view
-        returns (
-            address pledgedToken,
-            OperationsLib.CalculatePledgeResponse[] memory pledgeListData,
-            uint256 totalPledgeValue
-        )
-    {
-        (pledgedToken, pledgeListData) = getManager().calculatePledgeAmount(_lps);
-        for (uint256 i = 0; i < pledgeListData.length; ) {
-            pledgeListData[i].pledged = this.getPledgeBalanceByChainToken(pledgeListData[i].chainId, pledgedToken);
-            if (pledgeListData[i].pledgeValue > pledgeListData[i].pledged) {
-                pledgeListData[i].pledgeValue = pledgeListData[i].pledgeValue - pledgeListData[i].pledged;
-                totalPledgeValue += pledgeListData[i].pledgeValue;
+    function calculatePairPledgeAmount(
+        OperationsLib.LPActionStruct[] calldata _lps
+    ) external view returns (OperationsLib.CalculatePairPledgeResponseTemp[] memory) {
+        OperationsLib.CalculatePairPledgeResponseTemp[]
+            memory tempData = new OperationsLib.CalculatePairPledgeResponseTemp[](_lps.length);
+        console.logString("calculatePairPledgeAmount---");
+        IORManager manager = getManager();
+        OperationsLib.CalculatePairPledgeResponse[] memory pledgePairListData = manager.calculatePairPledgeAmount(_lps);
+        require(_lps.length == pledgePairListData.length, "Array inconsistent");
+        uint count;
+        for (uint256 i = 0; i < _lps.length; ) {
+            OperationsLib.CalculatePairPledgeResponse memory _pairPledge = pledgePairListData[i];
+            OperationsLib.LPActionStruct calldata _lp = _lps[i];
+            address pledgedToken = pledgePairListData[i].pledgedToken;
+            (uint sourceChain, , , , ) = manager.getPairs(_lp.pairId);
+            // pledged
+            if (_pairPledge.pledgedValue > 0) {
+                bool isExist;
+                for (uint256 j = 0; j < tempData.length; ) {
+                    OperationsLib.CalculatePairPledgeResponseTemp memory tempItem = tempData[j];
+                    if (
+                        tempItem.chainId != 0 &&
+                        tempItem.pledgedToken == pledgedToken &&
+                        tempItem.chainId == sourceChain
+                    ) {
+                        isExist = true;
+                        if (_pairPledge.pledgedValue > tempItem.pledgedValue) {
+                            tempItem.pledgedValue = _pairPledge.pledgedValue;
+                        }
+                        break;
+                    }
+                    unchecked {
+                        ++j;
+                    }
+                }
+                if (!isExist) {
+                    tempData[count] = OperationsLib.CalculatePairPledgeResponseTemp(
+                        pledgedToken,
+                        sourceChain,
+                        _pairPledge.pledgedValue
+                    );
+                    count++;
+                }
             }
             unchecked {
                 ++i;
             }
         }
+        uint256 accordWithCount = tempData.length - count;
+        if (accordWithCount > 0) {
+            assembly {
+                mstore(tempData, sub(mload(tempData), accordWithCount))
+            }
+        }
+        for (uint i=0;i<tempData.length;) {
+            uint256 nowPledgedValue = this.getPledgeBalanceByChainToken(tempData[i].chainId, tempData[i].pledgedToken);
+            console.logString("nowPledgedValue");
+            console.logUint(nowPledgedValue);
+            if (tempData[i].pledgedValue>nowPledgedValue) {
+                tempData[i].pledgedValue = tempData[i].pledgedValue - nowPledgedValue;
+            } else {
+                tempData[i].pledgedValue = 0;
+            }
+            unchecked {
+                ++i;
+            }
+        }
+        return tempData;
     }
 
     function lpAction(OperationsLib.LPActionStruct[] calldata _lps) external payable onlyOwner {
-        (
-            address pledgedToken,
-            OperationsLib.CalculatePledgeResponse[] memory pledgeListData,
-            uint256 totalPledgeValue
-        ) = this.calculatePledgeAmount(_lps);
-
-        if (pledgedToken == address(0)) {
-            require(msg.value >= totalPledgeValue, "Insufficient pledge quantity");
-        } else {
-            if (totalPledgeValue > 0) {
-                uint256 allowance = IERC20(pledgedToken).allowance(msg.sender, address(this));
-                require(allowance >= totalPledgeValue, "Token Insufficient pledge quantity");
-                bool success = IERC20(pledgedToken).transferFrom(msg.sender, address(this), totalPledgeValue);
-                require(success, "TransferFrom Fail");
-            }
-        }
-        if (totalPledgeValue > 0) {
-            uint256 pledgedTokenValue = this.getPledgeBalance(pledgedToken);
-            for (uint256 i = 0; i < pledgeListData.length; ) {
-                uint256 chainId = pledgeListData[i].chainId;
-                uint256 addPledgedValue = (pledgeListData[i].pledgeValue - pledgeListData[i].pledged);
-                pledgedTokenValue += addPledgedValue;
-                chainPledgeBalance[chainId].set(
-                    pledgedToken,
-                    this.getPledgeBalanceByChainToken(chainId, pledgedToken) + addPledgedValue
-                );
-                unchecked {
-                    ++i;
-                }
-            }
-            pledgeBalance.set(pledgedToken, pledgedTokenValue);
-        }
+        IORManager manager = getManager();
+        OperationsLib.CalculatePairPledgeResponse[] memory pledgePairListData = manager.calculatePairPledgeAmount(_lps);
+        require(_lps.length == pledgePairListData.length, "Array inconsistent");
+        uint needPledgeValue = 0;
+        address pledgedToken = pledgePairListData[0].pledgedToken;
         for (uint256 i = 0; i < _lps.length; ) {
+            OperationsLib.CalculatePairPledgeResponse memory _pairPledge = pledgePairListData[i];
+            require(pledgedToken == _pairPledge.pledgedToken, "The pledgedToken is inconsistent");
             OperationsLib.LPActionStruct calldata _lp = _lps[i];
-            // (uint sourceChain, , address sourceToken, ,) = manager.getPairs(
-            // _lp.pairId
-            // );
+            require(_pairPledge.pairId == _lp.pairId, "The pairId is inconsistent");
+            (uint sourceChain, , , , ) = manager.getPairs(_lp.pairId);
             OperationsLib.EffectivePairStruct memory effectivePairItem = effectivePair[_lp.pairId];
             require(effectivePairItem.lpId == 0, "Pair already exists");
             require(effectivePairItem.startTime == 0 && effectivePairItem.stopTime == 0, "LP started");
@@ -168,90 +192,112 @@ contract ORMakerDeposit is IORMakerDeposit {
                 _lp.minPrice,
                 _lp.maxPrice
             );
-            // OperationsLib.TokenInfo memory tokenInfo = manager.getTokenInfo(sourceChain, sourceToken);
-            // valid lpId not exist
-            bool created = pledgeTokenPairs[pledgedToken].add(_lp.pairId);
+            bool created = sourceChainPairs[sourceChain].add(_lp.pairId);
             require(created, "Pair already exists");
             lpData[lpId] = OperationsLib.LPStruct(
                 _lp.pairId,
                 _lp.minPrice,
-                _lp.maxPrice,
+                _pairPledge.maxPrice,
                 _lp.gasFee,
                 _lp.tradingFee,
                 block.timestamp,
                 0
             );
             effectivePair[_lp.pairId] = OperationsLib.EffectivePairStruct(lpId, block.timestamp, 0);
+            // pledged
+            if (_pairPledge.pledgedValue > 0) {
+                uint256 nowPledgedValue = this.getPledgeBalanceByChainToken(sourceChain, pledgedToken);
+                if (_pairPledge.pledgedValue > nowPledgedValue) {
+                    needPledgeValue += _pairPledge.pledgedValue - nowPledgedValue;
+                    sourceChainPledgeBalance[sourceChain].set(pledgedToken, _pairPledge.pledgedValue);
+                }
+            }
             emit LogLPAction(_lp.pairId, lpId, lpData[lpId]);
             unchecked {
                 ++i;
             }
         }
-    }
-
-    function lpPause(bytes32[] calldata pairIds) external onlyOwner {
-        IORManager manager = getManager();
-        for (uint256 i = 0; i < pairIds.length; ) {
-            bytes32 pairId = pairIds[i];
-            OperationsLib.EffectivePairStruct storage effectivePairItem = effectivePair[pairId];
-            require(effectivePairItem.lpId != 0, "LP does not exist");
-            require(effectivePairItem.startTime != 0 && effectivePairItem.stopTime == 0, "LP not started");
-            (uint256 sourceChain, , , , ) = manager.getPairs(pairId);
-            (, , , , , uint256 stopDelayTime, ) = manager.getChain(sourceChain);
-            console.logUint(stopDelayTime);
-            effectivePairItem.stopTime = block.timestamp + stopDelayTime;
-            effectivePairItem.startTime = 0;
-            // emit LogLPPause(pairId, lpInfo[pairId].lpId, _lpinfo);
-            unchecked {
-                ++i;
+        if (needPledgeValue > 0) {
+            uint256 unUsedAmount = idleAmount(pledgedToken);
+            uint256 pledgedTokenValue = this.getPledgeBalance(pledgedToken);
+            pledgeBalance.set(pledgedToken, pledgedTokenValue + needPledgeValue);
+            if (needPledgeValue > unUsedAmount) {
+                uint256 subunUsedAmount = needPledgeValue - unUsedAmount;
+                if (pledgedToken == address(0)) {
+                    require(msg.value >= subunUsedAmount, "Insufficient pledge quantity");
+                } else {
+                    if (needPledgeValue > 0) {
+                        uint256 allowance = IERC20(pledgedToken).allowance(msg.sender, address(this));
+                        require(allowance >= subunUsedAmount, "Token Insufficient pledge quantity");
+                        bool success = IERC20(pledgedToken).transferFrom(msg.sender, address(this), subunUsedAmount);
+                        require(success, "TransferFrom Fail");
+                    }
+                }
             }
         }
     }
 
-    // LPPause
-    // function lpPause(OperationsLib.lpInfo[] calldata _lpinfos) external onlyOwner {
-    //     IORManager manager = getManager();
-    //     for (uint256 i = 0; i < _lpinfos.length; ) {
-    //         // calc root Hash
-    //         OperationsLib.lpInfo memory _lpinfo = _lpinfos[i];
-    //         bytes32 pairId = OperationsLib.getPairID(_lpinfo);
-    //         require(lpInfo[pairId].lpId != "", "LPPAUSE_LPID_UNUSED");
-    //         require(this.pairExist(_lpinfo.sourceChain, pairId), "Pair does not exist");
-    //         require(lpInfo[pairId].startTime != 0 && lpInfo[pairId].stopTime == 0, "LPPAUSE_LPID_UNACTION");
-    //         // address ebcAddress = manager.getEBC(_lpinfo.ebcid);
-    //         address ebcAddress = _lpinfo.ebc;
-    //         require(ebcAddress != address(0), "LPPAUSE_EBCADDRESS_0");
-    //         // uint256 stopDelayTime = getChainInfoByChainID(_lpinfo.sourceChain).stopDelayTime;
-    //         (,, , , , uint256 stopDelayTime,) = getManager().getChain(_lpinfo.sourceChain);
-    //         lpInfo[pairId].stopTime = block.timestamp + stopDelayTime;
-    //         lpInfo[pairId].startTime = 0;
-    //         emit LogLPPause(pairId, lpInfo[pairId].lpId, _lpinfo);
-    //         unchecked {
-    //             ++i;
-    //         }
-    //     }
-    // }
-    function lpRestart(OperationsLib.LPActionStruct[] calldata _lps) external onlyOwner {}
+    function lpPause(bytes32 pairId) external onlyOwner {
+        IORManager manager = getManager();
+        // for (uint256 i = 0; i < pairIds.length; ) {
+        // bytes32 pairId = pairIds[i];
+        OperationsLib.EffectivePairStruct storage effectivePairItem = effectivePair[pairId];
+        require(effectivePairItem.lpId != 0, "LP does not exist");
+        require(effectivePairItem.startTime != 0 && effectivePairItem.stopTime == 0, "LP not started");
+        (uint256 sourceChain, , , , ) = manager.getPairs(pairId);
+        (, , , , , uint256 stopDelayTime, ) = manager.getChain(sourceChain);
+        effectivePairItem.stopTime = block.timestamp + stopDelayTime;
+        effectivePairItem.startTime = 0;
+        // emit LogLPPause(pairId, lpInfo[pairId].lpId, _lpinfo);
+        //     unchecked {
+        //         ++i;
+        //     }
+        // }
+    }
 
-    // function lpRestart(OperationsLib.lpRestart[] calldata _lps) external onlyOwner {
-    //     for (uint256 i = 0; i < _lps.length; ) {
-    //         OperationsLib.lpRestart memory _item = _lps[i];
-    //         bytes32 pairId = _item.pid;
-    //         bytes32 lpId = _item.lpid;
-    //         require(lpInfo[pairId].lpId != "", "LPPAUSE_LPID_UNUSED");
-    //         require(lpInfo[pairId].lpId == lpId, "LPPAUSE_LPID_ERROR");
-    //         require(lpInfo[pairId].startTime == 0 && lpInfo[pairId].stopTime != 0, "LPUPDATE_NOTPAUSED");
-    //         lpInfo[pairId].startTime = block.timestamp;
-    //         lpInfo[pairId].stopTime = 0;
-    //         emit LogLPRestart(pairId, lpId, _item.gasFee, _item.tradingFee);
-    //         unchecked {
-    //             ++i;
-    //         }
-    //     }
-    // }
+    function lpRestart(bytes32 pairId) external onlyOwner {
+        OperationsLib.EffectivePairStruct storage effectivePairItem = effectivePair[pairId];
+        require(effectivePairItem.lpId != 0, "LP does not exist");
+        require(effectivePairItem.startTime == 0 && effectivePairItem.stopTime != 0, "LP not paused");
+        effectivePairItem.startTime = block.timestamp;
+        effectivePairItem.stopTime = 0;
+    }
 
     // LPStop
-    function lpStop(bytes32[] calldata _lpIds) external onlyOwner {}
+    function lpStop(bytes32 pairId) external onlyOwner {
+        IORManager manager = getManager();
+        // for (uint256 i = 0; i < pairIds.length; ) {
+        // bytes32 pairId = pairIds[i];
+        OperationsLib.EffectivePairStruct memory effectivePairItem = effectivePair[pairId];
+        require(effectivePairItem.startTime == 0 && effectivePairItem.stopTime != 0, "LP not paused");
+        require(block.timestamp >= effectivePairItem.stopTime, "Not yet operating time");
+        OperationsLib.LPStruct storage lpInfo = lpData[effectivePairItem.lpId];
+        (uint256 sourceChain, , address sourceToken, , ) = manager.getPairs(pairId);
+        bool success = sourceChainPairs[sourceChain].remove(pairId);
+        require(success, "Failed to delete pair");
+        lpInfo.stopTime = block.timestamp;
+        delete effectivePair[pairId];
+        if (sourceChainPairs[sourceChain].length() <= 0) {
+            OperationsLib.TokenInfo memory tokenInfo = manager.getTokenInfo(sourceChain, sourceToken);
+            address pledgedToken = tokenInfo.mainTokenAddress;
+            EnumerableMap.AddressToUintMap storage chainPledgeTokenBalance = sourceChainPledgeBalance[sourceChain];
+            (, uint256 value1) = chainPledgeTokenBalance.tryGet(pledgedToken);
+            console.logString("delete ----");
+            console.logUint(value1);
+            bool removed = chainPledgeTokenBalance.remove(pledgedToken);
+            require(removed, "chainPledgeTokenBalance removal failed");
+            (, uint value2) = pledgeBalance.tryGet(pledgedToken);
+            console.logUint(value2);
+            bool created = pledgeBalance.set(pledgedToken, value2 - value1);
+            require(!created, "PledgeBalance Not Exist");
+        } else {
+            // TODO: Obtain the largest pledge proportion
+        }
+        //     unchecked {
+        //         ++i;
+        //     }
+        // }
+    }
 
     // function lpStop(OperationsLib.lpInfo[] calldata _lpinfos) external onlyOwner {
     //     IORManager manager = getManager();
@@ -297,22 +343,70 @@ contract ORMakerDeposit is IORMakerDeposit {
     // }
 
     // LPUpdate
-    function lpUpdate(OperationsLib.LPActionStruct[] calldata _lpfs) external onlyOwner {}
+    function lpUpdate(OperationsLib.LPUpdateStruct calldata _lp) external onlyOwner {
+        bytes32 pairId = _lp.pairId;
+        OperationsLib.EffectivePairStruct storage effectivePairItem = effectivePair[pairId];
+        require(effectivePairItem.lpId != 0, "LP does not exist");
+        require(effectivePairItem.startTime == 0 && effectivePairItem.stopTime != 0, "LP not paused");
+        effectivePairItem.startTime = block.timestamp;
+        effectivePairItem.stopTime = 0;
+        // change old lp stop time
+        OperationsLib.LPStruct storage lpInfo = lpData[effectivePairItem.lpId];
+        lpInfo.stopTime = block.timestamp;
+        // new lp
+        bytes32 lpId = OperationsLib.getLpID(pairId, address(this), block.timestamp, lpInfo.minPrice, lpInfo.maxPrice);
+        lpData[lpId] = OperationsLib.LPStruct(
+            pairId,
+            lpInfo.minPrice,
+            lpInfo.maxPrice,
+            _lp.gasFee,
+            _lp.tradingFee,
+            block.timestamp,
+            0
+        );
+        effectivePair[pairId] = OperationsLib.EffectivePairStruct(lpId, block.timestamp, 0);
+    }
 
-    // function lpUpdate(OperationsLib.lpRestart[] calldata _lpinfos) external onlyOwner {
-    //     for (uint256 i = 0; i < _lpinfos.length; ) {
-    //         OperationsLib.lpRestart memory _changeRow = _lpinfos[i];
-    //         bytes32 pairId = _changeRow.pid;
-    //         bytes32 lpId = _changeRow.lpid;
-    //         require(lpInfo[pairId].lpId != "", "LPPAUSE_LPID_UNUSED");
-    //         require(lpInfo[pairId].lpId == lpId, "LPPAUSE_LPID_ERROR");
-    //         require(lpInfo[pairId].startTime == 0 && lpInfo[pairId].stopTime != 0, "LPUPDATE_NOTPAUSED");
-    //         emit LogLPUpdate(pairId, lpId, _changeRow.gasFee, _changeRow.tradingFee);
-    //         unchecked {
-    //             ++i;
-    //         }
-    //     }
-    // }
+    function lpUserStop(bytes32 pairId) internal {}
+
+    // LPStop
+    function lpUserStop(uint256 sourceChain, address sourceToken, address ebcAddress) internal {
+        // IORManager manager = getManager();
+        // OperationsLib.TokenInfo memory tokenInfo = manager.getTokenInfo(sourceChain, sourceToken);
+        // // address ebcAddress = manager.getEBC(ebcid);
+        // require(ebcAddress != address(0), "USER_LPStop_EBCADDRESS_0");
+        // address pledgedToken = tokenInfo.mainTokenAddress;
+        // (, , , , , uint256 stopDelayTime, ) = getManager().getChain(sourceChain);
+        // // is exists
+        // if (chainPairs[sourceChain].length() > 0) {
+        //     bytes32[] memory pairs = this.getPairsByChain(sourceChain);
+        //     for (uint256 i = 0; i < pairs.length; ) {
+        //         bytes32 pairId = pairs[i];
+        //         require(this.pairExist(sourceChain, pairId), "Pair does not exist");
+        //         bool success = chainPairs[sourceChain].remove(pairId);
+        //         require(success, "Remove chainPairs Fail");
+        //         success = pledgeTokenPairs[pledgedToken].remove(pairId);
+        //         require(success, "Remove chainPairs Fail");
+        //         lpInfo[pairs[i]].startTime = 0;
+        //         lpInfo[pairs[i]].stopTime = 0;
+        //         // }
+        //         emit LogLPUserStop(pairs[i], lpInfo[pairs[i]].lpId);
+        //         unchecked {
+        //             ++i;
+        //         }
+        //     }
+        //     EnumerableMap.AddressToUintMap storage chainPledgeTokenBalance = chainPledgeBalance[sourceChain];
+        //     (, uint256 pledgedTokenValue) = chainPledgeTokenBalance.tryGet(pledgedToken);
+        //     // Release all deposits
+        //     bool removed = chainPledgeBalance[sourceChain].remove(pledgedToken);
+        //     require(removed, "Remove chainPledgeBalance Fail");
+        //     (, uint256 pledgedValue) = pledgeBalance.tryGet(pledgedToken);
+        //     bool created = pledgeBalance.set(pledgedToken, pledgedValue - pledgedTokenValue);
+        //     require(!created, "PledgeBalance Not Exist");
+        // }
+        // //     //Set Maker withdrawal time to the current time plus stopDelayTime.
+        // pledgeTokenLPStopDealyTime[pledgedToken] = block.timestamp + stopDelayTime;
+    }
 
     // withDrawAssert()
     function withDrawAssert(uint256 amount, address tokenAddress) external onlyOwner {
@@ -335,16 +429,14 @@ contract ORMakerDeposit is IORMakerDeposit {
         }
     }
 
-    function checkTxProofExists(OperationsLib.ValidateParams calldata params)
-        internal
-        view
-        returns (bool success, OperationsLib.Transaction memory tx)
-    {
+    function checkTxProofExists(
+        OperationsLib.ValidateParams calldata params
+    ) internal view returns (bool, OperationsLib.Transaction memory) {
         IProventh spv = IProventh(getManager().getSPV());
         OperationsLib.ValidateResult memory validResult = spv.startValidate(params);
         require(validResult.result, "startValidate fail");
-        success = validResult.result;
-        tx = OperationsLib.Transaction(
+        bool success = validResult.result;
+        OperationsLib.Transaction memory tx = OperationsLib.Transaction(
             bytes32(validResult.txHash),
             bytes32(validResult.blockHash),
             validResult.from,
@@ -359,6 +451,7 @@ contract ORMakerDeposit is IORMakerDeposit {
             validResult.transactionIndex,
             validResult.input
         );
+        return (success, tx);
     }
 
     // OperationsLib.ValidateParams result =
@@ -406,59 +499,16 @@ contract ORMakerDeposit is IORMakerDeposit {
         emit LogChallengeInfo(address(getMakerFactory), challengeID, challengeInfos[challengeID], _txinfo);
     }
 
-    // LPStop
-    function lpUserStop(
-        uint256 sourceChain,
-        address sourceToken,
-        address ebcAddress
-    ) internal {
-        // IORManager manager = getManager();
-        // OperationsLib.TokenInfo memory tokenInfo = manager.getTokenInfo(sourceChain, sourceToken);
-        // // address ebcAddress = manager.getEBC(ebcid);
-        // require(ebcAddress != address(0), "USER_LPStop_EBCADDRESS_0");
-        // address pledgedToken = tokenInfo.mainTokenAddress;
-        // (, , , , , uint256 stopDelayTime, ) = getManager().getChain(sourceChain);
-        // // is exists
-        // if (chainPairs[sourceChain].length() > 0) {
-        //     bytes32[] memory pairs = this.getPairsByChain(sourceChain);
-        //     for (uint256 i = 0; i < pairs.length; ) {
-        //         bytes32 pairId = pairs[i];
-        //         require(this.pairExist(sourceChain, pairId), "Pair does not exist");
-        //         bool success = chainPairs[sourceChain].remove(pairId);
-        //         require(success, "Remove chainPairs Fail");
-        //         success = pledgeTokenPairs[pledgedToken].remove(pairId);
-        //         require(success, "Remove chainPairs Fail");
-        //         lpInfo[pairs[i]].startTime = 0;
-        //         lpInfo[pairs[i]].stopTime = 0;
-        //         // }
-        //         emit LogLPUserStop(pairs[i], lpInfo[pairs[i]].lpId);
-        //         unchecked {
-        //             ++i;
-        //         }
-        //     }
-        //     EnumerableMap.AddressToUintMap storage chainPledgeTokenBalance = chainPledgeBalance[sourceChain];
-        //     (, uint256 pledgedTokenValue) = chainPledgeTokenBalance.tryGet(pledgedToken);
-        //     // Release all deposits
-        //     bool removed = chainPledgeBalance[sourceChain].remove(pledgedToken);
-        //     require(removed, "Remove chainPledgeBalance Fail");
-        //     (, uint256 pledgedValue) = pledgeBalance.tryGet(pledgedToken);
-        //     bool created = pledgeBalance.set(pledgedToken, pledgedValue - pledgedTokenValue);
-        //     require(!created, "PledgeBalance Not Exist");
-        // }
-        // //     //Set Maker withdrawal time to the current time plus stopDelayTime.
-        // pledgeTokenLPStopDealyTime[pledgedToken] = block.timestamp + stopDelayTime;
-    }
-
     // userWithDraw
     function userWithDraw(OperationsLib.Transaction memory _userTx, OperationsLib.lpInfo memory _lpinfo) external {
         bytes32 challengeID = OperationsLib.getChallengeID(_userTx);
-        IORManager manager = getManager();
+        // IORManager manager = getManager();
         // When the state of challengeInfos is 'waiting for maker' and the stopTime of challengeInfos has passed, the user can withdraw money.
         require(_userTx.from == msg.sender, "UW_SENDER");
         OperationsLib.challengeInfo storage challengeInfo = challengeInfos[challengeID];
         require(challengeInfo.challengeState == 1, "UW_WITHDRAW");
         require(block.timestamp > challengeInfo.stopTime, "UW_TIME");
-        bytes32 pairId = OperationsLib.getPairID(_lpinfo);
+        // bytes32 pairId = OperationsLib.getPairID(_lpinfo);
         // require(this.pairExist(_lpinfo.sourceChain, pairId), "Pair does not exist");
         // address ebcAddress = manager.getEBC(challengeInfo.ebcid);
         address ebcAddress = challengeInfo.ebc;
@@ -558,7 +608,7 @@ contract ORMakerDeposit is IORMakerDeposit {
         OperationsLib.Transaction memory _makerTx,
         bytes32[] memory _makerProof
     ) external onlyOwner {
-        IORManager manager = getManager();
+        // IORManager manager = getManager();
         // Get the corresponding challengeID through txinfo.
         bytes32 challengeID = OperationsLib.getChallengeID(_userTx);
         // The corresponding challengeInfo is required to be in a waiting for maker state.

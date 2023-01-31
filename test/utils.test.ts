@@ -113,7 +113,6 @@ export async function getUserAccount() {
   return userAccount;
 }
 export const getTxLeaf = (tx: any) => {
-  console.log(tx, '===getTxLeaf');
   const lpid = tx.lpid.toLowerCase();
   const txHash = tx.id.toLowerCase();
   const sourceAddress = tx.from.toLowerCase();
@@ -235,12 +234,15 @@ export class DataInit {
         sourcePresion: 18,
         destPresion: 18,
         minPrice: '5000000000000000',
-        maxPrice: '9000000000000000',
+        maxPrice: '200000000000000000',
         gasFee: '10000000000000000',
         tradingFee: '10000000000000000',
         startTime: 0,
         stopTime: 0,
       };
+      if (pair.sourceChain && pair.destChain == 9033) {
+          lp.maxPrice = '100000000000000000';
+      }
       const lpId = solidityKeccak256(
         ['bytes32', 'address', 'uint256', 'uint256', 'uint256'],
         [
@@ -282,7 +284,7 @@ export async function getSPVProof(
   } else {
     api = `${api}?ChainID=${chainId}&L1SubmissionHash=${l1Hash}`;
   }
-  console.log(api, '===api');
+  console.log(api);
   const { code, data } = await fetch(api).then((res) => res.json());
   if (code === 200) {
     const { txInfo, proof, blockInfo, sequence, txTransaction } = data;
