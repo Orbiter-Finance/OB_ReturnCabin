@@ -12,10 +12,11 @@ import {StrSlice, toSlice, StrChar, StrChar__} from "./stringutils/StrSlice.sol"
 
 contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     IORManager public getManager;
-    uint256 public challengePledgedAmount;
-    uint256 public pledgeAmountSafeRate;
-    uint256 public mainCoinPunishRate;
-    uint256 public tokenPunishRate;
+    // uint256 public challengePledgedAmount;
+    // uint256 public pledgeAmountSafeRate;
+    // uint256 public mainCoinPunishRate;
+    // uint256 public tokenPunishRate;
+    OperationsLib.EBCConfigStruct public config;
     using {toSlice} for string;
 
     // mapping(uint16 => uint256) idChainID;
@@ -29,33 +30,33 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     ) external initializer {
         require(_manager != address(0), "Owner address error");
         getManager = IORManager(_manager);
-        challengePledgedAmount = _challengePledgedAmount;
-        pledgeAmountSafeRate = _pledgeAmountSafeRate;
-        mainCoinPunishRate = _mainCoinPunishRate;
-        tokenPunishRate = _tokenPunishRate;
+        config.challengePledgedAmount = _challengePledgedAmount;
+        config.pledgeAmountSafeRate = _pledgeAmountSafeRate;
+        config.mainCoinPunishRate = _mainCoinPunishRate;
+        config.tokenPunishRate = _tokenPunishRate;
         __Ownable_init();
     }
 
     // The parameter here is the user challenge pledge factor in wei.
     function setChallengePledgedAmount(uint256 value) external onlyOwner {
-        challengePledgedAmount = value;
+        config.challengePledgedAmount = value;
         emit ChangeChallengePledgedAmount(value);
     }
 
     // The parameter is a number of percentile precision, for example: When tenDigits is 110, it represents 1.1
     function setPledgeAmountSafeRate(uint256 value) external onlyOwner {
-        pledgeAmountSafeRate = value;
+        config.pledgeAmountSafeRate = value;
         emit ChangePledgeAmountSafeRate(value);
     }
 
     // The parameter is a number of percentile precision, for example: When tenDigits is 110, it represents 1.1
     function setMainCoinPunishRate(uint256 value) external onlyOwner {
-        mainCoinPunishRate = value;
+        config.mainCoinPunishRate = value;
     }
 
     // The parameter is a number of percentile precision, for example: When tenDigits is 110, it represents 1.1
     function setTokenPunishRate(uint256 value) external onlyOwner {
-        tokenPunishRate = value;
+        config.tokenPunishRate = value;
     }
     function getPledgedAmount(uint256 chainId, uint256 maxPrice)
         external
@@ -64,17 +65,17 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     {
         require(chainId != 0, "chain not exist");
         (, , uint256 batchLimit, , , ,) = getManager.getChain(chainId);
-        require(batchLimit != 0 && maxPrice != 0 && pledgeAmountSafeRate != 0, "PledgeAmountSafeRate Non Set");
-        return ((batchLimit * maxPrice) * pledgeAmountSafeRate) / 10000;
+        require(batchLimit != 0 && maxPrice != 0 && config.pledgeAmountSafeRate != 0, "PledgeAmountSafeRate Non Set");
+        return ((batchLimit * maxPrice) * config.pledgeAmountSafeRate) / 10000;
     }
     function getPledgeAmount(uint256 batchLimit, uint256 maxPrice)
         external
         view
         returns (uint256 baseValue, uint256 additiveValue)
     {
-        require(batchLimit != 0 && maxPrice != 0 && pledgeAmountSafeRate != 0, "PledgeAmountSafeRate Non Set");
+        require(batchLimit != 0 && maxPrice != 0 && config.pledgeAmountSafeRate != 0, "PledgeAmountSafeRate Non Set");
         baseValue = (batchLimit * maxPrice);
-        additiveValue = (baseValue * pledgeAmountSafeRate) / 10000;
+        additiveValue = (baseValue * config.pledgeAmountSafeRate) / 10000;
     }
 
     function calculateCompensation(address token, uint256 value)
@@ -84,14 +85,13 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     {
         baseValue = value;
         if (token == address(0)) {
-            additiveValue = (baseValue * mainCoinPunishRate) / 10000;
+            additiveValue = (baseValue * config.mainCoinPunishRate) / 10000;
         } else {
-            additiveValue = (baseValue * tokenPunishRate) / 10000;
+            additiveValue = (baseValue * config.tokenPunishRate) / 10000;
         }
     }
 
     function getAmountValidDigits(
-        uint256 chainId,
         string memory value,
         uint256 maxUint
     ) internal pure returns (uint256) {
@@ -125,7 +125,7 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
         StrSlice strValue = Strings.toString(value).toSlice();
         uint256 valueMaxLen = strValue.len();
         require(valueMaxLen >= 4, "validDigit Error");
-        uint256 validDigit = getAmountValidDigits(chainKey, strValue.toString(), maxUint);
+        uint256 validDigit = getAmountValidDigits(strValue.toString(), maxUint);
         require(validDigit > 0, "validDigit Error");
         if (maxUint < 256 && valueMaxLen > validDigit) {
             strValue = strValue.getSubslice(0, validDigit);
@@ -170,7 +170,7 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
         }
     }
 
-    function checkUserChallenge(OperationsLib.Transaction memory _tx, bytes32[] memory _txproof)
+    function checkUserChallenge(OperationsLib.Transaction memory _tx, uint256 value)
         external
         view
         returns (
@@ -178,21 +178,14 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
             bool
         )
     {
-        // bytes32 lpid = _txinfo.lpid;
-        //1. txinfo is already spv
-        // address spvAddress = getManager.getSPV();
-        // Verify that txinfo and txproof are valid
-        // TODO: IProventh
-        // bool txVerify = IORSpv(spvAddress).verifyUserTxProof(_txinfo, _txproof);
-        // require(txVerify, "UCE_1");
 
+        require(value >= config.challengePledgedAmount);
         return true;
     }
 
     function checkMakerChallenge(
         OperationsLib.Transaction memory _userTx,
-        OperationsLib.Transaction memory _makerTx,
-        bytes32[] memory _makerProof
+        OperationsLib.Transaction memory _makerTx
     ) external view returns (bool) {
         // address spvAddress = getManager.getSPV();
 

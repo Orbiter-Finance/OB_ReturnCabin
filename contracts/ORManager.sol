@@ -35,7 +35,6 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable, Multicall {
 
     function addEBC(address ebc) external onlyOwner {
         require(ebc != address(0), "zero-check");
-        // getEBC[++ebcId] = ebc;
         ebcs.add(ebc);
     }
 

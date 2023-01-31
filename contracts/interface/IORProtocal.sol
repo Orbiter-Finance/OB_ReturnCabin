@@ -12,15 +12,13 @@ interface IORProtocal {
         view
         returns (uint256 baseValue, uint256 additiveValue);
 
-    function challengePledgedAmount() external view returns (uint256);
 
     function checkMakerChallenge(
         OperationsLib.Transaction memory _userTx,
-        OperationsLib.Transaction memory _makerTx,
-        bytes32[] memory _makerProof
+        OperationsLib.Transaction memory _makerTx
     ) external view returns (bool);
 
-    function checkUserChallenge(OperationsLib.Transaction memory _tx, bytes32[] memory _txproof)
+    function checkUserChallenge(OperationsLib.Transaction memory _tx, uint value)
         external
         view
         returns (bool);
@@ -52,18 +50,4 @@ interface IORProtocal {
         uint256 _mainCoinPunishRate,
         uint256 _tokenPunishRate
     ) external;
-
-    function mainCoinPunishRate() external view returns (uint256);
-
-    function pledgeAmountSafeRate() external view returns (uint256);
-
-    function setChallengePledgedAmount(uint256 value) external;
-
-    function setMainCoinPunishRate(uint256 value) external;
-
-    function setPledgeAmountSafeRate(uint256 value) external;
-
-    function setTokenPunishRate(uint256 value) external;
-
-    function tokenPunishRate() external view returns (uint256);
 }

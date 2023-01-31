@@ -50,6 +50,10 @@ describe('ORProtocalV1.test.ts', () => {
     const result = await ebc.getToTxNonceId(tx);
     expect(result).eq(DataInit.userTxList[0].nonce);
   });
+  it('ebc config', async () => {
+    const result = await ebc.config();
+    console.log(result);
+  });
   // it('Get Safety Code From TxList', async function () {
   //   this.timeout(1000 * 60 * 30);
   //   const unmatched = [];
@@ -107,8 +111,8 @@ describe('ORProtocalV1.test.ts', () => {
   it('setAndGetChallengePledgeAmountCoefficient', async () => {
     const value = ethers.utils.parseEther('0.05');
     await ebc.connect(ebcOwner).setChallengePledgedAmount(value);
-    const result = await ebc.challengePledgedAmount();
-    expect(result).eq(value);
+    const result = await ebc.config();
+    expect(result.challengePledgedAmount).eq(value);
   });
   it('setAndGetDepositAmountCoefficient', async () => {
     const value = 1000;
@@ -128,8 +132,8 @@ describe('ORProtocalV1.test.ts', () => {
       .setMainCoinPunishRate(value)
       .then(async (tx) => {
         await tx.wait();
-        const result = await ebc.mainCoinPunishRate();
-        expect(result).eq(value);
+        const result = await ebc.config();
+        expect(result.mainCoinPunishRate).eq(value);
       });
   });
   it('setAndGetTokenPunishCoefficient', async () => {
@@ -139,8 +143,8 @@ describe('ORProtocalV1.test.ts', () => {
       .setTokenPunishRate(value)
       .then(async (tx) => {
         await tx.wait();
-        const result = await ebc.tokenPunishRate();
-        expect(result).eq(value);
+        const result = await ebc.config();
+        expect(result.tokenPunishRate).eq(value);
       });
   });
   // it('getETHPunish', async () => {

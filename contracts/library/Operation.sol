@@ -2,12 +2,11 @@
 pragma solidity ^0.8.17;
 
 library OperationsLib {
-    struct CalculatePledgeResponse {
-        uint256 chainId;
-        uint256 baseValue;
-        uint256 additiveValue;
-        uint256 pledged;
-        uint256 pledgeValue;
+    struct EBCConfigStruct {
+        uint256 challengePledgedAmount;
+        uint256 pledgeAmountSafeRate;
+        uint256 mainCoinPunishRate;
+        uint256 tokenPunishRate;
     }
     struct CalculatePairPledgeResponse {
         bytes32 pairId;
@@ -19,13 +18,6 @@ library OperationsLib {
         address pledgedToken;
         uint256 chainId;
         uint256 pledgedValue;
-    }
-    struct calcLpNeedPledgeAmountParams {
-        bytes32 pairId;
-        uint256 fromChain;
-        uint256 maxPrice;
-        address fromToken;
-        address ebc;
     }
 
     struct TokenInfo {
@@ -107,11 +99,6 @@ library OperationsLib {
         uint256 startTime;
     }
 
-    struct lpPairInfo {
-        bytes32 lpId;
-        uint256 stopTime;
-        uint256 startTime;
-    }
 
     struct challengeInfo {
         uint256 challengeState; // 0:unused   1:watting for maker  2.maker success   3.maker failed   4.ma
@@ -159,7 +146,7 @@ library OperationsLib {
         return
             keccak256(
                 abi.encodePacked(
-                    // _txinfo.lpid,
+                    _txinfo.chainId,
                     _txinfo.from,
                     _txinfo.to,
                     _txinfo.value,
@@ -178,15 +165,6 @@ library OperationsLib {
             }
         }
         return result;
-    }
-
-    function bytesToUint256(bytes memory _bs) internal pure returns (uint256 value) {
-        // require(_bs.length == 32, "bytes length is not 32.");
-        assembly {
-            // load 32 bytes from memory starting from position _bs + 32
-            value := mload(add(_bs, 0x20))
-        }
-        require(value <= 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff, "Value exceeds the range");
     }
 
     struct ValidateParams {

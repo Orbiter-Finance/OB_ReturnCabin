@@ -59,14 +59,6 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
         owner = _owner;
     }
 
-    // function pairExist(uint256 chainId, bytes32 pairId) external view returns (bool) {
-    //     return chainPairs[chainId].contains(pairId);
-    // }
-
-    // function getLpId(OperationsLib.LPStruct calldata _lp) external view returns (bytes32) {
-    //     return OperationsLib.getLpID(address(this), _lp);
-    // }
-
     function getPledgeBalance(address token) external view returns (uint256) {
         (, uint256 value) = pledgeBalance.tryGet(token);
         return value;
@@ -76,14 +68,6 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
         (, uint256 value) = sourceChainPledgeBalance[chainId].tryGet(token);
         return value;
     }
-
-    // function getPairsByPledgeToken(address token) external view returns (bytes32[] memory) {
-    //     return pledgeTokenPairs[token].values();
-    // }
-
-    // function getPairsByChain(uint256 _chainId) external view returns (bytes32[] memory) {
-    //     return chainPairs[_chainId].values();
-    // }
 
     function getManager() private view returns (IORManager manager) {
         manager = getMakerFactory.getManager();
@@ -427,9 +411,9 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
         bytes32 challengeID = OperationsLib.getChallengeID(_txinfo);
         // The corresponding challengeInfo is required to be in an unused state.
         require(challengeInfos[challengeID].challengeState == 0, "UCE_USED");
-        uint256 pledgeAmount = IORProtocal(ebcAddress).challengePledgedAmount();
+        // uint256 pledgeAmount = IORProtocal(ebcAddress).challengePledgedAmount();
         // The pledge required to be transferred by the user is greater than that stipulated in the EBC contract.
-        require(msg.value >= pledgeAmount, "UCE_PLEDGEAMOUNT");
+        require(IORProtocal(ebcAddress).checkUserChallenge(_txinfo, msg.value), "checkUserChallenge Fail");
         // Obtaining txinfo Validity Proof by EBC
         challengeInfos[challengeID].responseTxinfo = IORProtocal(ebcAddress).getResponseHash(_txinfo, true);
         challengeInfos[challengeID].pledged = msg.value;
@@ -572,7 +556,7 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
         // Determine whether sourceAddress in txinfo is an MDC address
         require(_makerTx.from == msg.sender, "MC_SENDER");
         // userTx,makerTx and makerProof are provided to EBC and verified to pass
-        require(IORProtocal(ebcAddress).checkMakerChallenge(_userTx, _makerTx, _makerProof), "MC_ERROR");
+        require(IORProtocal(ebcAddress).checkMakerChallenge(_userTx, _makerTx), "MC_ERROR");
         // Obtaining _makerTx Validity Proof by EBC
         // TODO: get responseSafetyCode
         uint256 responseSafetyCode = 0;
