@@ -174,30 +174,32 @@ describe('MakerDeposit.test.ts', () => {
     });
     it('LP Stop', async () => {
       const lps = DataInit.lps;
-      const pauseCodes = [lps[0].pairId, lps[1].pairId].map((row) => {
+      await MDC.connect(makerAccount).lpAction([lps[2]]);
+      const pauseCodes = [lps[0].pairId, lps[1].pairId, lps[2].pairId].map((row) => {
         return MDC.interface.encodeFunctionData('lpPause', [row]);
       });
-      const pause1Tx = await MDC.connect(makerAccount).multicall(pauseCodes);
-      await pause1Tx.wait();
       const idleAmountBefore = await MDC.idleAmount(
         '0x0000000000000000000000000000000000000000',
       );
-      // console.log(idleAmountBefore, '==idleAmount before');
+      const pause1Tx = await MDC.connect(makerAccount).multicall(pauseCodes);
+      await pause1Tx.wait();
+  
       const effectivePair = await MDC.effectivePair(lps[0].pairId);
       expect(effectivePair.lpId).not.empty;
       expect(effectivePair.startTime).eq(0);
-      // console.log(effectivePair.stopTime, '====effectivePair');
       expect(effectivePair.stopTime).gt(0);
       // stop
       await speedUpTime(3600);
-      const stop1Tx = await MDC.connect(makerAccount).lpStop(
-        lps[0].pairId,
-        // lps[1].pairId,
-      );
+       const stopCodes = [lps[0], lps[2], lps[1]].map((row) => {
+        return MDC.interface.encodeFunctionData('lpStop', [row.pairId]);
+      });
+      const stop1Tx = await MDC.connect(makerAccount).multicall(stopCodes);
+      await stop1Tx.wait();
       const idleAmountAfter = await MDC.idleAmount(
         '0x0000000000000000000000000000000000000000',
       );
-      console.log(idleAmountAfter, '==idleAmount after');
+      expect(idleAmountAfter).gt(idleAmountBefore);
+      expect(idleAmountAfter).eq(totalPledgeValue);
     });
   });
 });

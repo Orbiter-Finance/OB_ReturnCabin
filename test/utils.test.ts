@@ -241,8 +241,11 @@ export class DataInit {
         stopTime: 0,
       };
       if (pair.sourceChain && pair.destChain == 9033) {
-          lp.maxPrice = '100000000000000000';
+        lp.maxPrice = '100000000000000000';
       }
+      if (pair.sourceChain && pair.destChain == 9077) {
+        lp.maxPrice = '150000000000000000';
+    }
       const lpId = solidityKeccak256(
         ['bytes32', 'address', 'uint256', 'uint256', 'uint256'],
         [
