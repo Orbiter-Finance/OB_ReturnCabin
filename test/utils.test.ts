@@ -94,10 +94,12 @@ export async function getORProtocalV1Contract(): Promise<ORProtocalV1> {
       true,
       name,
       managerContractAddress,
-      ethers.utils.parseEther('0.05'),
-      10 * 100,
-      10 * 100,
-      10 * 100,
+      {
+        challengePledgedAmount: ethers.utils.parseEther('0.05'),
+        pledgeAmountSafeRate: 10 * 100,
+        mainCoinPunishRate: 10 * 100,
+        tokenPunishRate: 10 * 100,
+      }
     );
     process.env[name] = contract.address;
     return contract;

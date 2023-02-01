@@ -43,11 +43,4 @@ interface IORProtocal {
 
     function getValueSecuirtyCode(uint256 chainKey, uint256 value) external view returns (string memory);
 
-    function initialize(
-        address _manager,
-        uint256 _challengePledgedAmount,
-        uint256 _pledgeAmountSafeRate,
-        uint256 _mainCoinPunishRate,
-        uint256 _tokenPunishRate
-    ) external;
 }

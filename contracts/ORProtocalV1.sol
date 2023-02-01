@@ -6,16 +6,11 @@ import "./interface/IORManager.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
-import "hardhat/console.sol";
 
 import {StrSlice, toSlice, StrChar, StrChar__} from "./stringutils/StrSlice.sol";
 
 contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     IORManager public getManager;
-    // uint256 public challengePledgedAmount;
-    // uint256 public pledgeAmountSafeRate;
-    // uint256 public mainCoinPunishRate;
-    // uint256 public tokenPunishRate;
     OperationsLib.EBCConfigStruct public config;
     using {toSlice} for string;
 
@@ -23,17 +18,11 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
 
     function initialize(
         address _manager,
-        uint256 _challengePledgedAmount,
-        uint256 _pledgeAmountSafeRate,
-        uint256 _mainCoinPunishRate,
-        uint256 _tokenPunishRate
+        OperationsLib.EBCConfigStruct calldata _config
     ) external initializer {
         require(_manager != address(0), "Owner address error");
         getManager = IORManager(_manager);
-        config.challengePledgedAmount = _challengePledgedAmount;
-        config.pledgeAmountSafeRate = _pledgeAmountSafeRate;
-        config.mainCoinPunishRate = _mainCoinPunishRate;
-        config.tokenPunishRate = _tokenPunishRate;
+        config = _config;
         __Ownable_init();
     }
 
@@ -44,18 +33,18 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     }
 
     // The parameter is a number of percentile precision, for example: When tenDigits is 110, it represents 1.1
-    function setPledgeAmountSafeRate(uint256 value) external onlyOwner {
+    function setPledgeAmountSafeRate(uint16 value) external onlyOwner {
         config.pledgeAmountSafeRate = value;
         emit ChangePledgeAmountSafeRate(value);
     }
 
     // The parameter is a number of percentile precision, for example: When tenDigits is 110, it represents 1.1
-    function setMainCoinPunishRate(uint256 value) external onlyOwner {
+    function setMainCoinPunishRate(uint16 value) external onlyOwner {
         config.mainCoinPunishRate = value;
     }
 
     // The parameter is a number of percentile precision, for example: When tenDigits is 110, it represents 1.1
-    function setTokenPunishRate(uint256 value) external onlyOwner {
+    function setTokenPunishRate(uint16 value) external onlyOwner {
         config.tokenPunishRate = value;
     }
     function getPledgedAmount(uint256 chainId, uint256 maxPrice)
@@ -153,6 +142,7 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     }
 
     function getResponseAmount(OperationsLib.Transaction calldata tx) external pure returns (uint256) {
+        // get pairId & lpInfo
         return 9990000000000071;
     }
 
@@ -174,11 +164,9 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
         external
         view
         returns (
-            // Verify that txinfo and txproof are valid
             bool
         )
     {
-
         require(value >= config.challengePledgedAmount);
         return true;
     }

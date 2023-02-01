@@ -4,9 +4,9 @@ pragma solidity ^0.8.17;
 library OperationsLib {
     struct EBCConfigStruct {
         uint256 challengePledgedAmount;
-        uint256 pledgeAmountSafeRate;
-        uint256 mainCoinPunishRate;
-        uint256 tokenPunishRate;
+        uint16 pledgeAmountSafeRate;
+        uint16 mainCoinPunishRate;
+        uint16 tokenPunishRate;
     }
     struct CalculatePairPledgeResponse {
         bytes32 pairId;
