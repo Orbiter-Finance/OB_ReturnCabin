@@ -11,8 +11,6 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable, Multicall {
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using EnumerableSet for EnumerableSet.AddressSet;
     address public getSPV;
-    // internal id => chainId
-    mapping(uint256 => uint256) public idChainID;
     // internal id  => ChainInfo
     mapping(uint256 => OperationsLib.ChainInfo) public getChain;
     // tokenId => tokenInfo
@@ -44,17 +42,14 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable, Multicall {
 
     function setChainInfo(
         uint256 id,
-        uint256 chainId,
         uint256 batchLimit,
         uint256 maxDisputeTime,
         uint256 maxReceiptTime,
         uint256 stopDelayTime,
         uint256 maxBits
     ) external onlyOwner {
-        idChainID[chainId] = id;
         getChain[id] = OperationsLib.ChainInfo(
             id,
-            chainId,
             batchLimit,
             maxDisputeTime,
             maxReceiptTime,

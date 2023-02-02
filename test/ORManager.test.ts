@@ -24,7 +24,6 @@ describe('ORManager.test.ts => Chain', () => {
       }
       return contract.interface.encodeFunctionData('setChainInfo', [
         chain.id,
-        chain.chainID,
         chain.batchLimit,
         chain.maxDisputeTime,
         chain.maxReceiptTime,
@@ -118,7 +117,6 @@ describe('ORManager.test.ts => Chain', () => {
     const manager = await getManagerContract();
     const {
       id,
-      chainID,
       batchLimit,
       stopDelayTime,
       maxDisputeTime,
@@ -128,7 +126,6 @@ describe('ORManager.test.ts => Chain', () => {
     await manager
       .setChainInfo(
         id,
-        chainID,
         batchLimit * 2,
         maxDisputeTime,
         maxReceiptTime,

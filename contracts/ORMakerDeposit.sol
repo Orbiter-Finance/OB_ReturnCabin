@@ -229,7 +229,7 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
         require(effectivePairItem.lpId != 0, "LP does not exist");
         require(effectivePairItem.startTime != 0 && effectivePairItem.stopTime == 0, "LP not started");
         (uint256 sourceChain, , , , ) = manager.getPairs(pairId);
-        (, , , , , uint256 stopDelayTime, ) = manager.getChain(sourceChain);
+        (, , , , uint256 stopDelayTime, ) = manager.getChain(sourceChain);
         effectivePairItem.stopTime = block.timestamp + stopDelayTime;
         effectivePairItem.startTime = 0;
         // emit LogLPPause(pairId, lpInfo[pairId].lpId, _lpinfo);
@@ -403,7 +403,7 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
         // Determine whether destAddress in txinfo is an MDC address
         require(_txinfo.to == owner, "UCE_4");
         // Verify whether it is within the period of appeal
-        (, , , , uint256 maxReceiptTime, , ) = getManager().getChain(_txinfo.chainId);
+        (, , , uint256 maxReceiptTime, , ) = getManager().getChain(_txinfo.chainId);
 
         require(block.timestamp > _txinfo.timestamp + maxReceiptTime, "UCE_5");
         // txinfo and txproof are provided to EBC and verified to pass
@@ -425,7 +425,7 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
         // Change the corresponding challengeInfos state to waiting for maker
         challengeInfos[challengeID].challengeState = 1;
         // challengeInfos's stopTime is the current time plus the maxDisputeTime.
-        (, , , uint256 maxDisputeTime, , , ) = getManager().getChain(_txinfo.chainId);
+        (, , uint256 maxDisputeTime, , , ) = getManager().getChain(_txinfo.chainId);
         challengeInfos[challengeID].stopTime = block.timestamp + maxDisputeTime;
         challengeInfos[challengeID].endTime = block.timestamp + maxDisputeTime + maxDisputeTime;
 

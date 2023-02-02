@@ -17,7 +17,6 @@ interface IORManager {
         view
         returns (
             uint256 id,
-            uint256 chainId,
             uint256 batchLimit,
             uint256 maxDisputeTime,
             uint256 maxReceiptTime,
@@ -44,8 +43,6 @@ interface IORManager {
 
     function getTokenInfo(uint256 chainID, address tokenAddress) external view returns (OperationsLib.TokenInfo memory);
 
-    function idChainID(uint256) external view returns (uint256);
-
     function initialize() external;
 
     function isSupportPair(bytes32 pairId) external view returns (bool);
@@ -56,7 +53,6 @@ interface IORManager {
 
     function setChainInfo(
         uint256 id,
-        uint256 chainId,
         uint256 batchLimit,
         uint256 maxDisputeTime,
         uint256 maxReceiptTime,

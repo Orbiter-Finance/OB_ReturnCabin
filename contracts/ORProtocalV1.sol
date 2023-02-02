@@ -5,7 +5,7 @@ import "./interface/IORProtocal.sol";
 import "./interface/IORManager.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
+import "hardhat/console.sol";
 
 import {StrSlice, toSlice, StrChar, StrChar__} from "./stringutils/StrSlice.sol";
 
@@ -13,9 +13,6 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     IORManager public getManager;
     OperationsLib.EBCConfigStruct public config;
     using {toSlice} for string;
-
-    // mapping(uint16 => uint256) idChainID;
-
     function initialize(
         address _manager,
         OperationsLib.EBCConfigStruct calldata _config
@@ -25,7 +22,9 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
         config = _config;
         __Ownable_init();
     }
-
+    function setConfig(OperationsLib.EBCConfigStruct calldata _config) external onlyOwner {
+        config = _config;
+    }
     // The parameter here is the user challenge pledge factor in wei.
     function setChallengePledgedAmount(uint256 value) external onlyOwner {
         config.challengePledgedAmount = value;
@@ -53,7 +52,7 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
         returns (uint256 value)
     {
         require(chainId != 0, "chain not exist");
-        (, , uint256 batchLimit, , , ,) = getManager.getChain(chainId);
+        ( , uint256 batchLimit, , , ,) = getManager.getChain(chainId);
         require(batchLimit != 0 && maxPrice != 0 && config.pledgeAmountSafeRate != 0, "PledgeAmountSafeRate Non Set");
         return ((batchLimit * maxPrice) * config.pledgeAmountSafeRate) / 10000;
     }
@@ -83,10 +82,12 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     function getAmountValidDigits(
         string memory value,
         uint256 maxUint
-    ) internal pure returns (uint256) {
+    ) internal view returns (uint256) {
         StrSlice strValue = value.toSlice();
         uint256 maxValue = maxUint < 256 ? 2**maxUint - 1 : type(uint256).max;
-        StrSlice maxValueSlice = Strings.toString(maxValue).toSlice();
+        StrSlice maxValueSlice = OperationsLib.uintToString(maxValue).toSlice();
+        console.logString("maxValueSlice");
+        console.logString(maxValueSlice.toString());
         // // uint i = strValue.len() - 1;
         // // StrSlice removeSidesZero;
         uint256 valueLen = strValue.len();
@@ -108,10 +109,10 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     }
 
     function getValueSecuirtyCode(uint256 chainKey, uint256 value) public view returns (string memory) {
-        (, , , , , , uint256 maxUint) = getManager.getChain(chainKey);
+        (, , , , , uint256 maxUint) = getManager.getChain(chainKey);
         require(maxUint != 0, "Maximum bits not set");
         require(maxUint <= 256, "The maximum bits exceeds 256");
-        StrSlice strValue = Strings.toString(value).toSlice();
+        StrSlice strValue = OperationsLib.uintToString(value).toSlice();
         uint256 valueMaxLen = strValue.len();
         require(valueMaxLen >= 4, "validDigit Error");
         uint256 validDigit = getAmountValidDigits(strValue.toString(), maxUint);
@@ -122,10 +123,28 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
         strValue = strValue.getSubslice(strValue.len() - 4, strValue.len());
         return strValue.toString();
     }
-
+    function getTxValueToChainId(uint256 value)  public view returns (uint256) {
+      StrSlice strValue = OperationsLib.uintToString(value).toSlice();
+      uint maxLen = strValue.len();
+      require(maxLen >= 5, "Incorrect amount length");
+      console.logString("--------------");
+      console.logUint(strValue.len());
+      uint lastFIndex = strValue.rfind(string("9").toSlice());
+      console.logUint(lastFIndex);
+      require(lastFIndex >= maxLen-4, "Identity not found");
+      strValue = strValue.getSubslice(maxLen - 4, lastFIndex + 4);
+      uint256 chainId = OperationsLib.stringToUint(strValue.toString());
+      console.logUint(chainId);
+      // (bool found, StrSlice prefix, StrSlice suffix) = strValue.rsplitOnce(string("9").toSlice());
+      // require(found, "Identity not found");
+      // console.logBool(found);
+      // console.logString(strValue.toString());
+      // console.logString(prefix.toString());
+      // console.logString(suffix.toString());
+      return chainId;
+    }
     function getFromTxChainId(OperationsLib.Transaction calldata tx) public view returns (uint256) {
-        uint256 chainKey = getManager.idChainID(tx.chainId);
-        (uint256 chainId, , , , , , ) = getManager.getChain(chainKey);
+        (uint256 chainId,  , , , , ) = getManager.getChain(tx.chainId);
         require(chainId != 0, "chainId not set");
         string memory toChainId = getValueSecuirtyCode(chainId, tx.value);
         uint256 code = OperationsLib.stringToUint(toChainId);
@@ -133,30 +152,102 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     }
 
     function getToTxNonceId(OperationsLib.Transaction calldata tx) public view returns (uint256) {
-        uint256 chainKey = getManager.idChainID(tx.chainId);
-        (uint256 chainId, , , , , , ) = getManager.getChain(chainKey);
+        (uint256 chainId, , , , , ) = getManager.getChain(tx.chainId);
         require(chainId != 0, "chainId not set");
         string memory toChainId = getValueSecuirtyCode(chainId, tx.value);
         uint256 code = OperationsLib.stringToUint(toChainId);
         return code;
     }
 
-    function getResponseAmount(OperationsLib.Transaction calldata tx) external pure returns (uint256) {
+    function getResponseAmount(OperationsLib.Transaction calldata tx) external view returns (uint256) {
+        require(tx.nonce<=9999, "nonce too high, not allowed");
+        uint gasFeeRate = 1000;
+        uint tradingFee = 100000000000000;
+        // usdt
+        // uint tradingFee = 100000;
         // get pairId & lpInfo
-        return 9990000000000071;
+        uint toAmountTradingFee = tx.value - tradingFee;
+        uint fee = toAmountTradingFee * gasFeeRate / 10000;
+        console.logString("getResponseAmount");
+        console.logUint(toAmountTradingFee);
+        console.logUint(fee);
+        uint sendValue = toAmountTradingFee - fee;
+        console.logUint(sendValue);
+        string memory nonce = OperationsLib.uintToString(tx.nonce);
+        for (uint i = nonce.toSlice().len();i<4;) {
+          nonce=string.concat("0", nonce);
+          unchecked {
+                ++i;
+            }
+        }
+        console.logString("nonce");
+        console.logString(nonce);
+        StrSlice strValue = OperationsLib.uintToString(sendValue).toSlice();
+        uint maxLen = strValue.len();
+        require(maxLen>4, "The length is too short");
+
+        StrSlice afterStr =strValue.getSubslice(0, maxLen - 4);
+        console.logString("sub");
+        console.logUint(maxLen);
+        console.logString(afterStr.toString());
+        string memory data = string.concat(afterStr.toString(), nonce);
+        console.logString(data);
+        // return 9990000000000071;
+        uint amount = OperationsLib.stringToUint(data);
+        require(amount<tx.value, "Amount calculation exception");
+        return amount;
+    }
+    function getResponseAmountTest(OperationsLib.Transaction calldata tx, uint gasFeeRate, uint tradingFee) external view returns (uint256) {
+        require(tx.nonce<=9999, "nonce too high, not allowed");
+        // uint gasFeeRate = 1000;
+        // uint tradingFee = 100000000000000;
+        // usdt
+        // uint tradingFee = 100000;
+        // get pairId & lpInfo
+        uint toAmountTradingFee = tx.value - tradingFee;
+        uint fee = toAmountTradingFee * gasFeeRate / 10**18;
+        console.logString("getResponseAmount");
+        console.logUint(toAmountTradingFee);
+        console.logUint(fee);
+        uint sendValue = toAmountTradingFee - fee;
+        console.logUint(sendValue);
+        string memory nonce = OperationsLib.uintToString(tx.nonce);
+        for (uint i = nonce.toSlice().len();i<4;) {
+          nonce=string.concat("0", nonce);
+          unchecked {
+                ++i;
+            }
+        }
+        console.logString("nonce");
+        console.logString(nonce);
+        StrSlice strValue = OperationsLib.uintToString(sendValue).toSlice();
+        uint maxLen = strValue.len();
+        require(maxLen>4, "The length is too short");
+
+        StrSlice afterStr =strValue.getSubslice(0, maxLen - 4);
+        console.logString("sub");
+        console.logUint(maxLen);
+        console.logString(afterStr.toString());
+        string memory data = string.concat(afterStr.toString(), nonce);
+        console.logString(data);
+        // return 9990000000000071;
+        uint amount = OperationsLib.stringToUint(data);
+        require(amount<tx.value, "Amount calculation exception");
+        return amount;
     }
 
     function getResponseHash(OperationsLib.Transaction calldata tx, bool isSource) external view returns (bytes32) {
         if (isSource) {
-            uint256 toChainId = this.getFromTxChainId(tx);
-            require(toChainId != 0, "chainId not set");
+            require(tx.nonce<=9999, "nonce too high, not allowed");
+            uint256 chainId = this.getFromTxChainId(tx);
+            require(chainId>=9000, "The chainId is incorrect");
             uint256 responseAmount = this.getResponseAmount(tx);
-            return keccak256(abi.encodePacked(tx.from, tx.to, toChainId, tx.nonce, responseAmount));
+            return keccak256(abi.encodePacked(tx.from, tx.to, chainId, tx.nonce, responseAmount));
         } else {
-            uint256 chainKey = getManager.idChainID(tx.chainId);
-            require(chainKey != 0, "chainKey not set");
+            require(tx.nonce<=8999, "nonce too high, not allowed");
+            require(tx.chainId != 0, "The chainId is incorrect");
             uint256 fromNonce = this.getToTxNonceId(tx);
-            return keccak256(abi.encodePacked(tx.to, tx.from, chainKey, fromNonce, tx.value));
+            return keccak256(abi.encodePacked(tx.to, tx.from, tx.chainId, fromNonce, tx.value));
         }
     }
 
@@ -181,7 +272,7 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
         // TODO:
         // bool txVerify = IORSpv(spvAddress).verifyMakerTxProof(_makerTx, _makerProof);
         // require(txVerify, "MCE_UNVERIFY");
-        (, , , uint256 maxDisputeTime, , , ) = getManager.getChain(_userTx.chainId);
+        (,  , uint256 maxDisputeTime, , , ) = getManager.getChain(_userTx.chainId);
         // The transaction time of maker is required to be later than that of user.
         // At the same time, the time difference between the above two times is required to be less than the maxDisputeTime.
         require(

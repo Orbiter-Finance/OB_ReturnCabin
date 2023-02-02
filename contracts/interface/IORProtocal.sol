@@ -35,7 +35,7 @@ interface IORProtocal {
         view
         returns (uint256 baseValue, uint256 additiveValue);
 
-    function getResponseAmount(OperationsLib.Transaction memory tx) external pure returns (uint256);
+    function getResponseAmount(OperationsLib.Transaction memory tx) external view returns (uint256);
 
     function getResponseHash(OperationsLib.Transaction memory tx, bool isSource) external view returns (bytes32);
 
