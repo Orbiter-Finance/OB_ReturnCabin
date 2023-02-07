@@ -42,10 +42,9 @@ describe('ORProtocalV1.test.ts', () => {
     });
     // expect(await factoryContract.getEBC(1)).equal(ebc.address);
   });
-   it('getFromTxChainId 1', async () => {
-    // const result = await ebc.getTxValueToChainId("2729170000000002002");
-    const result = await ebc.getTxValueToChainId("272970000000009002");
-    // expect(result).eq(9022);
+  it('getFromTxChainId 1', async () => {
+    const result = await ebc.getTxValueToChainId('272970000009002002');
+    expect(result).eq(9002);
   });
   it('getFromTxChainId', async () => {
     const tx = DataInit.userTxList[0];

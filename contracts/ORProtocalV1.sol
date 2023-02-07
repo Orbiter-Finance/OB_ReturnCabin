@@ -131,8 +131,8 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
       console.logUint(strValue.len());
       uint lastFIndex = strValue.rfind(string("9").toSlice());
       console.logUint(lastFIndex);
-      require(lastFIndex >= maxLen-4, "Identity not found");
-      strValue = strValue.getSubslice(maxLen - 4, lastFIndex + 4);
+      require(lastFIndex <= maxLen-4, "Identity not found");
+      strValue = strValue.getSubslice(lastFIndex, lastFIndex + 4);
       uint256 chainId = OperationsLib.stringToUint(strValue.toString());
       console.logUint(chainId);
       // (bool found, StrSlice prefix, StrSlice suffix) = strValue.rsplitOnce(string("9").toSlice());
