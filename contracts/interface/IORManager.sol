@@ -24,6 +24,8 @@ interface IORManager {
             uint256 maxBits
         );
 
+    function getEbcIds() external view returns (address[] memory);
+
     function getPairIds() external view returns (bytes32[] memory);
 
     function getPairs(bytes32)
@@ -36,9 +38,12 @@ interface IORManager {
             address destToken,
             address ebc
         );
- function calculatePairPledgeAmount(
-        OperationsLib.LPActionStruct[] calldata _lps
-    ) external view returns (OperationsLib.CalculatePairPledgeResponse[] memory);
+
+    function calculatePairPledgeAmount(OperationsLib.LPActionStruct[] calldata _lps)
+        external
+        view
+        returns (OperationsLib.CalculatePairPledgeResponse[] memory);
+
     function getSPV() external view returns (address);
 
     function getTokenInfo(uint256 chainID, address tokenAddress) external view returns (OperationsLib.TokenInfo memory);

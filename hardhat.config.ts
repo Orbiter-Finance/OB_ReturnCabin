@@ -3,10 +3,11 @@ import '@nomicfoundation/hardhat-toolbox';
 import '@nomiclabs/hardhat-web3';
 import '@openzeppelin/hardhat-upgrades';
 import 'hardhat-contract-sizer';
-import "@nomiclabs/hardhat-etherscan";
+import '@nomiclabs/hardhat-etherscan';
 import 'solidity-docgen';
 import { HardhatUserConfig, task } from 'hardhat/config';
-const { INFURA_API_KEY, ETHERSCAN_API_KEY,ALCHEMY_KEY, NETWORK,ACCOUNTS} = process.env;
+const { INFURA_API_KEY, ETHERSCAN_API_KEY, ALCHEMY_KEY, NETWORK, ACCOUNTS } =
+  process.env;
 task('accounts', 'Prints accounts', async (taskArgs, hre) => {
   const accounts = await hre.ethers.getSigners();
   for (const account of accounts) {
@@ -17,12 +18,11 @@ task('accounts', 'Prints accounts', async (taskArgs, hre) => {
 const accounts = ACCOUNTS?.split(',');
 const config: HardhatUserConfig = {
   defaultNetwork: NETWORK,
-  docgen: {
-  },
+  docgen: {},
   solidity: {
     compilers: [
       {
-        version: "0.8.17",
+        version: '0.8.17',
         settings: {
           optimizer: {
             enabled: true,
@@ -34,7 +34,7 @@ const config: HardhatUserConfig = {
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS !== undefined,
-    currency: "USD",
+    currency: 'USD',
   },
   networks: {
     hardhat: {
@@ -43,7 +43,7 @@ const config: HardhatUserConfig = {
     develop: {
       chainId: 1167,
       url: 'http://ec2-35-73-236-198.ap-northeast-1.compute.amazonaws.com:3002',
-      accounts
+      accounts,
     },
     test: {
       url: 'http://ec2-54-178-23-104.ap-northeast-1.compute.amazonaws.com:8545',
@@ -51,15 +51,15 @@ const config: HardhatUserConfig = {
     },
     mainnet: {
       url: `https://mainnet.infura.io/v3/${INFURA_API_KEY}`,
-      accounts
+      accounts,
     },
     ropsten: {
       url: `https://ropsten.infura.io/v3/${INFURA_API_KEY}`,
-      accounts
+      accounts,
     },
     rinkeby: {
       url: `https://rinkeby.infura.io/v3/${INFURA_API_KEY}`,
-      accounts
+      accounts,
     },
     goerli: {
       url: `https://goerli.infura.io/v3/${INFURA_API_KEY}`,
@@ -69,31 +69,31 @@ const config: HardhatUserConfig = {
     },
     kovan: {
       url: `https://kovan.infura.io/v3/${INFURA_API_KEY}`,
-      accounts
+      accounts,
     },
     arbitrumGoerli: {
       url: `https://arb-goerli.g.alchemy.com/v2/${ALCHEMY_KEY}`,
-      accounts
+      accounts,
     },
     arbitrum: {
       url: `https://arbitrum-mainnet.infura.io/v3/${INFURA_API_KEY}`,
-      accounts
+      accounts,
     },
     optimismKovan: {
       url: `https://optimism-kovan.infura.io/v3/${INFURA_API_KEY}`,
-      accounts
+      accounts,
     },
     optimism: {
       url: `https://optimism-mainnet.infura.io/v3/${INFURA_API_KEY}`,
-      accounts
+      accounts,
     },
     mumbai: {
       url: `https://polygon-mumbai.infura.io/v3/${INFURA_API_KEY}`,
-      accounts
+      accounts,
     },
     polygon: {
       url: `https://polygon-mainnet.infura.io/v3/${INFURA_API_KEY}`,
-      accounts
+      accounts,
     },
   },
   etherscan: {
@@ -102,8 +102,8 @@ const config: HardhatUserConfig = {
     apiKey: ETHERSCAN_API_KEY,
   },
   mocha: {
-    timeout: 40000 * 10
-  }
+    timeout: 40000 * 10,
+  },
 };
 
 export default config;

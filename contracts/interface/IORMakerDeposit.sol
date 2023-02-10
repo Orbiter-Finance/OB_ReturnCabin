@@ -25,7 +25,6 @@ interface IORMakerDeposit {
     event LogLPUpdate(bytes32 indexed pairId, bytes32 indexed lpId, uint256 gasFee, uint256 tradingFee);
     event LogLPUserStop(bytes32 indexed pairId, bytes32 lpId);
 
- 
     function challengePleged() external view returns (uint256);
 
     function challengerMakeGood(bytes32 challengeID) external;
@@ -85,11 +84,7 @@ interface IORMakerDeposit {
 
     // function lpUpdate(OperationsLib.LPUpdateStruct[] memory _lpfs) external;
 
-    function makerChallenger(
-        OperationsLib.Transaction memory _userTx,
-        OperationsLib.Transaction memory _makerTx,
-        bytes32[] memory _makerProof
-    ) external;
+    function makerChallenger(OperationsLib.Transaction memory _userTx, bytes calldata makerTxBytes) external;
 
     // function pairExist(uint256 chainId, bytes32 pairId)
     //     external
@@ -98,7 +93,7 @@ interface IORMakerDeposit {
 
     function pledgeTokenLPStopDealyTime(address) external view returns (uint256);
 
-    function userChallenge(OperationsLib.ValidateParams memory params) external payable;
+    function userChallenge(bytes calldata userTxBytes) external payable;
 
     function userWithDraw(OperationsLib.Transaction memory _userTx, OperationsLib.lpInfo memory _lpinfo) external;
 

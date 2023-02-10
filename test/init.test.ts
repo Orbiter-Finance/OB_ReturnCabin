@@ -22,7 +22,7 @@ describe('init.test.ts', () => {
   });
   it('Create SPV', async () => {
     await getORSPVContract();
-    expect(process.env['IProventh']).not.empty;
+    expect(process.env['ORProventh']).not.empty;
   });
 
   it('Create Maker', async () => {

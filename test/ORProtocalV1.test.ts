@@ -40,7 +40,7 @@ describe('ORProtocalV1.test.ts', () => {
       await tx.wait();
       expect(await factoryContract.getSPV()).equal(spvContract.address);
     });
-    // expect(await factoryContract.getEBC(1)).equal(ebc.address);
+    expect((await factoryContract.getEbcIds())[0]).equal(ebc.address);
   });
   it('getFromTxChainId 1', async () => {
     const result = await ebc.getTxValueToChainId('272970000009002002');
@@ -66,7 +66,8 @@ describe('ORProtocalV1.test.ts', () => {
     };
     const tx = _.clone(txList[0]);
     const list = VeiftFromCodeList.filter(
-      (row) => row.chainId == 1 && row.memo == 2 && row.symbol == 'ETH',
+      (row: { chainId: number; memo: number; symbol: string }) =>
+        row.chainId == 1 && row.memo == 2 && row.symbol == 'ETH',
     );
     console.log(list.length, '=====list');
     for (const row of list) {
@@ -234,42 +235,50 @@ describe('ORProtocalV1.test.ts', () => {
 });
 
 describe('SPV Veify', () => {
+  it('update L2RootHash And NodeRootHash', async () => {
+    const UserTreeHash =
+      '0xf064e5136311e29602148eaeae16ae35ac3387d3cf3bee30fd907a342c08f698';
+    const NodeRootHash =
+      '0x9c807909d4dae064933061088fbaf31310913320c2602a84cdbf657f8b82292e';
+    const spv = await getORSPVContract();
+    const updateL2RootHash = await spv.updateUserTreeHash(UserTreeHash);
+    await updateL2RootHash.wait();
+    const updateNodeRootHash = await spv.updateNodeTreeHash(NodeRootHash);
+    await updateNodeRootHash.wait();
+    const nowUserTreeHash = await spv.userTreeRootHash();
+    const nowNodeRootHash = await spv.nodeDataRootHash();
+    expect(nowUserTreeHash).eq(UserTreeHash);
+    expect(nowNodeRootHash).eq(NodeRootHash);
+  });
   it('startValidate From', async () => {
     const result = await getSPVProof(
-      '5',
+      '9005',
       '0xafee4ad1a2d0f54fdfde4a5f259c9d035b0ed39a8f615477f59c021ac2a274ad',
     );
     expect(result).not.empty;
+
     if (result) {
-      const { txInfoBytes, proofBytes, blockInfoBytes, sequenceBytes } = result;
       const spv = await getORSPVContract();
-      const validResult: any = await spv.startValidate({
-        txInfo: txInfoBytes,
-        proof: proofBytes,
-        blockInfo: blockInfoBytes,
-        sequence: sequenceBytes,
-      });
-      expect(validResult.result).true;
+      const validResult: any = await spv.startValidate(result);
+      expect(validResult.txHash).eq(
+        '0xafee4ad1a2d0f54fdfde4a5f259c9d035b0ed39a8f615477f59c021ac2a274ad',
+      );
     }
   });
 
   it('startValidate To', async () => {
     const result = await getSPVProof(
-      '421613',
+      '9022',
       '0x41080ea8df1841a67745f3d9a5315f8242c003ae3a1f0f8f610f0608008efdb5',
       '0x74c88fb66e8a580dfffadbbbbad48408e51067dec084b2cb6148f0ed558c3c63',
     );
     expect(result).not.empty;
     if (result) {
-      const { txInfoBytes, proofBytes, blockInfoBytes, sequenceBytes } = result;
       const spv = await getORSPVContract();
-      const validResult: any = await spv.startValidate({
-        txInfo: txInfoBytes,
-        proof: proofBytes,
-        blockInfo: blockInfoBytes,
-        sequence: sequenceBytes,
-      });
-      expect(validResult.result).true;
+      const validResult: any = await spv.startValidate(result);
+      expect(validResult.txHash).eq(
+        '0x74c88fb66e8a580dfffadbbbbad48408e51067dec084b2cb6148f0ed558c3c63',
+      );
     }
   });
 });

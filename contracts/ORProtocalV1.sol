@@ -143,75 +143,75 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
       // console.logString(suffix.toString());
       return chainId;
     }
-    function getFromTxChainId(OperationsLib.Transaction calldata tx) public view returns (uint256) {
-        (uint256 chainId,  , , , , ) = getManager.getChain(tx.chainId);
+    function getFromTxChainId(OperationsLib.Transaction calldata _tx) public view returns (uint256) {
+        (uint256 chainId,  , , , , ) = getManager.getChain(_tx.chainId);
         require(chainId != 0, "chainId not set");
-        string memory toChainId = getValueSecuirtyCode(chainId, tx.value);
+        string memory toChainId = getValueSecuirtyCode(chainId, _tx.value);
         uint256 code = OperationsLib.stringToUint(toChainId);
         return code;
     }
 
-    function getToTxNonceId(OperationsLib.Transaction calldata tx) public view returns (uint256) {
-        (uint256 chainId, , , , , ) = getManager.getChain(tx.chainId);
+    function getToTxNonceId(OperationsLib.Transaction calldata _tx) public view returns (uint256) {
+        (uint256 chainId, , , , , ) = getManager.getChain(_tx.chainId);
         require(chainId != 0, "chainId not set");
-        string memory toChainId = getValueSecuirtyCode(chainId, tx.value);
+        string memory toChainId = getValueSecuirtyCode(chainId, _tx.value);
         uint256 code = OperationsLib.stringToUint(toChainId);
         return code;
     }
 
-    function getResponseAmount(OperationsLib.Transaction calldata tx) external view returns (uint256) {
-        require(tx.nonce<=9999, "nonce too high, not allowed");
+    function getResponseAmount(OperationsLib.Transaction calldata _tx) external view returns (uint256) {
+        require(_tx.nonce<=9999, "nonce too high, not allowed");
         uint gasFeeRate = 1000;
         uint tradingFee = 100000000000000;
         // usdt
         // uint tradingFee = 100000;
         // get pairId & lpInfo
-        uint toAmountTradingFee = tx.value - tradingFee;
+        uint toAmountTradingFee = _tx.value - tradingFee;
         uint fee = toAmountTradingFee * gasFeeRate / 10000;
-        console.logString("getResponseAmount");
-        console.logUint(toAmountTradingFee);
-        console.logUint(fee);
+        // console.logString("getResponseAmount");
+        // console.logUint(toAmountTradingFee);
+        // console.logUint(fee);
         uint sendValue = toAmountTradingFee - fee;
-        console.logUint(sendValue);
-        string memory nonce = OperationsLib.uintToString(tx.nonce);
+        // console.logUint(sendValue);
+        string memory nonce = OperationsLib.uintToString(_tx.nonce);
         for (uint i = nonce.toSlice().len();i<4;) {
           nonce=string.concat("0", nonce);
           unchecked {
                 ++i;
             }
         }
-        console.logString("nonce");
-        console.logString(nonce);
+        // console.logString("nonce");
+        // console.logString(nonce);
         StrSlice strValue = OperationsLib.uintToString(sendValue).toSlice();
         uint maxLen = strValue.len();
         require(maxLen>4, "The length is too short");
 
         StrSlice afterStr =strValue.getSubslice(0, maxLen - 4);
-        console.logString("sub");
-        console.logUint(maxLen);
-        console.logString(afterStr.toString());
+        // console.logString("sub");
+        // console.logUint(maxLen);
+        // console.logString(afterStr.toString());
         string memory data = string.concat(afterStr.toString(), nonce);
-        console.logString(data);
+        // console.logString(data);
         // return 9990000000000071;
         uint amount = OperationsLib.stringToUint(data);
-        require(amount<tx.value, "Amount calculation exception");
+        require(amount<_tx.value, "Amount calculation exception");
         return amount;
     }
-    function getResponseAmountTest(OperationsLib.Transaction calldata tx, uint gasFeeRate, uint tradingFee) external view returns (uint256) {
-        require(tx.nonce<=9999, "nonce too high, not allowed");
+    function getResponseAmountTest(OperationsLib.Transaction calldata _tx, uint gasFeeRate, uint tradingFee) external view returns (uint256) {
+        require(_tx.nonce<=9999, "nonce too high, not allowed");
         // uint gasFeeRate = 1000;
         // uint tradingFee = 100000000000000;
         // usdt
         // uint tradingFee = 100000;
         // get pairId & lpInfo
-        uint toAmountTradingFee = tx.value - tradingFee;
+        uint toAmountTradingFee = _tx.value - tradingFee;
         uint fee = toAmountTradingFee * gasFeeRate / 10**18;
         console.logString("getResponseAmount");
         console.logUint(toAmountTradingFee);
         console.logUint(fee);
         uint sendValue = toAmountTradingFee - fee;
         console.logUint(sendValue);
-        string memory nonce = OperationsLib.uintToString(tx.nonce);
+        string memory nonce = OperationsLib.uintToString(_tx.nonce);
         for (uint i = nonce.toSlice().len();i<4;) {
           nonce=string.concat("0", nonce);
           unchecked {
@@ -232,26 +232,26 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
         console.logString(data);
         // return 9990000000000071;
         uint amount = OperationsLib.stringToUint(data);
-        require(amount<tx.value, "Amount calculation exception");
+        require(amount<_tx.value, "Amount calculation exception");
         return amount;
     }
 
-    function getResponseHash(OperationsLib.Transaction calldata tx, bool isSource) external view returns (bytes32) {
+    function getResponseHash(OperationsLib.Transaction calldata _tx, bool isSource) external view returns (bytes32) {
         if (isSource) {
-            require(tx.nonce<=9999, "nonce too high, not allowed");
-            uint256 chainId = this.getFromTxChainId(tx);
+            require(_tx.nonce<=9999, "nonce too high, not allowed");
+            uint256 chainId = this.getFromTxChainId(_tx);
             require(chainId>=9000, "The chainId is incorrect");
-            uint256 responseAmount = this.getResponseAmount(tx);
-            return keccak256(abi.encodePacked(tx.from, tx.to, chainId, tx.nonce, responseAmount));
+            uint256 responseAmount = this.getResponseAmount(_tx);
+            return keccak256(abi.encodePacked(_tx.from, _tx.to, chainId, _tx.nonce, responseAmount));
         } else {
-            require(tx.nonce<=8999, "nonce too high, not allowed");
-            require(tx.chainId != 0, "The chainId is incorrect");
-            uint256 fromNonce = this.getToTxNonceId(tx);
-            return keccak256(abi.encodePacked(tx.to, tx.from, tx.chainId, fromNonce, tx.value));
+            require(_tx.nonce<=8999, "nonce too high, not allowed");
+            require(_tx.chainId != 0, "The chainId is incorrect");
+            uint256 fromNonce = this.getToTxNonceId(_tx);
+            return keccak256(abi.encodePacked(_tx.to, _tx.from, _tx.chainId, fromNonce, _tx.value));
         }
     }
 
-    function checkUserChallenge(OperationsLib.Transaction memory _tx, uint256 value)
+    function checkUserChallenge(uint256 value)
         external
         view
         returns (
@@ -266,17 +266,12 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
         OperationsLib.Transaction memory _userTx,
         OperationsLib.Transaction memory _makerTx
     ) external view returns (bool) {
-        // address spvAddress = getManager.getSPV();
 
-        //1. _makerTx is already spv
-        // TODO:
-        // bool txVerify = IORSpv(spvAddress).verifyMakerTxProof(_makerTx, _makerProof);
-        // require(txVerify, "MCE_UNVERIFY");
         (,  , uint256 maxDisputeTime, , , ) = getManager.getChain(_userTx.chainId);
         // The transaction time of maker is required to be later than that of user.
         // At the same time, the time difference between the above two times is required to be less than the maxDisputeTime.
         require(
-            _makerTx.timestamp - _userTx.timestamp > 0 && _makerTx.timestamp - _userTx.timestamp < maxDisputeTime,
+            _makerTx.timeStamp - _userTx.timeStamp > 0 && _makerTx.timeStamp - _userTx.timeStamp < maxDisputeTime,
             "MCE_TIMEINVALIDATE"
         );
         return true;

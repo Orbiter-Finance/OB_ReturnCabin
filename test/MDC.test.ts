@@ -6,16 +6,22 @@ import {
   DataInit,
   getORMakerDepositContract,
   getORMakerV1FactoryContract,
+  getSPVProof,
 } from './utils.test';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { anyValue } from '@nomicfoundation/hardhat-chai-matchers/withArgs';
 let MDC: ORMakerDeposit;
 let makerAccount: SignerWithAddress;
+let UserTx1Account: SignerWithAddress;
+let UserTx2Account: SignerWithAddress;
 describe('MakerDeposit.test.ts', () => {
   async function getFactoryInfo() {
     // init lp list
     MDC = await getORMakerDepositContract();
     const accounts = await ethers.getSigners();
     makerAccount = accounts[1];
+    UserTx1Account = accounts[accounts.length - 1];
+    UserTx2Account = accounts[accounts.length - 2];
   }
 
   before(getFactoryInfo);
@@ -36,6 +42,7 @@ describe('MakerDeposit.test.ts', () => {
       const lps = DataInit.lps;
       const result = await MDC.calculatePairPledgeAmount([lps[0], lps[1]]);
       totalPledgeValue = result[0].pledgedValue;
+      console.log('totalPledgeValue: ', totalPledgeValue);
       totalPledgeValue = totalPledgeValue.mul(2);
       await expect(MDC.connect(makerAccount).lpAction(lps)).to.be.revertedWith(
         'Insufficient pledge quantity',
@@ -71,6 +78,7 @@ describe('MakerDeposit.test.ts', () => {
         '0x0000000000000000000000000000000000000000',
       );
       const mdcETHBalance = await ethers.provider.getBalance(MDC.address);
+      console.log('mdcETHBalance: ', mdcETHBalance);
       expect(mdcETHBalance).eq(totalPledgeValue);
       expect(result).eq(totalPledgeValue.div(2));
     });
@@ -84,7 +92,7 @@ describe('MakerDeposit.test.ts', () => {
 
     it('getPledgeBalanceByChainToken', async () => {
       const lps = DataInit.lps;
-      const pairInfo = DataInit.pairs.find(p => p.id === lps[0].pairId);
+      const pairInfo = DataInit.pairs.find((p) => p.id === lps[0].pairId);
       const result = await MDC.getPledgeBalanceByChainToken(
         pairInfo.sourceChain,
         '0x0000000000000000000000000000000000000000',
@@ -107,23 +115,12 @@ describe('MakerDeposit.test.ts', () => {
       }
     });
 
-    it('LPAction pledge ETH（Pair already exists）', async () => {
+    it('LPAction pledge ETH(Pair already exists)', async () => {
       const lps = DataInit.lps;
       await expect(
-        MDC.connect(makerAccount).lpAction(
-          [
-            {
-              pairId: lps[0].pairId,
-              minPrice: lps[0].minPrice,
-              maxPrice: lps[0].maxPrice,
-              gasFee: lps[0].gasFee,
-              tradingFee: lps[0].tradingFee,
-            },
-          ],
-          {
-            value: totalPledgeValue,
-          },
-        ),
+        MDC.connect(makerAccount).lpAction([lps[0]], {
+          value: totalPledgeValue,
+        }),
       ).to.be.revertedWith('Pair already exists');
     });
     it('LP Pause', async () => {
@@ -175,22 +172,25 @@ describe('MakerDeposit.test.ts', () => {
     it('LP Stop', async () => {
       const lps = DataInit.lps;
       await MDC.connect(makerAccount).lpAction([lps[2]]);
-      const pauseCodes = [lps[0].pairId, lps[1].pairId, lps[2].pairId].map((row) => {
-        return MDC.interface.encodeFunctionData('lpPause', [row]);
-      });
+      const pauseCodes = [lps[0].pairId, lps[1].pairId, lps[2].pairId].map(
+        (row) => {
+          return MDC.interface.encodeFunctionData('lpPause', [row]);
+        },
+      );
       const idleAmountBefore = await MDC.idleAmount(
         '0x0000000000000000000000000000000000000000',
       );
+
       const pause1Tx = await MDC.connect(makerAccount).multicall(pauseCodes);
       await pause1Tx.wait();
-  
+
       const effectivePair = await MDC.effectivePair(lps[0].pairId);
       expect(effectivePair.lpId).not.empty;
       expect(effectivePair.startTime).eq(0);
       expect(effectivePair.stopTime).gt(0);
       // stop
       await speedUpTime(3600);
-       const stopCodes = [lps[0], lps[2], lps[1]].map((row) => {
+      const stopCodes = [lps[0], lps[2], lps[1]].map((row) => {
         return MDC.interface.encodeFunctionData('lpStop', [row.pairId]);
       });
       const stop1Tx = await MDC.connect(makerAccount).multicall(stopCodes);
@@ -198,8 +198,97 @@ describe('MakerDeposit.test.ts', () => {
       const idleAmountAfter = await MDC.idleAmount(
         '0x0000000000000000000000000000000000000000',
       );
+      console.log('idleAmountAfter: ', idleAmountAfter);
       expect(idleAmountAfter).gt(idleAmountBefore);
+
       expect(idleAmountAfter).eq(totalPledgeValue);
+    });
+    it('Maker withDraw is time and no challenge', async () => {
+      let beforeAmount = await makerAccount.getBalance();
+      const response = await MDC.connect(makerAccount).withDrawAssert(
+        totalPledgeValue,
+        '0x0000000000000000000000000000000000000000',
+      );
+      const tx = await response.wait();
+      const gasUsed = tx.cumulativeGasUsed.mul(tx.effectiveGasPrice);
+      const afterAmount = await makerAccount.getBalance();
+      const idleAmountAfter = await MDC.idleAmount(
+        '0x0000000000000000000000000000000000000000',
+      );
+      beforeAmount = beforeAmount.add(totalPledgeValue).sub(gasUsed);
+      expect(beforeAmount).eq(afterAmount);
+      expect(idleAmountAfter).eq(0);
+    });
+    it('LPAction pledge ETH Again', async () => {
+      const lps = DataInit.lps;
+      const result = await MDC.calculatePairPledgeAmount([lps[0], lps[1]]);
+      totalPledgeValue = result[0].pledgedValue;
+      totalPledgeValue = totalPledgeValue.mul(2);
+      await expect(MDC.connect(makerAccount).lpAction(lps)).to.be.revertedWith(
+        'Insufficient pledge quantity',
+      );
+      const tx = await MDC.connect(makerAccount).lpAction([lps[1]], {
+        value: totalPledgeValue,
+      });
+      await tx.wait();
+      await MDC.connect(makerAccount).lpAction([lps[0]], {
+        value: '0',
+      });
+    });
+    it('userChallenge for maker already send', async () => {
+      // user Challenge
+      const userTx = DataInit.userTxList[0];
+      const userTxBytes = await getSPVProof(userTx.chainId, userTx.txHash);
+      const beforeAmount = await UserTx1Account.getBalance();
+      const overrides = {
+        value: ethers.utils.parseEther('1'), //>=0.05 ether
+      };
+      const userChallengeResponse = await MDC.connect(
+        UserTx1Account,
+      ).userChallenge(userTxBytes as Buffer, overrides);
+      const tx = await userChallengeResponse.wait();
+      const gasUsed = tx.cumulativeGasUsed.mul(tx.effectiveGasPrice);
+      const afterAmount = await UserTx1Account.getBalance();
+      expect(afterAmount).eq(beforeAmount.sub(overrides.value).sub(gasUsed));
+      await expect(userChallengeResponse)
+        .to.emit(MDC, 'LogChallengeInfo')
+        .withArgs(anyValue, anyValue, anyValue, anyValue);
+
+      // maker Challenge
+      const makerTx = DataInit.makerTxList[0];
+      const l1Sub =
+        '0x41080ea8df1841a67745f3d9a5315f8242c003ae3a1f0f8f610f0608008efdb5';
+      const makerTxBytes = await getSPVProof(
+        makerTx.chainId,
+        l1Sub,
+        makerTx.txHash,
+      );
+      const makerChallengeResponse = await MDC.connect(
+        makerAccount,
+      ).makerChallenger(userTx, makerTxBytes as Buffer, { gasLimit: 29000000 });
+      await makerChallengeResponse.wait();
+      await expect(makerChallengeResponse)
+        .to.emit(MDC, 'LogChallengeInfo')
+        .withArgs(anyValue, anyValue, anyValue, anyValue);
+    });
+    it('userChallenge for maker no send', async () => {
+      const userTx = DataInit.userTxList[1];
+      const userTxBytes = await getSPVProof(userTx.chainId, userTx.txHash);
+      const beforeAmount = await UserTx2Account.getBalance();
+      const overrides = {
+        value: ethers.utils.parseEther('1'), //>=0.05 ether
+      };
+      const response = await MDC.connect(UserTx2Account).userChallenge(
+        userTxBytes as Buffer,
+        overrides,
+      );
+      const tx = await response.wait();
+      const gasUsed = tx.cumulativeGasUsed.mul(tx.effectiveGasPrice);
+      const afterAmount = await UserTx2Account.getBalance();
+      expect(afterAmount).eq(beforeAmount.sub(overrides.value).sub(gasUsed));
+      await expect(response)
+        .to.emit(MDC, 'LogChallengeInfo')
+        .withArgs(anyValue, anyValue, anyValue, anyValue);
     });
   });
 });

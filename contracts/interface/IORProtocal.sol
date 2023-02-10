@@ -12,22 +12,17 @@ interface IORProtocal {
         view
         returns (uint256 baseValue, uint256 additiveValue);
 
-
-    function checkMakerChallenge(
-        OperationsLib.Transaction memory _userTx,
-        OperationsLib.Transaction memory _makerTx
-    ) external view returns (bool);
-
-    function checkUserChallenge(OperationsLib.Transaction memory _tx, uint value)
+    function checkMakerChallenge(OperationsLib.Transaction memory _userTx, OperationsLib.Transaction memory _makerTx)
         external
         view
         returns (bool);
 
+    function checkUserChallenge(uint256 value) external view returns (bool);
+
     function getFromTxChainId(OperationsLib.Transaction memory tx) external view returns (uint256);
-    function getPledgedAmount(uint256 chainId, uint256 maxPrice)
-        external
-        view
-        returns (uint256 value);
+
+    function getPledgedAmount(uint256 chainId, uint256 maxPrice) external view returns (uint256 value);
+
     // function getManager() external view returns (address);
 
     function getPledgeAmount(uint256 batchLimit, uint256 maxPrice)
@@ -42,5 +37,4 @@ interface IORProtocal {
     function getToTxNonceId(OperationsLib.Transaction memory tx) external view returns (uint256);
 
     function getValueSecuirtyCode(uint256 chainKey, uint256 value) external view returns (string memory);
-
 }

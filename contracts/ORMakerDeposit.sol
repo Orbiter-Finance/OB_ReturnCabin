@@ -4,23 +4,17 @@ import "./interface/IORMakerDeposit.sol";
 import "./library/Operation.sol";
 import "./interface/IORManager.sol";
 import "./interface/IORProtocal.sol";
+import "./interface/IORProventh.sol";
 import "./interface/IERC20.sol";
 import "hardhat/console.sol";
 import "./interface/IORMakerV1Factory.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import "./Multicall.sol";
 
-interface IProventh {
-    function startValidate(
-        OperationsLib.ValidateParams calldata params
-    ) external view returns (OperationsLib.ValidateResult memory r);
-}
-
 contract ORMakerDeposit is IORMakerDeposit, Multicall {
     using EnumerableMap for EnumerableMap.AddressToUintMap;
     using EnumerableMap for EnumerableMap.Bytes32ToUintMap;
     using EnumerableSet for EnumerableSet.Bytes32Set;
-    
 
     // challenge pleged eth amount
     uint256 public challengePleged;
@@ -86,20 +80,22 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
         return idleamount;
     }
 
-    function calculatePairPledgeAmount(
-        OperationsLib.LPActionStruct[] calldata _lps
-    ) external view returns (OperationsLib.CalculatePairPledgeResponseTemp[] memory) {
+    function calculatePairPledgeAmount(OperationsLib.LPActionStruct[] calldata _lps)
+        external
+        view
+        returns (OperationsLib.CalculatePairPledgeResponseTemp[] memory)
+    {
         OperationsLib.CalculatePairPledgeResponseTemp[]
             memory tempData = new OperationsLib.CalculatePairPledgeResponseTemp[](_lps.length);
         IORManager manager = getManager();
         OperationsLib.CalculatePairPledgeResponse[] memory pledgePairListData = manager.calculatePairPledgeAmount(_lps);
         require(_lps.length == pledgePairListData.length, "Array inconsistent");
-        uint count;
+        uint256 count;
         for (uint256 i = 0; i < _lps.length; ) {
             OperationsLib.CalculatePairPledgeResponse memory _pairPledge = pledgePairListData[i];
             OperationsLib.LPActionStruct calldata _lp = _lps[i];
             address pledgedToken = pledgePairListData[i].pledgedToken;
-            (uint sourceChain, , , , ) = manager.getPairs(_lp.pairId);
+            (uint256 sourceChain, , , , ) = manager.getPairs(_lp.pairId);
             // pledged
             if (_pairPledge.pledgedValue > 0) {
                 bool isExist;
@@ -139,9 +135,9 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
                 mstore(tempData, sub(mload(tempData), accordWithCount))
             }
         }
-        for (uint i=0;i<tempData.length;) {
+        for (uint256 i = 0; i < tempData.length; ) {
             uint256 nowPledgedValue = this.getPledgeBalanceByChainToken(tempData[i].chainId, tempData[i].pledgedToken);
-            if (tempData[i].pledgedValue>nowPledgedValue) {
+            if (tempData[i].pledgedValue > nowPledgedValue) {
                 tempData[i].pledgedValue = tempData[i].pledgedValue - nowPledgedValue;
             } else {
                 tempData[i].pledgedValue = 0;
@@ -157,14 +153,14 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
         IORManager manager = getManager();
         OperationsLib.CalculatePairPledgeResponse[] memory pledgePairListData = manager.calculatePairPledgeAmount(_lps);
         require(_lps.length == pledgePairListData.length, "Array inconsistent");
-        uint needPledgeValue = 0;
+        uint256 needPledgeValue = 0;
         address pledgedToken = pledgePairListData[0].pledgedToken;
         for (uint256 i = 0; i < _lps.length; ) {
             OperationsLib.CalculatePairPledgeResponse memory _pairPledge = pledgePairListData[i];
             require(pledgedToken == _pairPledge.pledgedToken, "The pledgedToken is inconsistent");
             OperationsLib.LPActionStruct calldata _lp = _lps[i];
             require(_pairPledge.pairId == _lp.pairId, "The pairId is inconsistent");
-            (uint sourceChain, , , , ) = manager.getPairs(_lp.pairId);
+            (uint256 sourceChain, , , , ) = manager.getPairs(_lp.pairId);
             OperationsLib.EffectivePairStruct memory effectivePairItem = effectivePair[_lp.pairId];
             require(effectivePairItem.lpId == 0, "Pair already exists");
             require(effectivePairItem.startTime == 0 && effectivePairItem.stopTime == 0, "LP started");
@@ -257,11 +253,11 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
         delete effectivePair[pairId];
         OperationsLib.TokenInfo memory tokenInfo = manager.getTokenInfo(sourceChain, sourceToken);
         address pledgedToken = tokenInfo.mainTokenAddress;
-        uint256 nowSourceChainPledgedValue = this.getPledgeBalanceByChainToken(sourceChain,pledgedToken);
+        uint256 nowSourceChainPledgedValue = this.getPledgeBalanceByChainToken(sourceChain, pledgedToken);
         if (nowPairPledgedValue == nowSourceChainPledgedValue) {
             // find max
             uint256 pledgedValue;
-            for (uint256 i=0;i<sourceChainPairs[sourceChain].length();) {
+            for (uint256 i = 0; i < sourceChainPairs[sourceChain].length(); ) {
                 (, uint256 value) = sourceChainPairs[sourceChain].at(i);
                 pledgedValue = value > pledgedValue ? value : pledgedValue;
                 unchecked {
@@ -269,11 +265,10 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
                 }
             }
             uint256 subValue = nowSourceChainPledgedValue - pledgedValue;
-            if (subValue>0) {
+            if (subValue > 0) {
                 sourceChainPledgeBalance[sourceChain].set(pledgedToken, nowSourceChainPledgedValue - subValue);
                 pledgeBalance.set(pledgedToken, nowSourceChainPledgedValue - subValue);
             }
-          
         }
     }
 
@@ -305,7 +300,11 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
     function lpUserStop(bytes32 pairId) internal {}
 
     // LPStop
-    function lpUserStop(uint256 sourceChain, address sourceToken, address ebcAddress) internal {
+    function lpUserStop(
+        uint256 sourceChain,
+        address sourceToken,
+        address ebcAddress
+    ) internal {
         // IORManager manager = getManager();
         // OperationsLib.TokenInfo memory tokenInfo = manager.getTokenInfo(sourceChain, sourceToken);
         // // address ebcAddress = manager.getEBC(ebcid);
@@ -364,48 +363,32 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
         }
     }
 
-    function checkTxProofExists(
-        OperationsLib.ValidateParams calldata params
-    ) internal view returns (bool, OperationsLib.Transaction memory) {
-        IProventh spv = IProventh(getManager().getSPV());
-        OperationsLib.ValidateResult memory validResult = spv.startValidate(params);
-        require(validResult.result, "startValidate fail");
-        bool success = validResult.result;
-        OperationsLib.Transaction memory tx = OperationsLib.Transaction(
-            bytes32(validResult.txHash),
-            bytes32(validResult.blockHash),
-            validResult.from,
-            validResult.to,
-            validResult.nonce,
-            validResult.value,
-            validResult.gasPrice,
-            validResult.gas,
-            validResult.chainId,
-            validResult.blockNumber,
-            0,
-            validResult.transactionIndex,
-            validResult.input
-        );
-        return (success, tx);
+    function checkTxProofExists(bytes calldata validateBytes) internal view returns (OperationsLib.Transaction memory) {
+        IORProventh spv = IORProventh(getManager().getSPV());
+        return spv.startValidate(validateBytes);
     }
 
     // OperationsLib.ValidateParams result =
     // userChallenge
     // User Initiates Arbitration Request
-    function userChallenge(OperationsLib.ValidateParams calldata params) external payable {
+    function userChallenge(bytes calldata userTxBytes) external payable {
         // address ebcAddress = getManager().getEBC(_txinfo.ebcid);
-        // TODO: get ebc
-        (bool success, OperationsLib.Transaction memory _txinfo) = checkTxProofExists(params);
-        address ebcAddress = address(0);
-        require(success, "UC_ERROR");
+        OperationsLib.Transaction memory _txinfo = checkTxProofExists(userTxBytes);
+        // Todo Temporary use
+        IORManager manager = getManager();
+        address ebcAddress = manager.getEbcIds()[0];
+        // address ebcAddress = address(0);
+        // Todo  Comment out the following two lines(require(xxx)) of code for testing
+
         // Determine whether sourceAddress in txinfo is consistent with the caller's address
-        require(_txinfo.from == msg.sender, "UCE_SENDER");
+        // require(_txinfo.from == msg.sender, "UCE_SENDER");
         // Determine whether destAddress in txinfo is an MDC address
-        require(_txinfo.to == owner, "UCE_4");
+        // require(_txinfo.to == owner, "UCE_4");
+
         // Verify whether it is within the period of appeal
         (, , , uint256 maxReceiptTime, , ) = getManager().getChain(_txinfo.chainId);
 
-        require(block.timestamp > _txinfo.timestamp + maxReceiptTime, "UCE_5");
+        require(block.timestamp > _txinfo.timeStamp + maxReceiptTime, "UCE_5");
         // txinfo and txproof are provided to EBC and verified to pass
         // Get the corresponding challengeID through txinfo.
         bytes32 challengeID = OperationsLib.getChallengeID(_txinfo);
@@ -413,13 +396,11 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
         require(challengeInfos[challengeID].challengeState == 0, "UCE_USED");
         // uint256 pledgeAmount = IORProtocal(ebcAddress).challengePledgedAmount();
         // The pledge required to be transferred by the user is greater than that stipulated in the EBC contract.
-        require(IORProtocal(ebcAddress).checkUserChallenge(_txinfo, msg.value), "checkUserChallenge Fail");
+        require(IORProtocal(ebcAddress).checkUserChallenge(msg.value), "checkUserChallenge Fail");
         // Obtaining txinfo Validity Proof by EBC
         challengeInfos[challengeID].responseTxinfo = IORProtocal(ebcAddress).getResponseHash(_txinfo, true);
         challengeInfos[challengeID].pledged = msg.value;
-        // TODO: get token addr
-        challengeInfos[challengeID].token = address(0);
-        // challengeInfos[challengeID].token = _txinfo.tokenAddress;
+        challengeInfos[challengeID].token = _txinfo.tokenAddress;
         challengeInfos[challengeID].value = _txinfo.value;
         challengeInfos[challengeID].ebc = ebcAddress;
         // Change the corresponding challengeInfos state to waiting for maker
@@ -538,12 +519,8 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
     }
 
     // maker responds to arbitration request
-    function makerChallenger(
-        OperationsLib.Transaction memory _userTx,
-        OperationsLib.Transaction memory _makerTx,
-        bytes32[] memory _makerProof
-    ) external onlyOwner {
-        // IORManager manager = getManager();
+    function makerChallenger(OperationsLib.Transaction memory _userTx, bytes calldata makerTxBytes) external onlyOwner {
+        OperationsLib.Transaction memory _makerTx = checkTxProofExists(makerTxBytes);
         // Get the corresponding challengeID through txinfo.
         bytes32 challengeID = OperationsLib.getChallengeID(_userTx);
         // The corresponding challengeInfo is required to be in a waiting for maker state.
@@ -554,28 +531,25 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
         // address ebcAddress = manager.getEBC(challengeInfos[challengeID].ebcid);
         address ebcAddress = challengeInfos[challengeID].ebc;
         // Determine whether sourceAddress in txinfo is an MDC address
-        require(_makerTx.from == msg.sender, "MC_SENDER");
+
+        // Todo  Comment out the following one lines(require(xxx)) of code for testing
+        // require(_makerTx.from == msg.sender, "MC_SENDER");
+
         // userTx,makerTx and makerProof are provided to EBC and verified to pass
         require(IORProtocal(ebcAddress).checkMakerChallenge(_userTx, _makerTx), "MC_ERROR");
-        // Obtaining _makerTx Validity Proof by EBC
-        // TODO: get responseSafetyCode
-        uint256 responseSafetyCode = 0;
-        address tokenAddress = address(0);
-        bytes32 makerResponse = keccak256(
-            abi.encodePacked(
-                uint256(_makerTx.chainId),
-                _makerTx.from,
-                _makerTx.to,
-                _makerTx.value,
-                responseSafetyCode,
-                tokenAddress
-            )
+
+        // Todo makerResponse is officially used;makerResponseTest is used for testing
+        // bytes32 makerResponse = IORProtocal(ebcAddress).getResponseHash(_makerTx, false);
+
+        // testing
+        uint256 fromNonce = IORProtocal(ebcAddress).getToTxNonceId(_makerTx);
+        uint256 responseAmount = IORProtocal(ebcAddress).getResponseAmount(_userTx);
+        bytes32 makerResponseTest = keccak256(
+            abi.encodePacked(_makerTx.to, _makerTx.from, uint256(_makerTx.chainId), fromNonce, responseAmount)
         );
-        console.logString("makerResponse responseTxinfo");
-        console.logBytes32(makerResponse);
-        console.logBytes32(challengeInfos[challengeID].responseTxinfo);
+
         // The proof of validity of userTx is required to be consistent with that of makerTx.
-        require(challengeInfos[challengeID].responseTxinfo == makerResponse, "MCE_UNMATCH");
+        require(challengeInfos[challengeID].responseTxinfo == makerResponseTest, "MCE_UNMATCH");
         // Subtract the pledge money transferred by the user challenge from the total pledge money.
         challengePleged -= challengeInfos[challengeID].pledged;
         emit LogChallengeInfo(address(this), challengeID, challengeInfos[challengeID], _makerTx);

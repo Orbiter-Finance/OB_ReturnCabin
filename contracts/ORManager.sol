@@ -17,6 +17,8 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable, Multicall {
     mapping(bytes32 => OperationsLib.TokenInfo) public tokenInfos;
     // pairs
     mapping(bytes32 => OperationsLib.PairStruct) public getPairs;
+    // ebcs
+    mapping(address => OperationsLib.EBCConfigStruct) public getEbcs;
     // pair id list
     EnumerableSet.Bytes32Set private pairs;
     // ebcAddr list
@@ -29,6 +31,10 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable, Multicall {
     function setSPV(address spv) external onlyOwner {
         require(spv != address(0), "zero-check");
         getSPV = spv;
+    }
+
+    function getEbcIds() external view returns (address[] memory) {
+        return ebcs.values();
     }
 
     function addEBC(address ebc) external onlyOwner {
@@ -48,14 +54,7 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable, Multicall {
         uint256 stopDelayTime,
         uint256 maxBits
     ) external onlyOwner {
-        getChain[id] = OperationsLib.ChainInfo(
-            id,
-            batchLimit,
-            maxDisputeTime,
-            maxReceiptTime,
-            stopDelayTime,
-            maxBits
-        );
+        getChain[id] = OperationsLib.ChainInfo(id, batchLimit, maxDisputeTime, maxReceiptTime, stopDelayTime, maxBits);
         // TODO:
         // emit ChangeChain(chainID, getChain[chainID]);
     }
@@ -71,10 +70,11 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable, Multicall {
         emit ChangeToken(chainId, tokenAddress, tokenInfos[tokenId]);
     }
 
-    function getTokenInfo(
-        uint256 chainID,
-        address tokenAddress
-    ) external view returns (OperationsLib.TokenInfo memory) {
+    function getTokenInfo(uint256 chainID, address tokenAddress)
+        external
+        view
+        returns (OperationsLib.TokenInfo memory)
+    {
         require(getChain[chainID].batchLimit > 0, "CHAINID_NOTINSTALL");
         return tokenInfos[keccak256(abi.encodePacked(chainID, tokenAddress))];
     }
@@ -101,9 +101,11 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable, Multicall {
         return pairs.contains(pairId);
     }
 
-    function calculatePairPledgeAmount(
-        OperationsLib.LPActionStruct[] calldata _lps
-    ) external view returns (OperationsLib.CalculatePairPledgeResponse[] memory) {
+    function calculatePairPledgeAmount(OperationsLib.LPActionStruct[] calldata _lps)
+        external
+        view
+        returns (OperationsLib.CalculatePairPledgeResponse[] memory)
+    {
         OperationsLib.CalculatePairPledgeResponse[]
             memory pledgeListData = new OperationsLib.CalculatePairPledgeResponse[](_lps.length);
         for (uint256 i = 0; i < _lps.length; ) {
@@ -117,7 +119,12 @@ contract ORManager is IORManager, Initializable, OwnableUpgradeable, Multicall {
             OperationsLib.TokenInfo memory tokenInfo = this.getTokenInfo(pair.sourceChain, pair.sourceToken);
             require(tokenInfo.chainID > 0, "Chain Not Supported");
             uint256 pledgedValue = IORProtocal(pair.ebc).getPledgedAmount(pair.sourceChain, _lp.maxPrice);
-            pledgeListData[i] = OperationsLib.CalculatePairPledgeResponse(_lp.pairId, tokenInfo.mainTokenAddress, _lp.maxPrice, pledgedValue);
+            pledgeListData[i] = OperationsLib.CalculatePairPledgeResponse(
+                _lp.pairId,
+                tokenInfo.mainTokenAddress,
+                _lp.maxPrice,
+                pledgedValue
+            );
             unchecked {
                 ++i;
             }

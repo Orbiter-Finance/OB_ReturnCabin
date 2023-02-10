@@ -1,15 +1,14 @@
-import { IProventh } from './../typechain-types/contracts/interface/IProventh';
 import { ethers } from 'hardhat';
 import { chains, pairs } from './goerli.data.json';
 import { printContract, deploy } from '../scripts/utils';
 import txList from './tx.json';
-const ProventhAbi = require('./Proventh.abi.json');
 import 'cross-fetch/polyfill';
 import {
   ORMakerDeposit,
   ORMakerV1Factory,
   ORManager,
   ORProtocalV1,
+  ORProventh,
 } from '../typechain-types';
 import { solidityKeccak256 } from 'ethers/lib/utils';
 
@@ -65,16 +64,18 @@ export async function getManagerContract(): Promise<ORManager> {
     return contract;
   }
 }
-export async function getORSPVContract(): Promise<IProventh> {
-  const name = 'IProventh';
-  const contractAddress = '0x8aECd2db4cd8b675375ec3aEB81B8BBa49652092';
-  const provider = new ethers.providers.JsonRpcProvider(
-    'http://ec2-35-73-236-198.ap-northeast-1.compute.amazonaws.com:3002',
-  );
-  const contract = new ethers.Contract(contractAddress, ProventhAbi, provider);
-  printContract(`load ${name} contract:`, contract.address.toString());
-  process.env[name] = contract.address;
-  return contract as any;
+export async function getORSPVContract(): Promise<ORProventh> {
+  const name = 'ORProventh';
+  const contractAddress = process.env[name];
+  if (contractAddress) {
+    const contract = await ethers.getContractAt(name, contractAddress);
+    printContract(`load ${name} contract:`, contract.address.toString());
+    return contract;
+  } else {
+    const contract = await deploy<ORProventh>(true, name);
+    process.env[name] = contract.address;
+    return contract;
+  }
 }
 
 export async function getORProtocalV1Contract(): Promise<ORProtocalV1> {
@@ -99,7 +100,7 @@ export async function getORProtocalV1Contract(): Promise<ORProtocalV1> {
         pledgeAmountSafeRate: 10 * 100,
         mainCoinPunishRate: 10 * 100,
         tokenPunishRate: 10 * 100,
-      }
+      },
     );
     process.env[name] = contract.address;
     return contract;
@@ -247,7 +248,7 @@ export class DataInit {
       }
       if (pair.sourceChain && pair.destChain == 9077) {
         lp.maxPrice = '150000000000000000';
-    }
+      }
       const lpId = solidityKeccak256(
         ['bytes32', 'address', 'uint256', 'uint256', 'uint256'],
         [
@@ -268,6 +269,7 @@ export class DataInit {
     return this;
   }
   static initMakerTxList(makerAddress?: string, userAddress?: string) {
+    DataInit.makerTxList = [txList[2]];
     // DataInit.makerTxList = makerListData.map((row) => {
     //   row.from = String(makerAddress);
     //   row.to = String(userAddress);
@@ -284,28 +286,11 @@ export async function getSPVProof(
 ) {
   let api =
     'http://ec2-35-73-236-198.ap-northeast-1.compute.amazonaws.com:3000/proof/getProof';
-  if (l2Hash) {
-    api = `${api}?ChainID=${chainId}&L1SubmissionHash=${l1Hash}&L2Hash=${l2Hash}`;
-  } else {
-    api = `${api}?ChainID=${chainId}&L1SubmissionHash=${l1Hash}`;
-  }
-  console.log(api);
+  api = `${api}?ChainID=${chainId}&L1SubmissionHash=${l1Hash}&L2Hash=${l2Hash}`;
   const { code, data } = await fetch(api).then((res) => res.json());
   if (code === 200) {
-    const { txInfo, proof, blockInfo, sequence, txTransaction } = data;
-    const txInfoBytes = txInfo.map((tx) => Buffer.from(tx, 'base64'));
-    const blockInfoBytes = blockInfo.map((item) => Buffer.from(item, 'base64'));
-    const proofBytes = proof.map((row) => {
-      return row.map((item) => {
-        return Buffer.from(item, 'base64');
-      });
-    });
-    return {
-      txInfoBytes,
-      blockInfoBytes,
-      proofBytes,
-      sequenceBytes: Buffer.from(sequence, 'base64'),
-    };
+    const { validateBytes, txTransaction } = data;
+    return Buffer.from(validateBytes, 'base64');
   }
   return undefined;
 }
