@@ -95,7 +95,7 @@ interface IORMakerDeposit {
 
     function userChallenge(bytes calldata userTxBytes) external payable;
 
-    function userWithDraw(OperationsLib.Transaction memory _userTx, OperationsLib.lpInfo memory _lpinfo) external;
+    function userWithDraw(OperationsLib.Transaction calldata _userTx, OperationsLib.LPStruct calldata _lp) external;
 
     function withDrawAssert(uint256 amount, address tokenAddress) external;
 

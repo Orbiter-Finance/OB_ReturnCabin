@@ -6,6 +6,7 @@ import {
   DataInit,
   getORMakerDepositContract,
   getORMakerV1FactoryContract,
+  getORProtocalV1Contract,
   getSPVProof,
 } from './utils.test';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
@@ -289,6 +290,37 @@ describe('MakerDeposit.test.ts', () => {
       await expect(response)
         .to.emit(MDC, 'LogChallengeInfo')
         .withArgs(anyValue, anyValue, anyValue, anyValue);
+    });
+    it('User Withdrawal under successful UserChallenge', async () => {
+      await speedUpTime(3600 * 24);
+      const userTx = DataInit.userTxList[1];
+      const lpInfo = DataInit.lps[0];
+      const beforeAmount = await UserTx2Account.getBalance();
+      const response = await MDC.connect(UserTx2Account).userWithDraw(
+        userTx,
+        lpInfo,
+      );
+      const afterAmount = await UserTx2Account.getBalance();
+      expect(afterAmount).gt(beforeAmount);
+      const tx = await response.wait();
+      const gasUsed = tx.cumulativeGasUsed.mul(tx.effectiveGasPrice);
+      const pledgeAmount = ethers.utils.parseEther('1');
+      const ebc = await getORProtocalV1Contract();
+      const ETHPunishAmount = await ebc.calculateCompensation(
+        '0x0000000000000000000000000000000000000000',
+        userTx.value,
+      );
+      const amount = ETHPunishAmount.baseValue
+        .add(ETHPunishAmount.additiveValue)
+        .add(pledgeAmount)
+        .sub(gasUsed);
+      expect(amount).eq(afterAmount.sub(beforeAmount));
+    });
+    it('User Withdrawal in failure of UserChallenge', async () => {
+      const userTx = DataInit.userTxList[0];
+      const lpInfo = DataInit.lps[0];
+      const response = MDC.connect(UserTx1Account).userWithDraw(userTx, lpInfo);
+      await expect(response).to.be.revertedWith('UW_WITHDRAW');
     });
   });
 });

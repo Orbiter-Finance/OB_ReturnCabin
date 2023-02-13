@@ -297,7 +297,50 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
         effectivePair[pairId] = OperationsLib.EffectivePairStruct(lpId, block.timestamp, 0);
     }
 
-    function lpUserStop(bytes32 pairId) internal {}
+    function lpUserStop(bytes32 pairId) internal {
+        IORManager manager = getManager();
+        (uint256 sourceChain, , address sourceToken, , address ebcAddress) = manager.getPairs(pairId);
+        require(ebcAddress != address(0), "USER_LPStop_EBCADDRESS_0");
+        OperationsLib.TokenInfo memory tokenInfo = manager.getTokenInfo(sourceChain, sourceToken);
+        address pledgedToken = tokenInfo.mainTokenAddress;
+        (, , , , uint256 stopDelayTime, ) = manager.getChain(sourceChain);
+        uint256 sourceChainPairsLength = sourceChainPairs[sourceChain].length();
+        if (sourceChainPairsLength > 0) {
+            bytes32[] memory pairs = new bytes32[](sourceChainPairsLength);
+            // get all pairs by sourceChain
+            for (uint256 pairIndex = 0; pairIndex < sourceChainPairsLength; ) {
+                (bytes32 pair, ) = sourceChainPairs[sourceChain].at(pairIndex);
+                pairs[pairIndex] = pair;
+                unchecked {
+                    ++pairIndex;
+                }
+            }
+            for (uint256 i = 0; i < pairs.length; ) {
+                bytes32 _pairId = pairs[i];
+                require(sourceChainPairs[sourceChain].contains(_pairId), "Pair does not exist");
+                bool success = sourceChainPairs[sourceChain].remove(_pairId);
+                require(success, "Remove chainPairs Fail");
+                OperationsLib.EffectivePairStruct memory effectivePairItem = effectivePair[_pairId];
+                OperationsLib.LPStruct storage lpInfo = lpData[effectivePairItem.lpId];
+                lpInfo.startTime = 0;
+                lpInfo.stopTime = 0;
+                delete effectivePair[_pairId];
+                emit LogLPUserStop(pairs[i], effectivePairItem.lpId);
+                unchecked {
+                    ++i;
+                }
+            }
+            uint256 pledgedTokenValue = this.getPledgeBalanceByChainToken(sourceChain, pledgedToken);
+            // Release all deposits
+            bool removed = sourceChainPledgeBalance[sourceChain].remove(pledgedToken);
+            require(removed, "Remove chainPledgeBalance Fail");
+            (, uint256 pledgedValue) = pledgeBalance.tryGet(pledgedToken);
+            bool created = pledgeBalance.set(pledgedToken, pledgedValue - pledgedTokenValue);
+            require(!created, "PledgeBalance Not Exist");
+        }
+        //Set Maker withdrawal time to the current time plus stopDelayTime.
+        pledgeTokenLPStopDealyTime[pledgedToken] = block.timestamp + stopDelayTime;
+    }
 
     // LPStop
     function lpUserStop(
@@ -372,12 +415,11 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
     // userChallenge
     // User Initiates Arbitration Request
     function userChallenge(bytes calldata userTxBytes) external payable {
-        // address ebcAddress = getManager().getEBC(_txinfo.ebcid);
         OperationsLib.Transaction memory _txinfo = checkTxProofExists(userTxBytes);
         // Todo Temporary use
         IORManager manager = getManager();
         address ebcAddress = manager.getEbcIds()[0];
-        // address ebcAddress = address(0);
+
         // Todo  Comment out the following two lines(require(xxx)) of code for testing
 
         // Determine whether sourceAddress in txinfo is consistent with the caller's address
@@ -416,11 +458,11 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
     }
 
     // userWithDraw
-    function userWithDraw(OperationsLib.Transaction memory _userTx, OperationsLib.lpInfo memory _lpinfo) external {
+    function userWithDraw(OperationsLib.Transaction calldata _userTx, OperationsLib.LPStruct calldata _lp) external {
         bytes32 challengeID = OperationsLib.getChallengeID(_userTx);
-        // IORManager manager = getManager();
         // When the state of challengeInfos is 'waiting for maker' and the stopTime of challengeInfos has passed, the user can withdraw money.
-        require(_userTx.from == msg.sender, "UW_SENDER");
+        // Todo  Comment out the following two lines(require(xxx)) of code for testing
+        // require(_userTx.from == msg.sender, "UW_SENDER");
         OperationsLib.challengeInfo storage challengeInfo = challengeInfos[challengeID];
         require(challengeInfo.challengeState == 1, "UW_WITHDRAW");
         require(block.timestamp > challengeInfo.stopTime, "UW_TIME");
@@ -454,8 +496,7 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
         // Subtract the pledge money transferred by the user challenge from the total pledge money.
         if (challengeInfo.token != address(0)) {
             if (withDrawAmount > unUsedAmount) {
-                // TODO: User STOP
-                // lpUserStop(_lpinfo.sourceChain, challengeInfo.token, challengeInfo.ebc);
+                lpUserStop(_lp.pairId);
                 idleAmount(challengeInfo.token);
             }
             bool success = IERC20(challengeInfo.token).transfer(msg.sender, withDrawAmount);
@@ -465,7 +506,7 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
         } else {
             uint256 totalValue = withDrawAmount + pledgeAmount;
             if (totalValue > unUsedAmount) {
-                lpUserStop(_lpinfo.sourceChain, challengeInfo.token, challengeInfo.ebc);
+                lpUserStop(_lp.pairId);
             }
             require(address(this).balance >= totalValue, "Insufficient balance");
             payable(msg.sender).transfer(totalValue);
@@ -519,7 +560,10 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
     }
 
     // maker responds to arbitration request
-    function makerChallenger(OperationsLib.Transaction memory _userTx, bytes calldata makerTxBytes) external onlyOwner {
+    function makerChallenger(OperationsLib.Transaction calldata _userTx, bytes calldata makerTxBytes)
+        external
+        onlyOwner
+    {
         OperationsLib.Transaction memory _makerTx = checkTxProofExists(makerTxBytes);
         // Get the corresponding challengeID through txinfo.
         bytes32 challengeID = OperationsLib.getChallengeID(_userTx);
