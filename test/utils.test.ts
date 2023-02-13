@@ -1,7 +1,7 @@
 import { ethers } from 'hardhat';
 import { chains, pairs } from './goerli.data.json';
 import { printContract, deploy } from '../scripts/utils';
-import txList from './tx.json';
+import tx from './tx.json';
 import 'cross-fetch/polyfill';
 import {
   ORMakerDeposit,
@@ -204,7 +204,7 @@ export class DataInit {
     if (!chain) {
       throw new Error(`${chainId} chain not found`);
     }
-    return chain.tokenList.find((t) => t.address == token);
+    return chain.tokenList.find((t: { address: string }) => t.address == token);
   }
   static initChains() {
     DataInit.chains = chains;
@@ -265,11 +265,11 @@ export class DataInit {
     return this;
   }
   static initUserTxList(makerAddress?: string, userAddress?: string) {
-    DataInit.userTxList = [txList[0], txList[1], txList[2]];
+    DataInit.userTxList = tx.userTx;
     return this;
   }
   static initMakerTxList(makerAddress?: string, userAddress?: string) {
-    DataInit.makerTxList = [txList[txList.length - 1]];
+    DataInit.makerTxList = tx.makerTx;
     // DataInit.makerTxList = makerListData.map((row) => {
     //   row.from = String(makerAddress);
     //   row.to = String(userAddress);

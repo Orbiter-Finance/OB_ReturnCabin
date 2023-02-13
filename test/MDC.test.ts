@@ -205,7 +205,6 @@ describe('MakerDeposit.test.ts', () => {
       const idleAmountAfter = await MDC.idleAmount(
         '0x0000000000000000000000000000000000000000',
       );
-      console.log('idleAmountAfter: ', idleAmountAfter);
       expect(idleAmountAfter).gt(idleAmountBefore);
 
       expect(idleAmountAfter).eq(totalPledgeValue);
@@ -391,6 +390,120 @@ describe('MakerDeposit.test.ts', () => {
       expect(amount).eq(
         challengerMakeGoodAfterAmount.sub(challengerMakeGoodBeforeAmount),
       );
+    });
+    it('Maker withDraw and remain 0.0001ether', async () => {
+      let beforeAmount = await makerAccount.getBalance();
+      const idleAmountBefore = await MDC.idleAmount(
+        '0x0000000000000000000000000000000000000000',
+      );
+      const remainIdleAmount = ethers.utils.parseEther('0.0001');
+      const response = await MDC.connect(makerAccount).withDrawAssert(
+        idleAmountBefore.sub(remainIdleAmount),
+        '0x0000000000000000000000000000000000000000',
+      );
+      const tx = await response.wait();
+      const gasUsed = tx.cumulativeGasUsed.mul(tx.effectiveGasPrice);
+      const afterAmount = await makerAccount.getBalance();
+      const idleAmountAfter = await MDC.idleAmount(
+        '0x0000000000000000000000000000000000000000',
+      );
+      beforeAmount = beforeAmount
+        .add(idleAmountBefore.sub(remainIdleAmount))
+        .sub(gasUsed);
+      expect(beforeAmount).eq(afterAmount);
+      expect(idleAmountAfter).eq(remainIdleAmount);
+    });
+    it('maker no send => userChallenge successful => userLpStop', async () => {
+      // user Challenge
+      const userTx = DataInit.userTxList[3];
+      const userTxBytes = await getSPVProof(userTx.chainId, userTx.txHash);
+      const userChallengeBeforeAmount = await UserTx3Account.getBalance();
+      const overrides = {
+        value: ethers.utils.parseEther('1'), //>=0.05 ether
+      };
+      const userChallengeResponse = await MDC.connect(
+        UserTx3Account,
+      ).userChallenge(userTxBytes as Buffer, overrides);
+      const userChallengeTx = await userChallengeResponse.wait();
+      const userChallengeGasUsed = userChallengeTx.cumulativeGasUsed.mul(
+        userChallengeTx.effectiveGasPrice,
+      );
+      const userChallengeAfterAmount = await UserTx3Account.getBalance();
+      expect(userChallengeAfterAmount).eq(
+        userChallengeBeforeAmount
+          .sub(overrides.value)
+          .sub(userChallengeGasUsed),
+      );
+      await expect(userChallengeResponse)
+        .to.emit(MDC, 'LogChallengeInfo')
+        .withArgs(anyValue, anyValue, anyValue, anyValue);
+
+      // maker don't response challenge
+
+      // user withdraw
+      await speedUpTime(3600 * 24);
+      const lpInfo = DataInit.lps[0];
+      const userWithdrawBeforeAmount = await UserTx2Account.getBalance();
+      const userWithdrawResponse = await MDC.connect(
+        UserTx2Account,
+      ).userWithDraw(userTx, lpInfo);
+      const userWithdrawAfterAmount = await UserTx2Account.getBalance();
+      const userWithdrawTx = await userWithdrawResponse.wait();
+      const gasUsed = userWithdrawTx.cumulativeGasUsed.mul(
+        userWithdrawTx.effectiveGasPrice,
+      );
+      const pledgeAmount = ethers.utils.parseEther('1');
+      const ebc = await getORProtocalV1Contract();
+      const ETHPunishAmount = await ebc.calculateCompensation(
+        '0x0000000000000000000000000000000000000000',
+        userTx.value,
+      );
+      const amount = ETHPunishAmount.baseValue
+        .add(ETHPunishAmount.additiveValue)
+        .add(pledgeAmount)
+        .sub(gasUsed);
+      expect(amount).eq(userWithdrawAfterAmount.sub(userWithdrawBeforeAmount));
+      if (userWithdrawTx.events !== undefined) {
+        const events = userWithdrawTx.events || [];
+        const eventNames = events.map((e) => e.event);
+        expect(eventNames).includes('LogLPUserStop');
+        expect(eventNames).includes('LogChallengerCompensation');
+      }
+    });
+    it('zero PledgeBalance', async () => {
+      const result = await MDC.getPledgeBalance(
+        '0x0000000000000000000000000000000000000000',
+      );
+      expect(result).eq(0);
+    });
+    it('zero effectivePairLP', async () => {
+      const lps = DataInit.lps;
+      for (const lp of [lps[0], lps[1]]) {
+        const pairInfo = await MDC.effectivePair(lp.pairId);
+        expect(pairInfo.lpId).eq(ethers.constants.HashZero);
+      }
+    });
+    it('Maker withDraw all amount', async () => {
+      await speedUpTime(3600 * 24);
+      let beforeAmount = await makerAccount.getBalance();
+      const idleAmountBefore = await MDC.idleAmount(
+        '0x0000000000000000000000000000000000000000',
+      );
+      const response = await MDC.connect(makerAccount).withDrawAssert(
+        idleAmountBefore,
+        '0x0000000000000000000000000000000000000000',
+      );
+      const tx = await response.wait();
+      const gasUsed = tx.cumulativeGasUsed.mul(tx.effectiveGasPrice);
+      const afterAmount = await makerAccount.getBalance();
+      const idleAmountAfter = await MDC.idleAmount(
+        '0x0000000000000000000000000000000000000000',
+      );
+      const mdcETHBalance = await ethers.provider.getBalance(MDC.address);
+      beforeAmount = beforeAmount.add(idleAmountBefore).sub(gasUsed);
+      expect(beforeAmount).eq(afterAmount);
+      expect(idleAmountAfter).eq(0);
+      expect(mdcETHBalance).eq(0);
     });
   });
 });

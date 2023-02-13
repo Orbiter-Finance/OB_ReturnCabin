@@ -342,49 +342,6 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
         pledgeTokenLPStopDealyTime[pledgedToken] = block.timestamp + stopDelayTime;
     }
 
-    // LPStop
-    function lpUserStop(
-        uint256 sourceChain,
-        address sourceToken,
-        address ebcAddress
-    ) internal {
-        // IORManager manager = getManager();
-        // OperationsLib.TokenInfo memory tokenInfo = manager.getTokenInfo(sourceChain, sourceToken);
-        // // address ebcAddress = manager.getEBC(ebcid);
-        // require(ebcAddress != address(0), "USER_LPStop_EBCADDRESS_0");
-        // address pledgedToken = tokenInfo.mainTokenAddress;
-        // (, , , , , uint256 stopDelayTime, ) = getManager().getChain(sourceChain);
-        // // is exists
-        // if (chainPairs[sourceChain].length() > 0) {
-        //     bytes32[] memory pairs = this.getPairsByChain(sourceChain);
-        //     for (uint256 i = 0; i < pairs.length; ) {
-        //         bytes32 pairId = pairs[i];
-        //         require(this.pairExist(sourceChain, pairId), "Pair does not exist");
-        //         bool success = chainPairs[sourceChain].remove(pairId);
-        //         require(success, "Remove chainPairs Fail");
-        //         success = pledgeTokenPairs[pledgedToken].remove(pairId);
-        //         require(success, "Remove chainPairs Fail");
-        //         lpInfo[pairs[i]].startTime = 0;
-        //         lpInfo[pairs[i]].stopTime = 0;
-        //         // }
-        //         emit LogLPUserStop(pairs[i], lpInfo[pairs[i]].lpId);
-        //         unchecked {
-        //             ++i;
-        //         }
-        //     }
-        //     EnumerableMap.AddressToUintMap storage chainPledgeTokenBalance = chainPledgeBalance[sourceChain];
-        //     (, uint256 pledgedTokenValue) = chainPledgeTokenBalance.tryGet(pledgedToken);
-        //     // Release all deposits
-        //     bool removed = chainPledgeBalance[sourceChain].remove(pledgedToken);
-        //     require(removed, "Remove chainPledgeBalance Fail");
-        //     (, uint256 pledgedValue) = pledgeBalance.tryGet(pledgedToken);
-        //     bool created = pledgeBalance.set(pledgedToken, pledgedValue - pledgedTokenValue);
-        //     require(!created, "PledgeBalance Not Exist");
-        // }
-        // //     //Set Maker withdrawal time to the current time plus stopDelayTime.
-        // pledgeTokenLPStopDealyTime[pledgedToken] = block.timestamp + stopDelayTime;
-    }
-
     // withDrawAssert()
     function withDrawAssert(uint256 amount, address tokenAddress) external onlyOwner {
         // This condition is not passed only when the user withdrawals trigger a forced stop event.
@@ -505,9 +462,6 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
             payable(msg.sender).transfer(pledgeAmount);
         } else {
             uint256 totalValue = withDrawAmount + pledgeAmount;
-            console.log("withDraw Test");
-            console.logUint(totalValue);
-            console.logUint(unUsedAmount);
             if (totalValue > unUsedAmount) {
                 lpUserStop(_lp.pairId);
             }

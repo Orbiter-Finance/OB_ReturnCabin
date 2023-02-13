@@ -1,62 +1,81 @@
-[
-  {
-    "txHash": "0xafee4ad1a2d0f54fdfde4a5f259c9d035b0ed39a8f615477f59c021ac2a274ad",
-    "nonce": 71,
-    "blockHash": "0xb6e4bf504a3f3d8cb8578812d1d4718d503d105289d4d7c81c7aad699cfe841b",
-    "blockNumber": 8294867,
-    "transactionIndex": 29,
-    "from": "0x2712d3acf51270e79f313953a89b6dd7775c6b87",
-    "to": "0x0043d60e87c5dd08c86c3123340705a1556c4719",
-    "value": "10100000000009022",
-    "gasPrice": 12745937181,
-    "chainId": 9005,
-    "gas": 21000,
-    "timeStamp": 1673467644,
-    "tokenAddress": "0x0000000000000000000000000000000000000000"
-  },
-  {
-    "txHash": "0xbd30d6a9c35344dd21e51f59d2b8f1ab32cd8f8b628943c1c7f821dfd459f234",
-    "nonce": 296,
-    "blockHash": "0xde679e78b9e675fece53b23ebe101847f7591b1f724bb47ce888067e9e24b188",
-    "blockNumber": 8295888,
-    "transactionIndex": 205,
-    "from": "0xffc75a6fe820eb80f64b8e3b3b7c3178e76dcbb0",
-    "to": "0x0043d60e87c5dd08c86c3123340705a1556c4719",
-    "value": "10100000000009519",
-    "gasPrice": 18492114139,
-    "chainId": 9005,
-    "gas": 21000,
-    "timeStamp": 1673483940,
-    "tokenAddress": "0x0000000000000000000000000000000000000000"
-  },
-  {
-    "txHash": "0x86ad708400efb032f22dfdaeb781ca0d4d788bacf70ecb3c0cc183a08ad56d4e",
-    "nonce": 14,
-    "blockHash": "0x7af21a5d3302b66cea48e0d4701ad18a87a0b23d2c7caf1e392c38dee590d62c",
-    "blockNumber": 8295908,
-    "transactionIndex": 22,
-    "from": "0x73858a7d64367ef9dfc7a15b546a930b9692ed5b",
-    "to": "0x0043d60e87c5dd08c86c3123340705a1556c4719",
-    "value": "10100000000009519",
-    "gasPrice": 21440125860,
-    "chainId": 9005,
-    "gas": 21000,
-    "timeStamp": 1673484252,
-    "tokenAddress": "0x0000000000000000000000000000000000000000"
-  },
-  {
-    "txHash": "0x74c88fb66e8a580dfffadbbbbad48408e51067dec084b2cb6148f0ed558c3c63",
-    "nonce": 3189,
-    "blockHash": "0xfd531250d2fcc5e104d2de23bf55a38ded94e505529da06b1f8ec5c76c807b6b",
-    "blockNumber": 4290151,
-    "transactionIndex": 1,
-    "from": "0x0043d60e87c5dd08c86c3123340705a1556c4719",
-    "to": "0x2712d3acf51270e79f313953a89b6dd7775c6b87",
-    "value": "9990000000000071",
-    "gasPrice": 0,
-    "chainId": 9022,
-    "gas": 0,
-    "timeStamp": 1673467710,
-    "tokenAddress": "0x0000000000000000000000000000000000000000"
-  }
-]
+{
+  "userTx": [
+    {
+      "txHash": "0xafee4ad1a2d0f54fdfde4a5f259c9d035b0ed39a8f615477f59c021ac2a274ad",
+      "nonce": 71,
+      "blockHash": "0xb6e4bf504a3f3d8cb8578812d1d4718d503d105289d4d7c81c7aad699cfe841b",
+      "blockNumber": 8294867,
+      "transactionIndex": 29,
+      "from": "0x2712d3acf51270e79f313953a89b6dd7775c6b87",
+      "to": "0x0043d60e87c5dd08c86c3123340705a1556c4719",
+      "value": "10100000000009022",
+      "gasPrice": 12745937181,
+      "chainId": 9005,
+      "gas": 21000,
+      "timeStamp": 1673467644,
+      "tokenAddress": "0x0000000000000000000000000000000000000000"
+    },
+    {
+      "txHash": "0xbd30d6a9c35344dd21e51f59d2b8f1ab32cd8f8b628943c1c7f821dfd459f234",
+      "nonce": 296,
+      "blockHash": "0xde679e78b9e675fece53b23ebe101847f7591b1f724bb47ce888067e9e24b188",
+      "blockNumber": 8295888,
+      "transactionIndex": 205,
+      "from": "0xffc75a6fe820eb80f64b8e3b3b7c3178e76dcbb0",
+      "to": "0x0043d60e87c5dd08c86c3123340705a1556c4719",
+      "value": "10100000000009519",
+      "gasPrice": 18492114139,
+      "chainId": 9005,
+      "gas": 21000,
+      "timeStamp": 1673483940,
+      "tokenAddress": "0x0000000000000000000000000000000000000000"
+    },
+    {
+      "txHash": "0x86ad708400efb032f22dfdaeb781ca0d4d788bacf70ecb3c0cc183a08ad56d4e",
+      "nonce": 14,
+      "blockHash": "0x7af21a5d3302b66cea48e0d4701ad18a87a0b23d2c7caf1e392c38dee590d62c",
+      "blockNumber": 8295908,
+      "transactionIndex": 22,
+      "from": "0x73858a7d64367ef9dfc7a15b546a930b9692ed5b",
+      "to": "0x0043d60e87c5dd08c86c3123340705a1556c4719",
+      "value": "10100000000009519",
+      "gasPrice": 21440125860,
+      "chainId": 9005,
+      "gas": 21000,
+      "timeStamp": 1673484252,
+      "tokenAddress": "0x0000000000000000000000000000000000000000"
+    },
+    {
+      "txHash": "0x3dd36a4b563c2ac3e58765a4aaf58bc8051c897d91e94f810619d694d526f5c7",
+      "nonce": 148,
+      "blockHash": "0x14230fa32fccac16da7eb1dbb035f83e45636b1cc84d7ec877a171cc1e647a76",
+      "blockNumber": 8295920,
+      "transactionIndex": 24,
+      "from": "0xea4d2cf1c9babfdd6c5463f473081ff232730685",
+      "to": "0x0043d60e87c5dd08c86c3123340705a1556c4719",
+      "value": "10100000000009514",
+      "gasPrice": 22530708140,
+      "chainId": 9005,
+      "gas": 21000,
+      "timeStamp": 1673484456,
+      "tokenAddress": "0x0000000000000000000000000000000000000000"
+    }
+  ],
+  "makerTx": [
+    {
+      "txHash": "0x74c88fb66e8a580dfffadbbbbad48408e51067dec084b2cb6148f0ed558c3c63",
+      "nonce": 3189,
+      "blockHash": "0xfd531250d2fcc5e104d2de23bf55a38ded94e505529da06b1f8ec5c76c807b6b",
+      "blockNumber": 4290151,
+      "transactionIndex": 1,
+      "from": "0x0043d60e87c5dd08c86c3123340705a1556c4719",
+      "to": "0x2712d3acf51270e79f313953a89b6dd7775c6b87",
+      "value": "9990000000000071",
+      "gasPrice": 0,
+      "chainId": 9022,
+      "gas": 0,
+      "timeStamp": 1673467710,
+      "tokenAddress": "0x0000000000000000000000000000000000000000"
+    }
+  ]
+}
