@@ -20,8 +20,6 @@ contract ORProventh is IORProventh, Initializable, OwnableUpgradeable {
     using BytesLib for bytes;
     using BytesUtil for bytes;
 
-    // bytes32 public userTreeRootHash = 0xf064e5136311e29602148eaeae16ae35ac3387d3cf3bee30fd907a342c08f698;
-    // bytes32 public nodeDataRootHash = 0x9c807909d4dae064933061088fbaf31310913320c2602a84cdbf657f8b82292e;
     bytes32 public userTreeRootHash;
     bytes32 public nodeDataRootHash;
 

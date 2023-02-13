@@ -420,7 +420,7 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
         IORManager manager = getManager();
         address ebcAddress = manager.getEbcIds()[0];
 
-        // Todo  Comment out the following two lines(require(xxx)) of code for testing
+        // Todo dev: Comment out the following two lines(require(xxx)) of code for testing
 
         // Determine whether sourceAddress in txinfo is consistent with the caller's address
         // require(_txinfo.from == msg.sender, "UCE_SENDER");
@@ -439,7 +439,7 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
         // uint256 pledgeAmount = IORProtocal(ebcAddress).challengePledgedAmount();
         // The pledge required to be transferred by the user is greater than that stipulated in the EBC contract.
         require(IORProtocal(ebcAddress).checkUserChallenge(msg.value), "checkUserChallenge Fail");
-        // Obtaining txinfo Validity Proof by EBC
+
         challengeInfos[challengeID].responseTxinfo = IORProtocal(ebcAddress).getResponseHash(_txinfo, true);
         challengeInfos[challengeID].pledged = msg.value;
         challengeInfos[challengeID].token = _txinfo.tokenAddress;
@@ -461,7 +461,7 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
     function userWithDraw(OperationsLib.Transaction calldata _userTx, OperationsLib.LPStruct calldata _lp) external {
         bytes32 challengeID = OperationsLib.getChallengeID(_userTx);
         // When the state of challengeInfos is 'waiting for maker' and the stopTime of challengeInfos has passed, the user can withdraw money.
-        // Todo  Comment out the following two lines(require(xxx)) of code for testing
+        // Todo  dev: Comment out the following two lines(require(xxx)) of code for testing
         // require(_userTx.from == msg.sender, "UW_SENDER");
         OperationsLib.challengeInfo storage challengeInfo = challengeInfos[challengeID];
         require(challengeInfo.challengeState == 1, "UW_WITHDRAW");
@@ -505,6 +505,9 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
             payable(msg.sender).transfer(pledgeAmount);
         } else {
             uint256 totalValue = withDrawAmount + pledgeAmount;
+            console.log("withDraw Test");
+            console.logUint(totalValue);
+            console.logUint(unUsedAmount);
             if (totalValue > unUsedAmount) {
                 lpUserStop(_lp.pairId);
             }
@@ -514,13 +517,14 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
     }
 
     // makerChllenger MakeGood
-    function challengerMakeGood(bytes32 challengeID) external onlyOwner {
+    function challengerMakeGood(OperationsLib.Transaction calldata _userTx) external onlyOwner {
+        // Get the corresponding challengeID through txinfo.
+        bytes32 challengeID = OperationsLib.getChallengeID(_userTx);
         require(challengeInfos[challengeID].challengeState == 1, "MC_ANSWER");
         require(block.timestamp > challengeInfos[challengeID].endTime, "UW_TIME");
         challengeInfos[challengeID].challengeState = 3;
 
         OperationsLib.challengeInfo storage challengeInfo = challengeInfos[challengeID];
-        // address ebcAddress = getManager().getEBC(challengeInfo.ebcid);
         address ebcAddress = challengeInfo.ebc;
         require(ebcAddress != address(0), "UW_EBCADDRESS_0");
         // Get the unUsed balance corresponding to tokenAddress.
@@ -535,7 +539,7 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
         challengeInfo.endTime = block.timestamp;
         challengeInfo.challengeState = 4;
         // uint256 pledgeAmount = challengeInfo.pledged;
-        require(challengePleged > challengeInfo.pledged, "challengePleged Insufficient balance");
+        require(challengePleged >= challengeInfo.pledged, "challengePleged Insufficient balance");
         challengePleged -= challengeInfo.pledged;
         // Subtract the pledge money transferred by the user challenge from the total pledge money.
         emit LogChallengerCompensation(
@@ -547,20 +551,20 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
         );
         if (challengeInfo.token != address(0)) {
             require(unUsedAmount >= withDrawAmount, "Insufficient balance");
-            bool success = IERC20(challengeInfo.token).transfer(msg.sender, withDrawAmount);
+            bool success = IERC20(challengeInfo.token).transfer(_userTx.from, withDrawAmount);
             require(success, "ERC20 Transfer Fail");
             require(address(this).balance >= challengeInfo.pledged, "Insufficient balance");
-            payable(msg.sender).transfer(challengeInfo.pledged);
+            payable(_userTx.from).transfer(challengeInfo.pledged);
         } else {
             uint256 totalValue = withDrawAmount + challengeInfo.pledged;
             require(unUsedAmount >= totalValue, "Insufficient balance");
             require(address(this).balance >= totalValue, "Insufficient balance");
-            payable(msg.sender).transfer(totalValue);
+            payable(_userTx.from).transfer(totalValue);
         }
     }
 
     // maker responds to arbitration request
-    function makerChallenger(OperationsLib.Transaction calldata _userTx, bytes calldata makerTxBytes)
+    function makerChallenge(OperationsLib.Transaction calldata _userTx, bytes calldata makerTxBytes)
         external
         onlyOwner
     {
@@ -576,13 +580,13 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
         address ebcAddress = challengeInfos[challengeID].ebc;
         // Determine whether sourceAddress in txinfo is an MDC address
 
-        // Todo  Comment out the following one lines(require(xxx)) of code for testing
+        // Todo dev: Comment out the following one lines(require(xxx)) of code for testing
         // require(_makerTx.from == msg.sender, "MC_SENDER");
 
         // userTx,makerTx and makerProof are provided to EBC and verified to pass
         require(IORProtocal(ebcAddress).checkMakerChallenge(_userTx, _makerTx), "MC_ERROR");
 
-        // Todo makerResponse is officially used;makerResponseTest is used for testing
+        // Todo dev: makerResponse is officially used;makerResponseTest is used for testing
         // bytes32 makerResponse = IORProtocal(ebcAddress).getResponseHash(_makerTx, false);
 
         // testing

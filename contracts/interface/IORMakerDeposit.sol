@@ -27,7 +27,7 @@ interface IORMakerDeposit {
 
     function challengePleged() external view returns (uint256);
 
-    function challengerMakeGood(bytes32 challengeID) external;
+    function challengerMakeGood(OperationsLib.Transaction calldata _userTx) external;
 
     // function getMakerFactory() external view returns (address);
 
@@ -84,7 +84,7 @@ interface IORMakerDeposit {
 
     // function lpUpdate(OperationsLib.LPUpdateStruct[] memory _lpfs) external;
 
-    function makerChallenger(OperationsLib.Transaction memory _userTx, bytes calldata makerTxBytes) external;
+    function makerChallenge(OperationsLib.Transaction calldata _userTx, bytes calldata makerTxBytes) external;
 
     // function pairExist(uint256 chainId, bytes32 pairId)
     //     external

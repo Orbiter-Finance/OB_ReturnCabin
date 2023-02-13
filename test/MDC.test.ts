@@ -15,6 +15,7 @@ let MDC: ORMakerDeposit;
 let makerAccount: SignerWithAddress;
 let UserTx1Account: SignerWithAddress;
 let UserTx2Account: SignerWithAddress;
+let UserTx3Account: SignerWithAddress;
 describe('MakerDeposit.test.ts', () => {
   async function getFactoryInfo() {
     // init lp list
@@ -23,6 +24,7 @@ describe('MakerDeposit.test.ts', () => {
     makerAccount = accounts[1];
     UserTx1Account = accounts[accounts.length - 1];
     UserTx2Account = accounts[accounts.length - 2];
+    UserTx3Account = accounts[accounts.length - 3];
   }
 
   before(getFactoryInfo);
@@ -52,6 +54,10 @@ describe('MakerDeposit.test.ts', () => {
         value: totalPledgeValue,
       });
       await tx.wait();
+      const idleAmount = await MDC.idleAmount(
+        '0x0000000000000000000000000000000000000000',
+      );
+      console.log('idleAmount', idleAmount);
       await MDC.connect(makerAccount).lpAction([lps[0]], {
         value: '0',
       });
@@ -236,7 +242,7 @@ describe('MakerDeposit.test.ts', () => {
         value: '0',
       });
     });
-    it('userChallenge for maker already send', async () => {
+    it('maker send amount => userChallenge failure => user Withdraw failed', async () => {
       // user Challenge
       const userTx = DataInit.userTxList[0];
       const userTxBytes = await getSPVProof(userTx.chainId, userTx.txHash);
@@ -266,44 +272,57 @@ describe('MakerDeposit.test.ts', () => {
       );
       const makerChallengeResponse = await MDC.connect(
         makerAccount,
-      ).makerChallenger(userTx, makerTxBytes as Buffer, { gasLimit: 29000000 });
+      ).makerChallenge(userTx, makerTxBytes as Buffer, { gasLimit: 29000000 });
       await makerChallengeResponse.wait();
       await expect(makerChallengeResponse)
         .to.emit(MDC, 'LogChallengeInfo')
         .withArgs(anyValue, anyValue, anyValue, anyValue);
+
+      // user Withdraw
+      await speedUpTime(3600 * 24);
+      const lpInfo = DataInit.lps[0];
+      const response = MDC.connect(UserTx1Account).userWithDraw(userTx, lpInfo);
+      await expect(response).to.be.revertedWith('UW_WITHDRAW');
     });
-    it('userChallenge for maker no send', async () => {
+    it('maker no send => userChallenge successful => user Withdraw success', async () => {
+      // user Challenge
       const userTx = DataInit.userTxList[1];
       const userTxBytes = await getSPVProof(userTx.chainId, userTx.txHash);
-      const beforeAmount = await UserTx2Account.getBalance();
+      const userChallengeBeforeAmount = await UserTx2Account.getBalance();
       const overrides = {
         value: ethers.utils.parseEther('1'), //>=0.05 ether
       };
-      const response = await MDC.connect(UserTx2Account).userChallenge(
-        userTxBytes as Buffer,
-        overrides,
+      const userChallengeResponse = await MDC.connect(
+        UserTx2Account,
+      ).userChallenge(userTxBytes as Buffer, overrides);
+      const userChallengeTx = await userChallengeResponse.wait();
+      const userChallengeGasUsed = userChallengeTx.cumulativeGasUsed.mul(
+        userChallengeTx.effectiveGasPrice,
       );
-      const tx = await response.wait();
-      const gasUsed = tx.cumulativeGasUsed.mul(tx.effectiveGasPrice);
-      const afterAmount = await UserTx2Account.getBalance();
-      expect(afterAmount).eq(beforeAmount.sub(overrides.value).sub(gasUsed));
-      await expect(response)
+      const userChallengeAfterAmount = await UserTx2Account.getBalance();
+      expect(userChallengeAfterAmount).eq(
+        userChallengeBeforeAmount
+          .sub(overrides.value)
+          .sub(userChallengeGasUsed),
+      );
+      await expect(userChallengeResponse)
         .to.emit(MDC, 'LogChallengeInfo')
         .withArgs(anyValue, anyValue, anyValue, anyValue);
-    });
-    it('User Withdrawal under successful UserChallenge', async () => {
+
+      // maker don't response Challenge
+
+      // user withdraw
       await speedUpTime(3600 * 24);
-      const userTx = DataInit.userTxList[1];
       const lpInfo = DataInit.lps[0];
-      const beforeAmount = await UserTx2Account.getBalance();
-      const response = await MDC.connect(UserTx2Account).userWithDraw(
-        userTx,
-        lpInfo,
+      const userWithdrawBeforeAmount = await UserTx2Account.getBalance();
+      const userWithdrawResponse = await MDC.connect(
+        UserTx2Account,
+      ).userWithDraw(userTx, lpInfo);
+      const userWithdrawAfterAmount = await UserTx2Account.getBalance();
+      const userWithdrawTx = await userWithdrawResponse.wait();
+      const gasUsed = userWithdrawTx.cumulativeGasUsed.mul(
+        userWithdrawTx.effectiveGasPrice,
       );
-      const afterAmount = await UserTx2Account.getBalance();
-      expect(afterAmount).gt(beforeAmount);
-      const tx = await response.wait();
-      const gasUsed = tx.cumulativeGasUsed.mul(tx.effectiveGasPrice);
       const pledgeAmount = ethers.utils.parseEther('1');
       const ebc = await getORProtocalV1Contract();
       const ETHPunishAmount = await ebc.calculateCompensation(
@@ -314,13 +333,64 @@ describe('MakerDeposit.test.ts', () => {
         .add(ETHPunishAmount.additiveValue)
         .add(pledgeAmount)
         .sub(gasUsed);
-      expect(amount).eq(afterAmount.sub(beforeAmount));
+      expect(amount).eq(userWithdrawAfterAmount.sub(userWithdrawBeforeAmount));
     });
-    it('User Withdrawal in failure of UserChallenge', async () => {
-      const userTx = DataInit.userTxList[0];
-      const lpInfo = DataInit.lps[0];
-      const response = MDC.connect(UserTx1Account).userWithDraw(userTx, lpInfo);
-      await expect(response).to.be.revertedWith('UW_WITHDRAW');
+    it('maker no send => userChallenge successful => challengerMakeGood', async () => {
+      // user Challenge
+      const userTx = DataInit.userTxList[2];
+      const userTxBytes = await getSPVProof(userTx.chainId, userTx.txHash);
+      const userChallengeBeforeAmount = await UserTx3Account.getBalance();
+      const overrides = {
+        value: ethers.utils.parseEther('1'), //>=0.05 ether
+      };
+      const userChallengeResponse = await MDC.connect(
+        UserTx3Account,
+      ).userChallenge(userTxBytes as Buffer, overrides);
+      const userChallengeTx = await userChallengeResponse.wait();
+      const userChallengeGasUsed = userChallengeTx.cumulativeGasUsed.mul(
+        userChallengeTx.effectiveGasPrice,
+      );
+      const userChallengeAfterAmount = await UserTx3Account.getBalance();
+      expect(userChallengeAfterAmount).eq(
+        userChallengeBeforeAmount
+          .sub(overrides.value)
+          .sub(userChallengeGasUsed),
+      );
+      await expect(userChallengeResponse)
+        .to.emit(MDC, 'LogChallengeInfo')
+        .withArgs(anyValue, anyValue, anyValue, anyValue);
+
+      // maker don't response challenge
+
+      // challengerMakeGood
+      await speedUpTime(3600 * 24);
+      const challengerMakeGoodBeforeAmount = await ethers.provider.getBalance(
+        userTx.from,
+      );
+      const challengerMakeGoodResponse = await MDC.connect(
+        makerAccount,
+      ).challengerMakeGood(userTx);
+
+      await expect(challengerMakeGoodResponse)
+        .to.emit(MDC, 'LogChallengerCompensation')
+        .withArgs(anyValue, anyValue, anyValue, anyValue, anyValue);
+
+      const challengerMakeGoodAfterAmount = await ethers.provider.getBalance(
+        userTx.from,
+      );
+
+      const pledgeAmount = ethers.utils.parseEther('1');
+      const ebc = await getORProtocalV1Contract();
+      const ETHPunishAmount = await ebc.calculateCompensation(
+        '0x0000000000000000000000000000000000000000',
+        userTx.value,
+      );
+      const amount = ETHPunishAmount.baseValue
+        .add(ETHPunishAmount.additiveValue)
+        .add(pledgeAmount);
+      expect(amount).eq(
+        challengerMakeGoodAfterAmount.sub(challengerMakeGoodBeforeAmount),
+      );
     });
   });
 });

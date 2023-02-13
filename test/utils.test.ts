@@ -265,11 +265,11 @@ export class DataInit {
     return this;
   }
   static initUserTxList(makerAddress?: string, userAddress?: string) {
-    DataInit.userTxList = txList;
+    DataInit.userTxList = [txList[0], txList[1], txList[2]];
     return this;
   }
   static initMakerTxList(makerAddress?: string, userAddress?: string) {
-    DataInit.makerTxList = [txList[2]];
+    DataInit.makerTxList = [txList[txList.length - 1]];
     // DataInit.makerTxList = makerListData.map((row) => {
     //   row.from = String(makerAddress);
     //   row.to = String(userAddress);

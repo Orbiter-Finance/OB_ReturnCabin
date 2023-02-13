@@ -52,7 +52,7 @@ describe('ORProtocalV1.test.ts', () => {
     expect(result).eq(9022);
   });
   it('getToTxNonceId', async () => {
-    const tx = DataInit.userTxList[2];
+    const tx = DataInit.makerTxList[0];
     const result = await ebc.getToTxNonceId(tx);
     expect(result).eq(DataInit.userTxList[0].nonce);
   });
