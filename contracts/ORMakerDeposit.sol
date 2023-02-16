@@ -380,9 +380,9 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
         // Todo dev: Comment out the following two lines(require(xxx)) of code for testing
 
         // Determine whether sourceAddress in txinfo is consistent with the caller's address
-        // require(_txinfo.from == msg.sender, "UCE_SENDER");
+        require(_txinfo.from == msg.sender, "UCE_SENDER");
         // Determine whether destAddress in txinfo is an MDC address
-        // require(_txinfo.to == owner, "UCE_4");
+        require(_txinfo.to == owner, "UCE_4");
 
         // Verify whether it is within the period of appeal
         (, , , uint256 maxReceiptTime, , ) = getManager().getChain(_txinfo.chainId);
@@ -393,7 +393,6 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
         bytes32 challengeID = OperationsLib.getChallengeID(_txinfo);
         // The corresponding challengeInfo is required to be in an unused state.
         require(challengeInfos[challengeID].challengeState == 0, "UCE_USED");
-        // uint256 pledgeAmount = IORProtocal(ebcAddress).challengePledgedAmount();
         // The pledge required to be transferred by the user is greater than that stipulated in the EBC contract.
         require(IORProtocal(ebcAddress).checkUserChallenge(msg.value), "checkUserChallenge Fail");
 
@@ -419,13 +418,10 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
         bytes32 challengeID = OperationsLib.getChallengeID(_userTx);
         // When the state of challengeInfos is 'waiting for maker' and the stopTime of challengeInfos has passed, the user can withdraw money.
         // Todo  dev: Comment out the following two lines(require(xxx)) of code for testing
-        // require(_userTx.from == msg.sender, "UW_SENDER");
+        require(_userTx.from == msg.sender, "UW_SENDER");
         OperationsLib.challengeInfo storage challengeInfo = challengeInfos[challengeID];
         require(challengeInfo.challengeState == 1, "UW_WITHDRAW");
         require(block.timestamp > challengeInfo.stopTime, "UW_TIME");
-        // bytes32 pairId = OperationsLib.getPairID(_lpinfo);
-        // require(this.pairExist(_lpinfo.sourceChain, pairId), "Pair does not exist");
-        // address ebcAddress = manager.getEBC(challengeInfo.ebcid);
         address ebcAddress = challengeInfo.ebc;
         require(ebcAddress != address(0), "UW_EBCADDRESS_0");
         // Get the unUsed balance corresponding to tokenAddress.
@@ -535,23 +531,23 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
         // Determine whether sourceAddress in txinfo is an MDC address
 
         // Todo dev: Comment out the following one lines(require(xxx)) of code for testing
-        // require(_makerTx.from == msg.sender, "MC_SENDER");
+        require(_makerTx.from == msg.sender, "MC_SENDER");
 
         // userTx,makerTx and makerProof are provided to EBC and verified to pass
         require(IORProtocal(ebcAddress).checkMakerChallenge(_userTx, _makerTx), "MC_ERROR");
 
         // Todo dev: makerResponse is officially used;makerResponseTest is used for testing
-        // bytes32 makerResponse = IORProtocal(ebcAddress).getResponseHash(_makerTx, false);
+        bytes32 makerResponse = IORProtocal(ebcAddress).getResponseHash(_makerTx, false);
 
         // testing
-        uint256 fromNonce = IORProtocal(ebcAddress).getToTxNonceId(_makerTx);
-        uint256 responseAmount = IORProtocal(ebcAddress).getResponseAmount(_userTx);
-        bytes32 makerResponseTest = keccak256(
-            abi.encodePacked(_makerTx.to, _makerTx.from, uint256(_makerTx.chainId), fromNonce, responseAmount)
-        );
+        // uint256 fromNonce = IORProtocal(ebcAddress).getToTxNonceId(_makerTx);
+        // uint256 responseAmount = IORProtocal(ebcAddress).getResponseAmount(_userTx);
+        // bytes32 makerResponseTest = keccak256(
+        //     abi.encodePacked(_makerTx.to, _makerTx.from, uint256(_makerTx.chainId), fromNonce, responseAmount)
+        // );
 
         // The proof of validity of userTx is required to be consistent with that of makerTx.
-        require(challengeInfos[challengeID].responseTxinfo == makerResponseTest, "MCE_UNMATCH");
+        require(challengeInfos[challengeID].responseTxinfo == makerResponse, "MCE_UNMATCH");
         // Subtract the pledge money transferred by the user challenge from the total pledge money.
         challengePleged -= challengeInfos[challengeID].pledged;
         emit LogChallengeInfo(address(this), challengeID, challengeInfos[challengeID], _makerTx);
