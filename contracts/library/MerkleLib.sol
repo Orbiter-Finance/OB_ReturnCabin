@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.17;
+pragma solidity >=0.8.0 <0.9.0;
 import "solidity-rlp/contracts/RLPReader.sol";
 import {NotEmptyRootHash, NotEqualNodeValue} from "./Error.sol";
 
@@ -10,21 +10,13 @@ library MerkleLib {
     using RLPReader for RLPReader.RLPItem;
     using RLPReader for bytes;
 
-    function _efficientHash(bytes memory i)
-        internal
-        pure
-        returns (bytes32 value)
-    {
+    function _efficientHash(bytes memory i) internal pure returns (bytes32 value) {
         assembly {
             value := keccak256(add(i, 0x20), mload(i))
         }
     }
 
-    function _efficientDoubleHash(bytes memory i)
-        internal
-        pure
-        returns (bytes32 value)
-    {
+    function _efficientDoubleHash(bytes memory i) internal pure returns (bytes32 value) {
         assembly {
             let y := keccak256(add(i, 0x20), mload(i))
             mstore(0x00, y)
@@ -32,11 +24,7 @@ library MerkleLib {
         }
     }
 
-    function decodeNibbles(bytes memory compact, uint256 skipNibbles)
-        internal
-        pure
-        returns (bytes memory nibbles)
-    {
+    function decodeNibbles(bytes memory compact, uint256 skipNibbles) internal pure returns (bytes memory nibbles) {
         require(compact.length > 0);
 
         uint256 length = compact.length * 2;
@@ -49,13 +37,9 @@ library MerkleLib {
         unchecked {
             for (uint256 i = skipNibbles; i < itemLength; ++i) {
                 if (i % 2 == 0) {
-                    nibbles[nibblesLength] = bytes1(
-                        (uint8(compact[i / 2]) >> 4) & 0xF
-                    );
+                    nibbles[nibblesLength] = bytes1((uint8(compact[i / 2]) >> 4) & 0xF);
                 } else {
-                    nibbles[nibblesLength] = bytes1(
-                        (uint8(compact[i / 2]) >> 0) & 0xF
-                    );
+                    nibbles[nibblesLength] = bytes1((uint8(compact[i / 2]) >> 0) & 0xF);
                 }
 
                 ++nibblesLength;
@@ -116,14 +100,8 @@ library MerkleLib {
                         bool isLeaf;
                         bytes memory nodeKey;
                         // get node true type (isLeaf)
-                        (isLeaf, nodeKey) = merklePatriciaCompactDecode(
-                            node[0].toBytes()
-                        );
-                        uint256 prefixLength = sharedPrefixLength(
-                            mptKeyOffset,
-                            mptKey,
-                            nodeKey
-                        );
+                        (isLeaf, nodeKey) = merklePatriciaCompactDecode(node[0].toBytes());
+                        uint256 prefixLength = sharedPrefixLength(mptKeyOffset, mptKey, nodeKey);
                         mptKeyOffset += prefixLength;
                         if (prefixLength < nodeKey.length) {
                             // Proof claims divergent extension or leaf. (Only
@@ -196,13 +174,9 @@ library MerkleLib {
                                 }
                                 return new bytes(0);
                             } else if (!node[nibble].isList()) {
-                                nodeHashHash = keccak256(
-                                    node[nibble].toBytes()
-                                );
+                                nodeHashHash = keccak256(node[nibble].toBytes());
                             } else {
-                                nodeHashHash = keccak256(
-                                    node[nibble].toRlpBytes()
-                                );
+                                nodeHashHash = keccak256(node[nibble].toRlpBytes());
                             }
                         } else {
                             // we have consumed the entire mptKey, so we need to look at what's contained in this node.
@@ -219,11 +193,7 @@ library MerkleLib {
         }
     }
 
-    function isEmptyBytesequence(RLPReader.RLPItem memory item)
-        internal
-        pure
-        returns (bool)
-    {
+    function isEmptyBytesequence(RLPReader.RLPItem memory item) internal pure returns (bool) {
         if (item.len != 1) {
             return false;
         }

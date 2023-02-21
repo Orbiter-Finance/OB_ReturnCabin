@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.17;
-import "solidity-bytes-utils/contracts/BytesLib.sol";
+pragma solidity >=0.8.0 <0.9.0;
+import "./BytesLib.sol";
 import "solidity-rlp/contracts/RLPReader.sol";
 import "./Operation.sol";
 // Rollup Types
@@ -22,21 +22,6 @@ library TransactionLib {
     using RLPReader for RLPReader.RLPItem;
     using RLPReader for bytes;
     using BytesLib for bytes;
-    // struct Transaction {
-    //     address from;
-    //     address to;
-    //     address tokenAddress;
-    //     bytes32 txHash;
-    //     bytes32 blockHash;
-    //     uint256 blockNumber;
-    //     uint256 chainId;
-    //     uint256 nonce;
-    //     uint256 gas;
-    //     uint256 gasPrice;
-    //     uint256 value;
-    //     uint256 transactionIndex;
-    //     uint256 timeStamp;
-    // }
 
     struct DecodeTransaction {
         OperationsLib.Transaction transaction;
@@ -46,6 +31,17 @@ library TransactionLib {
     struct TxInfo {
         bytes[] txInfo; //l1->l2 [l1] l2->l1 [l1,op] [l1,zktx,zkrollup]
         bytes extra;
+    }
+
+    struct BlockInfo {
+        uint8 isTrack;
+        uint64 blockNumber;
+        bytes32 blockHash;
+        bytes32 txRootHash;
+        bytes32 txHash;
+        bytes32 trackBlockHash;
+        bytes sequence;
+        bytes headerRLP;
     }
 
     function decodeTransaction(
@@ -153,5 +149,104 @@ library TransactionLib {
             rlpTxHash = rlpTxHashHasPrefix;
         }
         return (rlpTxHash, prefix, prefixExtra);
+    }
+
+    function decodeRLPBytes(bytes memory decodeBytes)
+        internal
+        pure
+        returns (
+            OperationsLib.ProventhParams memory params,
+            bytes1 crossPrefix,
+            bytes1 rollupPrefix
+        )
+    {
+        bytes memory decodeBytesNoPrefix;
+        (decodeBytesNoPrefix, crossPrefix, rollupPrefix) = processPrefix(decodeBytes);
+        RLPReader.RLPItem[] memory decodeItem = decodeBytesNoPrefix.toRlpItem().toList();
+        uint256 decodeItemLength = decodeItem.length;
+        require(decodeItemLength == 3);
+        unchecked {
+            for (uint256 index = 0; index < decodeItemLength; ++index) {
+                if (index == 0) {
+                    RLPReader.RLPItem[] memory txInfoItem = decodeItem[index].toList();
+                    uint256 itemLength = txInfoItem.length;
+                    bytes[] memory txInfo = new bytes[](itemLength);
+                    for (uint256 txInfoIndex = 0; txInfoIndex < itemLength; ++txInfoIndex) {
+                        txInfo[txInfoIndex] = txInfoItem[txInfoIndex].toBytes();
+                    }
+                    params.txInfo = decodeTxInfo(txInfo, rollupPrefix);
+                } else if (index == 1) {
+                    RLPReader.RLPItem[] memory proofItem = decodeItem[index].toList();
+                    uint256 itemLength = proofItem.length;
+                    bytes[][] memory proof = new bytes[][](itemLength);
+                    for (uint256 proofItemIndex = 0; proofItemIndex < itemLength; ++proofItemIndex) {
+                        RLPReader.RLPItem[] memory proofDetailItem = proofItem[proofItemIndex].toList();
+                        uint256 proofItemLength = proofDetailItem.length;
+                        bytes[] memory proofDetail = new bytes[](proofItemLength);
+                        for (uint256 proofDetailIndex = 0; proofDetailIndex < proofItemLength; ++proofDetailIndex) {
+                            proofDetail[proofDetailIndex] = proofDetailItem[proofDetailIndex].toBytes();
+                        }
+                        proof[proofItemIndex] = proofDetail;
+                    }
+                    params.proof = proof;
+                } else if (index == 2) {
+                    params.blockInfo = decodeBlockInfo(decodeItem[index]);
+                }
+            }
+        }
+    }
+
+    function decodeTxInfo(bytes[] memory txInfoList, bytes1 rollupPrefix)
+        internal
+        pure
+        returns (TransactionLib.TxInfo memory decodeTx)
+    {
+        uint256 length = txInfoList.length;
+        if (rollupPrefix == Zk_Rollup) ++length;
+        bytes[] memory txInfo = new bytes[](length);
+        bytes memory extra;
+        unchecked {
+            for (uint256 txInfoListIndex = 0; txInfoListIndex < txInfoList.length; ++txInfoListIndex) {
+                RLPReader.RLPItem[] memory txInfoItem = txInfoList[txInfoListIndex].toRlpItem().toList();
+                if (txInfoListIndex == 1) {
+                    //l2
+                    if (rollupPrefix == Zk_Rollup) {
+                        //zk
+                        RLPReader.RLPItem[] memory zkTxInfoItem = txInfoItem[0].toBytes().toRlpItem().toList();
+                        txInfo[txInfoListIndex] = zkTxInfoItem[1].toBytes(); //tx
+                        txInfo[txInfoListIndex + 1] = zkTxInfoItem[0].toBytes(); //rollup
+                    } else if (rollupPrefix == Optimistic_Rollup) {
+                        txInfo[txInfoListIndex] = txInfoItem[0].toBytes();
+                    }
+                } else {
+                    //l1
+                    txInfo[txInfoListIndex] = txInfoItem[0].toBytes();
+                }
+                extra = txInfoItem[1].toBytes();
+            }
+        }
+
+        decodeTx.txInfo = txInfo;
+        decodeTx.extra = extra;
+    }
+
+    function decodeBlockInfo(RLPReader.RLPItem memory blockRLP) internal pure returns (BlockInfo memory blockInfo) {
+        RLPReader.RLPItem[] memory blockItem = blockRLP.toBytes().toRlpItem().toList();
+        blockInfo.headerRLP = blockItem[0].toBytes();
+
+        bytes memory blockInfoBytes = blockItem[1].toBytes();
+        blockInfo.isTrack = blockInfoBytes.toUint8(0); //0:no 1:yes
+
+        blockInfo.blockNumber = blockInfoBytes.toUint64(1);
+        blockInfo.blockHash = blockInfoBytes.toBytes32(9);
+        blockInfo.txRootHash = blockInfoBytes.toBytes32(41);
+        blockInfo.txHash = blockInfoBytes.toBytes32(73);
+        if (blockInfo.isTrack == 1) {
+            blockInfo.trackBlockHash = blockInfoBytes.toBytes32(105);
+            blockInfo.sequence = blockInfoBytes.slice(137, blockInfoBytes.length - 137);
+        } else {
+            blockInfo.trackBlockHash = blockInfo.blockHash;
+            blockInfo.sequence = blockInfoBytes.slice(105, blockInfoBytes.length - 105);
+        }
     }
 }

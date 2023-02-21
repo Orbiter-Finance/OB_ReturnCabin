@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
-
-pragma solidity ^0.8.17;
+pragma solidity >=0.8.0 <0.9.0;
 
 error NotEmptyRootHash();
 
@@ -19,3 +18,5 @@ error InvalidMPTProofs();
 error InvalidProofOfInclusion();
 
 error L1InputNotContainL2Tx();
+
+error MaxTrackBlockNumber();

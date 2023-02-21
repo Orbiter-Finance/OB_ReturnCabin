@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.17;
+pragma solidity >=0.8.0 <0.9.0;
+import "./TransactionLib.sol";
 
 library OperationsLib {
     struct EBCConfigStruct {
@@ -107,6 +108,12 @@ library OperationsLib {
         address ebc;
         address token;
         bytes32 responseTxinfo;
+    }
+
+    struct ProventhParams {
+        TransactionLib.TxInfo txInfo; // RLP encoding of Raw data for L1 Submission Hash
+        bytes[][] proof; // MPT Proof Data for L1 Blocks Containing L1 Submission Hash
+        TransactionLib.BlockInfo blockInfo; // Contains the information of the header part of the L1 block, the RLP encoding of the Raw data of the L1 block, and the data required to trace the L1 block.
     }
 
     function getPairID(PairStruct memory pair) internal pure returns (bytes32) {
