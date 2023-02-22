@@ -37,8 +37,9 @@ library TransactionLib {
         uint8 isTrack;
         uint64 blockNumber;
         bytes32 blockHash;
-        bytes32 txRootHash;
-        bytes32 txHash;
+        bytes32 transactionsRoot;
+        bytes32 l1TxHash;
+        bytes32 l2TxHash;
         bytes32 trackBlockHash;
         bytes sequence;
         bytes headerRLP;
@@ -168,13 +169,7 @@ library TransactionLib {
         unchecked {
             for (uint256 index = 0; index < decodeItemLength; ++index) {
                 if (index == 0) {
-                    RLPReader.RLPItem[] memory txInfoItem = decodeItem[index].toList();
-                    uint256 itemLength = txInfoItem.length;
-                    bytes[] memory txInfo = new bytes[](itemLength);
-                    for (uint256 txInfoIndex = 0; txInfoIndex < itemLength; ++txInfoIndex) {
-                        txInfo[txInfoIndex] = txInfoItem[txInfoIndex].toBytes();
-                    }
-                    params.txInfo = decodeTxInfo(txInfo, rollupPrefix);
+                    params.txInfo = decodeTxInfo(decodeItem[index].toBytes(), crossPrefix, rollupPrefix);
                 } else if (index == 1) {
                     RLPReader.RLPItem[] memory proofItem = decodeItem[index].toList();
                     uint256 itemLength = proofItem.length;
@@ -190,63 +185,81 @@ library TransactionLib {
                     }
                     params.proof = proof;
                 } else if (index == 2) {
-                    params.blockInfo = decodeBlockInfo(decodeItem[index]);
+                    params.blockInfo = decodeBlockInfo(decodeItem[index].toBytes(), crossPrefix);
                 }
             }
         }
     }
 
-    function decodeTxInfo(bytes[] memory txInfoList, bytes1 rollupPrefix)
-        internal
-        pure
-        returns (TransactionLib.TxInfo memory decodeTx)
-    {
-        uint256 length = txInfoList.length;
-        if (rollupPrefix == Zk_Rollup) ++length;
-        bytes[] memory txInfo = new bytes[](length);
+    function decodeTxInfo(
+        bytes memory txInfoList,
+        bytes1 crossPrefix,
+        bytes1 rollupPrefix
+    ) internal pure returns (TransactionLib.TxInfo memory decodeTx) {
+        uint256 length = 1;
+        if (crossPrefix == L2ToL1_Cross) {
+            length += 1;
+        }
+        if (rollupPrefix == Zk_Rollup) {
+            length += 1;
+        }
+        bytes[] memory txInfo = new bytes[](length); //[l1,op],[l1,zk transaction,zk rollup]
         bytes memory extra;
-        unchecked {
-            for (uint256 txInfoListIndex = 0; txInfoListIndex < txInfoList.length; ++txInfoListIndex) {
-                RLPReader.RLPItem[] memory txInfoItem = txInfoList[txInfoListIndex].toRlpItem().toList();
-                if (txInfoListIndex == 1) {
-                    //l2
-                    if (rollupPrefix == Zk_Rollup) {
-                        //zk
-                        RLPReader.RLPItem[] memory zkTxInfoItem = txInfoItem[0].toBytes().toRlpItem().toList();
-                        txInfo[txInfoListIndex] = zkTxInfoItem[1].toBytes(); //tx
-                        txInfo[txInfoListIndex + 1] = zkTxInfoItem[0].toBytes(); //rollup
-                    } else if (rollupPrefix == Optimistic_Rollup) {
-                        txInfo[txInfoListIndex] = txInfoItem[0].toBytes();
-                    }
-                } else {
-                    //l1
-                    txInfo[txInfoListIndex] = txInfoItem[0].toBytes();
-                }
-                extra = txInfoItem[1].toBytes();
+        if (crossPrefix == L1ToL2_Cross) {
+            extra = txInfoList;
+        } else {
+            //l2
+            RLPReader.RLPItem[] memory txInfoItem = txInfoList.toRlpItem().toList();
+            if (rollupPrefix == Zk_Rollup) {
+                //zk
+                RLPReader.RLPItem[] memory zkTxInfoItem = txInfoItem[1].toBytes().toRlpItem().toList();
+                txInfo[1] = zkTxInfoItem[1].toBytes(); //tx
+                txInfo[2] = zkTxInfoItem[0].toBytes(); //rollup
+            } else if (rollupPrefix == Optimistic_Rollup) {
+                txInfo[1] = txInfoItem[1].toBytes();
             }
+            extra = txInfoItem[0].toBytes();
         }
 
         decodeTx.txInfo = txInfo;
         decodeTx.extra = extra;
     }
 
-    function decodeBlockInfo(RLPReader.RLPItem memory blockRLP) internal pure returns (BlockInfo memory blockInfo) {
-        RLPReader.RLPItem[] memory blockItem = blockRLP.toBytes().toRlpItem().toList();
+    function decodeBlockInfo(bytes memory blockRLP, bytes1 crossPrefix)
+        internal
+        pure
+        returns (BlockInfo memory blockInfo)
+    {
+        RLPReader.RLPItem[] memory blockItem = blockRLP.toRlpItem().toList();
         blockInfo.headerRLP = blockItem[0].toBytes();
+
+        //decode header rlp
+        RLPReader.RLPItem[] memory blockHeaderItem = blockItem[0].toBytes().toRlpItem().toList();
 
         bytes memory blockInfoBytes = blockItem[1].toBytes();
         blockInfo.isTrack = blockInfoBytes.toUint8(0); //0:no 1:yes
 
         blockInfo.blockNumber = blockInfoBytes.toUint64(1);
         blockInfo.blockHash = blockInfoBytes.toBytes32(9);
-        blockInfo.txRootHash = blockInfoBytes.toBytes32(41);
-        blockInfo.txHash = blockInfoBytes.toBytes32(73);
-        if (blockInfo.isTrack == 1) {
-            blockInfo.trackBlockHash = blockInfoBytes.toBytes32(105);
-            blockInfo.sequence = blockInfoBytes.slice(137, blockInfoBytes.length - 137);
+        blockInfo.transactionsRoot = bytes32(blockHeaderItem[4].toUint());
+        blockInfo.l1TxHash = blockInfoBytes.toBytes32(41);
+        if (crossPrefix == L1ToL2_Cross) {
+            if (blockInfo.isTrack == 1) {
+                blockInfo.trackBlockHash = blockInfoBytes.toBytes32(73);
+                blockInfo.sequence = blockInfoBytes.slice(105, blockInfoBytes.length - 105);
+            } else {
+                blockInfo.trackBlockHash = blockInfo.blockHash;
+                blockInfo.sequence = blockInfoBytes.slice(73, blockInfoBytes.length - 73);
+            }
         } else {
-            blockInfo.trackBlockHash = blockInfo.blockHash;
-            blockInfo.sequence = blockInfoBytes.slice(105, blockInfoBytes.length - 105);
+            blockInfo.l2TxHash = blockInfoBytes.toBytes32(73);
+            if (blockInfo.isTrack == 1) {
+                blockInfo.trackBlockHash = blockInfoBytes.toBytes32(105);
+                blockInfo.sequence = blockInfoBytes.slice(137, blockInfoBytes.length - 137);
+            } else {
+                blockInfo.trackBlockHash = blockInfo.blockHash;
+                blockInfo.sequence = blockInfoBytes.slice(105, blockInfoBytes.length - 105);
+            }
         }
     }
 }

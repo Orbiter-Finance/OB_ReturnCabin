@@ -11,7 +11,6 @@ import {InvalidProofOfInclusion, L1InputNotContainL2Tx, InvalidRootHash, Invalid
 import "./library/TransactionLib.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "hardhat/console.sol";
 
 contract ORProventh is IORProventh, Initializable, OwnableUpgradeable {
     using RLPReader for RLPReader.RLPItem;
@@ -38,37 +37,35 @@ contract ORProventh is IORProventh, Initializable, OwnableUpgradeable {
      */
     function verifyL2AndL1Tx(
         TransactionLib.TxInfo memory txInfo,
+        TransactionLib.BlockInfo memory blockInfo,
         bytes[] memory proof,
         bytes1 rollupPrefix
     ) internal view {
         if (rollupPrefix == Optimistic_Rollup) {
-            bytes memory l2RLPTxHash = txInfo.txInfo[1];
-            bytes memory l1SubRLPTxhash = txInfo.txInfo[0];
+            bytes32 l2RLPTxHash = keccak256(txInfo.txInfo[1]);
 
-            bytes32 userTreeKey = keccak256(abi.encodePacked(keccak256(l2RLPTxHash), keccak256(l1SubRLPTxhash)));
-
-            // validateL2userTreeRootAndProof
-            verifyRootHashAndProof(proof, userTreeRootHash);
-
-            // validateL2RLPTxInfoAndProof
-            RLPReader.RLPItem[] memory proof_txinfo_rlp = proof[proof.length - 1].toRlpItem().toList();
-            bytes32 userTreeExpectValue = bytes32(proof_txinfo_rlp[proof_txinfo_rlp.length - 1].toUint());
-            bytes32 userTreeValue = keccak256(l2RLPTxHash);
-            if (userTreeValue != userTreeExpectValue) {
-                revert("userTreeValue Invalid");
+            if (l2RLPTxHash != blockInfo.l2TxHash) {
+                revert InvalidTxHash(blockInfo.l2TxHash, l2RLPTxHash);
             }
 
+            bytes32 userTreeKey = keccak256(abi.encodePacked(l2RLPTxHash, blockInfo.l1TxHash));
+
+            verifyRootHashAndProof(userTreeRootHash, proof);
+            verifyTxHashAndSelfProof(l2RLPTxHash, proof);
             verifyProofOfInclusion(userTreeRootHash, MerkleLib.decodeNibbles(abi.encodePacked(userTreeKey), 0), proof);
         } else if (rollupPrefix == Zk_Rollup) {
-            // bytes memory zkTxBytes = txInfo.txInfo[1];
+            bytes32 l2TxHash = sha256(txInfo.txInfo[1]);
             bytes memory zkRollupBytes = txInfo.txInfo[2];
+
+            if (l2TxHash != blockInfo.l2TxHash) {
+                revert InvalidTxHash(blockInfo.l2TxHash, l2TxHash);
+            }
 
             TransactionLib.DecodeTransaction memory l1SubTransaction = TransactionLib.decodeTransaction(
                 txInfo,
                 L1ToL2_Cross,
                 rollupPrefix
             );
-            // console.logBytes32(sha256(zkTxBytes));
             if (!l1SubTransaction.input.contains(zkRollupBytes)) {
                 revert L1InputNotContainL2Tx();
             }
@@ -101,16 +98,10 @@ contract ORProventh is IORProventh, Initializable, OwnableUpgradeable {
             }
         }
 
-        // validate dataTreeRootAndProof
-        verifyRootHashAndProof(bytesProof, nodeDataRootHash);
+        verifyRootHashAndProof(nodeDataRootHash, bytesProof);
 
-        // validateDataRLPTxInfoAndProof
-        RLPReader.RLPItem[] memory proof_txinfo_rlp = bytesProof[bytesProof.length - 1].toRlpItem().toList();
-        bytes32 dataTreeExpectValue = bytes32(proof_txinfo_rlp[proof_txinfo_rlp.length - 1].toUint());
         bytes32 dataTreeValue = keccak256(bytesRLP);
-        if (dataTreeValue != dataTreeExpectValue) {
-            revert("dataTreeValue Invalid");
-        }
+        verifyTxHashAndSelfProof(dataTreeValue, bytesProof);
 
         verifyProofOfInclusion(
             nodeDataRootHash,
@@ -128,24 +119,26 @@ contract ORProventh is IORProventh, Initializable, OwnableUpgradeable {
         returns (OperationsLib.Transaction memory transaction)
     {
         bytes memory verifyResult = verifyTestBytes(validateBytes);
-
         (OperationsLib.ProventhParams memory params, bytes1 crossPrefix, bytes1 rollupPrefix) = TransactionLib
             .decodeRLPBytes(verifyResult);
+
+        params.txInfo.txInfo[0] = verifyTxHashAndProof(params.blockInfo.l1TxHash, params.proof[0]);
 
         if (crossPrefix == L2ToL1_Cross) {
             uint256 proofIndex = 1;
             if (rollupPrefix == Zk_Rollup) proofIndex = 0;
-            verifyL2AndL1Tx(params.txInfo, params.proof[proofIndex], rollupPrefix);
+            verifyL2AndL1Tx(params.txInfo, params.blockInfo, params.proof[proofIndex], rollupPrefix);
         }
 
-        verifyTxInfoAndTxHash(params.txInfo.txInfo[0], params.blockInfo.txHash);
-        verifyTxInfoAndProof(params.txInfo.txInfo[0], params.proof[0]);
+        verifyRootHashAndProof(params.blockInfo.transactionsRoot, params.proof[0]);
 
-        bytes32 txRootHash = verifyRootHashAndProof(params.proof[0], params.blockInfo.txRootHash);
+        verifyBlockHeaderAndBlockHash(params.blockInfo);
 
-        verifyBlockInfoAndBlockHash(params.blockInfo);
-
-        verifyProofOfInclusion(txRootHash, MerkleLib.decodeNibbles(params.blockInfo.sequence, 0), params.proof[0]);
+        verifyProofOfInclusion(
+            params.blockInfo.transactionsRoot,
+            MerkleLib.decodeNibbles(params.blockInfo.sequence, 0),
+            params.proof[0]
+        );
 
         // Check the relationship between the verified block and the current block
         // verifyBlockHash(params.blockInfo);
@@ -171,49 +164,53 @@ contract ORProventh is IORProventh, Initializable, OwnableUpgradeable {
     }
 
     /**
-     * Verify that TxInfo and TxHash are consistent
+     * Verify that TxHash and TxProof are consistent
      */
-    function verifyTxInfoAndTxHash(bytes memory rlpTxInfo, bytes32 blockInfoTxHash) internal pure {
-        bytes32 txHash = keccak256(rlpTxInfo);
-        if (blockInfoTxHash != txHash) {
-            revert InvalidTxHash(txHash, blockInfoTxHash);
+    function verifyTxHashAndProof(bytes32 txHash, bytes[] memory proof) internal pure returns (bytes memory txInfoRLP) {
+        bytes memory nodeValue = proof[proof.length - 1];
+
+        RLPReader.RLPItem[] memory nodeItem = nodeValue.toRlpItem().toList();
+        txInfoRLP = nodeItem[nodeItem.length - 1].toBytes();
+
+        bytes32 proofTxHash = keccak256(txInfoRLP);
+        if (proofTxHash != txHash) {
+            revert InvalidTxHash(txHash, proofTxHash);
         }
     }
 
     /**
-     * Verify that TxInfo and TxProof are consistent
+     * Verify that TxHash and SelfProof are consistent
+     * Applicable to custom MPT trees
      */
-    function verifyTxInfoAndProof(bytes memory rlpTxInfo, bytes[] memory proof) internal pure {
-        bytes memory proof_last_child = proof[proof.length - 1];
+    function verifyTxHashAndSelfProof(bytes32 txHash, bytes[] memory proof) internal pure {
+        RLPReader.RLPItem[] memory nodeValue = proof[proof.length - 1].toRlpItem().toList();
+        bytes32 proofTxHash = bytes32(nodeValue[nodeValue.length - 1].toUint());
 
-        RLPReader.RLPItem[] memory proof_txinfo_rlp = proof_last_child.toRlpItem().toList();
-
-        bytes32 proofTxHash = keccak256(proof_txinfo_rlp[proof_txinfo_rlp.length - 1].toBytes());
-        bytes32 txHash = keccak256(rlpTxInfo);
         if (proofTxHash != txHash) {
-            revert InvalidTxInfo();
+            revert InvalidTxHash(txHash, proofTxHash);
+        }
+    }
+
+    /**
+     * Verify that BlockHeader and BlockHash are consistent
+     */
+    function verifyBlockHeaderAndBlockHash(TransactionLib.BlockInfo memory blockInfo) internal pure {
+        bytes32 blockHeaderHash = keccak256(blockInfo.headerRLP);
+
+        if (blockInfo.blockHash != blockHeaderHash) {
+            revert InvalidBlockHash(blockHeaderHash, blockInfo.blockHash);
         }
     }
 
     /**
      * Verify that RootHash and Proof are consistent
      */
-    function verifyRootHashAndProof(bytes[] memory proof, bytes32 rootHash) internal pure returns (bytes32) {
+    function verifyRootHashAndProof(bytes32 rootHash, bytes[] memory proof) internal pure {
         bytes memory rootHashProof = proof[0];
-        bytes32 proof_txRootHash = keccak256(rootHashProof);
-        if (proof_txRootHash != rootHash) {
-            revert InvalidRootHash(proof_txRootHash, rootHash);
-        }
-        return rootHash;
-    }
+        bytes32 proof_transactionsRoot = keccak256(rootHashProof);
 
-    /**
-     * Verify that BlockInfo and BlockHash are consistent
-     */
-    function verifyBlockInfoAndBlockHash(TransactionLib.BlockInfo memory blockInfo) internal pure {
-        bytes32 blockHeaderHash = keccak256(blockInfo.headerRLP);
-        if (blockInfo.blockHash != blockHeaderHash) {
-            revert InvalidBlockHash(blockHeaderHash, blockInfo.blockHash);
+        if (proof_transactionsRoot != rootHash) {
+            revert InvalidRootHash(proof_transactionsRoot, rootHash);
         }
     }
 
