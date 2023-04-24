@@ -36,6 +36,20 @@ library OperationsLib {
         uint256 stopDelayTime;
         uint256 maxBits;
     }
+    struct TransactionEIP1559Struct {
+        uint chainId;
+        uint nonce;
+        uint maxPriorityFeePerGas;
+        uint maxFeePerGas;
+        uint gasLimit;
+        address to;
+        uint value;
+        bytes data;
+        bytes [] accessList;
+        uint v;
+        bytes32 r;
+        bytes32 s;
+    }
     struct Transaction {
         address from;
         address to;
@@ -52,11 +66,11 @@ library OperationsLib {
         uint256 timeStamp;
     }
     struct PairStruct {
+        uint256 ebcId;
         uint256 sourceChain;
         uint256 destChain;
         address sourceToken;
         address destToken;
-        address ebc;
     }
     struct LPActionStruct {
         bytes32 pairId;
@@ -118,7 +132,7 @@ library OperationsLib {
 
     function getPairID(PairStruct memory pair) internal pure returns (bytes32) {
         return
-            keccak256(abi.encodePacked(pair.sourceChain, pair.destChain, pair.sourceToken, pair.destToken, pair.ebc));
+            keccak256(abi.encodePacked(pair.ebcId, pair.sourceChain, pair.destChain, pair.sourceToken, pair.destToken));
     }
 
     function getPairID(lpInfo memory _lpinfo) internal pure returns (bytes32) {

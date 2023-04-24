@@ -95,7 +95,7 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
             OperationsLib.CalculatePairPledgeResponse memory _pairPledge = pledgePairListData[i];
             OperationsLib.LPActionStruct calldata _lp = _lps[i];
             address pledgedToken = pledgePairListData[i].pledgedToken;
-            (uint256 sourceChain, , , , ) = manager.getPairs(_lp.pairId);
+            (,uint256 sourceChain, , , ) = manager.getPairs(_lp.pairId);
             // pledged
             if (_pairPledge.pledgedValue > 0) {
                 bool isExist;
@@ -160,7 +160,7 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
             require(pledgedToken == _pairPledge.pledgedToken, "The pledgedToken is inconsistent");
             OperationsLib.LPActionStruct calldata _lp = _lps[i];
             require(_pairPledge.pairId == _lp.pairId, "The pairId is inconsistent");
-            (uint256 sourceChain, , , , ) = manager.getPairs(_lp.pairId);
+            (,uint256 sourceChain, , , ) = manager.getPairs(_lp.pairId);
             OperationsLib.EffectivePairStruct memory effectivePairItem = effectivePair[_lp.pairId];
             require(effectivePairItem.lpId == 0, "Pair already exists");
             require(effectivePairItem.startTime == 0 && effectivePairItem.stopTime == 0, "LP started");
@@ -224,7 +224,7 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
         OperationsLib.EffectivePairStruct storage effectivePairItem = effectivePair[pairId];
         require(effectivePairItem.lpId != 0, "LP does not exist");
         require(effectivePairItem.startTime != 0 && effectivePairItem.stopTime == 0, "LP not started");
-        (uint256 sourceChain, , , , ) = manager.getPairs(pairId);
+        (,uint256 sourceChain, , , ) = manager.getPairs(pairId);
         (, , , , uint256 stopDelayTime, ) = manager.getChain(sourceChain);
         effectivePairItem.stopTime = block.timestamp + stopDelayTime;
         effectivePairItem.startTime = 0;
@@ -246,7 +246,7 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
         require(effectivePairItem.startTime == 0 && effectivePairItem.stopTime != 0, "LP not paused");
         require(block.timestamp >= effectivePairItem.stopTime, "Not yet operating time");
         OperationsLib.LPStruct storage lpInfo = lpData[effectivePairItem.lpId];
-        (uint256 sourceChain, , address sourceToken, , ) = manager.getPairs(pairId);
+        (,uint256 sourceChain, , address sourceToken, ) = manager.getPairs(pairId);
         (, uint256 nowPairPledgedValue) = sourceChainPairs[sourceChain].tryGet(pairId);
         bool success = sourceChainPairs[sourceChain].remove(pairId);
         lpInfo.stopTime = block.timestamp;
@@ -299,8 +299,8 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
 
     function lpUserStop(bytes32 pairId) internal {
         IORManager manager = getManager();
-        (uint256 sourceChain, , address sourceToken, , address ebcAddress) = manager.getPairs(pairId);
-        require(ebcAddress != address(0), "USER_LPStop_EBCADDRESS_0");
+        (uint ebcId,uint256 sourceChain, , address sourceToken, ) = manager.getPairs(pairId);
+        require(ebcId != 0, "USER_LPStop_EBCADDRESS_0");
         OperationsLib.TokenInfo memory tokenInfo = manager.getTokenInfo(sourceChain, sourceToken);
         address pledgedToken = tokenInfo.mainTokenAddress;
         (, , , , uint256 stopDelayTime, ) = manager.getChain(sourceChain);
@@ -364,7 +364,8 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
     }
 
     function checkTxProofExists(bytes calldata validateBytes) internal view returns (OperationsLib.Transaction memory) {
-        IORProventh spv = IORProventh(getManager().getSPV());
+        IORProventh spv = IORProventh(address(0));
+        // TODO: get .getSPV
         return spv.startValidate(validateBytes);
     }
 
@@ -375,7 +376,8 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
         OperationsLib.Transaction memory _txinfo = checkTxProofExists(userTxBytes);
         // Todo Temporary use
         IORManager manager = getManager();
-        address ebcAddress = manager.getEbcIds()[0];
+        // TODO: 
+        address ebcAddress = manager.getEBCAddress(0);
 
         // Todo dev: Comment out the following two lines(require(xxx)) of code for testing
 

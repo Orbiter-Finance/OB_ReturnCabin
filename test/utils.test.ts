@@ -214,13 +214,13 @@ export class DataInit {
     DataInit.pairs = pairs.map((pair: any) => {
       pair.ebc = process.env['ORProtocalV1'];
       const pairId = solidityKeccak256(
-        ['uint256', 'uint256', 'address', 'address', 'address'],
+        ['uint256', 'uint256', 'uint256', 'address', 'address'],
         [
+          pair.ebcId,
           pair.sourceChain,
           pair.destChain,
           pair.sourceToken,
           pair.destToken,
-          pair.ebc,
         ],
       );
       pair.id = pairId;

@@ -19,7 +19,6 @@ interface IORProtocal {
 
     function checkUserChallenge(uint256 value) external view returns (bool);
 
-    function getFromTxChainId(OperationsLib.Transaction memory tx) external view returns (uint256);
 
     function getPledgedAmount(uint256 chainId, uint256 maxPrice) external view returns (uint256 value);
 

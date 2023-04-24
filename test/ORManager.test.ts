@@ -14,7 +14,7 @@ describe('ORManager.test.ts => Chain', () => {
     const addChainsData = chains.map((chain) => {
       for (const token of chain.tokenList) {
         addTokensData.push(
-          contract.interface.encodeFunctionData('setTokenInfo', [
+          contract.interface.encodeFunctionData('registerToken', [
             chain.id,
             token.decimals,
             token.address,
@@ -22,7 +22,7 @@ describe('ORManager.test.ts => Chain', () => {
           ]),
         );
       }
-      return contract.interface.encodeFunctionData('setChainInfo', [
+      return contract.interface.encodeFunctionData('registerChain', [
         chain.id,
         chain.batchLimit,
         chain.maxDisputeTime,
@@ -37,29 +37,30 @@ describe('ORManager.test.ts => Chain', () => {
   it('init Pairs', async () => {
     const contract = await getManagerContract();
     const pairs = DataInit.pairs;
-    const addPair1 = await contract.addPair(pairs[0]);
+    const addPair1 = await contract.registerPair(pairs[0]);
     await addPair1.wait();
     const datas = pairs.map((row) => {
-      return contract.interface.encodeFunctionData('addPair', [row]);
+      return contract.interface.encodeFunctionData('registerPair', [row]);
     });
     const tx = await contract.multicall(datas);
     await tx.wait();
-    const pairIds = await contract.getPairIds();
-    expect(pairIds.length).eq(datas.length);
-    for (const pairId of pairIds) {
+    // const pairIds = await contract.getPairIds();
+    // expect(pairIds.length).eq(datas.length);
+    for (const pairId of pairs.map(row=> row.id)) {
       const pair = await contract.getPairs(pairId);
       const localPair = pairs.find((p) => p.id === pairId);
+      console.log(localPair, '==', pair)
       expect(localPair).not.empty;
       expect(pair).not.empty;
       expect(pair.sourceChain).eq(localPair.sourceChain);
       expect(pair.destChain).eq(localPair.destChain);
       expect(pair.sourceToken).eq(localPair.sourceToken);
-      expect(pair.ebc).eq(localPair.ebc);
+      expect(pair.ebcId).eq(localPair.ebcId);
     }
   });
   it('Delete Pair (Not Exists)', async () => {
     const contract = await getManagerContract();
-    const response = contract.removePair(
+    const response = contract.deletePair(
       '0xafee4ad1a2d0f54fdfde4a5f259c9d035b0ed39a8f615477f59c021ac2a274ad',
     );
     await expect(response).to.be.revertedWith('ID does not exist');
@@ -68,8 +69,8 @@ describe('ORManager.test.ts => Chain', () => {
     const contract = await getManagerContract();
     const pairs = DataInit.pairs;
     const pairId = pairs[0].id;
-    const response = await contract.removePair(pairId);
-    const isSupport = await contract.isSupportPair(pairId);
+    const response = await contract.deletePair(pairId);
+    const isSupport = await contract.isExistsPair(pairId);
     await expect(isSupport).false;
     const pairInfo = await contract.getPairs(pairId);
     await expect(pairInfo.sourceChain).eq(0);
@@ -79,8 +80,8 @@ describe('ORManager.test.ts => Chain', () => {
     const contract = await getManagerContract();
     const pairs = DataInit.pairs;
     const pairId = pairs[0].id;
-    await contract.addPair(pairs[0]);
-    const isSupport = await contract.isSupportPair(pairId);
+    await contract.registerPair(pairs[0]);
+    const isSupport = await contract.isExistsPair(pairId);
     await expect(isSupport).true;
   });
 
@@ -123,8 +124,7 @@ describe('ORManager.test.ts => Chain', () => {
       maxReceiptTime,
       maxBits,
     } = chains[0];
-    await manager
-      .setChainInfo(
+    await manager.registerChain(
         id,
         batchLimit * 2,
         maxDisputeTime,
@@ -158,7 +158,7 @@ describe('ORManager.test.ts => Chain', () => {
     const { id, tokenList } = chains[0];
     const { address, decimals, pledgeToken } = tokenList[0];
     await manager
-      .setTokenInfo(
+      .registerToken(
         id,
         decimals,
         address,
@@ -173,7 +173,7 @@ describe('ORManager.test.ts => Chain', () => {
       });
 
     await manager
-      .setTokenInfo(id, decimals, address, pledgeToken)
+      .registerToken(id, decimals, address, pledgeToken)
       .then(async (tx) => {
         await tx.wait();
         const contractToken = await manager.getTokenInfo(id, address);
@@ -185,7 +185,7 @@ describe('Manager EBC', () => {
   it('SET EBC', async () => {
     const manager = await getManagerContract();
     const ebc = await getORProtocalV1Contract();
-    await manager.addEBC(ebc.address);
+    await manager.registerEBC(ebc.address);
     //ERROR TEST
     // await userFactory.setEBC('0x0000000000000000000000000000000000000000');
     // expect(await manager.getEBC(1)).equal(ebc.address);
@@ -205,6 +205,6 @@ describe('Manager EBC', () => {
   it('SET SPV', async () => {
     const manager = await getManagerContract();
     const contract = await getORSPVContract();
-    await manager.setSPV(contract.address);
+    await manager.registerSPV(1, contract.address);
   });
 });

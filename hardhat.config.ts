@@ -4,7 +4,7 @@ import '@nomiclabs/hardhat-web3';
 import '@openzeppelin/hardhat-upgrades';
 import 'hardhat-contract-sizer';
 import '@nomiclabs/hardhat-etherscan';
-import 'solidity-docgen';
+// import 'solidity-docgen';
 import { HardhatUserConfig, task } from 'hardhat/config';
 const { INFURA_API_KEY, ETHERSCAN_API_KEY, ALCHEMY_KEY, NETWORK, ACCOUNTS } =
   process.env;
@@ -18,7 +18,7 @@ task('accounts', 'Prints accounts', async (taskArgs, hre) => {
 const accounts = ACCOUNTS?.split(',');
 const config: HardhatUserConfig = {
   defaultNetwork: NETWORK,
-  docgen: {},
+  // docgen: {},
   solidity: {
     compilers: [
       {
@@ -30,12 +30,21 @@ const config: HardhatUserConfig = {
           },
         },
       },
+      {
+        version: '0.7.6',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
+        },
+      },
     ],
   },
-  gasReporter: {
-    enabled: process.env.REPORT_GAS !== undefined,
-    currency: 'USD',
-  },
+  // gasReporter: {
+  //   enabled: process.env.REPORT_GAS !== undefined,
+  //   currency: 'USD',
+  // },
   networks: {
     hardhat: {
       allowUnlimitedContractSize: true,

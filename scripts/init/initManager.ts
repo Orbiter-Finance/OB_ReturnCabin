@@ -24,7 +24,7 @@ async function initChain() {
   const contract = await getManagerContract();
   for (const chain of DataInit.chains) {
     const tokenList = chain.tokenList.map((row) => row.address);
-    const tx = await contract.setChainInfo(
+    const tx = await contract.registerChain(
       chain.chainID,
       chain.batchLimit,
       chain.maxDisputeTime,
@@ -35,7 +35,7 @@ async function initChain() {
     await tx.wait();
     printSuccess(`Add Chain ${chain.chainID} Hash: ${tx.hash}`);
     for (const token of chain.tokenList) {
-      const tx = await contract.setTokenInfo(
+      const tx = await contract.registerToken(
         chain.chainID,
         token.decimals,
         token.address,
