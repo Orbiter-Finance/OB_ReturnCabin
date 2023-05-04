@@ -50,7 +50,7 @@ library Types {
         uint256 dToken;
     }
     struct PairConfig {
-        uint8 state; // 0 = stop,1=start,2=pause
+        uint256 state; // 0 = not start , < now  = start, > now  = pause allow stop
         uint256 tradingFee;
         uint256 withholdingFee;
         uint256 minPrice;

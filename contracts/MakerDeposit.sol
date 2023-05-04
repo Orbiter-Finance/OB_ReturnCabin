@@ -17,9 +17,12 @@ contract MakerDeposit {
     address public owner;
     IMakerFactory public makerFactory;
     mapping(bytes32 => Types.PairConfig) public pairs;
+    // sourceChain + pairId + amount
     mapping(uint8 => EnumerableMap.Bytes32ToUintMap) private pairsPledgeAmounts;
     mapping(address => uint256) public challengePledge;
+    // sourceChain + token + amount
     mapping(uint8 => EnumerableMap.AddressToUintMap) private pairPledgeByChainToken;
+    // token + amount
     EnumerableMap.AddressToUintMap private pairPledgeByToken;
 
     event Start(bytes32 indexed pairKey, Types.PairConfig config);
@@ -110,7 +113,7 @@ contract MakerDeposit {
         uint nowPledgeAmount = this.getPairPledgeByChainToken(_pair.s, layer1Token);
         uint maxPledgeAmount = nowPledgeAmount;
         Types.PairConfig memory config = Types.PairConfig({
-            state: 1,
+            state: block.number,
             tradingFee: tradingFee,
             withholdingFee: withholdingFee,
             minPrice: minPrice,
