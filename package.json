@@ -5,11 +5,16 @@
   "repository": "https://github.com/Orbiter-Finance/OB_ReturnCabin.git",
   "author": "",
   "license": "MIT",
+  "scripts": {
+    "compile": "hardhat compile",
+    "coverage": "env COVERAGE=true hardhat coverage",
+    "test": "REPORT_GAS=true hardhat test ./test/Manager.ts ./test/MakerFactory.ts ./test/EventBindingStandard.ts ./test/MakerDeposit.ts --network hardhat"
+  },
   "devDependencies": {
     "@ethersproject/abi": "^5.4.7",
     "@ethersproject/providers": "^5.4.7",
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.0",
-    "@nomicfoundation/hardhat-network-helpers": "^1.0.0",
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.8",
     "@nomicfoundation/hardhat-toolbox": "^2.0.0",
     "@nomiclabs/hardhat-ethers": "^2.0.0",
     "@nomiclabs/hardhat-etherscan": "^3.0.0",

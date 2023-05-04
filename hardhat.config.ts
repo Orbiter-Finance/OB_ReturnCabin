@@ -13,11 +13,19 @@ task("accounts", "Prints the list of accounts", async (_, { ethers, web3 }) => {
 const { INFURA_API_KEY, ETHERSCAN_API_KEY, ALCHEMY_KEY, NETWORK, ACCOUNTS } =
   process.env;
 const config: HardhatUserConfig = {
-  solidity: "0.8.18",
   defaultNetwork: NETWORK,
   networks: {
     hardhat: {
       allowUnlimitedContractSize: true,
+    },
+  },
+  solidity: {
+    version: '0.8.17',
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 200,
+      },
     },
   },
   typechain: {

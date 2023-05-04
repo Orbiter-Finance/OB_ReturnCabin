@@ -6,13 +6,15 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interface/IL2Bridge.sol";
 import "./interface/IMakerFactory.sol";
 import "./library/Type.sol";
+import "hardhat/console.sol";
+import "./interface/IManager.sol";
 
 interface IMakerDeposit {
-    function initialize(address _owner) external;
+    function initialize() external;
 }
 
 contract MakerFactory is IMakerFactory, IL2Bridge, Ownable {
-    address public manager;
+    IManager public manager;
     uint256 public makerMaxLimit;
     uint256 public makerLimitUsed;
     address public implementation;
@@ -21,15 +23,15 @@ contract MakerFactory is IMakerFactory, IL2Bridge, Ownable {
 
     event MakerCreated(address indexed owner, address indexed maker);
 
-    constructor(address _manager, uint256 _makerMaxLimit, address _implementation) {
-        require(_manager != address(0), "Manager address is zero");
+    constructor(IManager _manager, uint256 _makerMaxLimit, address _implementation) {
+        require(address(_manager) != address(0), "Manager address is zero");
         manager = _manager;
         makerMaxLimit = _makerMaxLimit;
         implementation = _implementation;
     }
 
-    function setManager(address _manager) external onlyOwner {
-        require(_manager != address(0), "Manager address is zero");
+    function setManager(IManager _manager) external onlyOwner {
+        require(address(_manager) != address(0), "Manager address is zero");
         manager = _manager;
     }
 
@@ -40,18 +42,16 @@ contract MakerFactory is IMakerFactory, IL2Bridge, Ownable {
     function createMaker() external {
         require(makerLimitUsed < makerMaxLimit, "Maker creation limit reached");
         require(makerByOwner[msg.sender] == address(0), "Maker already created for owner");
-
-        address makerAddress = Clones.cloneDeterministic(
+        ++makerLimitUsed;
+        address mdcAddr = Clones.cloneDeterministic(
             implementation,
             keccak256(abi.encodePacked(address(this), msg.sender))
         );
+    
+        makerByOwner[msg.sender] = mdcAddr;
+        emit MakerCreated(msg.sender, mdcAddr);
 
-        ++makerLimitUsed;
-        makerByOwner[msg.sender] = makerAddress;
-
-        emit MakerCreated(msg.sender, makerAddress);
-
-        IMakerDeposit(makerAddress).initialize(msg.sender);
+        IMakerDeposit(mdcAddr).initialize();
     }
 
     function handleMessage(bytes calldata message) external {

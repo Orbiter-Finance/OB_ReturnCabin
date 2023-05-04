@@ -3,15 +3,15 @@ pragma solidity >=0.8.0 <0.9.0;
 
 library Types {
     struct ChainInfo {
-        uint256 id;
-        uint256 batchLimit;
-        mapping(address => TokenInfo) tokens;
+        uint8 id;
+        uint16 batchLimit;
+        mapping(uint => TokenInfo) tokens;
     }
 
     struct TokenInfo {
-        uint256 precision;
-        address tokenAddress;
-        address mainAddress;
+        uint256 tokenAddress;
+        uint8 decimals;
+        address layer1Token;
     }
     struct TransactionEIP1559 {
         uint chainId;
@@ -41,5 +41,21 @@ library Types {
         uint256 value;
         uint256 transactionIndex;
         uint256 timeStamp;
+        bytes data;
     }
+    struct Pair {
+        uint8 s;
+        uint8 d;
+        uint256 sToken;
+        uint256 dToken;
+    }
+    struct PairConfig {
+        uint8 state; // 0 = stop,1=start,2=pause
+        uint256 tradingFee;
+        uint256 withholdingFee;
+        uint256 minPrice;
+        uint256 maxPrice;
+        // uint pledgeAmount;
+    }
+  
 }

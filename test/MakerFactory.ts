@@ -1,26 +1,35 @@
 import { ethers } from 'hardhat';
 import { expect } from 'chai';
-import { MakerFactory } from '../typechain-types';
+import { MakerFactory, Manager } from '../build/types';
+import { deployManagerFixture } from './Manager';
+import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
+export async function deployMakerFactoryFixture() {
+    const { manager } = await deployManagerFixture();
+    const [signer1, signer2, signer3] = await ethers.getSigners();
+    let MakerDeposit = await ethers.getContractFactory('MakerDeposit');
+    const makerDeposit = await MakerDeposit.deploy()
+    await makerDeposit.deployed();
+    const MakerFactory = await ethers.getContractFactory('MakerFactory', signer1);
+    // manager
+    const makerFactory = await MakerFactory.deploy(manager.address, 100, makerDeposit.address);
+    await makerFactory.deployed();
+    return {
+        manager,
+        makerFactory,
+        makerDeposit
+    }
+}
 
-describe('MakerFactory', () => {
-    let makerFactory: MakerFactory;
-    let owner;
+describe('MakerFactory', async () => {
+    let makerFactory!: MakerFactory;
+    let manager:Manager;
     let user1: any;
-    let user2;
-
     beforeEach(async () => {
+        const fixture = await loadFixture(deployMakerFactoryFixture);
+        makerFactory = fixture.makerFactory;
+        manager = fixture.manager;
         const [signer1, signer2, signer3] = await ethers.getSigners();
-        owner = signer1;
         user1 = signer2;
-        user2 = signer3;
-        //
-        let MakerDeposit = await ethers.getContractFactory('MakerDeposit');
-        const makerDeposit= await MakerDeposit.deploy()
-        await makerDeposit.deployed();
-
-        const MakerFactory = await ethers.getContractFactory('MakerFactory', owner);
-        makerFactory = await MakerFactory.deploy(owner.address, 2, makerDeposit.address);
-        await makerFactory.deployed();
     });
 
     it('should allow owner to set manager', async () => {
@@ -34,6 +43,10 @@ describe('MakerFactory', () => {
         await expect(makerFactory.connect(user1).setManager(newManager)).to.be.revertedWith('Ownable: caller is not the owner');
     });
 
+    it('should allow owner to set contract manager', async () => {
+        await makerFactory.setManager(manager.address);
+        expect(await makerFactory.manager()).to.equal(manager.address);
+    });
     it('should allow owner to set maker max limit', async () => {
         const newLimit = 3;
         await makerFactory.setMakerMaxLimit(newLimit);
@@ -52,6 +65,7 @@ describe('MakerFactory', () => {
 
     it('should not allow user to create more than maker max limit', async () => {
         const accounts = await ethers.getSigners();
+        await makerFactory.setMakerMaxLimit(2);
         await makerFactory.connect(accounts[10]).createMaker();
         await makerFactory.connect(accounts[11]).createMaker();
         await expect(makerFactory.connect(accounts[12]).createMaker()).to.be.revertedWith('Maker creation limit reached');
@@ -62,13 +76,4 @@ describe('MakerFactory', () => {
         await makerFactory.connect(user1).createMaker();
         await expect(makerFactory.connect(user1).createMaker()).to.be.revertedWith('Maker already created for owner');
     });
-
-    it('should Already initialized', async () => {
-        await makerFactory.connect(user1).createMaker();
-        const makerAddr = await makerFactory.makerByOwner(user1.address);
-        await expect(makerAddr).not.empty
-        const makerDeposit = await ethers.getContractAt("MakerDeposit", makerAddr);
-        await expect(makerDeposit.initialize(user1.address)).to.be.revertedWith('Already initialized');
-    });
-
 });

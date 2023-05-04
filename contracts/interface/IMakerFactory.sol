@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
-
+import "./IManager.sol";
 /**
  * @title Interface for MakerFactory contract.
  * @dev This interface defines the external functions and getter methods available on the MakerFactory contract.
@@ -10,7 +10,7 @@ interface IMakerFactory {
      * @notice Set the address of the manager.
      * @param _manager The address of the manager contract.
      */
-    function setManager(address _manager) external;
+    function setManager(IManager _manager) external;
 
     /**
      * @notice Set the maximum number of Maker instances that can be created.
