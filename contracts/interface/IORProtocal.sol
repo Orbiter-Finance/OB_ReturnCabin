@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import "../library/Operation.sol";
+import "../library/Operations.sol";
 
 interface IORProtocal {
     event ChangeChallengePledgedAmount(uint256 value);

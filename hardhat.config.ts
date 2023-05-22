@@ -1,117 +1,122 @@
-import 'dotenv/config';
 import '@nomicfoundation/hardhat-toolbox';
-import '@nomiclabs/hardhat-web3';
-import '@openzeppelin/hardhat-upgrades';
-import 'hardhat-contract-sizer';
-import '@nomiclabs/hardhat-etherscan';
-// import 'solidity-docgen';
-import { HardhatUserConfig, task } from 'hardhat/config';
-const { INFURA_API_KEY, ETHERSCAN_API_KEY, ALCHEMY_KEY, NETWORK, ACCOUNTS } =
-  process.env;
-task('accounts', 'Prints accounts', async (taskArgs, hre) => {
-  const accounts = await hre.ethers.getSigners();
-  for (const account of accounts) {
-    const balance = await hre.web3.eth.getBalance(account.address);
-    console.log(`account：${account.address}, balance：${balance.toString()}`);
+import { config as dotenvConfig } from 'dotenv';
+import type { HardhatUserConfig } from 'hardhat/config';
+import type { NetworkUserConfig } from 'hardhat/types';
+import { resolve } from 'path';
+
+const dotenvConfigPath: string = process.env.DOTENV_CONFIG_PATH || './.env';
+dotenvConfig({ path: resolve(__dirname, dotenvConfigPath) });
+
+// Ensure that we have all the environment variables we need.
+const mnemonic: string | undefined = process.env.MNEMONIC;
+if (!mnemonic) {
+  throw new Error('Please set your MNEMONIC in a .env file');
+}
+
+const infuraApiKey: string | undefined = process.env.INFURA_API_KEY;
+if (!infuraApiKey) {
+  throw new Error('Please set your INFURA_API_KEY in a .env file');
+}
+
+export const chainIds = {
+  'arbitrum-mainnet': 42161,
+  avalanche: 43114,
+  bsc: 56,
+  hardhat: 31337,
+  mainnet: 1,
+  'optimism-mainnet': 10,
+  'polygon-mainnet': 137,
+  'polygon-mumbai': 80001,
+  sepolia: 11155111,
+  goerli: 5,
+};
+
+function getChainConfig(chain: keyof typeof chainIds): NetworkUserConfig {
+  let jsonRpcUrl: string;
+  switch (chain) {
+    case 'avalanche':
+      jsonRpcUrl = 'https://api.avax.network/ext/bc/C/rpc';
+      break;
+    case 'bsc':
+      jsonRpcUrl = 'https://bsc-dataseed1.binance.org';
+      break;
+    default:
+      jsonRpcUrl = 'https://' + chain + '.infura.io/v3/' + infuraApiKey;
   }
-});
-const accounts = ACCOUNTS?.split(',');
+  return {
+    accounts: {
+      count: 20,
+      mnemonic,
+      path: "m/44'/60'/0'/0",
+    },
+    chainId: chainIds[chain],
+    url: jsonRpcUrl,
+  };
+}
+
 const config: HardhatUserConfig = {
-  defaultNetwork: NETWORK,
-  // docgen: {},
-  solidity: {
-    compilers: [
-      {
-        version: '0.8.17',
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 200,
-          },
-        },
-      },
-      {
-        version: '0.7.6',
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 200,
-          },
-        },
-      },
-    ],
+  defaultNetwork: 'hardhat',
+  etherscan: {
+    apiKey: {
+      arbitrumOne: process.env.ARBISCAN_API_KEY || '',
+      avalanche: process.env.SNOWTRACE_API_KEY || '',
+      bsc: process.env.BSCSCAN_API_KEY || '',
+      mainnet: process.env.ETHERSCAN_API_KEY || '',
+      optimisticEthereum: process.env.OPTIMISM_API_KEY || '',
+      polygon: process.env.POLYGONSCAN_API_KEY || '',
+      polygonMumbai: process.env.POLYGONSCAN_API_KEY || '',
+      sepolia: process.env.ETHERSCAN_API_KEY || '',
+      goerli: process.env.ETHERSCAN_API_KEY || '',
+    },
   },
-  // gasReporter: {
-  //   enabled: process.env.REPORT_GAS !== undefined,
-  //   currency: 'USD',
-  // },
+  gasReporter: {
+    currency: 'USD',
+    enabled: process.env.REPORT_GAS ? true : false,
+    excludeContracts: [],
+    coinmarketcap: process.env.COINMARKETCAP_KEY,
+    src: './contracts',
+  },
   networks: {
     hardhat: {
-      allowUnlimitedContractSize: true,
+      accounts: {
+        mnemonic,
+      },
+      chainId: chainIds.hardhat,
     },
-    develop: {
-      chainId: 1167,
-      url: 'http://ec2-35-73-236-198.ap-northeast-1.compute.amazonaws.com:3002',
-      accounts,
-    },
-    test: {
-      url: 'http://ec2-54-178-23-104.ap-northeast-1.compute.amazonaws.com:8545',
-      accounts,
-    },
-    mainnet: {
-      url: `https://mainnet.infura.io/v3/${INFURA_API_KEY}`,
-      accounts,
-    },
-    ropsten: {
-      url: `https://ropsten.infura.io/v3/${INFURA_API_KEY}`,
-      accounts,
-    },
-    rinkeby: {
-      url: `https://rinkeby.infura.io/v3/${INFURA_API_KEY}`,
-      accounts,
-    },
-    goerli: {
-      url: `https://goerli.infura.io/v3/${INFURA_API_KEY}`,
-      timeout: 1000 * 60 * 60 * 5,
-      gasPrice: 20000000000,
-      accounts,
-    },
-    kovan: {
-      url: `https://kovan.infura.io/v3/${INFURA_API_KEY}`,
-      accounts,
-    },
-    arbitrumGoerli: {
-      url: `https://arb-goerli.g.alchemy.com/v2/${ALCHEMY_KEY}`,
-      accounts,
-    },
-    arbitrum: {
-      url: `https://arbitrum-mainnet.infura.io/v3/${INFURA_API_KEY}`,
-      accounts,
-    },
-    optimismKovan: {
-      url: `https://optimism-kovan.infura.io/v3/${INFURA_API_KEY}`,
-      accounts,
-    },
-    optimism: {
-      url: `https://optimism-mainnet.infura.io/v3/${INFURA_API_KEY}`,
-      accounts,
-    },
-    mumbai: {
-      url: `https://polygon-mumbai.infura.io/v3/${INFURA_API_KEY}`,
-      accounts,
-    },
-    polygon: {
-      url: `https://polygon-mainnet.infura.io/v3/${INFURA_API_KEY}`,
-      accounts,
+    arbitrum: getChainConfig('arbitrum-mainnet'),
+    avalanche: getChainConfig('avalanche'),
+    bsc: getChainConfig('bsc'),
+    mainnet: getChainConfig('mainnet'),
+    optimism: getChainConfig('optimism-mainnet'),
+    'polygon-mainnet': getChainConfig('polygon-mainnet'),
+    'polygon-mumbai': getChainConfig('polygon-mumbai'),
+    sepolia: getChainConfig('sepolia'),
+    goerli: getChainConfig('goerli'),
+  },
+  paths: {
+    artifacts: './artifacts',
+    cache: './cache',
+    sources: './contracts',
+    tests: './test',
+  },
+  solidity: {
+    version: '0.8.17',
+    settings: {
+      metadata: {
+        // Not including the metadata hash
+        // https://github.com/paulrberg/hardhat-template/issues/31
+        bytecodeHash: 'none',
+      },
+      // Disable the optimizer when debugging
+      // https://hardhat.org/hardhat-network/#solidity-optimizer-support
+      optimizer: {
+        enabled: true,
+        runs: 800,
+      },
     },
   },
-  etherscan: {
-    // Your API key for Etherscan
-    // Obtain one at https://etherscan.io/
-    apiKey: ETHERSCAN_API_KEY,
-  },
-  mocha: {
-    timeout: 40000 * 10,
+  typechain: {
+    target: 'ethers-v5',
   },
 };
 

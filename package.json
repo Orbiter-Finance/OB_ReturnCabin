@@ -1,5 +1,6 @@
 {
   "name": "or-contract",
+  "license": "MIT",
   "scripts": {
     "compile": "hardhat compile",
     "coverage": "env COVERAGE=true hardhat coverage",

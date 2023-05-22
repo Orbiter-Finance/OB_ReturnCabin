@@ -3,7 +3,8 @@
 pragma solidity >=0.8.0 <0.9.0;
 import "./BytesLib.sol";
 import "solidity-rlp/contracts/RLPReader.sol";
-import "./Operation.sol";
+import "./Operations.sol";
+
 // Rollup Types
 bytes1 constant None_Rollup = 0xc0;
 bytes1 constant Optimistic_Rollup = 0xc1;

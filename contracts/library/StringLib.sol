@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.17;
+
 library StringLib {
     function uintToFloatString(uint256 value, uint256 decimalPlaces) internal pure returns (string memory) {
         // Calculate the integer and decimal parts of the float separately

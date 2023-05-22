@@ -4,7 +4,7 @@ import "./TransactionLib.sol";
 
 library OperationsLib {
     struct EBCConfigStruct {
-        uint256 challengePledgedAmount;
+        uint challengePledgedAmount;
         uint16 pledgeAmountSafeRate;
         uint16 mainCoinPunishRate;
         uint16 tokenPunishRate;
@@ -12,30 +12,32 @@ library OperationsLib {
     struct CalculatePairPledgeResponse {
         bytes32 pairId;
         address pledgedToken;
-        uint256 maxPrice;
-        uint256 pledgedValue;
+        uint maxPrice;
+        uint pledgedValue;
     }
     struct CalculatePairPledgeResponseTemp {
         address pledgedToken;
-        uint256 chainId;
-        uint256 pledgedValue;
+        uint chainId;
+        uint pledgedValue;
     }
 
     struct TokenInfo {
-        uint256 chainID;
         uint8 decimals;
-        address tokenAddress;
-        address mainTokenAddress;
+        address token;
+        address mainnetToken;
     }
 
     struct ChainInfo {
-        uint256 id;
-        uint256 batchLimit;
-        uint256 maxDisputeTime;
-        uint256 maxReceiptTime;
-        uint256 stopDelayTime;
-        uint256 maxBits;
+        uint id;
+        uint batchLimit;
+        address[] spvs;
+        uint minVerifyChallengeSourceTxSecond;
+        uint maxVerifyChallengeSourceTxSecond;
+        uint minVerifyChallengeDestTxSecond;
+        uint maxVerifyChallengeDestTxSecond;
+        TokenInfo[] tokens;
     }
+
     struct TransactionEIP1559Struct {
         uint chainId;
         uint nonce;
@@ -45,7 +47,7 @@ library OperationsLib {
         address to;
         uint value;
         bytes data;
-        bytes [] accessList;
+        bytes[] accessList;
         uint v;
         bytes32 r;
         bytes32 s;
@@ -56,69 +58,69 @@ library OperationsLib {
         address tokenAddress;
         bytes32 txHash;
         bytes32 blockHash;
-        uint256 blockNumber;
-        uint256 chainId;
-        uint256 nonce;
-        uint256 gas;
-        uint256 gasPrice;
-        uint256 value;
-        uint256 transactionIndex;
-        uint256 timeStamp;
+        uint blockNumber;
+        uint chainId;
+        uint nonce;
+        uint gas;
+        uint gasPrice;
+        uint value;
+        uint transactionIndex;
+        uint timeStamp;
     }
     struct PairStruct {
-        uint256 ebcId;
-        uint256 sourceChain;
-        uint256 destChain;
+        uint ebcId;
+        uint sourceChain;
+        uint destChain;
         address sourceToken;
         address destToken;
     }
     struct LPActionStruct {
         bytes32 pairId;
-        uint256 minPrice;
-        uint256 maxPrice;
-        uint256 gasFee;
-        uint256 tradingFee;
+        uint minPrice;
+        uint maxPrice;
+        uint gasFee;
+        uint tradingFee;
     }
     struct LPUpdateStruct {
         bytes32 pairId;
-        uint256 gasFee;
-        uint256 tradingFee;
+        uint gasFee;
+        uint tradingFee;
     }
     struct EffectivePairStruct {
         bytes32 lpId;
-        uint256 startTime;
-        uint256 stopTime;
+        uint startTime;
+        uint stopTime;
     }
     struct LPStruct {
         bytes32 pairId;
-        uint256 minPrice;
-        uint256 maxPrice;
-        uint256 gasFee;
-        uint256 tradingFee;
-        uint256 startTime;
-        uint256 stopTime;
+        uint minPrice;
+        uint maxPrice;
+        uint gasFee;
+        uint tradingFee;
+        uint startTime;
+        uint stopTime;
     }
     struct lpInfo {
         address sourceToken;
         address destToken;
-        uint256 sourceChain;
-        uint256 destChain;
+        uint sourceChain;
+        uint destChain;
         address ebc;
-        uint256 sourcePresion;
-        uint256 destPresion;
-        uint256 minPrice;
-        uint256 maxPrice;
-        uint256 gasFee;
-        uint256 tradingFee;
-        uint256 startTime;
+        uint sourcePresion;
+        uint destPresion;
+        uint minPrice;
+        uint maxPrice;
+        uint gasFee;
+        uint tradingFee;
+        uint startTime;
     }
 
     struct challengeInfo {
-        uint256 challengeState; // 0:unused   1:watting for maker  2.maker success   3.maker failed   4.ma
-        uint256 stopTime;
-        uint256 endTime;
-        uint256 value;
-        uint256 pledged;
+        uint challengeState; // 0:unused   1:watting for maker  2.maker success   3.maker failed   4.ma
+        uint stopTime;
+        uint endTime;
+        uint value;
+        uint pledged;
         address ebc;
         address token;
         bytes32 responseTxinfo;
@@ -151,9 +153,9 @@ library OperationsLib {
     function getLpID(
         bytes32 pairId,
         address makerId,
-        uint256 startTime,
-        uint256 minPrice,
-        uint256 maxPrice
+        uint startTime,
+        uint minPrice,
+        uint maxPrice
     ) internal pure returns (bytes32) {
         // bytes32 pairId = getPairID(_lpinfo);
         bytes32 rootHash = keccak256(abi.encodePacked(pairId, makerId, startTime, minPrice, maxPrice));
@@ -165,18 +167,18 @@ library OperationsLib {
         return keccak256(abi.encodePacked(_txinfo.chainId, _txinfo.from, _txinfo.to, _txinfo.value, _txinfo.nonce));
     }
 
-    function uintToString(uint256 _i) internal pure returns (string memory _uintAsString) {
+    function uintToString(uint _i) internal pure returns (string memory _uintAsString) {
         if (_i == 0) {
             return "0";
         }
-        uint256 j = _i;
-        uint256 len;
+        uint j = _i;
+        uint len;
         while (j != 0) {
             len++;
             j /= 10;
         }
         bytes memory bstr = new bytes(len);
-        uint256 k = len;
+        uint k = len;
         while (_i != 0) {
             k = k - 1;
             uint8 temp = (48 + uint8(_i - (_i / 10) * 10));
@@ -187,11 +189,11 @@ library OperationsLib {
         return string(bstr);
     }
 
-    function stringToUint(string memory s) internal pure returns (uint256) {
+    function stringToUint(string memory s) internal pure returns (uint) {
         bytes memory b = bytes(s);
-        uint256 result = 0;
-        for (uint256 i = 0; i < b.length; i++) {
-            uint256 c = uint256(uint8(b[i]));
+        uint result = 0;
+        for (uint i = 0; i < b.length; i++) {
+            uint c = uint(uint8(b[i]));
             if (c >= 48 && c <= 57) {
                 result = result * 10 + (c - 48);
             }

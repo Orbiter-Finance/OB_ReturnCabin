@@ -51,7 +51,8 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
 
     function getPledgedAmount(uint256 chainId, uint256 maxPrice) external view returns (uint256 value) {
         require(chainId != 0, "chain not exist");
-        (, uint256 batchLimit, , , , ) = getManager.getChain(chainId);
+        OperationsLib.ChainInfo memory chainInfo = getManager.getChainInfo(chainId);
+        uint256 batchLimit = chainInfo.batchLimit;
         require(batchLimit != 0 && maxPrice != 0 && config.pledgeAmountSafeRate != 0, "PledgeAmountSafeRate Non Set");
         return ((batchLimit * maxPrice) * config.pledgeAmountSafeRate) / 10000;
     }
@@ -104,7 +105,10 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     }
 
     function getValueSecuirtyCode(uint256 chainKey, uint256 value) public view returns (string memory) {
-        (, , , , , uint256 maxUint) = getManager.getChain(chainKey);
+        // TODO, for dev
+        // (, , , , , uint256 maxUint) = getManager.getChain(chainKey);
+        uint256 maxUint = 0;
+
         require(maxUint != 0, "Maximum bits not set");
         require(maxUint <= 256, "The maximum bits exceeds 256");
         StrSlice strValue = OperationsLib.uintToString(value).toSlice();
@@ -125,7 +129,8 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     }
 
     function getToTxNonceId(OperationsLib.Transaction calldata _tx) public view returns (uint256) {
-        (uint256 chainId, , , , , ) = getManager.getChain(_tx.chainId);
+        OperationsLib.ChainInfo memory chainInfo = getManager.getChainInfo(_tx.chainId);
+        uint chainId = chainInfo.id;
         require(chainId != 0, "chainId not set");
         string memory toChainId = getValueSecuirtyCode(chainId, _tx.value);
         uint256 code = OperationsLib.stringToUint(toChainId);
@@ -238,7 +243,11 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
         OperationsLib.Transaction memory _userTx,
         OperationsLib.Transaction memory _makerTx
     ) external view returns (bool) {
-        (, , uint256 maxDisputeTime, , , ) = getManager.getChain(_userTx.chainId);
+
+        // TODO, for dev
+        // (, , uint256 maxDisputeTime, , , ) = getManager.getChain(_userTx.chainId);
+        uint256 maxDisputeTime = 0;
+
         // The transaction time of maker is required to be later than that of user.
         // At the same time, the time difference between the above two times is required to be less than the maxDisputeTime.
         require(

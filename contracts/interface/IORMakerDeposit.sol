@@ -1,9 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import "../library/Operation.sol";
+import "../library/Operations.sol";
 
 interface IORMakerDeposit {
+    enum RuleStatus {
+        Stoped,
+        Activated,
+        Paused
+    }
+
     event Deposit(address caller, uint256 amount);
     event LogChallengeInfo(
         address indexed factory,
@@ -54,7 +60,9 @@ interface IORMakerDeposit {
 
     function lpAction(OperationsLib.LPActionStruct[] memory _lps) external payable;
 
-    function lpData(bytes32)
+    function lpData(
+        bytes32
+    )
         external
         view
         returns (

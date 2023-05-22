@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.17;
-import "../library/Operation.sol";
+import "../library/Operations.sol";
 
 interface IORProventh {
     function startValidate(bytes calldata validateBytes) external view returns (OperationsLib.Transaction memory);
