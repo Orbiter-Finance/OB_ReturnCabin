@@ -23,7 +23,7 @@ library OperationsLib {
 
     struct TokenInfo {
         uint8 decimals;
-        address token;
+        uint token; // uint160(address) will overflow in the token used for starknet
         address mainnetToken;
     }
 

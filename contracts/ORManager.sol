@@ -14,24 +14,43 @@ contract ORManager is IORManager, Ownable, Multicall {
         _transferOwnership(owner_);
     }
 
-    function registerChain(OperationsLib.ChainInfo calldata chainInfo) external onlyOwner {
-        chains[chainInfo.id] = chainInfo;
-        emit ChainInfoUpdated(chainInfo.id, chainInfo);
+    // TODO: setting the same chainId or token affect the protocol?
+    function registerChains(OperationsLib.ChainInfo[] calldata chains_) external onlyOwner {
+        unchecked {
+            for (uint i = 0; i < chains_.length; i++) {
+                chains[chains_[i].id] = chains_[i];
+                emit ChainInfoUpdated(chains_[i].id, chains_[i]);
+            }
+        }
     }
 
-    function setChainSpvs(uint id, address[] calldata spvs) external onlyOwner {
-        chains[id].spvs = spvs;
+    function updateChainSpvs(uint id, address[] calldata spvs, uint[] calldata indexs) external onlyOwner {
+        unchecked {
+            for (uint i = 0; i < spvs.length; i++) {
+                if (i < indexs.length) {
+                    chains[id].spvs[indexs[i]] = spvs[i];
+                } else {
+                    chains[id].spvs.push(spvs[i]);
+                }
+            }
+        }
         emit ChainInfoUpdated(id, chains[id]);
     }
 
-    function setChainTokens(uint id, OperationsLib.TokenInfo[] calldata tokens) external onlyOwner {
-        // OperationsLib.TokenInfo[] storage tokens = new OperationsLib.TokenInfo[](0);
-
-        // tokens = new OperationsLib.TokenInfo[](0);
-        for (uint i = 0; i < tokens.length; i++) {
-            // tokens.push(tokens[i]);
+    function updateChainTokens(
+        uint id,
+        OperationsLib.TokenInfo[] calldata tokens,
+        uint[] calldata indexs
+    ) external onlyOwner {
+        unchecked {
+            for (uint i = 0; i < tokens.length; i++) {
+                if (i < indexs.length) {
+                    chains[id].tokens[indexs[i]] = tokens[i];
+                } else {
+                    chains[id].tokens.push(tokens[i]);
+                }
+            }
         }
-
         emit ChainInfoUpdated(id, chains[id]);
     }
 

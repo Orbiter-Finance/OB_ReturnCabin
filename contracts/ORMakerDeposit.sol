@@ -12,6 +12,7 @@ import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import "./Multicall.sol";
 
 contract ORMakerDeposit {
+    uint public keep;
 
 // TODO, for dev
 // contract ORMakerDeposit is IORMakerDeposit, Multicall {
