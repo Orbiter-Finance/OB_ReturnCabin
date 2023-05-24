@@ -12,7 +12,7 @@ interface IORManager {
     event ChallengeUserRatioUpdated(uint64 challengeUserRatio);
     event FeeChallengeSecondUpdated(uint64 feeChallengeSecond);
     event FeeTakeOnChallengeSecondUpdated(uint64 feeTakeOnChallengeSecond);
-    event MakerMaxLimitUpdated(uint64 makerMaxLimit);
+    event MaxMDCLimitUpdated(uint64 maxMDCLimit);
 
     function registerChains(OperationsLib.ChainInfo[] calldata chains_) external;
 
@@ -50,7 +50,7 @@ interface IORManager {
 
     function updateFeeTakeOnChallengeSecond(uint64 feeTakeOnChallengeSecond_) external;
 
-    function makerMaxLimit() external view returns (uint64);
+    function maxMDCLimit() external view returns (uint64);
 
-    function updateMakerMaxLimit(uint64 makerMaxLimit_) external;
+    function updateMaxMDCLimit(uint64 maxMDCLimit_) external;
 }

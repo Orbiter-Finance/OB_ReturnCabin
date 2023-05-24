@@ -16,7 +16,7 @@ contract ORManager is IORManager, Ownable, Multicall {
     uint64 private _challengeUserRatio;
     uint64 private _feeChallengeSecond;
     uint64 private _feeTakeOnChallengeSecond;
-    uint64 private _makerMaxLimit;
+    uint64 private _maxMDCLimit = 2 ** 64 - 1;
 
     constructor(address owner_) {
         _transferOwnership(owner_);
@@ -107,7 +107,7 @@ contract ORManager is IORManager, Ownable, Multicall {
 
     function updateMinChallengeRatio(uint64 minChallengeRatio_) external onlyOwner {
         _minChallengeRatio = minChallengeRatio_;
-        emit MinChallengeRatioUpdated(minChallengeRatio_);
+        emit MinChallengeRatioUpdated(_minChallengeRatio);
     }
 
     function challengeUserRatio() external view returns (uint64) {
@@ -116,7 +116,7 @@ contract ORManager is IORManager, Ownable, Multicall {
 
     function updateChallengeUserRatio(uint64 challengeUserRatio_) external onlyOwner {
         _challengeUserRatio = challengeUserRatio_;
-        emit ChallengeUserRatioUpdated(challengeUserRatio_);
+        emit ChallengeUserRatioUpdated(_challengeUserRatio);
     }
 
     function feeChallengeSecond() external view returns (uint64) {
@@ -125,7 +125,7 @@ contract ORManager is IORManager, Ownable, Multicall {
 
     function updateFeeChallengeSecond(uint64 feeChallengeSecond_) external onlyOwner {
         _feeChallengeSecond = feeChallengeSecond_;
-        emit FeeChallengeSecondUpdated(feeChallengeSecond_);
+        emit FeeChallengeSecondUpdated(_feeChallengeSecond);
     }
 
     function feeTakeOnChallengeSecond() external view returns (uint64) {
@@ -134,15 +134,15 @@ contract ORManager is IORManager, Ownable, Multicall {
 
     function updateFeeTakeOnChallengeSecond(uint64 feeTakeOnChallengeSecond_) external onlyOwner {
         _feeTakeOnChallengeSecond = feeTakeOnChallengeSecond_;
-        emit FeeTakeOnChallengeSecondUpdated(feeTakeOnChallengeSecond_);
+        emit FeeTakeOnChallengeSecondUpdated(_feeTakeOnChallengeSecond);
     }
 
-    function makerMaxLimit() external view returns (uint64) {
-        return _makerMaxLimit;
+    function maxMDCLimit() external view returns (uint64) {
+        return _maxMDCLimit;
     }
 
-    function updateMakerMaxLimit(uint64 makerMaxLimit_) external onlyOwner {
-        _makerMaxLimit = makerMaxLimit_;
-        emit MakerMaxLimitUpdated(makerMaxLimit_);
+    function updateMaxMDCLimit(uint64 maxMDCLimit_) external onlyOwner {
+        _maxMDCLimit = maxMDCLimit_;
+        emit MaxMDCLimitUpdated(_maxMDCLimit);
     }
 }

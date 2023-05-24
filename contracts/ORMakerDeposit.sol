@@ -1,21 +1,39 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 import "./interface/IORMakerDeposit.sol";
-import "./library/Operations.sol";
 import "./interface/IORManager.sol";
 import "./interface/IORProtocal.sol";
 import "./interface/IORProventh.sol";
 import "./interface/IERC20.sol";
-import "hardhat/console.sol";
-import "./interface/IORMakerV1Factory.sol";
+import "./interface/IORMDCFactory.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import "./Multicall.sol";
 
-contract ORMakerDeposit {
-    uint public keep;
+contract ORMakerDeposit is IORMakerDeposit, Multicall {
+    address private _owner;
+    IORMDCFactory private _mdcFactory;
 
-// TODO, for dev
-// contract ORMakerDeposit is IORMakerDeposit, Multicall {
+    modifier onlyOwner() {
+        require(msg.sender == _owner, "Ownable: caller is not the owner");
+        _;
+    }
+
+    function initialize(address owner_) external {
+        require(_owner == address(0), "_ONZ");
+        require(owner_ != address(0), "OZ");
+
+        _owner = _owner;
+        _mdcFactory = IORMDCFactory(msg.sender);
+    }
+
+    function owner() external view returns (address) {
+        return _owner;
+    }
+
+    function mdcFactory() external view returns (address) {
+        return address(_mdcFactory);
+    }
+
     // using EnumerableMap for EnumerableMap.AddressToUintMap;
     // using EnumerableMap for EnumerableMap.Bytes32ToUintMap;
     // using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -380,7 +398,7 @@ contract ORMakerDeposit {
     //     OperationsLib.Transaction memory _txinfo = checkTxProofExists(userTxBytes);
     //     // Todo Temporary use
     //     IORManager manager = getManager();
-    //     // TODO: 
+    //     // TODO:
     //     address ebcAddress = manager.getEBCAddress(0);
 
     //     // Todo dev: Comment out the following two lines(require(xxx)) of code for testing

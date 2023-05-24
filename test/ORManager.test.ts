@@ -238,17 +238,17 @@ describe('Test ORManager', () => {
     );
   });
 
-  it('Function updateMakerMaxLimit should succeed', async function () {
-    const makerMaxLimit = BigNumber.from(2).pow(64).sub(1);
+  it('Function updateMaxMDCLimit should succeed', async function () {
+    const maxMDCLimit = BigNumber.from(2).pow(64).sub(1);
 
     const { events } = await orManager
-      .updateMakerMaxLimit(makerMaxLimit)
+      .updateMaxMDCLimit(maxMDCLimit)
       .then((t) => t.wait());
 
     const args = events![0].args!;
-    expect(args.makerMaxLimit).to.deep.eq(makerMaxLimit);
+    expect(args.maxMDCLimit).to.deep.eq(maxMDCLimit);
 
-    const storageMakerMaxLimit = await orManager.makerMaxLimit();
-    expect(storageMakerMaxLimit).to.deep.eq(makerMaxLimit);
+    const storageMaxMDCLimit = await orManager.maxMDCLimit();
+    expect(storageMaxMDCLimit).to.deep.eq(maxMDCLimit);
   });
 });

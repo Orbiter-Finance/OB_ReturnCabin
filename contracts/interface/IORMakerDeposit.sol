@@ -4,108 +4,114 @@ pragma solidity ^0.8.17;
 import "../library/Operations.sol";
 
 interface IORMakerDeposit {
-    enum RuleStatus {
-        Stoped,
-        Activated,
-        Paused
-    }
+    function initialize(address owner_) external;
 
-    event Deposit(address caller, uint256 amount);
-    event LogChallengeInfo(
-        address indexed factory,
-        bytes32 id,
-        OperationsLib.challengeInfo challenge,
-        OperationsLib.Transaction txInfo
-    );
-    event LogChallengerCompensation(
-        address indexed factory,
-        bytes32 challengeId,
-        uint256 refund,
-        uint256 refundPledged,
-        uint256 compensate
-    );
-    event LogLPAction(bytes32 indexed pairId, bytes32 lpId, OperationsLib.LPStruct lpinfo);
-    event LogLPPause(bytes32 indexed pairId, bytes32 lpId, OperationsLib.lpInfo lpinfo);
-    event LogLPRestart(bytes32 indexed pairId, bytes32 indexed lpId, uint256 gasFee, uint256 tradingFee);
-    event LogLPStop(bytes32 indexed pairId, bytes32 lpId, OperationsLib.lpInfo lpinfo);
-    event LogLPUpdate(bytes32 indexed pairId, bytes32 indexed lpId, uint256 gasFee, uint256 tradingFee);
-    event LogLPUserStop(bytes32 indexed pairId, bytes32 lpId);
+    function owner() external view returns (address);
 
-    function challengePleged() external view returns (uint256);
+    function mdcFactory() external view returns (address);
 
-    function challengerMakeGood(OperationsLib.Transaction calldata _userTx) external;
+    // enum RuleStatus {
+    //     Stoped,
+    //     Activated,
+    //     Paused
+    // }
 
-    // function getMakerFactory() external view returns (address);
+    // event Deposit(address caller, uint256 amount);
+    // event LogChallengeInfo(
+    //     address indexed factory,
+    //     bytes32 id,
+    //     OperationsLib.challengeInfo challenge,
+    //     OperationsLib.Transaction txInfo
+    // );
+    // event LogChallengerCompensation(
+    //     address indexed factory,
+    //     bytes32 challengeId,
+    //     uint256 refund,
+    //     uint256 refundPledged,
+    //     uint256 compensate
+    // );
+    // event LogLPAction(bytes32 indexed pairId, bytes32 lpId, OperationsLib.LPStruct lpinfo);
+    // event LogLPPause(bytes32 indexed pairId, bytes32 lpId, OperationsLib.lpInfo lpinfo);
+    // event LogLPRestart(bytes32 indexed pairId, bytes32 indexed lpId, uint256 gasFee, uint256 tradingFee);
+    // event LogLPStop(bytes32 indexed pairId, bytes32 lpId, OperationsLib.lpInfo lpinfo);
+    // event LogLPUpdate(bytes32 indexed pairId, bytes32 indexed lpId, uint256 gasFee, uint256 tradingFee);
+    // event LogLPUserStop(bytes32 indexed pairId, bytes32 lpId);
 
-    // function getPairsByChain(uint256 _chainId)
-    //     external
-    //     view
-    //     returns (bytes32[] memory);
+    // function challengePleged() external view returns (uint256);
 
-    // function getPairsByPledgeToken(address _token) external view returns (bytes32[] memory);
+    // function challengerMakeGood(OperationsLib.Transaction calldata _userTx) external;
 
-    // function getPledgeBalance(address _tokenAddress)
-    //     external
-    //     view
-    //     returns (uint256);
+    // // function getMakerFactory() external view returns (address);
 
-    // function getPledgeBalanceByChainToken(
-    //     uint256 _chainId,
-    //     address _tokenAddress
-    // ) external view returns (uint256);
+    // // function getPairsByChain(uint256 _chainId)
+    // //     external
+    // //     view
+    // //     returns (bytes32[] memory);
 
-    function idleAmount(address tokenAddress) external view returns (uint256);
+    // // function getPairsByPledgeToken(address _token) external view returns (bytes32[] memory);
 
-    function initialize(address _owner) external;
+    // // function getPledgeBalance(address _tokenAddress)
+    // //     external
+    // //     view
+    // //     returns (uint256);
 
-    function lpAction(OperationsLib.LPActionStruct[] memory _lps) external payable;
+    // // function getPledgeBalanceByChainToken(
+    // //     uint256 _chainId,
+    // //     address _tokenAddress
+    // // ) external view returns (uint256);
 
-    function lpData(
-        bytes32
-    )
-        external
-        view
-        returns (
-            bytes32 pairId,
-            uint256 minPrice,
-            uint256 maxPrice,
-            uint256 gasFee,
-            uint256 tradingFee,
-            uint256 startTime,
-            uint256 stopTime
-        );
+    // function idleAmount(address tokenAddress) external view returns (uint256);
 
-    // function lpInfo(bytes32)
+    // function initialize(address _owner) external;
+
+    // function lpAction(OperationsLib.LPActionStruct[] memory _lps) external payable;
+
+    // function lpData(
+    //     bytes32
+    // )
     //     external
     //     view
     //     returns (
-    //         bytes32 lpId,
-    //         uint256 stopTime,
-    //         uint256 startTime
+    //         bytes32 pairId,
+    //         uint256 minPrice,
+    //         uint256 maxPrice,
+    //         uint256 gasFee,
+    //         uint256 tradingFee,
+    //         uint256 startTime,
+    //         uint256 stopTime
     //     );
 
-    // function lpPause(bytes32[] memory _lpIds) external;
+    // // function lpInfo(bytes32)
+    // //     external
+    // //     view
+    // //     returns (
+    // //         bytes32 lpId,
+    // //         uint256 stopTime,
+    // //         uint256 startTime
+    // //     );
 
-    // function lpRestart(OperationsLib.LPUpdateStruct[] memory _lps) external;
+    // // function lpPause(bytes32[] memory _lpIds) external;
 
-    // function lpStop(bytes32[] memory _lpIds) external;
+    // // function lpRestart(OperationsLib.LPUpdateStruct[] memory _lps) external;
 
-    // function lpUpdate(OperationsLib.LPUpdateStruct[] memory _lpfs) external;
+    // // function lpStop(bytes32[] memory _lpIds) external;
 
-    function makerChallenge(OperationsLib.Transaction calldata _userTx, bytes calldata makerTxBytes) external;
+    // // function lpUpdate(OperationsLib.LPUpdateStruct[] memory _lpfs) external;
 
-    // function pairExist(uint256 chainId, bytes32 pairId)
-    //     external
-    //     view
-    //     returns (bool);
+    // function makerChallenge(OperationsLib.Transaction calldata _userTx, bytes calldata makerTxBytes) external;
 
-    function pledgeTokenLPStopDealyTime(address) external view returns (uint256);
+    // // function pairExist(uint256 chainId, bytes32 pairId)
+    // //     external
+    // //     view
+    // //     returns (bool);
 
-    function userChallenge(bytes calldata userTxBytes) external payable;
+    // function pledgeTokenLPStopDealyTime(address) external view returns (uint256);
 
-    function userWithDraw(OperationsLib.Transaction calldata _userTx, OperationsLib.LPStruct calldata _lp) external;
+    // function userChallenge(bytes calldata userTxBytes) external payable;
 
-    function withDrawAssert(uint256 amount, address tokenAddress) external;
+    // function userWithDraw(OperationsLib.Transaction calldata _userTx, OperationsLib.LPStruct calldata _lp) external;
 
-    receive() external payable;
+    // function withDrawAssert(uint256 amount, address tokenAddress) external;
+
+    // receive() external payable;
 }
