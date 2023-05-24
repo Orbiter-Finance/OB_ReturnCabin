@@ -5,12 +5,13 @@ import "../library/Operations.sol";
 
 interface IORManager {
     event ChainInfoUpdated(uint indexed id, OperationsLib.ChainInfo chainInfo);
+    event EbcsUpdated(address[] ebcs);
     event SubmitterFeeUpdated(address submitter);
     event ProtocolFeeUpdated(uint64 protocolFee);
     event MinChallengeRatioUpdated(uint64 minChallengeRatio);
     event ChallengeUserRatioUpdated(uint64 challengeUserRatio);
-    event FeeManagerChallengeSecondUpdated(uint64 feeManagerChallengeSecond);
-    event FeeManagerTakeOnChallengeSecondUpdated(uint64 feeManagerTakeOnChallengeSecond);
+    event FeeChallengeSecondUpdated(uint64 feeChallengeSecond);
+    event FeeTakeOnChallengeSecondUpdated(uint64 feeTakeOnChallengeSecond);
     event MakerMaxLimitUpdated(uint64 makerMaxLimit);
 
     function registerChains(OperationsLib.ChainInfo[] calldata chains_) external;
@@ -19,7 +20,11 @@ interface IORManager {
 
     function updateChainTokens(uint id, OperationsLib.TokenInfo[] calldata token, uint[] calldata indexs) external;
 
-    function getChainInfo(uint id) external view returns (OperationsLib.ChainInfo memory chainInfo);
+    function getChainInfo(uint id) external view returns (OperationsLib.ChainInfo memory);
+
+    function ebcs() external view returns (address[] memory);
+
+    function updateEbcs(address[] calldata ebcs_, uint[] calldata indexs) external;
 
     function submitter() external view returns (address);
 
@@ -37,13 +42,13 @@ interface IORManager {
 
     function updateChallengeUserRatio(uint64 challengeUserRatio_) external;
 
-    function feeManagerChallengeSecond() external view returns (uint64);
+    function feeChallengeSecond() external view returns (uint64);
 
-    function updateFeeManagerChallengeSecond(uint64 feeManagerChallengeSecond_) external;
+    function updateFeeChallengeSecond(uint64 feeChallengeSecond_) external;
 
-    function feeManagerTakeOnChallengeSecond() external view returns (uint64);
+    function feeTakeOnChallengeSecond() external view returns (uint64);
 
-    function updateFeeManagerTakeOnChallengeSecond(uint64 feeManagerTakeOnChallengeSecond_) external;
+    function updateFeeTakeOnChallengeSecond(uint64 feeTakeOnChallengeSecond_) external;
 
     function makerMaxLimit() external view returns (uint64);
 

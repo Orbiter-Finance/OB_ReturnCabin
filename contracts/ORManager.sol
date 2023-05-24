@@ -9,12 +9,13 @@ import "./Multicall.sol";
 
 contract ORManager is IORManager, Ownable, Multicall {
     mapping(uint => OperationsLib.ChainInfo) private _chains;
+    address[] private _ebcs;
     address private _submitter;
     uint64 private _protocolFee;
     uint64 private _minChallengeRatio = 200;
     uint64 private _challengeUserRatio;
-    uint64 private _feeManagerChallengeSecond;
-    uint64 private _feeManagerTakeOnChallengeSecond;
+    uint64 private _feeChallengeSecond;
+    uint64 private _feeTakeOnChallengeSecond;
     uint64 private _makerMaxLimit;
 
     constructor(address owner_) {
@@ -61,8 +62,25 @@ contract ORManager is IORManager, Ownable, Multicall {
         emit ChainInfoUpdated(id, _chains[id]);
     }
 
-    function getChainInfo(uint id) external view returns (OperationsLib.ChainInfo memory chainInfo) {
-        chainInfo = _chains[id];
+    function getChainInfo(uint id) external view returns (OperationsLib.ChainInfo memory) {
+        return _chains[id];
+    }
+
+    function ebcs() external view returns (address[] memory) {
+        return _ebcs;
+    }
+
+    function updateEbcs(address[] calldata ebcs_, uint[] calldata indexs) external onlyOwner {
+        unchecked {
+            for (uint i = 0; i < ebcs_.length; i++) {
+                if (i < indexs.length) {
+                    _ebcs[indexs[i]] = ebcs_[i];
+                } else {
+                    _ebcs.push(ebcs_[i]);
+                }
+            }
+        }
+        emit EbcsUpdated(_ebcs);
     }
 
     function submitter() external view returns (address) {
@@ -101,22 +119,22 @@ contract ORManager is IORManager, Ownable, Multicall {
         emit ChallengeUserRatioUpdated(challengeUserRatio_);
     }
 
-    function feeManagerChallengeSecond() external view returns (uint64) {
-        return _feeManagerChallengeSecond;
+    function feeChallengeSecond() external view returns (uint64) {
+        return _feeChallengeSecond;
     }
 
-    function updateFeeManagerChallengeSecond(uint64 feeManagerChallengeSecond_) external onlyOwner {
-        _feeManagerChallengeSecond = feeManagerChallengeSecond_;
-        emit FeeManagerChallengeSecondUpdated(feeManagerChallengeSecond_);
+    function updateFeeChallengeSecond(uint64 feeChallengeSecond_) external onlyOwner {
+        _feeChallengeSecond = feeChallengeSecond_;
+        emit FeeChallengeSecondUpdated(feeChallengeSecond_);
     }
 
-    function feeManagerTakeOnChallengeSecond() external view returns (uint64) {
-        return _feeManagerTakeOnChallengeSecond;
+    function feeTakeOnChallengeSecond() external view returns (uint64) {
+        return _feeTakeOnChallengeSecond;
     }
 
-    function updateFeeManagerTakeOnChallengeSecond(uint64 feeManagerTakeOnChallengeSecond_) external onlyOwner {
-        _feeManagerTakeOnChallengeSecond = feeManagerTakeOnChallengeSecond_;
-        emit FeeManagerTakeOnChallengeSecondUpdated(feeManagerTakeOnChallengeSecond_);
+    function updateFeeTakeOnChallengeSecond(uint64 feeTakeOnChallengeSecond_) external onlyOwner {
+        _feeTakeOnChallengeSecond = feeTakeOnChallengeSecond_;
+        emit FeeTakeOnChallengeSecondUpdated(feeTakeOnChallengeSecond_);
     }
 
     function makerMaxLimit() external view returns (uint64) {
