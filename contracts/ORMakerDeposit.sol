@@ -22,7 +22,7 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
         require(_owner == address(0), "_ONZ");
         require(owner_ != address(0), "OZ");
 
-        _owner = _owner;
+        _owner = owner_;
         _mdcFactory = IORMDCFactory(msg.sender);
     }
 

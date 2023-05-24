@@ -15,6 +15,7 @@ describe('ORMDCFactory', () => {
   let signers: SignerWithAddress[];
   let orManager: ORManager;
   let orMakerDeposit_impl: ORMakerDeposit;
+  let orMakerDeposit: ORMakerDeposit;
   let orMDCFactory: ORMDCFactory;
 
   before(async function () {
@@ -58,7 +59,6 @@ describe('ORMDCFactory', () => {
 
     const args = events![0].args!;
     expect(args.maker).eq(signerMaker.address);
-    console.warn('args:', args);
 
     const salt = utils.keccak256(
       utils.solidityPack(
@@ -66,23 +66,24 @@ describe('ORMDCFactory', () => {
         [orMDCFactory.address, signerMaker.address],
       ),
     );
-    console.warn('salt:', salt);
-
-    const initCodeHash = utils.keccak256(ORMakerDeposit__factory.bytecode);
-    console.warn('initCodeHash:', initCodeHash);
-
     const creationCode = [
       '0x3d602d80600a3d3981f3363d3d373d3d3d363d73',
       orMakerDeposit_impl.address.replace(/0x/, '').toLowerCase(),
       '5af43d82803e903d91602b57fd5bf3',
     ].join('');
-
-    const address = utils.getCreate2Address(
+    const mdcAddress = utils.getCreate2Address(
       orMDCFactory.address,
       salt,
-      initCodeHash,
+      utils.keccak256(creationCode),
     );
-    console.warn('address:', address);
+    expect(args.mdc).eq(mdcAddress);
+
+    orMakerDeposit = new ORMakerDeposit__factory(signerMaker).attach(
+      mdcAddress,
+    );
+
+    const owner = await orMakerDeposit.owner();
+    console.warn('owner:', owner);
 
     try {
       await orManager.updateMaxMDCLimit(1);
