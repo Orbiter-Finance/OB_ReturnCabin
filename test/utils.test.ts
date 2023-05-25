@@ -294,3 +294,9 @@ export async function getSPVProof(
   }
   return undefined;
 }
+
+export async function sleep(ms: number) {
+  return new Promise((resolve) => {
+    setTimeout(() => resolve(true), ms);
+  });
+}

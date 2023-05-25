@@ -33,7 +33,7 @@ contract ORMDCFactory is IORMDCFactory {
 
     function createMDC() external {
         require(_mdcCreatedTotal < _manager.maxMDCLimit(), "MML");
-        address mdc = Clones.cloneDeterministic(
+        address mdcAddress = Clones.cloneDeterministic(
             _implementation,
             keccak256(abi.encodePacked(address(this), msg.sender))
         );
@@ -42,8 +42,16 @@ contract ORMDCFactory is IORMDCFactory {
             ++_mdcCreatedTotal;
         }
 
-        IORMakerDeposit(mdc).initialize(msg.sender);
+        IORMakerDeposit(mdcAddress).initialize(msg.sender);
 
-        emit MDCCreated(msg.sender, mdc);
+        emit MDCCreated(msg.sender, mdcAddress);
+    }
+
+    function predictMDCAddress() external view returns (address) {
+        address mdcAddress = Clones.predictDeterministicAddress(
+            _implementation,
+            keccak256(abi.encodePacked(address(this), msg.sender))
+        );
+        return mdcAddress;
     }
 }

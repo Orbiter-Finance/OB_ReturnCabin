@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
+
 import "./interface/IORMakerDeposit.sol";
 import "./interface/IORManager.sol";
 import "./interface/IORProtocal.sol";
@@ -12,6 +13,8 @@ import "./Multicall.sol";
 contract ORMakerDeposit is IORMakerDeposit, Multicall {
     address private _owner;
     IORMDCFactory private _mdcFactory;
+    mapping(uint8 => address) private _ebcs;
+    mapping(uint8 => address) private _spvs;
 
     modifier onlyOwner() {
         require(msg.sender == _owner, "Ownable: caller is not the owner");
@@ -32,6 +35,46 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
 
     function mdcFactory() external view returns (address) {
         return address(_mdcFactory);
+    }
+
+    function ebc(uint8 key) external view returns (address) {
+        return _ebcs[key];
+    }
+
+    // function emitEbcUpdated(uint8 key, address ebc_) external {
+    //     emit EbcUpdated(msg.sender, key, ebc_);
+    // }
+
+    function updateEbcs(uint[] calldata managerEbcIndexs, uint8[] calldata keys) external onlyOwner {
+        address[] memory ebcs = IORManager(_mdcFactory.manager()).ebcs();
+        address impl = _mdcFactory.implementation();
+
+        for (uint i = 0; i < keys.length; i++) {
+            require(keys[i] > 0, "GTZ");
+            require(keys[i] < 10, "LT");
+
+            _ebcs[keys[i]] = ebcs[managerEbcIndexs[i]];
+
+            emit EbcUpdated(impl, keys[i], ebcs[managerEbcIndexs[i]]);
+        }
+    }
+
+    function spv(uint8 key) external view returns (address) {
+        return _spvs[key];
+    }
+
+    function updateSpvs(address[] calldata ebcs, uint8[] calldata keys) external {
+        for (uint i = 0; i < keys.length; i++) {
+            require(keys[i] > 0, "GTZ");
+            require(keys[i] < 10, "LT");
+
+            // Zero is reset. If there is no effective ebc, the maker rules will be invalidated. Can set ebc to 0 address at will?
+            // require(ebcs[i] != address(0), "NZ");
+
+            _ebcs[keys[i]] = ebcs[i];
+        }
+
+        // emit
     }
 
     // using EnumerableMap for EnumerableMap.AddressToUintMap;

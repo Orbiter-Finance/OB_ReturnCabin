@@ -3,7 +3,6 @@
         "dbaeumer.vscode-eslint",
         "editorconfig.editorconfig",
         "esbenp.prettier-vscode",
-        "JuanBlanco.solidity",
         "NomicFoundation.hardhat-solidity"
     ],
     "unwantedRecommendations": ["hookyqr.beautify", "dbaeumer.jshint"]

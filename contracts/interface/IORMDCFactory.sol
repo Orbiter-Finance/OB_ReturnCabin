@@ -12,4 +12,6 @@ interface IORMDCFactory {
     function mdcCreatedTotal() external view returns (uint);
 
     function createMDC() external;
+
+    function predictMDCAddress() external view returns (address);
 }

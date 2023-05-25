@@ -21,11 +21,19 @@ describe('ORMDCFactory', () => {
   before(async function () {
     signers = await ethers.getSigners();
 
-    orManager = await new ORManager__factory(signers[0]).deploy(
-      signers[0].address,
-    );
-    console.log('Address of orManager:', orManager.address);
-    await orManager.deployed();
+    const envORManagerAddress = process.env['ORMANAGER_ADDRESS'];
+    if (envORManagerAddress) {
+      orManager = new ORManager__factory(signers[0]).attach(
+        envORManagerAddress,
+      );
+      console.log('Address of orManager[env]:', orManager.address);
+    } else {
+      orManager = await new ORManager__factory(signers[0]).deploy(
+        signers[0].address,
+      );
+      console.log('Address of orManager:', orManager.address);
+      await orManager.deployed();
+    }
 
     orMakerDeposit_impl = await new ORMakerDeposit__factory(
       signers[0],
@@ -39,6 +47,9 @@ describe('ORMDCFactory', () => {
     );
     console.log('Address of orMDCFactory:', orMDCFactory.address);
     await orMDCFactory.deployed();
+
+    // set environment variables
+    process.env['ORMDCFACTORY_ADDRESS'] = orMDCFactory.address;
   });
 
   it('Manager and implementation should have been set up successfully', async function () {
@@ -77,19 +88,54 @@ describe('ORMDCFactory', () => {
       utils.keccak256(creationCode),
     );
     expect(args.mdc).eq(mdcAddress);
+    console.warn('mdcAddress:', mdcAddress);
 
     orMakerDeposit = new ORMakerDeposit__factory(signerMaker).attach(
       mdcAddress,
     );
+  });
 
-    const owner = await orMakerDeposit.owner();
-    console.warn('owner:', owner);
+  it("Function createMDC should cann't recreate", async function () {
+    const signerMaker = signers[1];
 
     try {
+      await orMDCFactory
+        .connect(signerMaker)
+        .createMDC()
+        .then((t) => t.wait());
+    } catch (err: any) {
+      expect(err.message.indexOf(`'ERC1167: create2 failed'`) > -1).to.be.eq(
+        true,
+      );
+    }
+  });
+
+  it('Function updateMaxMDCLimit should effective', async function () {
+    try {
       await orManager.updateMaxMDCLimit(1);
-      await orMDCFactory.connect(signerMaker).createMDC();
+      await orMDCFactory.createMDC();
     } catch (err: any) {
       expect(err.message.indexOf(`'MML'`) > -1).to.be.eq(true);
     }
+  });
+
+  it("ORMDCFactory's mdcCreatedTotal should be 1", async function () {
+    const mdcCreatedTotal = await orMDCFactory.mdcCreatedTotal();
+
+    expect(mdcCreatedTotal).eq(1);
+  });
+
+  it("ORMakerDeposit's owner should be maker", async function () {
+    const signerMaker = signers[1];
+
+    const owner = await orMakerDeposit.owner();
+
+    expect(owner).eq(signerMaker.address);
+  });
+
+  it("ORMakerDeposit's mdcFactory should be maker", async function () {
+    const mdcFactory = await orMakerDeposit.mdcFactory();
+
+    expect(mdcFactory).eq(orMDCFactory.address);
   });
 });
