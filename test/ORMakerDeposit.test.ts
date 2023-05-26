@@ -1,6 +1,6 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { assert, expect } from 'chai';
-import { BigNumberish } from 'ethers';
+import { BigNumber, BigNumberish, utils } from 'ethers';
 import { ethers } from 'hardhat';
 import {
   ORMDCFactory,
@@ -51,21 +51,8 @@ describe('ORMakerDeposit', () => {
     expect(owner).eq(signerMaker.address);
   });
 
-  it('Function updateEbcs should emit event and update storage', async function () {
+  it('Function updateEbcs should emit events and update storage', async function () {
     const ebcs = await orManager.ebcs();
-    console.warn('ebcs:', ebcs);
-
-    const impl = await orMDCFactory.implementation();
-    const filter = {
-      address: orMakerDeposit.address,
-      // topics: [BigNumber.from(impl).add(0).toHexString()],
-      topics: [
-        '0xa5f584f9fa7dffc81ef84ec3e9587fe3891b7cbf11a4156c905ddc4bb253e2df',
-      ],
-    };
-    signers[0].provider!.on(filter, (log) => {
-      console.warn('log:', log);
-    });
 
     const managerEbcIndexs: BigNumberish[] = [];
     const keys: number[] = [];
@@ -84,16 +71,28 @@ describe('ORMakerDeposit', () => {
       .updateEbcs(managerEbcIndexs, keys)
       .then((t) => t.wait());
 
+    const impl = await orMDCFactory.implementation();
+    for (const i in events!) {
+      const event = events[i];
+      expect(event.args!['impl']).eq(impl);
+      expect(event.args!['key']).eq(keys[i]);
+      expect(event.args!['ebc']).eq(ebcs[Number(managerEbcIndexs[i])]);
+    }
+
     for (const i in keys) {
       const ebc = await orMakerDeposit.ebc(keys[i]);
       expect(ebc).eq(ebcs[Number(managerEbcIndexs[i])]);
     }
 
     try {
+      await orMakerDeposit
+        .connect(signers[2])
+        .updateEbcs(managerEbcIndexs, keys)
+        .then((t) => t.wait());
     } catch (err: any) {
-      console.warn('err:', err.message);
+      expect(
+        err.message.indexOf('Ownable: caller is not the owner') > -1,
+      ).to.be.eq(true);
     }
-
-    await sleep(10000);
   });
 });
