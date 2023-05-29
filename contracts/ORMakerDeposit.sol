@@ -18,6 +18,7 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
     IORMDCFactory private _mdcFactory;
     bytes32 private _columnArrayHash;
     mapping(uint16 => address) private _spvs; // chainId => spvAddress
+    address[] private _responseMakers; // Response maker list, not just owner, to improve tps
 
     modifier onlyOwner() {
         require(msg.sender == _owner, "Ownable: caller is not the owner");
@@ -85,6 +86,23 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
 
             emit SpvUpdated(impl, chainIds[i], spvs[i]);
         }
+    }
+
+    function responseMakers() external view returns (address[] memory) {
+        return _responseMakers;
+    }
+
+    function updateResponseMakers(address[] calldata responseMakers_, uint[] calldata indexs) external onlyOwner {
+        unchecked {
+            for (uint i = 0; i < responseMakers_.length; i++) {
+                if (i < indexs.length) {
+                    _responseMakers[indexs[i]] = responseMakers_[i];
+                } else {
+                    _responseMakers.push(responseMakers_[i]);
+                }
+            }
+        }
+        emit ResponseMakersUpdated(_mdcFactory.implementation(), _responseMakers);
     }
 
     // using EnumerableMap for EnumerableMap.AddressToUintMap;

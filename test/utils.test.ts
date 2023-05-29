@@ -307,11 +307,17 @@ export async function testReverted(
   transaction: Promise<ContractTransaction>,
   reason: string,
 ) {
+  let succeed = false;
+
   try {
     await transaction.then((t) => t.wait());
+    succeed = true;
   } catch (err: any) {
     expect(
       err.message.indexOf(`reverted with reason string '${reason}'`) > -1,
     ).to.be.eq(true);
   }
+
+  if (succeed)
+    throw new Error(`should reverted with reason string '${reason}'`);
 }

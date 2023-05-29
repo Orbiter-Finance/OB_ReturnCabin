@@ -6,6 +6,7 @@ import lodash from 'lodash';
 import { ORManager, ORManager__factory } from '../typechain-types';
 import { OperationsLib } from '../typechain-types/contracts/ORManager';
 import { defaultChainInfo } from './defaults';
+import { testReverted } from './utils.test';
 
 describe('Test ORManager', () => {
   let signers: SignerWithAddress[];
@@ -30,17 +31,10 @@ describe('Test ORManager', () => {
   });
 
   it('Function transferOwnership should succeed', async function () {
-    try {
-      await orManager
-        .transferOwnership(signers[0].address)
-        .then((t) => t.wait());
-    } catch (e: any) {
-      expect(
-        e.message.indexOf(
-          "reverted with reason string 'Ownable: caller is not the owner'",
-        ) > -1,
-      ).to.be.eq(true);
-    }
+    await testReverted(
+      orManager.transferOwnership(signers[0].address),
+      'Ownable: caller is not the owner',
+    );
 
     await orManager.connect(signers[1]).transferOwnership(signers[0].address);
   });

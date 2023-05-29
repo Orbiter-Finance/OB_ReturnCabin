@@ -12,6 +12,7 @@ interface IORMakerDeposit {
         uint16[] chainIds
     );
     event SpvUpdated(address indexed impl, uint16 chainId, address spv);
+    event ResponseMakersUpdated(address indexed impl, address[] responseMakers);
 
     function initialize(address owner_) external;
 

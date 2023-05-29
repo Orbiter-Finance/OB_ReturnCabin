@@ -1,6 +1,6 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { assert, expect } from 'chai';
-import { Wallet, constants, utils } from 'ethers';
+import { BigNumberish, Wallet, constants, utils } from 'ethers';
 import { ethers } from 'hardhat';
 import lodash from 'lodash';
 import {
@@ -149,6 +149,31 @@ describe('ORMakerDeposit', () => {
     await testReverted(
       orMakerDeposit.updateSpvs([constants.AddressZero], chainIds),
       'SI',
+    );
+  });
+
+  it('Function updateResponseMakers should emit events and update storage', async function () {
+    const responseMakers: string[] = [];
+    const indexs: BigNumberish[] = [];
+    for (let i = 0; i < 10; i++) {
+      responseMakers.push(ethers.Wallet.createRandom().address);
+    }
+
+    const { events } = await orMakerDeposit
+      .updateResponseMakers(responseMakers, indexs)
+      .then((t) => t.wait());
+
+    const args = events![0].args!;
+    expect(args.responseMakers).to.deep.eq(responseMakers);
+
+    const storageResponseMakers = await orMakerDeposit.responseMakers();
+    expect(storageResponseMakers).to.deep.eq(responseMakers);
+
+    await testReverted(
+      orMakerDeposit
+        .connect(signers[2])
+        .updateResponseMakers(responseMakers, indexs),
+      'Ownable: caller is not the owner',
     );
   });
 });
