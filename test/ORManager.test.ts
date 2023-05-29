@@ -5,23 +5,7 @@ import { ethers } from 'hardhat';
 import lodash from 'lodash';
 import { ORManager, ORManager__factory } from '../typechain-types';
 import { OperationsLib } from '../typechain-types/contracts/ORManager';
-
-const defaultChainInfo: OperationsLib.ChainInfoStruct = {
-  id: BigNumber.from(2),
-  batchLimit: BigNumber.from(1000),
-  spvs: [constants.AddressZero],
-  minVerifyChallengeSourceTxSecond: BigNumber.from(100),
-  maxVerifyChallengeSourceTxSecond: BigNumber.from(200),
-  minVerifyChallengeDestTxSecond: BigNumber.from(100),
-  maxVerifyChallengeDestTxSecond: BigNumber.from(200),
-  tokens: [
-    {
-      decimals: 18,
-      token: constants.Two,
-      mainnetToken: constants.AddressZero,
-    },
-  ],
-};
+import { defaultChainInfo } from './defaults';
 
 describe('Test ORManager', () => {
   let signers: SignerWithAddress[];
@@ -52,7 +36,9 @@ describe('Test ORManager', () => {
         .then((t) => t.wait());
     } catch (e: any) {
       expect(
-        e.message.indexOf('Ownable: caller is not the owner') > -1,
+        e.message.indexOf(
+          "reverted with reason string 'Ownable: caller is not the owner'",
+        ) > -1,
       ).to.be.eq(true);
     }
 

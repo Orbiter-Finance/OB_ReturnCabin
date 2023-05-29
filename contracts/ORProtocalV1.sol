@@ -51,7 +51,7 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
 
     function getPledgedAmount(uint256 chainId, uint256 maxPrice) external view returns (uint256 value) {
         require(chainId != 0, "chain not exist");
-        OperationsLib.ChainInfo memory chainInfo = getManager.getChainInfo(chainId);
+        OperationsLib.ChainInfo memory chainInfo = getManager.getChainInfo(uint16(chainId));
         uint256 batchLimit = chainInfo.batchLimit;
         require(batchLimit != 0 && maxPrice != 0 && config.pledgeAmountSafeRate != 0, "PledgeAmountSafeRate Non Set");
         return ((batchLimit * maxPrice) * config.pledgeAmountSafeRate) / 10000;
@@ -129,7 +129,7 @@ contract ORProtocalV1 is IORProtocal, Initializable, OwnableUpgradeable {
     }
 
     function getToTxNonceId(OperationsLib.Transaction calldata _tx) public view returns (uint256) {
-        OperationsLib.ChainInfo memory chainInfo = getManager.getChainInfo(_tx.chainId);
+        OperationsLib.ChainInfo memory chainInfo = getManager.getChainInfo(uint16(_tx.chainId));
         uint chainId = chainInfo.id;
         require(chainId != 0, "chainId not set");
         string memory toChainId = getValueSecuirtyCode(chainId, _tx.value);

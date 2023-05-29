@@ -11,6 +11,8 @@ import {
   ORProventh,
 } from '../typechain-types';
 import { solidityKeccak256 } from 'ethers/lib/utils';
+import { ContractTransaction } from 'ethers';
+import { expect } from 'chai';
 
 export async function getORMakerDepositContract(): Promise<ORMakerDeposit> {
   const name = 'ORMakerDeposit';
@@ -299,4 +301,17 @@ export async function sleep(ms: number) {
   return new Promise((resolve) => {
     setTimeout(() => resolve(true), ms);
   });
+}
+
+export async function testReverted(
+  transaction: Promise<ContractTransaction>,
+  reason: string,
+) {
+  try {
+    await transaction.then((t) => t.wait());
+  } catch (err: any) {
+    expect(
+      err.message.indexOf(`reverted with reason string '${reason}'`) > -1,
+    ).to.be.eq(true);
+  }
 }

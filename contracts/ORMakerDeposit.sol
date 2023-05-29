@@ -8,13 +8,16 @@ import "./interface/IORProventh.sol";
 import "./interface/IERC20.sol";
 import "./interface/IORMDCFactory.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
-import "./Multicall.sol";
+import {Multicall} from "./Multicall.sol";
+import {ArrayLib} from "./library/ArrayLib.sol";
 
 contract ORMakerDeposit is IORMakerDeposit, Multicall {
+    using ArrayLib for address[];
+
     address private _owner;
     IORMDCFactory private _mdcFactory;
-    mapping(uint8 => address) private _ebcs;
-    mapping(uint8 => address) private _spvs;
+    bytes32 private _columnArrayHash;
+    mapping(uint16 => address) private _spvs; // chainId => spvAddress
 
     modifier onlyOwner() {
         require(msg.sender == _owner, "Ownable: caller is not the owner");
@@ -37,44 +40,51 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
         return address(_mdcFactory);
     }
 
-    function ebc(uint8 key) external view returns (address) {
-        return _ebcs[key];
+    function columnArrayHash() external view returns (bytes32) {
+        return _columnArrayHash;
     }
 
-    // function emitEbcUpdated(uint8 key, address ebc_) external {
-    //     emit EbcUpdated(msg.sender, key, ebc_);
-    // }
+    function updateColumnArray(
+        address[] calldata dealers,
+        address[] calldata ebcs,
+        uint16[] calldata chainIds
+    ) external onlyOwner {
+        require(dealers.length <= 10, "DOF");
+        require(ebcs.length <= 10, "EOF");
+        require(chainIds.length <= 100, "COF");
 
-    function updateEbcs(uint[] calldata managerEbcIndexs, uint8[] calldata keys) external onlyOwner {
-        address[] memory ebcs = IORManager(_mdcFactory.manager()).ebcs();
+        IORManager manager = IORManager(_mdcFactory.manager());
+        require(manager.ebcs().addressArrayIncludes(ebcs), "EI"); // Has invalid ebc
+
+        for (uint i = 0; i < chainIds.length; i++) {
+            OperationsLib.ChainInfo memory chainInfo = manager.getChainInfo(chainIds[i]);
+            require(chainInfo.id > 0, "CI"); // Invalid chainId
+        }
+
+        _columnArrayHash = keccak256(abi.encodePacked(dealers, ebcs, chainIds));
+
+        address impl = _mdcFactory.implementation();
+        emit ColumnArrayUpdated(impl, _columnArrayHash, dealers, ebcs, chainIds);
+    }
+
+    function spv(uint16 chainId) external view returns (address) {
+        return _spvs[chainId];
+    }
+
+    function updateSpvs(address[] calldata spvs, uint16[] calldata chainIds) external onlyOwner {
+        IORManager manager = IORManager(_mdcFactory.manager());
         address impl = _mdcFactory.implementation();
 
-        for (uint i = 0; i < keys.length; i++) {
-            require(keys[i] > 0, "GTZ");
-            require(keys[i] < 10, "LT");
+        for (uint i = 0; i < chainIds.length; i++) {
+            OperationsLib.ChainInfo memory chainInfo = manager.getChainInfo(chainIds[i]);
+            require(chainInfo.id > 0, "CI"); // Invalid chainId
 
-            _ebcs[keys[i]] = ebcs[managerEbcIndexs[i]];
+            require(chainInfo.spvs.addressIncludes(spvs[i]), "SI"); // Invalid spv
 
-            emit EbcUpdated(impl, keys[i], ebcs[managerEbcIndexs[i]]);
+            _spvs[chainIds[i]] = spvs[i];
+
+            emit SpvUpdated(impl, chainIds[i], spvs[i]);
         }
-    }
-
-    function spv(uint8 key) external view returns (address) {
-        return _spvs[key];
-    }
-
-    function updateSpvs(address[] calldata ebcs, uint8[] calldata keys) external {
-        for (uint i = 0; i < keys.length; i++) {
-            require(keys[i] > 0, "GTZ");
-            require(keys[i] < 10, "LT");
-
-            // Zero is reset. If there is no effective ebc, the maker rules will be invalidated. Can set ebc to 0 address at will?
-            // require(ebcs[i] != address(0), "NZ");
-
-            _ebcs[keys[i]] = ebcs[i];
-        }
-
-        // emit
     }
 
     // using EnumerableMap for EnumerableMap.AddressToUintMap;

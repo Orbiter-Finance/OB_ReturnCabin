@@ -16,11 +16,11 @@ interface IORManager {
 
     function registerChains(OperationsLib.ChainInfo[] calldata chains_) external;
 
-    function updateChainSpvs(uint id, address[] calldata spvs, uint[] calldata indexs) external;
+    function updateChainSpvs(uint16 id, address[] calldata spvs, uint[] calldata indexs) external;
 
-    function updateChainTokens(uint id, OperationsLib.TokenInfo[] calldata token, uint[] calldata indexs) external;
+    function updateChainTokens(uint16 id, OperationsLib.TokenInfo[] calldata token, uint[] calldata indexs) external;
 
-    function getChainInfo(uint id) external view returns (OperationsLib.ChainInfo memory);
+    function getChainInfo(uint16 id) external view returns (OperationsLib.ChainInfo memory);
 
     function ebcs() external view returns (address[] memory);
 

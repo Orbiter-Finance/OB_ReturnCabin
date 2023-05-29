@@ -4,15 +4,20 @@ pragma solidity ^0.8.17;
 import "../library/Operations.sol";
 
 interface IORMakerDeposit {
-    event EbcUpdated(address indexed impl, uint8 key, address ebc);
+    event ColumnArrayUpdated(
+        address indexed impl,
+        bytes32 columnArrayHash,
+        address[] dealers,
+        address[] ebcs,
+        uint16[] chainIds
+    );
+    event SpvUpdated(address indexed impl, uint16 chainId, address spv);
 
     function initialize(address owner_) external;
 
     function owner() external view returns (address);
 
     function mdcFactory() external view returns (address);
-
-    // function emitEbcUpdated(uint8 key, address ebc_) external;
 
     // enum RuleStatus {
     //     Stoped,

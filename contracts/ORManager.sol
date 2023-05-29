@@ -8,7 +8,7 @@ import "./interface/IORProtocal.sol";
 import "./Multicall.sol";
 
 contract ORManager is IORManager, Ownable, Multicall {
-    mapping(uint => OperationsLib.ChainInfo) private _chains;
+    mapping(uint16 => OperationsLib.ChainInfo) private _chains;
     address[] private _ebcs;
     address private _submitter;
     uint64 private _protocolFee;
@@ -32,7 +32,7 @@ contract ORManager is IORManager, Ownable, Multicall {
         }
     }
 
-    function updateChainSpvs(uint id, address[] calldata spvs, uint[] calldata indexs) external onlyOwner {
+    function updateChainSpvs(uint16 id, address[] calldata spvs, uint[] calldata indexs) external onlyOwner {
         unchecked {
             for (uint i = 0; i < spvs.length; i++) {
                 if (i < indexs.length) {
@@ -46,7 +46,7 @@ contract ORManager is IORManager, Ownable, Multicall {
     }
 
     function updateChainTokens(
-        uint id,
+        uint16 id,
         OperationsLib.TokenInfo[] calldata tokens,
         uint[] calldata indexs
     ) external onlyOwner {
@@ -62,7 +62,7 @@ contract ORManager is IORManager, Ownable, Multicall {
         emit ChainInfoUpdated(id, _chains[id]);
     }
 
-    function getChainInfo(uint id) external view returns (OperationsLib.ChainInfo memory) {
+    function getChainInfo(uint16 id) external view returns (OperationsLib.ChainInfo memory) {
         return _chains[id];
     }
 

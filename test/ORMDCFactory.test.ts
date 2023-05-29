@@ -104,7 +104,7 @@ describe('ORMDCFactory', () => {
         .createMDC()
         .then((t) => t.wait());
     } catch (err: any) {
-      expect(err.message.indexOf(`'ERC1167: create2 failed'`) > -1).to.be.eq(
+      expect(err.message.indexOf("reverted with reason string 'ERC1167: create2 failed'") > -1).to.be.eq(
         true,
       );
     }
@@ -115,7 +115,7 @@ describe('ORMDCFactory', () => {
       await orManager.updateMaxMDCLimit(1);
       await orMDCFactory.createMDC();
     } catch (err: any) {
-      expect(err.message.indexOf(`'MML'`) > -1).to.be.eq(true);
+      expect(err.message.indexOf("reverted with reason string 'MML'") > -1).to.be.eq(true);
     }
   });
 

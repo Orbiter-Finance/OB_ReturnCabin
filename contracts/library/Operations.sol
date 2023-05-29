@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.9.0;
+
 import "./TransactionLib.sol";
 
 library OperationsLib {
@@ -28,13 +29,13 @@ library OperationsLib {
     }
 
     struct ChainInfo {
-        uint id;
-        uint batchLimit;
+        uint16 id;
+        uint240 batchLimit;
         address[] spvs;
-        uint minVerifyChallengeSourceTxSecond;
-        uint maxVerifyChallengeSourceTxSecond;
-        uint minVerifyChallengeDestTxSecond;
-        uint maxVerifyChallengeDestTxSecond;
+        uint64 minVerifyChallengeSourceTxSecond;
+        uint64 maxVerifyChallengeSourceTxSecond;
+        uint64 minVerifyChallengeDestTxSecond;
+        uint64 maxVerifyChallengeDestTxSecond;
         TokenInfo[] tokens;
     }
 
