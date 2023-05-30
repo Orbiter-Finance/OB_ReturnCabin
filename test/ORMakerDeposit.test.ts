@@ -1,6 +1,6 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { assert, expect } from 'chai';
-import { BigNumberish, Wallet, constants, utils } from 'ethers';
+import { BigNumber, BigNumberish, Wallet, constants, utils } from 'ethers';
 import { ethers } from 'hardhat';
 import lodash from 'lodash';
 import {
@@ -19,6 +19,7 @@ describe('ORMakerDeposit', () => {
   let orManager: ORManager;
   let orMDCFactory: ORMDCFactory;
   let orMakerDeposit: ORMakerDeposit;
+  let implementation: string;
 
   before(async function () {
     signers = await ethers.getSigners();
@@ -32,6 +33,7 @@ describe('ORMakerDeposit', () => {
     orMDCFactory = new ORMDCFactory__factory(signers[0]).attach(
       envORMDCFactoryAddress,
     );
+    implementation = await orMDCFactory.implementation();
 
     orManager = new ORManager__factory(signers[0]).attach(
       await orMDCFactory.manager(),
@@ -70,10 +72,9 @@ describe('ORMakerDeposit', () => {
       .updateColumnArray([], mdcEbcs, [])
       .then((t) => t.wait());
 
-    const impl = await orMDCFactory.implementation();
     const args = events![0].args!;
 
-    expect(args['impl']).eq(impl);
+    expect(args['impl']).eq(implementation);
     expect(args['columnArrayHash']).eq(columnArrayHash);
     expect(lodash.toPlainObject(args['ebcs'])).to.deep.includes(mdcEbcs);
 
@@ -126,11 +127,10 @@ describe('ORMakerDeposit', () => {
       .updateSpvs(spvs, chainIds)
       .then((t) => t.wait());
 
-    const impl = await orMDCFactory.implementation();
     for (const i in events!) {
       const event = events[i];
 
-      expect(event.args!['impl']).eq(impl);
+      expect(event.args!['impl']).eq(implementation);
       expect(event.args!['chainId']).eq(chainIds[i]);
       expect(event.args!['spv']).eq(spvs[i]);
     }
@@ -175,5 +175,16 @@ describe('ORMakerDeposit', () => {
         .updateResponseMakers(responseMakers, indexs),
       'Ownable: caller is not the owner',
     );
+  });
+
+  it('Test', async function () {
+    const types = ['uint16', 'uint16', 'uint16', 'uint16'];
+    const values = [1, 2, 0, 1];
+
+    const pack = utils.solidityPack(types, values);
+    console.warn('pack:', pack);
+
+    const decode = utils.defaultAbiCoder.decode(types, pack);
+    console.warn('decode:', decode);
   });
 });

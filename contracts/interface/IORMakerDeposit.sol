@@ -20,6 +20,22 @@ interface IORMakerDeposit {
 
     function mdcFactory() external view returns (address);
 
+    function columnArrayHash() external view returns (bytes32);
+
+    function updateColumnArray(
+        address[] calldata dealers,
+        address[] calldata ebcs,
+        uint16[] calldata chainIds
+    ) external;
+
+    function spv(uint16 chainId) external view returns (address);
+
+    function updateSpvs(address[] calldata spvs, uint16[] calldata chainIds) external;
+
+    function responseMakers() external view returns (address[] memory);
+
+    function updateResponseMakers(address[] calldata responseMakers_, uint[] calldata indexs) external;
+
     // enum RuleStatus {
     //     Stoped,
     //     Activated,

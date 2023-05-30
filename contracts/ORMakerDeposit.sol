@@ -10,6 +10,7 @@ import "./interface/IORMDCFactory.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import {Multicall} from "./Multicall.sol";
 import {ArrayLib} from "./library/ArrayLib.sol";
+import {RuleLib} from "./library/RuleLib.sol";
 
 contract ORMakerDeposit is IORMakerDeposit, Multicall {
     using ArrayLib for address[];
@@ -19,6 +20,10 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
     bytes32 private _columnArrayHash;
     mapping(uint16 => address) private _spvs; // chainId => spvAddress
     address[] private _responseMakers; // Response maker list, not just owner, to improve tps
+    mapping(bytes32 => RuleLib.RuleStruct) private _rules; // hash(chainId0,chainId1,token0,token1) => Rule
+
+    // solhint-disable-next-line no-empty-blocks
+    receive() external payable {}
 
     modifier onlyOwner() {
         require(msg.sender == _owner, "Ownable: caller is not the owner");
@@ -103,6 +108,23 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
             }
         }
         emit ResponseMakersUpdated(_mdcFactory.implementation(), _responseMakers);
+    }
+
+    function rule(bytes32 key) external view returns (RuleLib.RuleStruct memory) {
+        return _rules[key];
+    }
+
+    struct Data {
+        uint16 a;
+        uint16 b;
+    }
+
+    function updateRules(bytes[] memory rules) external onlyOwner {
+        //         Data memory data = Data(0, 0);
+        // assembly {mstore(y, source)
+        //             mstore(add(y, 16), source)
+        //     }
+        // abi.decode()
     }
 
     // using EnumerableMap for EnumerableMap.AddressToUintMap;
