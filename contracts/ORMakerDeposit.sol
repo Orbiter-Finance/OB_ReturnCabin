@@ -119,12 +119,19 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
         uint16 b;
     }
 
+    event RulesUpdated(uint16 a, uint16 b);
+
     function updateRules(bytes[] memory rules) external onlyOwner {
-        //         Data memory data = Data(0, 0);
-        // assembly {mstore(y, source)
-        //             mstore(add(y, 16), source)
-        //     }
-        // abi.decode()
+        uint16 a;
+        uint16 b;
+        byte result;
+        assembly {
+            result := mload(add(add(data, 32), index))
+        }
+        return result;
+        // (uint16 a, uint16 b, , ) = abi.decode(rules[0], (uint16, uint16, uint16, uint16));
+
+        // emit RulesUpdated(a, b);
     }
 
     // using EnumerableMap for EnumerableMap.AddressToUintMap;

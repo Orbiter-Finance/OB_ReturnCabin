@@ -178,13 +178,66 @@ describe('ORMakerDeposit', () => {
   });
 
   it('Test', async function () {
-    const types = ['uint16', 'uint16', 'uint16', 'uint16'];
-    const values = [1, 2, 0, 1];
+    const types = [
+      'uint16',
+      'uint16',
+      'uint16',
+      'uint16',
+      'uint',
+      'uint',
+      'uint128',
+      'uint128',
+      'uint128',
+      'uint128',
+      'uint16',
+      'uint16',
+      'uint16',
+      'uint16',
+      'uint32',
+      'uint32',
+      'uint32',
+      'uint32',
+    ];
+    const values = [
+      1,
+      2,
+      0,
+      1,
+      Wallet.createRandom().address,
+      Wallet.createRandom().address,
+      10n ** 18n,
+      10n ** 19n,
+      10n ** 20n,
+      10n ** 21n,
+      1,
+      2,
+      3,
+      4,
+      123456,
+      12345678,
+      123456789,
+      1234567891,
+    ];
 
-    const pack = utils.solidityPack(types, values);
-    console.warn('pack:', pack);
+    const rules: string[] = [];
+    for (let i = 0; i < 20; i++) {
+      const pack = utils.solidityPack(types, values);
+      rules.push(pack);
+    }
 
-    const decode = utils.defaultAbiCoder.decode(types, pack);
-    console.warn('decode:', decode);
+    // const rules: string[] = [];
+    // for (let i = 0; i < 50; i++) {
+    //   const pack = utils.defaultAbiCoder.encode(types, values);
+    //   rules.push(pack);
+    // }
+
+    // const decode = utils.defaultAbiCoder.decode(types, pack);
+    // console.warn('decode:', decode);
+
+    const { events } = await orMakerDeposit
+      .updateRules(rules)
+      .then((t) => t.wait());
+
+    console.warn('events:', events);
   });
 });
