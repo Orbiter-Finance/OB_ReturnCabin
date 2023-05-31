@@ -181,16 +181,14 @@ describe('ORMakerDeposit', () => {
     const types = [
       'uint16',
       'uint16',
-      'uint16',
-      'uint16',
+      'uint8',
+      'uint8',
       'uint',
       'uint',
       'uint128',
       'uint128',
       'uint128',
       'uint128',
-      'uint16',
-      'uint16',
       'uint16',
       'uint16',
       'uint32',
@@ -211,8 +209,6 @@ describe('ORMakerDeposit', () => {
       10n ** 21n,
       1,
       2,
-      3,
-      4,
       123456,
       12345678,
       123456789,
@@ -220,24 +216,26 @@ describe('ORMakerDeposit', () => {
     ];
 
     const rules: string[] = [];
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 100; i++) {
       const pack = utils.solidityPack(types, values);
       rules.push(pack);
     }
+    console.warn('pack:', rules[0]);
 
     // const rules: string[] = [];
-    // for (let i = 0; i < 50; i++) {
-    //   const pack = utils.defaultAbiCoder.encode(types, values);
+    // for (let i = 0; i < 100; i++) {
+    //   const _values = lodash.cloneDeep(values);
+    //   _values[0] = Number(_values[0]) + i;
+    //   _values[1] = Number(_values[1]) + i;
+    //   const pack = utils.defaultAbiCoder.encode(types, _values);
     //   rules.push(pack);
     // }
-
-    // const decode = utils.defaultAbiCoder.decode(types, pack);
-    // console.warn('decode:', decode);
+    // console.warn('encode:', rules[0]);
 
     const { events } = await orMakerDeposit
-      .updateRules(rules)
+      .updateRules(Wallet.createRandom().address, rules)
       .then((t) => t.wait());
 
-    console.warn('events:', events);
+    console.warn('events[0].args:', events![0].args);
   });
 });

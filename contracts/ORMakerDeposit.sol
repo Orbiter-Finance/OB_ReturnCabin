@@ -12,6 +12,9 @@ import {Multicall} from "./Multicall.sol";
 import {ArrayLib} from "./library/ArrayLib.sol";
 import {RuleLib} from "./library/RuleLib.sol";
 
+// TODO: for dev
+import "hardhat/console.sol";
+
 contract ORMakerDeposit is IORMakerDeposit, Multicall {
     using ArrayLib for address[];
 
@@ -20,7 +23,8 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
     bytes32 private _columnArrayHash;
     mapping(uint16 => address) private _spvs; // chainId => spvAddress
     address[] private _responseMakers; // Response maker list, not just owner, to improve tps
-    mapping(bytes32 => RuleLib.RuleStruct) private _rules; // hash(chainId0,chainId1,token0,token1) => Rule
+    mapping(bytes32 => RuleLib.Rule) private _rules; // hash(chainId0,chainId1,token0,token1) => Rule
+    mapping(bytes32 => bytes32) private _ruleHashs; // hash(chainId0,chainId1,token0,token1) => hash(Rule)
 
     // solhint-disable-next-line no-empty-blocks
     receive() external payable {}
@@ -110,28 +114,23 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
         emit ResponseMakersUpdated(_mdcFactory.implementation(), _responseMakers);
     }
 
-    function rule(bytes32 key) external view returns (RuleLib.RuleStruct memory) {
+    function rule(bytes32 key) external view returns (RuleLib.Rule memory) {
         return _rules[key];
     }
 
-    struct Data {
-        uint16 a;
-        uint16 b;
-    }
+    event RuleUpdated(address ebc, RuleLib.Rule rules);
 
-    event RulesUpdated(uint16 a, uint16 b);
+    function updateRules(address ebc, bytes[] memory rbs) external onlyOwner {
+        for (uint i = 0; i < rbs.length; i++) {
+            // (bytes32 key, RuleLib.Rule memory _rule) = RuleLib.decode(rbs[i]);
 
-    function updateRules(bytes[] memory rules) external onlyOwner {
-        uint16 a;
-        uint16 b;
-        byte result;
-        assembly {
-            result := mload(add(add(data, 32), index))
+            // _rules[key] = _rule;
+            // if (i == 1) {
+                // _ruleHashs[key] = keccak256(abi.encode(_rule));
+            // }
+
+            // emit RuleUpdated(ebc, _rule);
         }
-        return result;
-        // (uint16 a, uint16 b, , ) = abi.decode(rules[0], (uint16, uint16, uint16, uint16));
-
-        // emit RulesUpdated(a, b);
     }
 
     // using EnumerableMap for EnumerableMap.AddressToUintMap;
