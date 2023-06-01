@@ -120,10 +120,13 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
         return _rules[key];
     }
 
-    event RuleUpdated(address ebc, RuleLib.Rule rules);
+    event RulesRootUpdated(address ebc, bytes32 root, uint32 version);
 
-    function updateRules(address ebc, bytes memory rsc, bytes32 mptRoot, uint32 version) external onlyOwner {
-        _rulesRoots[ebc] = mptRoot;
+    function updateRules(address ebc, bytes memory rsc, bytes32 root, uint32 version) external onlyOwner {
+        address[] memory ebcs = IORManager(_mdcFactory.manager()).ebcs();
+        require(ebcs.addressIncludes(ebc), "EI");
+
+        _rulesRoots[ebc] = root;
 
         // Prevent unused hints
         rsc;
@@ -133,16 +136,7 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
             require(_rulesRootVersions[ebc] == version, "VE");
         }
 
-        // for (uint i = 0; i < rbs.length; i++) {
-        // (bytes32 key, RuleLib.Rule memory _rule) = RuleLib.decode(rbs[i]);
-
-        // _rules[key] = _rule;
-        // if (i == 1) {
-        // _ruleHashs[key] = keccak256(abi.encode(_rule));
-        // }
-
-        // emit RuleUpdated(ebc, _rule);
-        // }
+        emit RulesRootUpdated(ebc, root, version);
     }
 
     // using EnumerableMap for EnumerableMap.AddressToUintMap;

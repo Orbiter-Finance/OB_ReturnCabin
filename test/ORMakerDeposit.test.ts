@@ -258,20 +258,30 @@ describe('ORMakerDeposit', () => {
     );
     console.warn('sources[0]:', sources[0]);
 
-    const leaves = valuesList.map((values) =>
-      utils.keccak256(utils.defaultAbiCoder.encode(types, values)),
-    );
-
-    console.warn('leaves.length:', leaves.length);
+    const leaves = valuesList
+      .map((values) =>
+        utils.keccak256(utils.defaultAbiCoder.encode(types, values)),
+      )
+      .sort((a, b) => (BigNumber.from(a).sub(b).gt(0) ? 1 : -1));
 
     const tree = new MerkleTree(leaves, utils.keccak256);
     const root = utils.hexlify(tree.getRoot());
-    console.warn('root:', root);
+
+    const leaf = lodash.sample(leaves)!;
+    const proof = tree.getProof(leaf, 0);
+    console.warn('proof:', proof);
+
+    console.warn(
+      'tree.verify(proof, leaf, root):',
+      tree.verify(proof, leaf, root),
+    );
+
+    const ebcs = await orManager.ebcs();
 
     const { events } = await orMakerDeposit
-      .updateRules(Wallet.createRandom().address, rsc, root, 1)
+      .updateRules(lodash.sample(ebcs)!, rsc, root, 1)
       .then((t) => t.wait());
 
-    // console.warn('events[0].args:', events![0].args);
+    console.warn('events[0].args:', events![0].args);
   });
 });
