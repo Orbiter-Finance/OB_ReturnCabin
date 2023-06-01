@@ -3,6 +3,7 @@ import { assert, expect } from 'chai';
 import { BigNumber, BigNumberish, Wallet, constants, utils } from 'ethers';
 import { ethers } from 'hardhat';
 import lodash from 'lodash';
+import pako from 'pako';
 import {
   ORMDCFactory,
   ORMDCFactory__factory,
@@ -11,8 +12,9 @@ import {
   ORManager,
   ORManager__factory,
 } from '../typechain-types';
-import { testReverted } from './utils.test';
 import { defaultChainInfo } from './defaults';
+import { testReverted } from './utils.test';
+import MerkleTree from 'merkletreejs';
 
 describe('ORMakerDeposit', () => {
   let signers: SignerWithAddress[];
@@ -196,46 +198,80 @@ describe('ORMakerDeposit', () => {
       'uint32',
       'uint32',
     ];
-    const values = [
-      1,
-      2,
-      0,
-      1,
-      Wallet.createRandom().address,
-      Wallet.createRandom().address,
-      10n ** 18n,
-      10n ** 19n,
-      10n ** 20n,
-      10n ** 21n,
-      1,
-      2,
-      123456,
-      12345678,
-      123456789,
-      1234567891,
-    ];
-
-    const rules: string[] = [];
-    for (let i = 0; i < 100; i++) {
-      const pack = utils.solidityPack(types, values);
-      rules.push(pack);
-    }
-    console.warn('pack:', rules[0]);
+    const getValues = () => {
+      return [
+        1,
+        2,
+        0,
+        1,
+        Wallet.createRandom().address,
+        Wallet.createRandom().address,
+        BigNumber.from(5).pow(parseInt(Math.random() * 40 + '') + 1),
+        BigNumber.from(5).pow(parseInt(Math.random() * 40 + '') + 1),
+        BigNumber.from(5).pow(parseInt(Math.random() * 40 + '') + 1),
+        BigNumber.from(5).pow(parseInt(Math.random() * 40 + '') + 1),
+        1,
+        2,
+        (2 ^ 32) - 1,
+        (2 ^ 31) - 1,
+        (2 ^ 30) - 1,
+        (2 ^ 29) - 1,
+      ];
+    };
 
     // const rules: string[] = [];
     // for (let i = 0; i < 100; i++) {
+    //   const pack = utils.solidityPack(types, values);
+    //   rules.push(pack);
+    // }
+    // console.warn('pack:', rules[0]);
+
+    // const rules: string[] = [];
+    // for (let i = 0; i < 200; i++) {
     //   const _values = lodash.cloneDeep(values);
     //   _values[0] = Number(_values[0]) + i;
     //   _values[1] = Number(_values[1]) + i;
     //   const pack = utils.defaultAbiCoder.encode(types, _values);
-    //   rules.push(pack);
+    //   rules.push(utils.hexlify(pako.gzip(utils.arrayify(pack), { level: 9 })));
     // }
     // console.warn('encode:', rules[0]);
 
+    const valuesList: any[] = [];
+    for (let i = 0; i < 200; i++) {
+      const _values = getValues();
+      _values[0] = Number(_values[0]) + i;
+      _values[1] = Number(_values[1]) + i;
+      valuesList.push(_values);
+    }
+    const encode = utils.defaultAbiCoder.encode(
+      [`tuple(${types.join(',')})[]`],
+      [valuesList],
+    );
+    console.warn('encode.length:', encode.length);
+
+    const rsc = utils.hexlify(pako.gzip(utils.arrayify(encode), { level: 9 }));
+    console.warn('rsc.length:', rsc.length);
+
+    const [sources] = utils.defaultAbiCoder.decode(
+      [`tuple(${types.join(',')})[]`],
+      utils.hexlify(pako.ungzip(utils.arrayify(rsc))),
+    );
+    console.warn('sources[0]:', sources[0]);
+
+    const leaves = valuesList.map((values) =>
+      utils.keccak256(utils.defaultAbiCoder.encode(types, values)),
+    );
+
+    console.warn('leaves.length:', leaves.length);
+
+    const tree = new MerkleTree(leaves, utils.keccak256);
+    const root = utils.hexlify(tree.getRoot());
+    console.warn('root:', root);
+
     const { events } = await orMakerDeposit
-      .updateRules(Wallet.createRandom().address, rules)
+      .updateRules(Wallet.createRandom().address, rsc, root, 1)
       .then((t) => t.wait());
 
-    console.warn('events[0].args:', events![0].args);
+    // console.warn('events[0].args:', events![0].args);
   });
 });

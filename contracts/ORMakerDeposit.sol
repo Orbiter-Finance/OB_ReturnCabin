@@ -25,6 +25,8 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
     address[] private _responseMakers; // Response maker list, not just owner, to improve tps
     mapping(bytes32 => RuleLib.Rule) private _rules; // hash(chainId0,chainId1,token0,token1) => Rule
     mapping(bytes32 => bytes32) private _ruleHashs; // hash(chainId0,chainId1,token0,token1) => hash(Rule)
+    mapping(address => bytes32) private _rulesRoots; // ebc => merkleRoot(rules)
+    mapping(address => uint64) private _rulesRootVersions; // ebc => merkleRoot's version
 
     // solhint-disable-next-line no-empty-blocks
     receive() external payable {}
@@ -120,17 +122,27 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
 
     event RuleUpdated(address ebc, RuleLib.Rule rules);
 
-    function updateRules(address ebc, bytes[] memory rbs) external onlyOwner {
-        for (uint i = 0; i < rbs.length; i++) {
-            // (bytes32 key, RuleLib.Rule memory _rule) = RuleLib.decode(rbs[i]);
+    function updateRules(address ebc, bytes memory rsc, bytes32 mptRoot, uint32 version) external onlyOwner {
+        _rulesRoots[ebc] = mptRoot;
 
-            // _rules[key] = _rule;
-            // if (i == 1) {
-                // _ruleHashs[key] = keccak256(abi.encode(_rule));
-            // }
+        // Prevent unused hints
+        rsc;
 
-            // emit RuleUpdated(ebc, _rule);
+        unchecked {
+            _rulesRootVersions[ebc] += 1;
+            require(_rulesRootVersions[ebc] == version, "VE");
         }
+
+        // for (uint i = 0; i < rbs.length; i++) {
+        // (bytes32 key, RuleLib.Rule memory _rule) = RuleLib.decode(rbs[i]);
+
+        // _rules[key] = _rule;
+        // if (i == 1) {
+        // _ruleHashs[key] = keccak256(abi.encode(_rule));
+        // }
+
+        // emit RuleUpdated(ebc, _rule);
+        // }
     }
 
     // using EnumerableMap for EnumerableMap.AddressToUintMap;
