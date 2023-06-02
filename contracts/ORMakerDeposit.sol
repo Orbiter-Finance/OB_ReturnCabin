@@ -5,28 +5,25 @@ import "./interface/IORMakerDeposit.sol";
 import "./interface/IORManager.sol";
 import "./interface/IORProtocal.sol";
 import "./interface/IORProventh.sol";
-import "./interface/IERC20.sol";
 import "./interface/IORMDCFactory.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Multicall} from "./Multicall.sol";
 import {ArrayLib} from "./library/ArrayLib.sol";
 import {RuleLib} from "./library/RuleLib.sol";
 
-// TODO: for dev
-import "hardhat/console.sol";
-
 contract ORMakerDeposit is IORMakerDeposit, Multicall {
     using ArrayLib for address[];
+    using SafeERC20 for IERC20;
 
     address private _owner;
     IORMDCFactory private _mdcFactory;
     bytes32 private _columnArrayHash;
     mapping(uint16 => address) private _spvs; // chainId => spvAddress
     address[] private _responseMakers; // Response maker list, not just owner, to improve tps
-    mapping(bytes32 => RuleLib.Rule) private _rules; // hash(chainId0,chainId1,token0,token1) => Rule
-    mapping(bytes32 => bytes32) private _ruleHashs; // hash(chainId0,chainId1,token0,token1) => hash(Rule)
-    mapping(address => bytes32) private _rulesRoots; // ebc => merkleRoot(rules)
-    mapping(address => uint64) private _rulesRootVersions; // ebc => merkleRoot's version
+    mapping(address => RuleLib.RootWithVersion) private _rulesRoots; // ebc => merkleRoot(rules), version
+    mapping(address => mapping(bytes32 => uint)) private _pledgeBalances; // ebc => hash(sourceChainId, sourceToken) => pledgeBalance
 
     // solhint-disable-next-line no-empty-blocks
     receive() external payable {}
@@ -66,11 +63,21 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
         require(chainIds.length <= 100, "COF");
 
         IORManager manager = IORManager(_mdcFactory.manager());
-        require(manager.ebcs().addressArrayIncludes(ebcs), "EI"); // Has invalid ebc
+        for (uint i = 0; i < ebcs.length; ) {
+            require(manager.ebcIncludes(ebcs[i]), "EI"); // Has invalid ebc
 
-        for (uint i = 0; i < chainIds.length; i++) {
+            unchecked {
+                i++;
+            }
+        }
+
+        for (uint i = 0; i < chainIds.length; ) {
             OperationsLib.ChainInfo memory chainInfo = manager.getChainInfo(chainIds[i]);
             require(chainInfo.id > 0, "CI"); // Invalid chainId
+
+            unchecked {
+                i++;
+            }
         }
 
         _columnArrayHash = keccak256(abi.encodePacked(dealers, ebcs, chainIds));
@@ -116,27 +123,77 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
         emit ResponseMakersUpdated(_mdcFactory.implementation(), _responseMakers);
     }
 
-    function rule(bytes32 key) external view returns (RuleLib.Rule memory) {
-        return _rules[key];
+    function rulesRoot(address ebc) external view returns (RuleLib.RootWithVersion memory) {
+        return _rulesRoots[ebc];
     }
 
-    event RulesRootUpdated(address ebc, bytes32 root, uint32 version);
-
-    function updateRules(address ebc, bytes memory rsc, bytes32 root, uint32 version) external onlyOwner {
-        address[] memory ebcs = IORManager(_mdcFactory.manager()).ebcs();
-        require(ebcs.addressIncludes(ebc), "EI");
-
-        _rulesRoots[ebc] = root;
-
+    function updateRulesRoot(
+        bytes calldata rsc,
+        address ebc,
+        RuleLib.RootWithVersion calldata rootWithVersion,
+        uint16[] calldata sourceChainIds,
+        uint[] calldata pledgeAmounts
+    ) external payable onlyOwner {
         // Prevent unused hints
         rsc;
 
-        unchecked {
-            _rulesRootVersions[ebc] += 1;
-            require(_rulesRootVersions[ebc] == version, "VE");
+        _updateRulesRoot(ebc, rootWithVersion);
+
+        require(sourceChainIds.length == pledgeAmounts.length, "SPL");
+
+        uint totalAmount;
+        for (uint i = 0; i < sourceChainIds.length; ) {
+            bytes32 k = keccak256(abi.encodePacked(sourceChainIds[i], address(0)));
+            _pledgeBalances[ebc][k] += pledgeAmounts[i];
+
+            unchecked {
+                totalAmount += pledgeAmounts[i];
+                i++;
+            }
         }
 
-        emit RulesRootUpdated(ebc, root, version);
+        require(totalAmount <= msg.value, "IV"); // Insufficient value
+    }
+
+    function updateRulesRootERC20(
+        bytes calldata rsc,
+        address ebc,
+        RuleLib.RootWithVersion calldata rootWithVersion,
+        uint16[] calldata sourceChainIds,
+        uint[] calldata pledgeAmounts,
+        address token
+    ) external payable onlyOwner {
+        // Prevent unused hints
+        rsc;
+
+        _updateRulesRoot(ebc, rootWithVersion);
+
+        require(sourceChainIds.length == pledgeAmounts.length, "SPL");
+
+        for (uint i = 0; i < sourceChainIds.length; ) {
+            IERC20(token).safeTransferFrom(msg.sender, address(this), pledgeAmounts[i]);
+
+            bytes32 k = keccak256(abi.encodePacked(sourceChainIds[i], token));
+            _pledgeBalances[ebc][k] += pledgeAmounts[i];
+
+            unchecked {
+                i++;
+            }
+        }
+    }
+
+    function _updateRulesRoot(address ebc, RuleLib.RootWithVersion calldata rootWithVersion) private {
+        IORManager manager = IORManager(_mdcFactory.manager());
+        require(manager.ebcIncludes(ebc), "EI"); // Has invalid ebc
+
+        require(rootWithVersion.root != bytes32(0), "RZ");
+        unchecked {
+            require(_rulesRoots[ebc].version + 1 == rootWithVersion.version, "VE");
+        }
+
+        _rulesRoots[ebc] = rootWithVersion;
+
+        emit RulesRootUpdated(ebc, rootWithVersion);
     }
 
     // using EnumerableMap for EnumerableMap.AddressToUintMap;

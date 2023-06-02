@@ -5,7 +5,7 @@ import "../library/Operations.sol";
 
 interface IORManager {
     event ChainInfoUpdated(uint indexed id, OperationsLib.ChainInfo chainInfo);
-    event EbcsUpdated(address[] ebcs);
+    event EbcsUpdated(address[] ebcs, bool[] statuses);
     event SubmitterFeeUpdated(address submitter);
     event ProtocolFeeUpdated(uint64 protocolFee);
     event MinChallengeRatioUpdated(uint64 minChallengeRatio);
@@ -22,9 +22,9 @@ interface IORManager {
 
     function getChainInfo(uint16 id) external view returns (OperationsLib.ChainInfo memory);
 
-    function ebcs() external view returns (address[] memory);
+    function ebcIncludes(address ebc) external view returns (bool);
 
-    function updateEbcs(address[] calldata ebcs_, uint[] calldata indexs) external;
+    function updateEbcs(address[] calldata ebcs_, bool[] calldata statuses) external;
 
     function submitter() external view returns (address);
 

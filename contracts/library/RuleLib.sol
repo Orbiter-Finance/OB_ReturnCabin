@@ -22,6 +22,11 @@ library RuleLib {
         uint32 compensationRatio1;
     }
 
+    struct RootWithVersion {
+        bytes32 root;
+        uint32 version;
+    }
+
     function decode(bytes memory ruleBytes) internal pure returns (bytes32, Rule memory) {
         RuleLib.Rule memory _rule = abi.decode(ruleBytes, (RuleLib.Rule));
 

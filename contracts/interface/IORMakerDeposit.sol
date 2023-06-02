@@ -2,6 +2,7 @@
 pragma solidity ^0.8.17;
 
 import "../library/Operations.sol";
+import {RuleLib} from "../library/RuleLib.sol";
 
 interface IORMakerDeposit {
     event ColumnArrayUpdated(
@@ -13,6 +14,7 @@ interface IORMakerDeposit {
     );
     event SpvUpdated(address indexed impl, uint16 chainId, address spv);
     event ResponseMakersUpdated(address indexed impl, address[] responseMakers);
+    event RulesRootUpdated(address ebc, RuleLib.RootWithVersion rootWithVersion);
 
     function initialize(address owner_) external;
 
@@ -35,6 +37,16 @@ interface IORMakerDeposit {
     function responseMakers() external view returns (address[] memory);
 
     function updateResponseMakers(address[] calldata responseMakers_, uint[] calldata indexs) external;
+
+    function rulesRoot(address ebc) external view returns (RuleLib.RootWithVersion memory);
+
+    function updateRulesRoot(
+        bytes calldata rsc,
+        address ebc,
+        RuleLib.RootWithVersion calldata rootWithVersion,
+        uint16[] calldata sourceChainIds,
+        uint[] calldata pledgeAmounts
+    ) external payable;
 
     // enum RuleStatus {
     //     Stoped,

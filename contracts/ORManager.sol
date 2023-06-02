@@ -9,7 +9,7 @@ import "./Multicall.sol";
 
 contract ORManager is IORManager, Ownable, Multicall {
     mapping(uint16 => OperationsLib.ChainInfo) private _chains;
-    address[] private _ebcs;
+    mapping(address => bool) private _ebcs;
     address private _submitter;
     uint64 private _protocolFee;
     uint64 private _minChallengeRatio = 200;
@@ -66,21 +66,21 @@ contract ORManager is IORManager, Ownable, Multicall {
         return _chains[id];
     }
 
-    function ebcs() external view returns (address[] memory) {
-        return _ebcs;
+    function ebcIncludes(address ebc) external view returns (bool) {
+        return _ebcs[ebc];
     }
 
-    function updateEbcs(address[] calldata ebcs_, uint[] calldata indexs) external onlyOwner {
+    function updateEbcs(address[] calldata ebcs_, bool[] calldata statuses) external onlyOwner {
         unchecked {
             for (uint i = 0; i < ebcs_.length; i++) {
-                if (i < indexs.length) {
-                    _ebcs[indexs[i]] = ebcs_[i];
+                if (i < statuses.length) {
+                    _ebcs[ebcs_[i]] = statuses[i];
                 } else {
-                    _ebcs.push(ebcs_[i]);
+                    _ebcs[ebcs_[i]] = true;
                 }
             }
         }
-        emit EbcsUpdated(_ebcs);
+        emit EbcsUpdated(ebcs_, statuses);
     }
 
     function submitter() external view returns (address) {

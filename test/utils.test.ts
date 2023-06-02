@@ -321,3 +321,9 @@ export async function testReverted(
   if (succeed)
     throw new Error(`should reverted with reason string '${reason}'`);
 }
+
+export async function testRevertedOwner(
+  transaction: Promise<ContractTransaction>,
+) {
+  await testReverted(transaction, 'Ownable: caller is not the owner');
+}

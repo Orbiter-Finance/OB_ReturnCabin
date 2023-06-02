@@ -12,8 +12,8 @@ import {
   ORManager,
   ORManager__factory,
 } from '../typechain-types';
-import { defaultChainInfo } from './defaults';
-import { testReverted } from './utils.test';
+import { defaultChainInfo, defaultsEbcs } from './defaults';
+import { testReverted, testRevertedOwner } from './utils.test';
 import MerkleTree from 'merkletreejs';
 
 describe('ORMakerDeposit', () => {
@@ -57,8 +57,14 @@ describe('ORMakerDeposit', () => {
     expect(owner).eq(signerMaker.address);
   });
 
+  it("ORMakerDeposit's functions prefixed with _ should not be callable from outside", async function () {
+    for (const key in orMakerDeposit.functions) {
+      expect(key.replace(/^_/, '')).eq(key);
+    }
+  });
+
   it('Function updateColumnArray should emit events and update hash', async function () {
-    const ebcs = await orManager.ebcs();
+    const ebcs = lodash.cloneDeep(defaultsEbcs);
 
     const mdcEbcs: string[] = ebcs.slice(0, 10);
     mdcEbcs.sort(() => Math.random() - 0.5);
@@ -80,9 +86,8 @@ describe('ORMakerDeposit', () => {
     expect(args['columnArrayHash']).eq(columnArrayHash);
     expect(lodash.toPlainObject(args['ebcs'])).to.deep.includes(mdcEbcs);
 
-    await testReverted(
+    await testRevertedOwner(
       orMakerDeposit.connect(signers[2]).updateColumnArray([], mdcEbcs, []),
-      'Ownable: caller is not the owner',
     );
 
     // Test length
@@ -142,9 +147,8 @@ describe('ORMakerDeposit', () => {
       expect(spv).eq(spvs[i]);
     }
 
-    await testReverted(
+    await testRevertedOwner(
       orMakerDeposit.connect(signers[2]).updateSpvs(spvs, chainIds),
-      'Ownable: caller is not the owner',
     );
 
     await testReverted(orMakerDeposit.updateSpvs(spvs, [2 ** 16 - 1]), 'CI');
@@ -171,15 +175,14 @@ describe('ORMakerDeposit', () => {
     const storageResponseMakers = await orMakerDeposit.responseMakers();
     expect(storageResponseMakers).to.deep.eq(responseMakers);
 
-    await testReverted(
+    await testRevertedOwner(
       orMakerDeposit
         .connect(signers[2])
         .updateResponseMakers(responseMakers, indexs),
-      'Ownable: caller is not the owner',
     );
   });
 
-  it('Test', async function () {
+  it('Function updateRulesRoot should emit events and update storage', async function () {
     const types = [
       'uint16',
       'uint16',
@@ -219,69 +222,57 @@ describe('ORMakerDeposit', () => {
       ];
     };
 
-    // const rules: string[] = [];
-    // for (let i = 0; i < 100; i++) {
-    //   const pack = utils.solidityPack(types, values);
-    //   rules.push(pack);
-    // }
-    // console.warn('pack:', rules[0]);
-
-    // const rules: string[] = [];
-    // for (let i = 0; i < 200; i++) {
-    //   const _values = lodash.cloneDeep(values);
-    //   _values[0] = Number(_values[0]) + i;
-    //   _values[1] = Number(_values[1]) + i;
-    //   const pack = utils.defaultAbiCoder.encode(types, _values);
-    //   rules.push(utils.hexlify(pako.gzip(utils.arrayify(pack), { level: 9 })));
-    // }
-    // console.warn('encode:', rules[0]);
-
-    const valuesList: any[] = [];
+    const rules: any[] = [];
     for (let i = 0; i < 200; i++) {
       const _values = getValues();
       _values[0] = Number(_values[0]) + i;
       _values[1] = Number(_values[1]) + i;
-      valuesList.push(_values);
+      rules.push(_values);
     }
-    const encode = utils.defaultAbiCoder.encode(
+
+    const rsEncode = utils.defaultAbiCoder.encode(
       [`tuple(${types.join(',')})[]`],
-      [valuesList],
+      [rules],
     );
-    console.warn('encode.length:', encode.length);
-
-    const rsc = utils.hexlify(pako.gzip(utils.arrayify(encode), { level: 9 }));
-    console.warn('rsc.length:', rsc.length);
-
-    const [sources] = utils.defaultAbiCoder.decode(
-      [`tuple(${types.join(',')})[]`],
-      utils.hexlify(pako.ungzip(utils.arrayify(rsc))),
+    const rsc = utils.hexlify(
+      pako.gzip(utils.arrayify(rsEncode), { level: 9 }),
     );
-    console.warn('sources[0]:', sources[0]);
+    expect(utils.hexlify(pako.ungzip(utils.arrayify(rsc)))).eq(rsEncode);
 
-    const leaves = valuesList
+    const leaves = rules
       .map((values) =>
         utils.keccak256(utils.defaultAbiCoder.encode(types, values)),
       )
       .sort((a, b) => (BigNumber.from(a).sub(b).gt(0) ? 1 : -1));
-
     const tree = new MerkleTree(leaves, utils.keccak256);
     const root = utils.hexlify(tree.getRoot());
 
-    const leaf = lodash.sample(leaves)!;
-    const proof = tree.getProof(leaf, 0);
-    console.warn('proof:', proof);
-
-    console.warn(
-      'tree.verify(proof, leaf, root):',
-      tree.verify(proof, leaf, root),
-    );
-
-    const ebcs = await orManager.ebcs();
-
+    const ebc = lodash.sample(defaultsEbcs)!;
+    const rootWithVersion = { root, version: 1 };
     const { events } = await orMakerDeposit
-      .updateRules(lodash.sample(ebcs)!, rsc, root, 1)
+      .updateRulesRoot(rsc, ebc, rootWithVersion, [], [])
       .then((t) => t.wait());
 
-    console.warn('events[0].args:', events![0].args);
+    const args = events![0].args!;
+    expect(args.ebc).eq(ebc);
+    expect(args.rootWithVersion.root).eq(rootWithVersion.root);
+    expect(args.rootWithVersion.version).eq(rootWithVersion.version);
+
+    await testReverted(
+      orMakerDeposit.updateRulesRoot(rsc, ebc, rootWithVersion, [], []),
+      'VE',
+    );
+    await testRevertedOwner(
+      orMakerDeposit
+        .connect(signers[2])
+        .updateRulesRoot(rsc, ebc, { ...rootWithVersion, version: 2 }, [], []),
+    );
+
+    const storageRWV = await orMakerDeposit.rulesRoot(ebc);
+    expect(storageRWV.root).eq(rootWithVersion.root);
+    expect(storageRWV.version).eq(rootWithVersion.version);
+
+    const leaf = lodash.sample(leaves)!;
+    expect(tree.verify(tree.getProof(leaf), leaf, storageRWV.root)).to.be.true;
   });
 });

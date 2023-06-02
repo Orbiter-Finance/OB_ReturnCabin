@@ -1,12 +1,12 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
-import { BigNumber, BigNumberish, constants } from 'ethers';
+import { BigNumber, BigNumberish, Wallet, constants } from 'ethers';
 import { ethers } from 'hardhat';
 import lodash from 'lodash';
 import { ORManager, ORManager__factory } from '../typechain-types';
 import { OperationsLib } from '../typechain-types/contracts/ORManager';
-import { defaultChainInfo } from './defaults';
-import { testReverted } from './utils.test';
+import { defaultChainInfo, defaultsEbcs } from './defaults';
+import { testReverted, testRevertedOwner } from './utils.test';
 
 describe('Test ORManager', () => {
   let signers: SignerWithAddress[];
@@ -31,10 +31,7 @@ describe('Test ORManager', () => {
   });
 
   it('Function transferOwnership should succeed', async function () {
-    await testReverted(
-      orManager.transferOwnership(signers[0].address),
-      'Ownable: caller is not the owner',
-    );
+    await testRevertedOwner(orManager.transferOwnership(signers[0].address));
 
     await orManager.connect(signers[1]).transferOwnership(signers[0].address);
   });
@@ -117,21 +114,25 @@ describe('Test ORManager', () => {
   });
 
   it('Function updateEbcs should succeed', async function () {
-    const ebcs: string[] = [];
-    const indexs: BigNumberish[] = [];
-    for (let i = 0; i < 10; i++) {
-      ebcs.push(ethers.Wallet.createRandom().address);
-    }
+    const ebcs = lodash.cloneDeep(defaultsEbcs);
+    const statuses: boolean[] = [];
 
     const { events } = await orManager
-      .updateEbcs(ebcs, indexs)
+      .updateEbcs(ebcs, statuses)
       .then((t) => t.wait());
 
     const args = events![0].args!;
     expect(args.ebcs).to.deep.eq(ebcs);
+    expect(args.statuses).to.deep.eq(statuses);
 
-    const storageEbcs = await orManager.ebcs();
-    expect(storageEbcs).to.deep.eq(ebcs);
+    for (const ebc of ebcs) {
+      const status = await orManager.ebcIncludes(ebc);
+      expect(status).to.deep.eq(true);
+    }
+
+    expect(await orManager.ebcIncludes(constants.AddressZero)).to.deep.eq(
+      false,
+    );
   });
 
   it('Function updateSubmitter should succeed', async function () {

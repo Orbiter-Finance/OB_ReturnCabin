@@ -1,4 +1,4 @@
-import { BigNumber, constants } from 'ethers';
+import { BigNumber, constants, ethers } from 'ethers';
 import { OperationsLib } from '../typechain-types/contracts/ORManager';
 
 export const defaultChainInfo: OperationsLib.ChainInfoStruct = {
@@ -17,3 +17,7 @@ export const defaultChainInfo: OperationsLib.ChainInfoStruct = {
     },
   ],
 };
+
+export const defaultsEbcs: string[] = new Array(10)
+  .fill(undefined)
+  .map(() => ethers.Wallet.createRandom().address);
