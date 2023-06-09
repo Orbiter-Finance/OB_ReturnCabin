@@ -14,7 +14,7 @@ interface IORMakerDeposit {
     );
     event SpvUpdated(address indexed impl, uint16 chainId, address spv);
     event ResponseMakersUpdated(address indexed impl, address[] responseMakers);
-    event RulesRootUpdated(address ebc, RuleLib.RootWithVersion rootWithVersion);
+    event RulesRootUpdated(address indexed impl, address ebc, RuleLib.RootWithVersion rootWithVersion);
 
     function initialize(address owner_) external;
 
@@ -41,12 +41,21 @@ interface IORMakerDeposit {
     function rulesRoot(address ebc) external view returns (RuleLib.RootWithVersion memory);
 
     function updateRulesRoot(
-        bytes calldata rsc,
         address ebc,
+        bytes calldata rsc,
         RuleLib.RootWithVersion calldata rootWithVersion,
         uint16[] calldata sourceChainIds,
         uint[] calldata pledgeAmounts
     ) external payable;
+
+    function updateRulesRootERC20(
+        address ebc,
+        bytes calldata rsc,
+        RuleLib.RootWithVersion calldata rootWithVersion,
+        uint16[] calldata sourceChainIds,
+        uint[] calldata pledgeAmounts,
+        address token
+    ) external;
 
     // enum RuleStatus {
     //     Stoped,

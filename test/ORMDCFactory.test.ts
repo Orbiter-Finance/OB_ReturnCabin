@@ -21,7 +21,7 @@ describe('ORMDCFactory', () => {
   before(async function () {
     signers = await ethers.getSigners();
 
-    const envORManagerAddress = process.env['ORMANAGER_ADDRESS'];
+    const envORManagerAddress = process.env['OR_MANAGER_ADDRESS'];
     if (envORManagerAddress) {
       orManager = new ORManager__factory(signers[0]).attach(
         envORManagerAddress,
@@ -49,7 +49,7 @@ describe('ORMDCFactory', () => {
     await orMDCFactory.deployed();
 
     // set environment variables
-    process.env['ORMDCFACTORY_ADDRESS'] = orMDCFactory.address;
+    process.env['OR_MDC_FACTORY_ADDRESS'] = orMDCFactory.address;
   });
 
   it('Manager and implementation should have been set up successfully', async function () {

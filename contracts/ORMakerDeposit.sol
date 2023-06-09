@@ -128,8 +128,8 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
     }
 
     function updateRulesRoot(
-        bytes calldata rsc,
         address ebc,
+        bytes calldata rsc,
         RuleLib.RootWithVersion calldata rootWithVersion,
         uint16[] calldata sourceChainIds,
         uint[] calldata pledgeAmounts
@@ -156,13 +156,13 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
     }
 
     function updateRulesRootERC20(
-        bytes calldata rsc,
         address ebc,
+        bytes calldata rsc,
         RuleLib.RootWithVersion calldata rootWithVersion,
         uint16[] calldata sourceChainIds,
         uint[] calldata pledgeAmounts,
         address token
-    ) external payable onlyOwner {
+    ) external onlyOwner {
         // Prevent unused hints
         rsc;
 
@@ -193,7 +193,7 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
 
         _rulesRoots[ebc] = rootWithVersion;
 
-        emit RulesRootUpdated(ebc, rootWithVersion);
+        emit RulesRootUpdated(_mdcFactory.implementation(), ebc, rootWithVersion);
     }
 
     // using EnumerableMap for EnumerableMap.AddressToUintMap;

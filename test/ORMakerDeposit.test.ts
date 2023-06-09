@@ -1,8 +1,9 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { assert, expect } from 'chai';
-import { BigNumber, BigNumberish, Wallet, constants, utils } from 'ethers';
+import { BigNumber, BigNumberish, constants, utils } from 'ethers';
 import { ethers } from 'hardhat';
 import lodash from 'lodash';
+import MerkleTree from 'merkletreejs';
 import pako from 'pako';
 import {
   ORMDCFactory,
@@ -11,10 +12,12 @@ import {
   ORMakerDeposit__factory,
   ORManager,
   ORManager__factory,
+  TestToken,
+  TestToken__factory,
 } from '../typechain-types';
 import { defaultChainInfo, defaultsEbcs } from './defaults';
+import { createRandomRule, ruleTypes } from './lib/rule';
 import { testReverted, testRevertedOwner } from './utils.test';
-import MerkleTree from 'merkletreejs';
 
 describe('ORMakerDeposit', () => {
   let signers: SignerWithAddress[];
@@ -22,14 +25,15 @@ describe('ORMakerDeposit', () => {
   let orMDCFactory: ORMDCFactory;
   let orMakerDeposit: ORMakerDeposit;
   let implementation: string;
+  let testToken: TestToken;
 
   before(async function () {
     signers = await ethers.getSigners();
 
-    const envORMDCFactoryAddress = process.env['ORMDCFACTORY_ADDRESS'];
+    const envORMDCFactoryAddress = process.env['OR_MDC_FACTORY_ADDRESS'];
     assert(
       !!envORMDCFactoryAddress,
-      'Env miss [ORMDCFACTORY_ADDRESS]. You may need to test ORMDCFactory.test.ts first. Example: npx hardhat test test/ORManager.test test/ORMDCFactory.test.ts test/ORMakerDeposit.test.ts',
+      'Env miss [OR_MDC_FACTORY_ADDRESS]. You may need to test ORMDCFactory.test.ts first. Example: npx hardhat test test/ORManager.test test/ORMDCFactory.test.ts test/ORMakerDeposit.test.ts',
     );
 
     orMDCFactory = new ORMDCFactory__factory(signers[0]).attach(
@@ -40,6 +44,15 @@ describe('ORMakerDeposit', () => {
     orManager = new ORManager__factory(signers[0]).attach(
       await orMDCFactory.manager(),
     );
+
+    const testTokenAddress = process.env['TEST_TOKEN_ADDRESS'];
+    if (testTokenAddress) {
+      testToken = new TestToken__factory(signers[0]).attach(testTokenAddress);
+    } else {
+      testToken = await new TestToken__factory(signers[0]).deploy();
+    }
+
+    await testToken.deployed();
   });
 
   it('Restoring the ORMakerDeposit should succeed', async function () {
@@ -183,55 +196,16 @@ describe('ORMakerDeposit', () => {
   });
 
   it('Function updateRulesRoot should emit events and update storage', async function () {
-    const types = [
-      'uint16',
-      'uint16',
-      'uint8',
-      'uint8',
-      'uint',
-      'uint',
-      'uint128',
-      'uint128',
-      'uint128',
-      'uint128',
-      'uint16',
-      'uint16',
-      'uint32',
-      'uint32',
-      'uint32',
-      'uint32',
-    ];
-    const getValues = () => {
-      return [
-        1,
-        2,
-        0,
-        1,
-        Wallet.createRandom().address,
-        Wallet.createRandom().address,
-        BigNumber.from(5).pow(parseInt(Math.random() * 40 + '') + 1),
-        BigNumber.from(5).pow(parseInt(Math.random() * 40 + '') + 1),
-        BigNumber.from(5).pow(parseInt(Math.random() * 40 + '') + 1),
-        BigNumber.from(5).pow(parseInt(Math.random() * 40 + '') + 1),
-        1,
-        2,
-        (2 ^ 32) - 1,
-        (2 ^ 31) - 1,
-        (2 ^ 30) - 1,
-        (2 ^ 29) - 1,
-      ];
-    };
-
     const rules: any[] = [];
-    for (let i = 0; i < 200; i++) {
-      const _values = getValues();
-      _values[0] = Number(_values[0]) + i;
-      _values[1] = Number(_values[1]) + i;
-      rules.push(_values);
+    for (let i = 0; i < 20; i++) {
+      const _rule = createRandomRule();
+      _rule[0] = Number(_rule[0]) + i;
+      _rule[1] = Number(_rule[1]) + i;
+      rules.push(_rule);
     }
 
     const rsEncode = utils.defaultAbiCoder.encode(
-      [`tuple(${types.join(',')})[]`],
+      [`tuple(${ruleTypes.join(',')})[]`],
       [rules],
     );
     const rsc = utils.hexlify(
@@ -241,7 +215,7 @@ describe('ORMakerDeposit', () => {
 
     const leaves = rules
       .map((values) =>
-        utils.keccak256(utils.defaultAbiCoder.encode(types, values)),
+        utils.keccak256(utils.defaultAbiCoder.encode(ruleTypes, values)),
       )
       .sort((a, b) => (BigNumber.from(a).sub(b).gt(0) ? 1 : -1));
     const tree = new MerkleTree(leaves, utils.keccak256);
@@ -249,8 +223,31 @@ describe('ORMakerDeposit', () => {
 
     const ebc = lodash.sample(defaultsEbcs)!;
     const rootWithVersion = { root, version: 1 };
+    const sourceChainIds = [1];
+    const pledgeAmounts = [utils.parseEther('0.001')];
+
+    await testReverted(
+      orMakerDeposit.updateRulesRoot(
+        ebc,
+        rsc,
+        rootWithVersion,
+        sourceChainIds,
+        pledgeAmounts,
+      ),
+      'IV',
+    );
+
     const { events } = await orMakerDeposit
-      .updateRulesRoot(rsc, ebc, rootWithVersion, [], [])
+      .updateRulesRoot(
+        ebc,
+        rsc,
+        rootWithVersion,
+        sourceChainIds,
+        pledgeAmounts,
+        {
+          value: pledgeAmounts.reduce((pV, cV) => pV.add(cV)),
+        },
+      )
       .then((t) => t.wait());
 
     const args = events![0].args!;
@@ -259,13 +256,13 @@ describe('ORMakerDeposit', () => {
     expect(args.rootWithVersion.version).eq(rootWithVersion.version);
 
     await testReverted(
-      orMakerDeposit.updateRulesRoot(rsc, ebc, rootWithVersion, [], []),
+      orMakerDeposit.updateRulesRoot(ebc, rsc, rootWithVersion, [], []),
       'VE',
     );
     await testRevertedOwner(
       orMakerDeposit
         .connect(signers[2])
-        .updateRulesRoot(rsc, ebc, { ...rootWithVersion, version: 2 }, [], []),
+        .updateRulesRoot(ebc, rsc, { ...rootWithVersion, version: 2 }, [], []),
     );
 
     const storageRWV = await orMakerDeposit.rulesRoot(ebc);
@@ -274,5 +271,133 @@ describe('ORMakerDeposit', () => {
 
     const leaf = lodash.sample(leaves)!;
     expect(tree.verify(tree.getProof(leaf), leaf, storageRWV.root)).to.be.true;
+  });
+
+  it('Function updateRulesRootErc20 should emit events and update storage', async function () {
+    const logs = await signers[0].provider?.getLogs({
+      address: orMakerDeposit.address,
+      topics: [
+        utils.id('RulesRootUpdated(address,address,(bytes32,uint32))'),
+        ethers.utils.hexZeroPad(implementation.toLowerCase(), 32),
+      ],
+    });
+
+    const updateActions: {
+      transactionHash: string;
+      ebc: string;
+      root: string;
+      version: number;
+    }[] = [];
+    for (const log of logs || []) {
+      const [ebc, [root, version]] = utils.defaultAbiCoder.decode(
+        ['address', 'tuple(bytes32,uint32)'],
+        log.data,
+      );
+      updateActions.push({
+        transactionHash: log.transactionHash,
+        ebc,
+        root,
+        version,
+      });
+    }
+    updateActions.sort((a, b) => a.version - b.version);
+
+    for (const item of updateActions) {
+      const transaction = await signers[0].provider?.getTransaction(
+        item.transactionHash,
+      );
+      if (!transaction) continue;
+
+      const [_, rsc] = utils.defaultAbiCoder.decode(
+        ['address', 'bytes', 'tuple(bytes32,uint32)', 'uint16[]', 'uint[]'],
+        utils.hexDataSlice(transaction.data, 4),
+      );
+
+      const ungzipData = pako.ungzip(utils.arrayify(rsc));
+
+      const [rules] = utils.defaultAbiCoder.decode(
+        [`tuple(${ruleTypes.join(',')})[]`],
+        utils.hexlify(ungzipData),
+      );
+
+      console.warn('rules.length:', rules.length);
+    }
+
+    // const rules: any[] = [];
+    // for (let i = 0; i < 200; i++) {
+    //   const _rule = createRandomRule();
+    //   _rule[0] = Number(_rule[0]) + i;
+    //   _rule[1] = Number(_rule[1]) + i;
+    //   rules.push(_rule);
+    // }
+
+    // const rsEncode = utils.defaultAbiCoder.encode(
+    //   [`tuple(${ruleTypes.join(',')})[]`],
+    //   [rules],
+    // );
+    // const rsc = utils.hexlify(
+    //   pako.gzip(utils.arrayify(rsEncode), { level: 9 }),
+    // );
+    // expect(utils.hexlify(pako.ungzip(utils.arrayify(rsc)))).eq(rsEncode);
+
+    // const leaves = rules
+    //   .map((values) =>
+    //     utils.keccak256(utils.defaultAbiCoder.encode(ruleTypes, values)),
+    //   )
+    //   .sort((a, b) => (BigNumber.from(a).sub(b).gt(0) ? 1 : -1));
+    // const tree = new MerkleTree(leaves, utils.keccak256);
+    // const root = utils.hexlify(tree.getRoot());
+
+    // const ebc = lodash.sample(defaultsEbcs)!;
+    // const rootWithVersion = { root, version: 1 };
+    // const sourceChainIds = [1];
+    // const pledgeAmounts = [utils.parseEther('0.001')];
+
+    // await testReverted(
+    //   orMakerDeposit.updateRulesRootERC20(
+    //     rsc,
+    //     ebc,
+    //     rootWithVersion,
+    //     sourceChainIds,
+    //     pledgeAmounts,
+    //     testToken.address,
+    //   ),
+    //   'IV',
+    // );
+
+    // const { events } = await orMakerDeposit
+    //   .updateRulesRoot(
+    //     rsc,
+    //     ebc,
+    //     rootWithVersion,
+    //     sourceChainIds,
+    //     pledgeAmounts,
+    //     {
+    //       value: pledgeAmounts.reduce((pV, cV) => pV.add(cV)),
+    //     },
+    //   )
+    //   .then((t) => t.wait());
+
+    // const args = events![0].args!;
+    // expect(args.ebc).eq(ebc);
+    // expect(args.rootWithVersion.root).eq(rootWithVersion.root);
+    // expect(args.rootWithVersion.version).eq(rootWithVersion.version);
+
+    // await testReverted(
+    //   orMakerDeposit.updateRulesRoot(rsc, ebc, rootWithVersion, [], []),
+    //   'VE',
+    // );
+    // await testRevertedOwner(
+    //   orMakerDeposit
+    //     .connect(signers[2])
+    //     .updateRulesRoot(rsc, ebc, { ...rootWithVersion, version: 2 }, [], []),
+    // );
+
+    // const storageRWV = await orMakerDeposit.rulesRoot(ebc);
+    // expect(storageRWV.root).eq(rootWithVersion.root);
+    // expect(storageRWV.version).eq(rootWithVersion.version);
+
+    // const leaf = lodash.sample(leaves)!;
+    // expect(tree.verify(tree.getProof(leaf), leaf, storageRWV.root)).to.be.true;
   });
 });

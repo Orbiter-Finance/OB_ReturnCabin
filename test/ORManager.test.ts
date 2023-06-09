@@ -24,7 +24,7 @@ describe('Test ORManager', () => {
     await orManager.deployed();
 
     // set environment variables
-    process.env['ORMANAGER_ADDRESS'] = orManager.address;
+    process.env['OR_MANAGER_ADDRESS'] = orManager.address;
 
     const owner = await orManager.owner();
     expect(owner).eq(signers[1].address);
