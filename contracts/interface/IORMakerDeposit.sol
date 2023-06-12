@@ -38,6 +38,8 @@ interface IORMakerDeposit {
 
     function updateResponseMakers(address[] calldata responseMakers_, uint[] calldata indexs) external;
 
+    function freezeAssets(address token) external view returns (uint);
+
     function deposit(address token, uint amount) external payable;
 
     function withdraw(address token, uint amount) external;

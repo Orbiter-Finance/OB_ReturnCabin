@@ -124,6 +124,10 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
         emit ResponseMakersUpdated(_mdcFactory.implementation(), _responseMakers);
     }
 
+    function freezeAssets(address token) external view returns (uint) {
+        return _freezeAssets[token];
+    }
+
     function deposit(address token, uint amount) external payable {
         // TODO: This method is useless if it does not need to throw an event
         // ETH received by default
