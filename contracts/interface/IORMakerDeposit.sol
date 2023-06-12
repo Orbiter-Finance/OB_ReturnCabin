@@ -38,6 +38,10 @@ interface IORMakerDeposit {
 
     function updateResponseMakers(address[] calldata responseMakers_, uint[] calldata indexs) external;
 
+    function deposit(address token, uint amount) external payable;
+
+    function withdraw(address token, uint amount) external;
+
     function rulesRoot(address ebc) external view returns (RuleLib.RootWithVersion memory);
 
     function updateRulesRoot(

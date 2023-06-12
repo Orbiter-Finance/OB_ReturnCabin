@@ -1,6 +1,6 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { assert, expect } from 'chai';
-import { BigNumberish, constants, utils } from 'ethers';
+import { BigNumber, BigNumberish, constants, utils } from 'ethers';
 import { ethers } from 'hardhat';
 import lodash from 'lodash';
 import {
@@ -197,6 +197,59 @@ describe('ORMakerDeposit', () => {
         .connect(signers[2])
         .updateResponseMakers(responseMakers, indexs),
     );
+  });
+
+  it('Function deposit should success', async function () {
+    const bETHBefore = await mdcOwner.provider?.getBalance(
+      orMakerDeposit.address,
+    );
+    const amountETH = utils.parseEther('1');
+    await orMakerDeposit
+      .deposit(constants.AddressZero, constants.Zero, { value: amountETH })
+      .then((t) => t.wait());
+    const bETHAfter = await mdcOwner.provider?.getBalance(
+      orMakerDeposit.address,
+    );
+    expect(bETHAfter?.sub(bETHBefore || 0)).eq(amountETH);
+
+    const bERC20Before = await testToken.balanceOf(orMakerDeposit.address);
+    const amountERC20 = utils.parseEther('0.5');
+    await testToken
+      .approve(orMakerDeposit.address, amountERC20)
+      .then((t) => t.wait());
+    await orMakerDeposit
+      .deposit(testToken.address, amountERC20)
+      .then((t) => t.wait());
+    const bERC20After = await testToken.balanceOf(orMakerDeposit.address);
+    expect(bERC20After.sub(bERC20Before)).eq(amountERC20);
+  });
+
+  it('Function withdraw should success', async function () {
+    const bETHBefore = await mdcOwner.provider?.getBalance(mdcOwner.address);
+    const amountETH = utils.parseEther('0.5');
+    const receipt = await orMakerDeposit
+      .withdraw(constants.AddressZero, amountETH)
+      .then((t) => t.wait());
+    const bETHAfter = await mdcOwner.provider?.getBalance(mdcOwner.address);
+    expect(
+      bETHAfter
+        ?.add(receipt.gasUsed.mul(receipt.effectiveGasPrice))
+        .sub(bETHBefore || 0),
+    ).eq(amountETH);
+
+    await testRevertedOwner(
+      orMakerDeposit
+        .connect(signers[2])
+        .withdraw(constants.AddressZero, amountETH),
+    );
+
+    const bERC20Before = await testToken.balanceOf(mdcOwner.address);
+    const amountERC20 = utils.parseEther('0.5');
+    await orMakerDeposit
+      .withdraw(testToken.address, amountERC20)
+      .then((t) => t.wait());
+    const bERC20After = await testToken.balanceOf(mdcOwner.address);
+    expect(bERC20After.sub(bERC20Before)).eq(amountERC20);
   });
 
   it('Function updateRulesRoot should emit events and update storage', async function () {

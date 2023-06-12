@@ -24,6 +24,7 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
     address[] private _responseMakers; // Response maker list, not just owner, to improve tps
     mapping(address => RuleLib.RootWithVersion) private _rulesRoots; // ebc => merkleRoot(rules), version
     mapping(address => mapping(bytes32 => uint)) private _pledgeBalances; // ebc => hash(sourceChainId, sourceToken) => pledgeBalance
+    mapping(address => uint) private _freezeAssets; // token(ETH: 0) => freezeAmount
 
     // solhint-disable-next-line no-empty-blocks
     receive() external payable {}
@@ -121,6 +122,29 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
             }
         }
         emit ResponseMakersUpdated(_mdcFactory.implementation(), _responseMakers);
+    }
+
+    function deposit(address token, uint amount) external payable {
+        // TODO: This method is useless if it does not need to throw an event
+        // ETH received by default
+        // ERC20 calls safeTransferFrom, can also call `transfer` send assets to address(this)
+        if (token != address(0)) {
+            IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+        }
+    }
+
+    function withdraw(address token, uint amount) external onlyOwner {
+        if (token == address(0)) {
+            require(address(this).balance - _freezeAssets[token] >= amount, "ETH: IF");
+
+            (bool sent, ) = payable(msg.sender).call{value: amount}("");
+            require(sent, "ETH: SE");
+        } else {
+            uint balance = IERC20(token).balanceOf(address(this));
+            require(balance - _freezeAssets[token] >= amount, "ERC20: IF");
+
+            IERC20(token).safeTransfer(msg.sender, amount);
+        }
     }
 
     function rulesRoot(address ebc) external view returns (RuleLib.RootWithVersion memory) {
