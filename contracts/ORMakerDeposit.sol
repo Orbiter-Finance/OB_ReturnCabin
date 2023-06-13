@@ -13,6 +13,9 @@ import {Multicall} from "./Multicall.sol";
 import {ArrayLib} from "./library/ArrayLib.sol";
 import {RuleLib} from "./library/RuleLib.sol";
 
+// TODO: for dev
+// import "hardhat/console.sol";
+
 contract ORMakerDeposit is IORMakerDeposit, Multicall {
     using ArrayLib for address[];
     using SafeERC20 for IERC20;
@@ -25,6 +28,7 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
     mapping(address => RuleLib.RootWithVersion) private _rulesRoots; // ebc => merkleRoot(rules), version
     mapping(address => mapping(bytes32 => uint)) private _pledgeBalances; // ebc => hash(sourceChainId, sourceToken) => pledgeBalance
     mapping(address => uint) private _freezeAssets; // token(ETH: 0) => freezeAmount
+    mapping(bytes32 => ChallengeInfo) private _challenges; // hash(sourceChainId, transactionHash) => ChallengeInfo
 
     // solhint-disable-next-line no-empty-blocks
     receive() external payable {}
@@ -172,10 +176,14 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
         uint totalAmount;
         for (uint i = 0; i < sourceChainIds.length; ) {
             bytes32 k = keccak256(abi.encodePacked(sourceChainIds[i], address(0)));
-            _pledgeBalances[ebc][k] += pledgeAmounts[i];
+
+            if (pledgeAmounts[i] > _pledgeBalances[ebc][k]) {
+                totalAmount += pledgeAmounts[i] - _pledgeBalances[ebc][k];
+            }
+
+            _pledgeBalances[ebc][k] = pledgeAmounts[i];
 
             unchecked {
-                totalAmount += pledgeAmounts[i];
                 i++;
             }
         }
@@ -199,10 +207,11 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
         require(sourceChainIds.length == pledgeAmounts.length, "SPL");
 
         for (uint i = 0; i < sourceChainIds.length; ) {
-            IERC20(token).safeTransferFrom(msg.sender, address(this), pledgeAmounts[i]);
-
             bytes32 k = keccak256(abi.encodePacked(sourceChainIds[i], token));
-            _pledgeBalances[ebc][k] += pledgeAmounts[i];
+
+            if (pledgeAmounts[i] > _pledgeBalances[ebc][k]) {
+                IERC20(token).safeTransferFrom(msg.sender, address(this), pledgeAmounts[i] - _pledgeBalances[ebc][k]);
+            }
 
             unchecked {
                 i++;
@@ -212,7 +221,7 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
 
     function _updateRulesRoot(address ebc, RuleLib.RootWithVersion calldata rootWithVersion) private {
         IORManager manager = IORManager(_mdcFactory.manager());
-        require(manager.ebcIncludes(ebc), "EI"); // Has invalid ebc
+        require(manager.ebcIncludes(ebc), "EI"); // Invalid ebc
 
         require(rootWithVersion.root != bytes32(0), "RZ");
         unchecked {
@@ -223,6 +232,37 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
 
         emit RulesRootUpdated(_mdcFactory.implementation(), ebc, rootWithVersion);
     }
+
+    function challenge(
+        uint16 sourceChainId,
+        bytes32 sourceTxHash,
+        address freezeToken,
+        uint freezeAmount
+    ) external payable {
+        bytes32 k = keccak256(abi.encodePacked(sourceChainId, sourceTxHash));
+        require(_challenges[k].time1 == 0, "CE");
+
+        if (freezeToken == address(0)) {
+            require(freezeAmount == msg.value, "IF");
+        } else {
+            IERC20(freezeToken).safeTransferFrom(msg.sender, address(this), freezeAmount);
+        }
+
+        // TODO: Currently it is assumed that the pledged assets of the challenger and the owner are the same
+
+        // Freeze mdc's owner assets
+        _freezeAssets[freezeToken] += freezeAmount;
+
+        _challenges[k] = ChallengeInfo(freezeToken, freezeAmount, 0, uint64(block.timestamp), 0, 0);
+
+        // TODO: emit event
+    }
+
+    function checkChallenge(bytes32 challengeId) external {}
+
+    function verifyChallengeSource() external {}
+
+    function verifyChallengeDest() external {}
 
     // using EnumerableMap for EnumerableMap.AddressToUintMap;
     // using EnumerableMap for EnumerableMap.Bytes32ToUintMap;

@@ -5,6 +5,15 @@ import "../library/Operations.sol";
 import {RuleLib} from "../library/RuleLib.sol";
 
 interface IORMakerDeposit {
+    struct ChallengeInfo {
+        address freezeToken;
+        uint freezeAmount0; // Owner's freeze amount
+        uint freezeAmount1; // Challenger's free amount
+        uint64 time1; // Time of challenge
+        uint64 time2; // Time of verifyChallengeSource
+        uint64 time3; // Time of verifyChallengeDest
+    }
+
     event ColumnArrayUpdated(
         address indexed impl,
         bytes32 columnArrayHash,

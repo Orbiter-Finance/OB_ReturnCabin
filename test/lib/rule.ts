@@ -25,22 +25,22 @@ export const ruleTypes = [
 
 export function createRandomRule() {
   return [
-    1, // chain0
-    2, // chain1
-    0, // chain0's status
-    1, // chain1's status
-    Wallet.createRandom().address, // chain0's token
-    Wallet.createRandom().address, // chain1's token
-    BigNumber.from(5).pow(parseInt(Math.random() * 40 + '') + 1), // minPrice
-    BigNumber.from(5).pow(parseInt(Math.random() * 40 + '') + 1), // maxPrice
-    BigNumber.from(5).pow(parseInt(Math.random() * 40 + '') + 1), // chain0's withholdingFee
-    BigNumber.from(5).pow(parseInt(Math.random() * 40 + '') + 1), // chain1's withholdingFee
-    1, // chain0's tradeFee
-    2, // chain1's tradeFee
-    (2 ^ 32) - 1, // chain0's response time
-    (2 ^ 31) - 1, // chain1's response time
-    (2 ^ 30) - 1, // chain0's compensation ratio
-    (2 ^ 29) - 1, // chain1's compensation ratio
+    1, // uint16 chain0
+    2, // uint16 chain1
+    0, // uint8 chain0's status
+    1, // uint8 chain1's status
+    Wallet.createRandom().address, // uint chain0's token
+    Wallet.createRandom().address, // uint chain1's token
+    BigNumber.from(5).pow(parseInt(Math.random() * 40 + '') + 1), // uint128 minPrice
+    BigNumber.from(5).pow(parseInt(Math.random() * 40 + '') + 1), // uint128 maxPrice
+    BigNumber.from(5).pow(parseInt(Math.random() * 40 + '') + 1), // uint128 chain0's withholdingFee
+    BigNumber.from(5).pow(parseInt(Math.random() * 40 + '') + 1), // uint128 chain1's withholdingFee
+    1, // uint16 chain0's tradeFee
+    2, // uint16 chain1's tradeFee
+    (2 ^ 32) - 1, // uint32 chain0's response time
+    (2 ^ 31) - 1, // uint32 chain1's response time
+    (2 ^ 30) - 1, // uint32 chain0's compensation ratio
+    (2 ^ 29) - 1, // uint32 chain1's compensation ratio
   ];
 }
 
