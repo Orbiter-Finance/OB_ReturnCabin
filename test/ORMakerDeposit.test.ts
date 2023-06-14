@@ -1,6 +1,6 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { assert, expect } from 'chai';
-import { BigNumber, BigNumberish, constants, utils } from 'ethers';
+import { BigNumber, BigNumberish, Wallet, constants, utils } from 'ethers';
 import { ethers } from 'hardhat';
 import lodash from 'lodash';
 import {
@@ -417,5 +417,47 @@ describe('ORMakerDeposit', () => {
           testToken.address,
         ),
     );
+  });
+
+  it('Function challenge should success', async function () {
+    const sourceChainId = 10;
+    const sourceTxHash = utils.keccak256('0x01');
+    const freezeToken = constants.AddressZero;
+    const freezeAmount = utils.parseEther('0.001');
+
+    const tx = await orMakerDeposit.challenge(
+      sourceChainId,
+      sourceTxHash,
+      freezeToken,
+      freezeAmount,
+      { value: freezeAmount },
+    );
+
+    console.warn('tx.hash:', tx.hash);
+    const e = utils.RLP.encode([
+      BigNumber.from(tx.chainId).toHexString(),
+      BigNumber.from(tx.nonce).toHexString(),
+      BigNumber.from(tx.maxPriorityFeePerGas).toHexString(),
+      BigNumber.from(tx.maxFeePerGas).toHexString(),
+      BigNumber.from(tx.gasLimit).toHexString(),
+      BigNumber.from(tx.to).toHexString(),
+      BigNumber.from(tx.value).toHexString(),
+      BigNumber.from(tx.data).toHexString(),
+      tx.accessList,
+      BigNumber.from(tx.v).toHexString(),
+      BigNumber.from(tx.r).toHexString(),
+      BigNumber.from(tx.s).toHexString(),
+    ]);
+    console.warn(
+      'utils.keccak256(e):',
+      utils.keccak256(utils.hexConcat(['0x02', e])),
+    );
+
+    const receipt = await tx.wait();
+    const block = await mdcOwner.provider?.getBlockWithTransactions(
+      receipt.blockHash,
+    );
+
+    console.warn('block:', JSON.stringify(block));
   });
 });
