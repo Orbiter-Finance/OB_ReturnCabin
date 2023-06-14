@@ -37,19 +37,19 @@ library OperationsLib {
         uint256 maxBits;
     }
     struct Transaction {
-        address from;
-        address to;
-        address tokenAddress;
-        bytes32 txHash;
-        bytes32 blockHash;
-        uint256 blockNumber;
         uint256 chainId;
         uint256 nonce;
-        uint256 gas;
-        uint256 gasPrice;
+        uint256 maxPriorityFeePerGas;
+        uint256 maxFeePerGas;
+        uint256 gasLimit;
+        address from;
+        address to;
         uint256 value;
-        uint256 transactionIndex;
-        uint256 timeStamp;
+        bytes input;
+        bytes accessList;
+        bytes v;
+        bytes r;
+        bytes s;
     }
     struct PairStruct {
         uint256 sourceChain;
