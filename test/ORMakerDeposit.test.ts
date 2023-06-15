@@ -1,7 +1,8 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { assert, expect } from 'chai';
-import { BigNumber, BigNumberish, Wallet, constants, utils } from 'ethers';
-import { ethers } from 'hardhat';
+import { BigNumber, BigNumberish, constants, utils } from 'ethers';
+import { ethers, network } from 'hardhat';
+
 import lodash from 'lodash';
 import {
   ORMDCFactory,
@@ -21,6 +22,7 @@ import {
   gzipRules,
 } from './lib/rule';
 import { testReverted, testRevertedOwner } from './utils.test';
+import MerkleTree from 'merkletreejs';
 
 describe('ORMakerDeposit', () => {
   let signers: SignerWithAddress[];
@@ -453,11 +455,20 @@ describe('ORMakerDeposit', () => {
       utils.keccak256(utils.hexConcat(['0x02', e])),
     );
 
-    const receipt = await tx.wait();
-    const block = await mdcOwner.provider?.getBlockWithTransactions(
-      receipt.blockHash,
-    );
+    const h = utils.keccak256(tx.hash);
+    console.warn('h:', h);
 
+    const leaves = [tx.hash];
+    const tree = new MerkleTree(leaves, utils.keccak256, { hashLeaves: true });
+    console.warn('tree.root:', tree.getHexRoot());
+
+    const receipt = await tx.wait();
+
+    const block = await network.provider.send('eth_getBlockByNumber', [
+      utils.hexlify(receipt.blockNumber),
+      false,
+    ]);
     console.warn('block:', JSON.stringify(block));
+    console.warn('transactionsRoot:', block.transactionsRoot);
   });
 });
