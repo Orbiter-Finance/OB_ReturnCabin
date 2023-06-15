@@ -5,6 +5,7 @@ import "../library/Operation.sol";
 
 interface IORProventhZkSync {
     function startValidate(
+        bytes calldata proof,
         bytes calldata srcTx,
         uint256 seqNum,
         bytes32[] calldata storageBlockHash,
