@@ -4,6 +4,7 @@ import { BigNumber, BigNumberish, constants, utils } from 'ethers';
 import { ethers, network } from 'hardhat';
 
 import lodash from 'lodash';
+import { BaseTrie } from 'merkle-patricia-tree';
 import {
   ORMDCFactory,
   ORMDCFactory__factory,
@@ -22,7 +23,6 @@ import {
   gzipRules,
 } from './lib/rule';
 import { testReverted, testRevertedOwner } from './utils.test';
-import MerkleTree from 'merkletreejs';
 
 describe('ORMakerDeposit', () => {
   let signers: SignerWithAddress[];
@@ -436,6 +436,11 @@ describe('ORMakerDeposit', () => {
     );
 
     console.warn('tx.hash:', tx.hash);
+    // console.warn(
+    //   "Buffer.from(tx.chainId + ''):",
+    //   Buffer.from(BigNumber.from(tx.chainId).toHexString().slice(2), 'hex'),
+    // );
+
     const e = utils.RLP.encode([
       BigNumber.from(tx.chainId).toHexString(),
       BigNumber.from(tx.nonce).toHexString(),
@@ -446,7 +451,7 @@ describe('ORMakerDeposit', () => {
       BigNumber.from(tx.value).toHexString(),
       BigNumber.from(tx.data).toHexString(),
       tx.accessList,
-      BigNumber.from(tx.v).toHexString(),
+      tx.v == 1 ? '0x01' : '0x',
       BigNumber.from(tx.r).toHexString(),
       BigNumber.from(tx.s).toHexString(),
     ]);
@@ -455,20 +460,60 @@ describe('ORMakerDeposit', () => {
       utils.keccak256(utils.hexConcat(['0x02', e])),
     );
 
-    const h = utils.keccak256(tx.hash);
-    console.warn('h:', h);
+    const tree = new BaseTrie();
+    const key = Buffer.from(
+      utils.arrayify(utils.RLP.encode(utils.arrayify('0x'))),
+    );
+    console.warn('key:', key);
+    const value = Buffer.from(utils.arrayify(utils.hexConcat(['0x02', e])));
+    console.warn('value:', value);
 
-    const leaves = [tx.hash];
-    const tree = new MerkleTree(leaves, utils.keccak256, { hashLeaves: true });
-    console.warn('tree.root:', tree.getHexRoot());
+    await tree.put(key, value);
+
+    const proof = await BaseTrie.createProof(tree, key);
+    console.warn('proof:', proof);
+
+    console.warn('root:', utils.hexlify(tree.root));
 
     const receipt = await tx.wait();
 
+    console.warn('receipt.blockNumber:', utils.hexlify(receipt.blockNumber));
+
     const block = await network.provider.send('eth_getBlockByNumber', [
-      utils.hexlify(receipt.blockNumber),
+      'latest',
       false,
     ]);
     console.warn('block:', JSON.stringify(block));
+    console.warn('block.hash:', block.hash);
     console.warn('transactionsRoot:', block.transactionsRoot);
+
+    const be = utils.RLP.encode([
+      block.parentHash,
+      block.sha3Uncles,
+      block.miner,
+      block.stateRoot,
+      block.transactionsRoot,
+      block.receiptsRoot,
+      block.logsBloom,
+      // BigNumber.from(block.difficulty).toHexString(),
+      '0x',
+      block.number,
+      BigNumber.from(block.gasLimit).toHexString(),
+      // Buffer.from(block.gasLimit.slice(2), 'hex'),
+      BigNumber.from(block.gasUsed).toHexString(),
+      BigNumber.from(block.timestamp).toHexString(),
+      block.extraData,
+      block.mixHash,
+      block.nonce,
+      BigNumber.from(block.baseFeePerGas).toHexString(),
+    ]);
+    console.warn('block.gasLimit:', block.gasLimit);
+    console.warn(
+      `Buffer.from(block.gasLimit.slice(2), 'hex'):`,
+      Buffer.from(block.gasLimit.slice(2), 'hex'),
+    );
+
+    const blockHash = utils.keccak256(be);
+    console.warn('blockHash:', blockHash);
   });
 });
