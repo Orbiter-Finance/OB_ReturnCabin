@@ -9,6 +9,7 @@ import { expect } from 'chai';
 
 describe('BlockVerify', () => {
   let signers: SignerWithAddress[];
+  let testToken: TestToken;
 
   before(async function () {
     signers = await ethers.getSigners();
@@ -43,8 +44,8 @@ describe('BlockVerify', () => {
     // ]);
     // console.warn('block:', block);
 
-    // testToken = await new TestToken__factory(signers[0]).deploy();
-    // await testToken.deployed();
+    testToken = await new TestToken__factory(signers[0]).deploy();
+    await testToken.deployed();
 
     // console.warn('testToken.address:', testToken.address);
 
@@ -126,11 +127,8 @@ describe('BlockVerify', () => {
   });
 
   it('ReceiptsRoot should be calculated correctly', async function () {
-    const receipt = await signers[0]
-      .sendTransaction({
-        to: signers[1].address,
-        value: '100',
-      })
+    const receipt = await testToken
+      .transfer(signers[1].address, '100')
       .then((t) => t.wait());
 
     const block = await network.provider.send('eth_getBlockByHash', [
