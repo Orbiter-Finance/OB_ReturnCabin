@@ -1,5 +1,6 @@
 import '@nomicfoundation/hardhat-toolbox';
 import { config as dotenvConfig } from 'dotenv';
+import { utils } from 'ethers';
 import type { HardhatUserConfig } from 'hardhat/config';
 import type { NetworkUserConfig } from 'hardhat/types';
 import { resolve } from 'path';
@@ -78,8 +79,11 @@ const config: HardhatUserConfig = {
   },
   networks: {
     hardhat: {
+      hardfork: 'shanghai',
       accounts: {
         mnemonic,
+        count: 10,
+        accountsBalance: utils.parseEther('100') + '',
       },
       chainId: chainIds.hardhat,
     },

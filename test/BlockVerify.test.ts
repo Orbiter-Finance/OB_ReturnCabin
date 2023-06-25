@@ -22,42 +22,47 @@ describe('BlockVerify', () => {
     // await sendTx.wait();
     // console.warn('sendTx.hash:', sendTx.hash);
 
-    const tree = new BaseTrie();
-    for (const signer of signers) {
-      // const key = Buffer.from(utils.arrayify(utils.RLP.encode(signer.address)));
-      const key = Buffer.from(utils.arrayify(signer.address));
-      const nonce = await signer.getTransactionCount();
-      const balance = await signer.getBalance();
+    // const _node = (network.provider as any)._wrapped._wrapped._wrapped._node;
+    // const _vm = _node._vm;
+    // console.warn('_vm:', _vm);
+    // console.warn(
+    //   '_vm._common._chainParams.genesis:',
+    //   _vm._common._chainParams.genesis,
+    // );
 
-      const accountEncode = utils.RLP.encode([
-        utils.stripZeros(BigNumber.from(nonce).toHexString()),
-        balance.toHexString(),
-        new BaseTrie().root,
-        utils.keccak256('0x'),
-      ]);
+    // const tree = new BaseTrie();
+    // console.warn('signers.length:', signers.length);
 
-      const value = Buffer.from(utils.arrayify(utils.keccak256(accountEncode)));
+    // for (const signer of signers) {
+    //   // const key = Buffer.from(utils.arrayify(utils.RLP.encode(signer.address)));
+    //   const key = Buffer.from(utils.arrayify(signer.address));
+    //   const nonce = await signer.getTransactionCount();
+    //   const balance = await signer.getBalance();
 
-      await tree.put(key, value);
-    }
-    console.warn('tree.root:', utils.hexlify(tree.root));
+    //   console.warn('signer.address:', signer.address);
 
-    const block = await network.provider.send('eth_getBlockByNumber', [
-      'latest',
-      true,
-    ]);
-    console.warn('block:', block);
+    //   const accountEncode = utils.RLP.encode([
+    //     utils.stripZeros(BigNumber.from(nonce).toHexString()),
+    //     balance.toHexString(),
+    //     new BaseTrie().root,
+    //     utils.keccak256('0x'),
+    //   ]);
 
-    testToken = await new TestToken__factory(signers[0]).deploy();
-    await testToken.deployed();
+    //   const value = Buffer.from(utils.arrayify(accountEncode));
 
-    // console.warn('testToken.address:', testToken.address);
+    //   await tree.put(key, value);
+    // }
+    // console.warn('tree.root:', utils.hexlify(tree.root));
 
-    // const block2 = await network.provider.send('eth_getBlockByNumber', [
+    // const block = await network.provider.send('eth_getBlockByNumber', [
     //   'latest',
     //   true,
     // ]);
-    // console.warn('block2:', block2);
+    // console.warn('block:', block);
+
+    testToken = await new TestToken__factory(signers[0]).deploy();
+    await testToken.deployed();
+    console.warn('testToken.address:', testToken.address);
   });
 
   it('TransactionsRoot should be calculated correctly', async function () {
@@ -203,6 +208,7 @@ describe('BlockVerify', () => {
       'mixHash',
       'nonce',
       'baseFeePerGas',
+      'withdrawalsRoot',
     ];
 
     const blockEncode = utils.RLP.encode(
