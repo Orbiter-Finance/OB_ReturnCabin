@@ -1,14 +1,14 @@
 {
-    "singleQuote": true,
-    "trailingComma": "all",
-    "overrides": [
-      {
-        "files": "*.sol",
-        "options": {
-          "singleQuote": false,
-          "printWidth": 120,
-          "explicitTypes": "always"
-        }
+  "singleQuote": true,
+  "trailingComma": "all",
+  "overrides": [
+    {
+      "files": "*.sol",
+      "options": {
+        "singleQuote": false,
+        "printWidth": 120,
+        "explicitTypes": "always"
       }
-    ]
-  }
+    }
+  ]
+}
