@@ -24,49 +24,25 @@ async function getTestTokenStroageRoot(
 
   const tree = new BaseTrie();
 
+  const treePut = async (storageKey: string) => {
+    const storageValue = await provider.getStorageAt(address, storageKey);
+
+    const key = Buffer.from(arrayify(keccak256(storageKey)));
+    const value = Buffer.from(arrayify(RLP.encode(stripZeros(storageValue))));
+
+    await tree.put(key, value);
+  };
+
   for (const holder of holders) {
     const storageKey = keccak256(
       hexConcat([hexZeroPad(holder, 32), hexZeroPad('0x00', 32)]),
     );
-    const storageValue = await provider.getStorageAt(address, storageKey);
-
-    const key = Buffer.from(arrayify(keccak256(storageKey)));
-    const value = Buffer.from(arrayify(RLP.encode(stripZeros(storageValue))));
-
-    await tree.put(key, value);
+    await treePut(storageKey);
   }
 
-  {
-    const storageKey = '0x01';
-    const storageValue = await provider.getStorageAt(address, storageKey);
-    console.warn('storageValue1:', storageValue);
-    const key = Buffer.from(arrayify(keccak256(storageKey)));
-    const value = Buffer.from(arrayify(RLP.encode(stripZeros(storageValue))));
-    await tree.put(key, value);
-  }
-
-  {
-    const storageKey = '0x02';
-    const storageValue = await provider.getStorageAt(address, storageKey);
-    console.warn('storageValue1:', storageValue);
-    const key = Buffer.from(arrayify(keccak256(storageKey)));
-    const value = Buffer.from(arrayify(RLP.encode(stripZeros(storageValue))));
-    await tree.put(key, value);
-  }
-
-  // const storageKey3 = '0x03';
-  // const storageValue3 = await provider.getStorageAt(address, storageKey3);
-  // const key3 = Buffer.from(arrayify(keccak256(storageKey3)));
-  // const value3 = Buffer.from(arrayify(RLP.encode(stripZeros(storageValue3))));
-  // await tree.put(key3, value3);
-
-  // const storageKey4 = '0x04';
-  // const storageValue4 = await provider.getStorageAt(address, storageKey4);
-  // const key4 = Buffer.from(arrayify(keccak256(storageKey4)));
-  // const value4 = Buffer.from(arrayify(RLP.encode(stripZeros(storageValue4))));
-  // await tree.put(key4, value4);
-
-  console.warn('erc20 stroage root:', hexlify(tree.root));
+  await treePut(hexZeroPad('0x02', 32));
+  await treePut(hexZeroPad('0x03', 32));
+  await treePut(hexZeroPad('0x04', 32));
 
   return hexlify(tree.root);
 }
@@ -79,6 +55,12 @@ describe('BlockVerify', () => {
   before(async function () {
     signers = await ethers.getSigners();
 
+    testToken = await new TestToken__factory(signers[0]).deploy();
+    await testToken.deployed();
+    console.warn('testToken.address:', testToken.address);
+  });
+
+  it('StateRoot should be calculated correctly', async function () {
     const tree = new BaseTrie();
 
     for (const signer of signers) {
@@ -113,10 +95,6 @@ describe('BlockVerify', () => {
       await tree.put(key, value);
     }
 
-    testToken = await new TestToken__factory(signers[0]).deploy();
-    await testToken.deployed();
-    console.warn('testToken.address:', testToken.address);
-
     const code = await signers[0].provider?.getCode(testToken.address);
     const testTokenStroageRoot = await getTestTokenStroageRoot(testToken, [
       signers[0].address,
@@ -132,44 +110,39 @@ describe('BlockVerify', () => {
     await tree.put(key, value);
 
     {
-      const key1 = Buffer.from(arrayify(keccak256(signers[0].address)));
-      const nonce1 = await signers[0].getTransactionCount();
-      const balance1 = await signers[0].getBalance();
-      const accountEncode1 = RLP.encode([
-        stripZeros(BigNumber.from(nonce1).toHexString()),
-        balance1.toHexString(),
+      const key = Buffer.from(arrayify(keccak256(signers[0].address)));
+      const nonce = await signers[0].getTransactionCount();
+      const balance = await signers[0].getBalance();
+      const accountEncode = RLP.encode([
+        stripZeros(BigNumber.from(nonce).toHexString()),
+        balance.toHexString(),
         new BaseTrie().root,
         keccak256('0x'),
       ]);
-      const value1 = Buffer.from(arrayify(accountEncode1));
-      await tree.put(key1, value1);
+      const value = Buffer.from(arrayify(accountEncode));
+      await tree.put(key, value);
     }
 
     const block = await network.provider.send('eth_getBlockByNumber', [
       'latest',
-      true,
+      false,
     ]);
-    console.warn('block.stateRoot:', block.stateRoot);
 
     {
-      const key2 = Buffer.from(arrayify(keccak256(block.miner)));
-      const nonce2 = await signers[0].provider?.getTransactionCount(
-        block.miner,
-      );
-      const balance2 = await signers[0].provider?.getBalance(block.miner);
-      const accountEncode2 = RLP.encode([
-        stripZeros(BigNumber.from(nonce2).toHexString()),
-        balance2?.toHexString() || '0x',
+      const key = Buffer.from(arrayify(keccak256(block.miner)));
+      const nonce = await signers[0].provider?.getTransactionCount(block.miner);
+      const balance = await signers[0].provider?.getBalance(block.miner);
+      const minerEncode = RLP.encode([
+        stripZeros(BigNumber.from(nonce).toHexString()),
+        balance?.toHexString() || '0x',
         new BaseTrie().root,
         keccak256('0x'),
       ]);
-      const value2 = Buffer.from(arrayify(accountEncode2));
-      await tree.put(key2, value2);
+      const value = Buffer.from(arrayify(minerEncode));
+      await tree.put(key, value);
     }
 
-    console.warn('root:', hexlify(tree.root));
-
-    process.exit(0);
+    expect(block.stateRoot).eq(hexlify(tree.root));
   });
 
   it('TransactionsRoot should be calculated correctly', async function () {
