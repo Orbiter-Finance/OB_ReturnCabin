@@ -240,7 +240,7 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
         uint freezeAmount
     ) external payable {
         bytes32 k = keccak256(abi.encodePacked(sourceChainId, sourceTxHash));
-        require(_challenges[k].time1 == 0, "CE");
+        require(_challenges[k].challengeTime == 0, "CE");
 
         if (freezeToken == address(0)) {
             require(freezeAmount == msg.value, "IF");
@@ -258,7 +258,9 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
         // TODO: emit event
     }
 
-    function checkChallenge(bytes32 challengeId) external {}
+    function checkChallenge(bytes32 challengeId) external {
+        // TODO: state machine
+    }
 
     function verifyChallengeSource() external {}
 

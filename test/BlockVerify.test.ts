@@ -1,5 +1,4 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { ethers, network } from 'hardhat';
 import { expect } from 'chai';
 import { BigNumber } from 'ethers';
 import {
@@ -12,6 +11,7 @@ import {
   stripZeros,
   zeroPad,
 } from 'ethers/lib/utils';
+import { ethers, network } from 'hardhat';
 import { BaseTrie } from 'merkle-patricia-tree';
 import { TestToken, TestToken__factory } from '../typechain-types';
 
@@ -100,7 +100,7 @@ describe('BlockVerify', () => {
       signers[0].address,
     ]);
     const testTokenAccount = RLP.encode([
-      '0x01',
+      '0x01', // The nonce of the contract is always 0x01
       '0x',
       testTokenStroageRoot,
       keccak256(code || '0x'),
@@ -109,6 +109,7 @@ describe('BlockVerify', () => {
     const value = Buffer.from(arrayify(testTokenAccount));
     await tree.put(key, value);
 
+    // Sender account changed
     {
       const key = Buffer.from(arrayify(keccak256(signers[0].address)));
       const nonce = await signers[0].getTransactionCount();
@@ -128,10 +129,12 @@ describe('BlockVerify', () => {
       false,
     ]);
 
+    // Miner account changed
     {
       const key = Buffer.from(arrayify(keccak256(block.miner)));
       const nonce = await signers[0].provider?.getTransactionCount(block.miner);
       const balance = await signers[0].provider?.getBalance(block.miner);
+
       const minerEncode = RLP.encode([
         stripZeros(BigNumber.from(nonce).toHexString()),
         balance?.toHexString() || '0x',

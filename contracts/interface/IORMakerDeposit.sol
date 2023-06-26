@@ -9,9 +9,9 @@ interface IORMakerDeposit {
         address freezeToken;
         uint freezeAmount0; // Owner's freeze amount
         uint freezeAmount1; // Challenger's free amount
-        uint64 time1; // Time of challenge
-        uint64 time2; // Time of verifyChallengeSource
-        uint64 time3; // Time of verifyChallengeDest
+        uint64 challengeTime; // Time of challenge
+        uint64 verifyTime0; // Time of verifyChallengeSource
+        uint64 verifyTime1; // Time of verifyChallengeDest
     }
 
     event ColumnArrayUpdated(
