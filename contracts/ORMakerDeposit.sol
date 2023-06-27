@@ -262,9 +262,16 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
         // TODO: state machine
     }
 
-    function verifyChallengeSource() external {}
+    function verifyChallengeSource(
+        uint16 chainId,
+        bytes32 txHash,
+        bytes32 blockHashL1,
+        bytes calldata zkProof,
+        uint[] calldata,
+        bytes[] calldata slots
+    ) external {}
 
-    function verifyChallengeDest() external {}
+    function verifyChallengeDest(bytes32 challengeId, uint16 destChainId, bytes32 destTxHash) external {}
 
     // using EnumerableMap for EnumerableMap.AddressToUintMap;
     // using EnumerableMap for EnumerableMap.Bytes32ToUintMap;
