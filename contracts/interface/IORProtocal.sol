@@ -7,27 +7,26 @@ interface IORProtocal {
     event ChangeChallengePledgedAmount(uint256 value);
     event ChangePledgeAmountSafeRate(uint256 value);
 
-    function calculateCompensation(address token, uint256 value)
-        external
-        view
-        returns (uint256 baseValue, uint256 additiveValue);
+    function calculateCompensation(
+        address token,
+        uint256 value
+    ) external view returns (uint256 baseValue, uint256 additiveValue);
 
-    function checkMakerChallenge(OperationsLib.Transaction memory _userTx, OperationsLib.Transaction memory _makerTx)
-        external
-        view
-        returns (bool);
+    function checkMakerChallenge(
+        OperationsLib.Transaction memory _userTx,
+        OperationsLib.Transaction memory _makerTx
+    ) external view returns (bool);
 
     function checkUserChallenge(uint256 value) external view returns (bool);
-
 
     function getPledgedAmount(uint256 chainId, uint256 maxPrice) external view returns (uint256 value);
 
     // function getManager() external view returns (address);
 
-    function getPledgeAmount(uint256 batchLimit, uint256 maxPrice)
-        external
-        view
-        returns (uint256 baseValue, uint256 additiveValue);
+    function getPledgeAmount(
+        uint256 batchLimit,
+        uint256 maxPrice
+    ) external view returns (uint256 baseValue, uint256 additiveValue);
 
     function getResponseAmount(OperationsLib.Transaction memory tx) external view returns (uint256);
 

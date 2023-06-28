@@ -10,8 +10,9 @@ interface IORMakerDeposit {
         uint freezeAmount0; // Owner's freeze amount
         uint freezeAmount1; // Challenger's free amount
         uint64 challengeTime; // Time of challenge
-        uint64 verifyTime0; // Time of verifyChallengeSource
-        uint64 verifyTime1; // Time of verifyChallengeDest
+        uint64 verifiedTime0; // Time of verifyChallengeSource. Greater than 0 means verification passed
+        uint64 verifiedTime1; // Time of verifyChallengeDest. Greater than 0 means verification passed
+        bytes32 verifiedDataHash0; // Data's hash of verifyChallengeSource
     }
 
     event ColumnArrayUpdated(

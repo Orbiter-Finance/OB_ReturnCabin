@@ -6,17 +6,16 @@ import "./interface/IORManager.sol";
 import "./interface/IORProtocal.sol";
 import "./interface/IORProventh.sol";
 import "./interface/IORMDCFactory.sol";
-import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {Multicall} from "./Multicall.sol";
 import {ArrayLib} from "./library/ArrayLib.sol";
 import {RuleLib} from "./library/RuleLib.sol";
+import {IORChallengeSpv} from "./interface/IORChallengeSpv.sol";
 
 // TODO: for dev
 // import "hardhat/console.sol";
 
-contract ORMakerDeposit is IORMakerDeposit, Multicall {
+contract ORMakerDeposit is IORMakerDeposit {
     using ArrayLib for address[];
     using SafeERC20 for IERC20;
 
@@ -253,7 +252,7 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
         // Freeze mdc's owner assets
         _freezeAssets[freezeToken] += freezeAmount;
 
-        _challenges[k] = ChallengeInfo(freezeToken, freezeAmount, 0, uint64(block.timestamp), 0, 0);
+        _challenges[k] = ChallengeInfo(freezeToken, freezeAmount, 0, uint64(block.timestamp), 0, 0, 0);
 
         // TODO: emit event
     }
@@ -263,15 +262,56 @@ contract ORMakerDeposit is IORMakerDeposit, Multicall {
     }
 
     function verifyChallengeSource(
-        uint16 chainId,
-        bytes32 txHash,
-        bytes32 blockHashL1,
-        bytes calldata zkProof,
-        uint[] calldata,
-        bytes[] calldata slots
-    ) external {}
+        address spvAddress,
+        bytes calldata proof,
+        bytes32 spvBlockHash,
+        IORChallengeSpv.VerifyInfo calldata verifyInfo
+    ) external {
+        bytes32 verifyInfoHash = keccak256(abi.encode(verifyInfo));
 
-    function verifyChallengeDest(bytes32 challengeId, uint16 destChainId, bytes32 destTxHash) external {}
+        bool result = IORChallengeSpv(spvAddress).verifyChallenge(proof, spvBlockHash, verifyInfoHash);
+        require(result, "VF");
+
+        bytes32 challengeId = keccak256(abi.encodePacked(uint16(verifyInfo.txInfos[0]), verifyInfo.txInfos[1]));
+        require(_challenges[challengeId].challengeTime > 0, "CTZ");
+        require(_challenges[challengeId].verifiedTime0 == 0, "VT0NZ");
+
+        // TODO, check time interval
+
+        // TODO: Check the address and key of the slot
+
+        _challenges[challengeId].verifiedTime0 = uint64(block.timestamp);
+
+        // TODO: emit events
+    }
+
+    function verifyChallengeDest(
+        address spvAddress,
+        bytes calldata proof,
+        bytes32 spvBlockHash,
+        IORChallengeSpv.VerifyInfo calldata verifyInfo,
+        uint[] calldata verifiedData0
+    ) external {
+        bytes32 verifyInfoHash = keccak256(abi.encode(verifyInfo));
+
+        bool result = IORChallengeSpv(spvAddress).verifyChallenge(proof, spvBlockHash, verifyInfoHash);
+        require(result, "VF");
+
+        bytes32 challengeId = keccak256(abi.encodePacked(uint16(verifyInfo.txInfos[0]), verifyInfo.txInfos[1]));
+        require(_challenges[challengeId].verifiedTime0 > 0, "VT0Z");
+        require(_challenges[challengeId].verifiedTime1 == 0, "VT1NZ");
+
+        // TODO, check time interval
+
+        // TODO: Check the address and key of the slot
+
+        bytes32 verifiedDataHash0 = keccak256(abi.encode(verifiedData0));
+        require(_challenges[challengeId].verifiedDataHash0 == verifiedDataHash0, "VDHI");
+
+        _challenges[challengeId].verifiedTime1 = uint64(block.timestamp);
+
+        // TODO: emit events
+    }
 
     // using EnumerableMap for EnumerableMap.AddressToUintMap;
     // using EnumerableMap for EnumerableMap.Bytes32ToUintMap;
