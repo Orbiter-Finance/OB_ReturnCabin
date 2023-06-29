@@ -3,7 +3,6 @@ import { expect } from 'chai';
 import { BigNumber } from 'ethers';
 import {
   RLP,
-  arrayify,
   hexConcat,
   hexZeroPad,
   hexlify,
@@ -14,6 +13,7 @@ import {
 import { ethers, network } from 'hardhat';
 import { BaseTrie } from 'merkle-patricia-tree';
 import { TestToken, TestToken__factory } from '../typechain-types';
+import { hexToBuffer } from './utils.test';
 
 async function getTestTokenStroageRoot(
   testToken: TestToken,
@@ -27,8 +27,8 @@ async function getTestTokenStroageRoot(
   const treePut = async (storageKey: string) => {
     const storageValue = await provider.getStorageAt(address, storageKey);
 
-    const key = Buffer.from(arrayify(keccak256(storageKey)));
-    const value = Buffer.from(arrayify(RLP.encode(stripZeros(storageValue))));
+    const key = hexToBuffer(keccak256(storageKey));
+    const value = hexToBuffer(RLP.encode(stripZeros(storageValue)));
 
     await tree.put(key, value);
   };
@@ -64,7 +64,7 @@ describe('BlockVerify', () => {
     const tree = new BaseTrie();
 
     for (const signer of signers) {
-      const key = Buffer.from(arrayify(keccak256(signer.address)));
+      const key = hexToBuffer(keccak256(signer.address));
       const nonce = await signer.getTransactionCount();
       const balance = await signer.getBalance();
 
@@ -75,7 +75,7 @@ describe('BlockVerify', () => {
         keccak256('0x'),
       ]);
 
-      const value = Buffer.from(arrayify(accountEncode));
+      const value = hexToBuffer(accountEncode);
 
       await tree.put(key, value);
     }
@@ -90,8 +90,8 @@ describe('BlockVerify', () => {
         keccak256('0x'),
       ]);
 
-      const key = Buffer.from(arrayify(keccak256(address)));
-      const value = Buffer.from(arrayify(emptyAccountEncode));
+      const key = hexToBuffer(keccak256(address));
+      const value = hexToBuffer(emptyAccountEncode);
       await tree.put(key, value);
     }
 
@@ -105,13 +105,13 @@ describe('BlockVerify', () => {
       testTokenStroageRoot,
       keccak256(code || '0x'),
     ]);
-    const key = Buffer.from(arrayify(keccak256(testToken.address)));
-    const value = Buffer.from(arrayify(testTokenAccount));
+    const key = hexToBuffer(keccak256(testToken.address));
+    const value = hexToBuffer(testTokenAccount);
     await tree.put(key, value);
 
     // Sender account changed
     {
-      const key = Buffer.from(arrayify(keccak256(signers[0].address)));
+      const key = hexToBuffer(keccak256(signers[0].address));
       const nonce = await signers[0].getTransactionCount();
       const balance = await signers[0].getBalance();
       const accountEncode = RLP.encode([
@@ -120,7 +120,7 @@ describe('BlockVerify', () => {
         new BaseTrie().root,
         keccak256('0x'),
       ]);
-      const value = Buffer.from(arrayify(accountEncode));
+      const value = hexToBuffer(accountEncode);
       await tree.put(key, value);
     }
 
@@ -131,7 +131,7 @@ describe('BlockVerify', () => {
 
     // Miner account changed
     {
-      const key = Buffer.from(arrayify(keccak256(block.miner)));
+      const key = hexToBuffer(keccak256(block.miner));
       const nonce = await signers[0].provider?.getTransactionCount(block.miner);
       const balance = await signers[0].provider?.getBalance(block.miner);
 
@@ -141,7 +141,7 @@ describe('BlockVerify', () => {
         new BaseTrie().root,
         keccak256('0x'),
       ]);
-      const value = Buffer.from(arrayify(minerEncode));
+      const value = hexToBuffer(minerEncode);
       await tree.put(key, value);
     }
 
@@ -198,11 +198,9 @@ describe('BlockVerify', () => {
 
       expect(tx.hash).eq(keccak256(value));
 
-      const key = Buffer.from(
-        arrayify(
-          RLP.encode(
-            stripZeros(BigNumber.from(item.transactionIndex).toHexString()),
-          ),
+      const key = hexToBuffer(
+        RLP.encode(
+          stripZeros(BigNumber.from(item.transactionIndex).toHexString()),
         ),
       );
       await tree.put(key, value);
@@ -250,14 +248,11 @@ describe('BlockVerify', () => {
         ),
       );
 
-      const key = Buffer.from(
-        arrayify(
-          RLP.encode(
-            stripZeros(BigNumber.from(item.transactionIndex).toHexString()),
-          ),
+      const key = hexToBuffer(
+        RLP.encode(
+          stripZeros(BigNumber.from(item.transactionIndex).toHexString()),
         ),
       );
-
       await tree.put(key, value);
     }
 

@@ -1,7 +1,7 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { assert, expect } from 'chai';
-import { BigNumber, BigNumberish, constants, utils } from 'ethers';
-import { ethers, network } from 'hardhat';
+import { BigNumberish, constants, utils } from 'ethers';
+import { ethers } from 'hardhat';
 
 import lodash from 'lodash';
 import { BaseTrie } from 'merkle-patricia-tree';
@@ -17,12 +17,13 @@ import {
 } from '../typechain-types';
 import { defaultChainInfo, defaultsEbcs } from './defaults';
 import {
-  calculateRulesMerkleTree,
+  calculateRuleKey,
+  calculateRulesTree,
   createRandomRule,
   getRulesRootUpdatedLogs,
   gzipRules,
 } from './lib/rule';
-import { testReverted, testRevertedOwner } from './utils.test';
+import { hexToBuffer, testReverted, testRevertedOwner } from './utils.test';
 
 describe('ORMakerDeposit', () => {
   let signers: SignerWithAddress[];
@@ -263,8 +264,8 @@ describe('ORMakerDeposit', () => {
       rules.push(_rule);
     }
 
-    const tree = calculateRulesMerkleTree(rules);
-    const root = utils.hexlify(tree.getRoot());
+    const tree = await calculateRulesTree(rules);
+    const root = utils.hexlify(tree.root);
     const rsc = gzipRules(rules);
 
     ebcSample = lodash.sample(defaultsEbcs)!;
@@ -321,8 +322,14 @@ describe('ORMakerDeposit', () => {
     expect(storageRWV.root).eq(rootWithVersion.root);
     expect(storageRWV.version).eq(rootWithVersion.version);
 
-    const leaf = lodash.sample(tree.getLeaves())!;
-    expect(tree.verify(tree.getProof(leaf), leaf, storageRWV.root)).to.be.true;
+    const key = hexToBuffer(calculateRuleKey(lodash.sample(rules)));
+    const proof = await BaseTrie.createProof(tree, key);
+    const v = await BaseTrie.verifyProof(
+      hexToBuffer(storageRWV.root),
+      key,
+      proof,
+    );
+    expect(v !== null).to.be.true;
   });
 
   it('Event RulesRootUpdated should emit logs', async function () {
@@ -331,8 +338,8 @@ describe('ORMakerDeposit', () => {
       orMakerDeposit.address,
       implementation,
     );
-    const tree = calculateRulesMerkleTree(rules);
-    const root = utils.hexlify(tree.getRoot());
+    const tree = await calculateRulesTree(rules);
+    const root = utils.hexlify(tree.root);
 
     const storageRWV = await orMakerDeposit.rulesRoot(ebcSample);
     expect(storageRWV.root).eq(root);
@@ -355,8 +362,8 @@ describe('ORMakerDeposit', () => {
     const rootWithVersion = await orMakerDeposit.rulesRoot(ebcSample);
 
     const rsc = gzipRules(rules);
-    const tree = calculateRulesMerkleTree(rules);
-    const root = utils.hexlify(tree.getRoot());
+    const tree = await calculateRulesTree(rules);
+    const root = utils.hexlify(tree.root);
     const sourceChainIds = [
       rules[rules.length - 1][0],
       rules[rules.length - 2][0],

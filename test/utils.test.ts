@@ -11,7 +11,7 @@ import {
   ORProventh,
 } from '../typechain-types';
 import { solidityKeccak256 } from 'ethers/lib/utils';
-import { ContractTransaction } from 'ethers';
+import { BigNumberish, ContractTransaction, utils } from 'ethers';
 import { expect } from 'chai';
 
 export async function getORMakerDepositContract(): Promise<ORMakerDeposit> {
@@ -295,6 +295,10 @@ export async function getSPVProof(
     return Buffer.from(validateBytes, 'base64');
   }
   return undefined;
+}
+
+export function hexToBuffer(hex: string) {
+  return Buffer.from(utils.arrayify(hex));
 }
 
 export async function sleep(ms: number) {

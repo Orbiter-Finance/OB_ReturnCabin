@@ -1,46 +1,47 @@
 import { Provider } from '@ethersproject/providers';
 import { BigNumber, BigNumberish, BytesLike, Wallet, utils } from 'ethers';
 import { Hexable } from 'ethers/lib/utils';
-import MerkleTree from 'merkletreejs';
+import { BaseTrie } from 'merkle-patricia-tree';
 import Pako from 'pako';
+import { hexToBuffer } from '../utils.test';
 
 export const ruleTypes = [
-  'uint16',
-  'uint16',
-  'uint8',
-  'uint8',
-  'uint',
-  'uint',
-  'uint128',
-  'uint128',
-  'uint128',
-  'uint128',
-  'uint16',
-  'uint16',
-  'uint32',
-  'uint32',
-  'uint32',
-  'uint32',
+  'uint32', // chain0's id
+  'uint32', // chain1's id
+  'uint8', // chain0's status
+  'uint8', // chain1's status
+  'uint', // chain0's token
+  'uint', // chain1's token
+  'uint128', // minPrice
+  'uint128', // maxPrice
+  'uint128', // chain0's withholdingFee
+  'uint128', // chain1's withholdingFee
+  'uint16', // chain0's tradeFee. 10,000 percent
+  'uint16', // chain1's tradeFee
+  'uint32', // chain0's response time
+  'uint32', // chain1's response time
+  'uint32', // chain0's compensation ratio
+  'uint32', // chain1's compensation ratio
 ];
 
 export function createRandomRule() {
   return [
-    1, // uint16 chain0
-    2, // uint16 chain1
-    0, // uint8 chain0's status
-    1, // uint8 chain1's status
-    Wallet.createRandom().address, // uint chain0's token
-    Wallet.createRandom().address, // uint chain1's token
-    BigNumber.from(5).pow(parseInt(Math.random() * 40 + '') + 1), // uint128 minPrice
-    BigNumber.from(5).pow(parseInt(Math.random() * 40 + '') + 1), // uint128 maxPrice
-    BigNumber.from(5).pow(parseInt(Math.random() * 40 + '') + 1), // uint128 chain0's withholdingFee
-    BigNumber.from(5).pow(parseInt(Math.random() * 40 + '') + 1), // uint128 chain1's withholdingFee
-    1, // uint16 chain0's tradeFee
-    2, // uint16 chain1's tradeFee
-    (2 ^ 32) - 1, // uint32 chain0's response time
-    (2 ^ 31) - 1, // uint32 chain1's response time
-    (2 ^ 30) - 1, // uint32 chain0's compensation ratio
-    (2 ^ 29) - 1, // uint32 chain1's compensation ratio
+    1,
+    2,
+    0,
+    1,
+    Wallet.createRandom().address,
+    Wallet.createRandom().address,
+    BigNumber.from(5).pow(parseInt(Math.random() * 40 + '') + 1),
+    BigNumber.from(5).pow(parseInt(Math.random() * 40 + '') + 1),
+    BigNumber.from(5).pow(parseInt(Math.random() * 40 + '') + 1),
+    BigNumber.from(5).pow(parseInt(Math.random() * 40 + '') + 1),
+    1,
+    2,
+    (2 ^ 32) - 1,
+    (2 ^ 31) - 1,
+    (2 ^ 30) - 1,
+    (2 ^ 29) - 1,
   ];
 }
 
@@ -112,13 +113,18 @@ export async function getRulesRootUpdatedLogs(
   return rules;
 }
 
-export function calculateRulesMerkleTree(rules: BigNumberish[][]) {
-  const leaves = rules
-    .map((rule) =>
-      utils.keccak256(utils.defaultAbiCoder.encode(ruleTypes, rule)),
-    )
-    .sort((a, b) => (BigNumber.from(a).sub(b).gt(0) ? 1 : -1));
-  return new MerkleTree(leaves, utils.keccak256);
+export async function calculateRulesTree(rules: BigNumberish[][]) {
+  const trie = new BaseTrie();
+  for (const rule of rules) {
+    const key = calculateRuleKey(rule);
+    const value = utils.RLP.encode(
+      rule.map((r) => utils.stripZeros(BigNumber.from(r).toHexString())),
+    );
+
+    await trie.put(hexToBuffer(key), hexToBuffer(value));
+  }
+
+  return trie;
 }
 
 export function gzipRules(rules: BigNumberish[][]) {
