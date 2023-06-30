@@ -276,7 +276,7 @@ contract ORMakerDeposit is IORMakerDeposit {
         require(_challenges[challengeId].challengeTime > 0, "CTZ");
         require(_challenges[challengeId].verifiedTime0 == 0, "VT0NZ");
 
-        // TODO, check time interval
+        // TODO, check chainInfo.minVerifyChallengeSourceTxSecond,maxVerifyChallengeSourceTxSecond
 
         // TODO: Check the address and key of the slot
 
@@ -303,7 +303,7 @@ contract ORMakerDeposit is IORMakerDeposit {
         require(_challenges[challengeId].verifiedTime0 > 0, "VT0Z");
         require(_challenges[challengeId].verifiedTime1 == 0, "VT1NZ");
 
-        // TODO, check time interval
+        // TODO, check chainInfo.minVerifyChallengeDestTxSecond, maxVerifyChallengeDestTxSecond
 
         // TODO: Check the address and key of the slot
 

@@ -30,6 +30,12 @@ describe('Test ORManager', () => {
     expect(owner).eq(signers[1].address);
   });
 
+  it("ORManager's functions prefixed with _ should be private", async function () {
+    for (const key in orManager.functions) {
+      expect(key.replace(/^_/, '')).eq(key);
+    }
+  });
+
   it('Function transferOwnership should succeed', async function () {
     await testRevertedOwner(orManager.transferOwnership(signers[0].address));
 

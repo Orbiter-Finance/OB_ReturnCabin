@@ -52,6 +52,12 @@ describe('ORMDCFactory', () => {
     process.env['OR_MDC_FACTORY_ADDRESS'] = orMDCFactory.address;
   });
 
+  it("ORMDCFactory's functions prefixed with _ should be private", async function () {
+    for (const key in orMDCFactory.functions) {
+      expect(key.replace(/^_/, '')).eq(key);
+    }
+  });
+
   it('Manager and implementation should have been set up successfully', async function () {
     const manager = await orMDCFactory.manager();
     expect(manager).eq(orManager.address);
@@ -104,9 +110,11 @@ describe('ORMDCFactory', () => {
         .createMDC()
         .then((t) => t.wait());
     } catch (err: any) {
-      expect(err.message.indexOf("reverted with reason string 'ERC1167: create2 failed'") > -1).to.be.eq(
-        true,
-      );
+      expect(
+        err.message.indexOf(
+          "reverted with reason string 'ERC1167: create2 failed'",
+        ) > -1,
+      ).to.be.eq(true);
     }
   });
 
@@ -115,7 +123,9 @@ describe('ORMDCFactory', () => {
       await orManager.updateMaxMDCLimit(1);
       await orMDCFactory.createMDC();
     } catch (err: any) {
-      expect(err.message.indexOf("reverted with reason string 'MML'") > -1).to.be.eq(true);
+      expect(
+        err.message.indexOf("reverted with reason string 'MML'") > -1,
+      ).to.be.eq(true);
     }
   });
 

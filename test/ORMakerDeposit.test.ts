@@ -77,7 +77,7 @@ describe('ORMakerDeposit', () => {
     expect(owner).eq(mdcOwner.address);
   });
 
-  it("ORMakerDeposit's functions prefixed with _ should not be callable from outside", async function () {
+  it("ORMakerDeposit's functions prefixed with _ should be private", async function () {
     for (const key in orMakerDeposit.functions) {
       expect(key.replace(/^_/, '')).eq(key);
     }

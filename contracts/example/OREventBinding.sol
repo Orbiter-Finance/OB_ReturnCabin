@@ -4,11 +4,23 @@ pragma solidity ^0.8.17;
 import {IOREventBinding} from "../interface/IOREventBinding.sol";
 
 // TODO: for dev
-import "hardhat/console.sol";
+// import "hardhat/console.sol";
 
-contract OREventBinding {
-    function getAmountSecurityCode(uint amount) public pure returns (uint16) {
+contract OREventBinding is IOREventBinding {
+    function getSecurityCode(uint amount) public pure returns (uint) {
         return uint16(amount % 10000);
+    }
+
+    function splitSecurityCode(uint securityCode) public pure returns (uint[] memory) {
+        uint[] memory splits = new uint[](3);
+
+        unchecked {
+            splits[0] = (securityCode / 1000) % 10;
+            splits[1] = (securityCode / 100) % 10;
+            splits[2] = securityCode % 100;
+        }
+
+        return splits;
     }
 
     /**
@@ -22,7 +34,7 @@ contract OREventBinding {
         address dest,
         uint[] calldata ruleValues
     ) external pure returns (bytes memory) {
-        uint16 securityCode = getAmountSecurityCode(amount);
+        uint securityCode = getSecurityCode(amount);
         require(securityCode > 0, "SCZ");
 
         uint tradeAmount = amount - securityCode;
