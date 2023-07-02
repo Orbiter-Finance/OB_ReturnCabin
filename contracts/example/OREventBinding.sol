@@ -29,7 +29,7 @@ contract OREventBinding is IOREventBinding {
      * @param dest Dest account address
      * @param ruleValues [minPrice, maxPrice, withholdingFee, tradeFee]
      */
-    function getResponsePreview(
+    function getResponseIntent(
         uint amount,
         address dest,
         uint[] calldata ruleValues

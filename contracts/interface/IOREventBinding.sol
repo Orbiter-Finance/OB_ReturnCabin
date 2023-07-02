@@ -6,7 +6,7 @@ interface IOREventBinding {
 
     function splitSecurityCode(uint securityCode) external pure returns (uint[] memory);
 
-    function getResponsePreview(
+    function getResponseIntent(
         uint amount,
         address dest,
         uint[] calldata ruleValues
