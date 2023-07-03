@@ -2,13 +2,10 @@
 pragma solidity ^0.8.17;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-
 import "./interface/IORManager.sol";
-import "./interface/IORProtocal.sol";
-import "./Multicall.sol";
 
-contract ORManager is IORManager, Ownable, Multicall {
-    mapping(uint16 => OperationsLib.ChainInfo) private _chains;
+contract ORManager is IORManager, Ownable {
+    mapping(uint32 => BridgeLib.ChainInfo) private _chains;
     mapping(address => bool) private _ebcs;
     address private _submitter;
     uint64 private _protocolFee;
@@ -23,7 +20,7 @@ contract ORManager is IORManager, Ownable, Multicall {
     }
 
     // TODO: setting the same chainId or token affect the protocol?
-    function registerChains(OperationsLib.ChainInfo[] calldata chains_) external onlyOwner {
+    function registerChains(BridgeLib.ChainInfo[] calldata chains_) external onlyOwner {
         unchecked {
             for (uint i = 0; i < chains_.length; i++) {
                 _chains[chains_[i].id] = chains_[i];
@@ -32,7 +29,7 @@ contract ORManager is IORManager, Ownable, Multicall {
         }
     }
 
-    function updateChainSpvs(uint16 id, address[] calldata spvs, uint[] calldata indexs) external onlyOwner {
+    function updateChainSpvs(uint32 id, address[] calldata spvs, uint[] calldata indexs) external onlyOwner {
         unchecked {
             for (uint i = 0; i < spvs.length; i++) {
                 if (i < indexs.length) {
@@ -46,8 +43,8 @@ contract ORManager is IORManager, Ownable, Multicall {
     }
 
     function updateChainTokens(
-        uint16 id,
-        OperationsLib.TokenInfo[] calldata tokens,
+        uint32 id,
+        BridgeLib.TokenInfo[] calldata tokens,
         uint[] calldata indexs
     ) external onlyOwner {
         unchecked {
@@ -62,7 +59,7 @@ contract ORManager is IORManager, Ownable, Multicall {
         emit ChainInfoUpdated(id, _chains[id]);
     }
 
-    function getChainInfo(uint16 id) external view returns (OperationsLib.ChainInfo memory) {
+    function getChainInfo(uint32 id) external view returns (BridgeLib.ChainInfo memory) {
         return _chains[id];
     }
 

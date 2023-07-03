@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import "../library/Operations.sol";
+import {BridgeLib} from "../library/BridgeLib.sol";
 
 interface IORManager {
-    event ChainInfoUpdated(uint indexed id, OperationsLib.ChainInfo chainInfo);
+    event ChainInfoUpdated(uint32 indexed id, BridgeLib.ChainInfo chainInfo);
     event EbcsUpdated(address[] ebcs, bool[] statuses);
     event SubmitterFeeUpdated(address submitter);
     event ProtocolFeeUpdated(uint64 protocolFee);
@@ -14,13 +14,13 @@ interface IORManager {
     event FeeTakeOnChallengeSecondUpdated(uint64 feeTakeOnChallengeSecond);
     event MaxMDCLimitUpdated(uint64 maxMDCLimit);
 
-    function registerChains(OperationsLib.ChainInfo[] calldata chains_) external;
+    function registerChains(BridgeLib.ChainInfo[] calldata chains_) external;
 
-    function updateChainSpvs(uint16 id, address[] calldata spvs, uint[] calldata indexs) external;
+    function updateChainSpvs(uint32 id, address[] calldata spvs, uint[] calldata indexs) external;
 
-    function updateChainTokens(uint16 id, OperationsLib.TokenInfo[] calldata token, uint[] calldata indexs) external;
+    function updateChainTokens(uint32 id, BridgeLib.TokenInfo[] calldata token, uint[] calldata indexs) external;
 
-    function getChainInfo(uint16 id) external view returns (OperationsLib.ChainInfo memory);
+    function getChainInfo(uint32 id) external view returns (BridgeLib.ChainInfo memory);
 
     function ebcIncludes(address ebc) external view returns (bool);
 

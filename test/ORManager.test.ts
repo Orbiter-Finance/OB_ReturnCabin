@@ -1,12 +1,12 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
-import { BigNumber, BigNumberish, Wallet, constants } from 'ethers';
+import { BigNumber, BigNumberish, constants } from 'ethers';
 import { ethers } from 'hardhat';
 import lodash from 'lodash';
 import { ORManager, ORManager__factory } from '../typechain-types';
-import { OperationsLib } from '../typechain-types/contracts/ORManager';
+import { BridgeLib } from '../typechain-types/contracts/interface/IORManager';
 import { defaultChainInfo, defaultsEbcs } from './defaults';
-import { testReverted, testRevertedOwner } from './utils.test';
+import { testRevertedOwner } from './utils.test';
 
 describe('Test ORManager', () => {
   let signers: SignerWithAddress[];
@@ -54,7 +54,7 @@ describe('Test ORManager', () => {
 
     for (const i in chains) {
       const event = events![i];
-      let chainInfo: OperationsLib.ChainInfoStruct = lodash.toPlainObject(
+      let chainInfo: BridgeLib.ChainInfoStruct = lodash.toPlainObject(
         event.args!.chainInfo,
       );
 
@@ -95,7 +95,7 @@ describe('Test ORManager', () => {
   it('Function updateChainTokens should succeed', async function () {
     const chainId = defaultChainInfo.id;
 
-    const tokens: OperationsLib.TokenInfoStruct[] = [];
+    const tokens: BridgeLib.TokenInfoStruct[] = [];
     const indexs: BigNumberish[] = [BigNumber.from(0)];
     for (let i = 0; i < 10; i++) {
       tokens.push({

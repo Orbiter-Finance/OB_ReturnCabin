@@ -44,7 +44,7 @@ describe('OREventBinding', () => {
     expect(splits.map((i) => i + '')).deep.eq(_splits.map((i) => i + ''));
   });
 
-  it('Function getResponsePreview should succeed', async function () {
+  it('Function getResponseIntent should succeed', async function () {
     const amount = utils.parseEther('0.101200000000003721');
     const dest = signers[1].address;
     const ruleValues = [
@@ -55,7 +55,7 @@ describe('OREventBinding', () => {
         .mul(10 ** 9),
       30,
     ];
-    const preview = await orEventBinding.getResponsePreview(
+    const intent = await orEventBinding.getResponseIntent(
       amount,
       dest,
       ruleValues,
@@ -66,11 +66,8 @@ describe('OREventBinding', () => {
     const fee = tradeAmount.mul(ruleValues[3]).div(10000).add(ruleValues[2]);
     const responseAmount = tradeAmount.sub(fee);
 
-    console.warn('responseAmount:', responseAmount);
-
-    // const v = defaultAbiCoder.decode(['address', 'uint'], preview);
-    // console.warn('v:', v);
-
-    console.warn('preview:', preview);
+    const intentDecode = defaultAbiCoder.decode(['address', 'uint'], intent);
+    expect(intentDecode[0]).eq(dest);
+    expect(intentDecode[1]).deep.eq(responseAmount);
   });
 });

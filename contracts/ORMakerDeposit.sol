@@ -76,7 +76,7 @@ contract ORMakerDeposit is IORMakerDeposit {
         }
 
         for (uint i = 0; i < chainIds.length; ) {
-            OperationsLib.ChainInfo memory chainInfo = manager.getChainInfo(chainIds[i]);
+            BridgeLib.ChainInfo memory chainInfo = manager.getChainInfo(chainIds[i]);
             require(chainInfo.id > 0, "CI"); // Invalid chainId
 
             unchecked {
@@ -99,7 +99,7 @@ contract ORMakerDeposit is IORMakerDeposit {
         address impl = _mdcFactory.implementation();
 
         for (uint i = 0; i < chainIds.length; i++) {
-            OperationsLib.ChainInfo memory chainInfo = manager.getChainInfo(chainIds[i]);
+            BridgeLib.ChainInfo memory chainInfo = manager.getChainInfo(chainIds[i]);
             require(chainInfo.id > 0, "CI"); // Invalid chainId
 
             require(chainInfo.spvs.addressIncludes(spvs[i]), "SI"); // Invalid spv

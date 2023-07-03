@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import "../library/Operations.sol";
+import {BridgeLib} from "../library/BridgeLib.sol";
 import {RuleLib} from "../library/RuleLib.sol";
 
 interface IORMakerDeposit {
