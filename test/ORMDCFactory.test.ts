@@ -1,5 +1,7 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import assert from 'assert';
 import { expect } from 'chai';
+import { BigNumber, utils } from 'ethers';
 import { ethers } from 'hardhat';
 import {
   ORMDCFactory,
@@ -9,7 +11,7 @@ import {
   ORManager,
   ORManager__factory,
 } from '../typechain-types';
-import { utils } from 'ethers';
+import { testReverted } from './utils.test';
 
 describe('ORMDCFactory', () => {
   let signers: SignerWithAddress[];
@@ -22,18 +24,13 @@ describe('ORMDCFactory', () => {
     signers = await ethers.getSigners();
 
     const envORManagerAddress = process.env['OR_MANAGER_ADDRESS'];
-    if (envORManagerAddress) {
-      orManager = new ORManager__factory(signers[0]).attach(
-        envORManagerAddress,
-      );
-      console.log('Address of orManager[env]:', orManager.address);
-    } else {
-      orManager = await new ORManager__factory(signers[0]).deploy(
-        signers[0].address,
-      );
-      console.log('Address of orManager:', orManager.address);
-      await orManager.deployed();
-    }
+    assert(
+      !!envORManagerAddress,
+      'Env miss [OR_MANAGER_ADDRESS]. You may need to test ORManager.test.ts first. Example: npx hardhat test test/ORManager.test test/ORMDCFactory.test.ts',
+    );
+
+    orManager = new ORManager__factory(signers[0]).attach(envORManagerAddress);
+    await orManager.deployed();
 
     orMakerDeposit_impl = await new ORMakerDeposit__factory(
       signers[0],
@@ -104,29 +101,20 @@ describe('ORMDCFactory', () => {
   it("Function createMDC should cann't recreate", async function () {
     const signerMaker = signers[1];
 
-    try {
-      await orMDCFactory
-        .connect(signerMaker)
-        .createMDC()
-        .then((t) => t.wait());
-    } catch (err: any) {
-      expect(
-        err.message.indexOf(
-          "reverted with reason string 'ERC1167: create2 failed'",
-        ) > -1,
-      ).to.be.eq(true);
-    }
+    await testReverted(
+      orMDCFactory.connect(signerMaker).createMDC(),
+      'ERC1167: create2 failed',
+    );
   });
 
   it('Function updateMaxMDCLimit should effective', async function () {
-    try {
-      await orManager.updateMaxMDCLimit(1);
-      await orMDCFactory.createMDC();
-    } catch (err: any) {
-      expect(
-        err.message.indexOf("reverted with reason string 'MML'") > -1,
-      ).to.be.eq(true);
-    }
+    await orManager.updateMaxMDCLimit(1).then((t) => t.wait());
+
+    await testReverted(orMDCFactory.createMDC(), 'MML');
+
+    await orManager
+      .updateMaxMDCLimit(BigNumber.from(2).pow(64).sub(1))
+      .then((t) => t.wait());
   });
 
   it("ORMDCFactory's mdcCreatedTotal should be 1", async function () {

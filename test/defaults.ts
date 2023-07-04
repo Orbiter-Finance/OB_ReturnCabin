@@ -1,7 +1,7 @@
 import { BigNumber, constants, ethers } from 'ethers';
-import { OperationsLib } from '../typechain-types/contracts/ORManager';
+import { BridgeLib } from '../typechain-types/contracts/ORManager';
 
-export const defaultChainInfo: OperationsLib.ChainInfoStruct = {
+export const defaultChainInfo: BridgeLib.ChainInfoStruct = {
   id: 2,
   batchLimit: BigNumber.from(1000),
   spvs: [constants.AddressZero],

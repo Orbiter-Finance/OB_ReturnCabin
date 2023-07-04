@@ -39,7 +39,10 @@ describe('Test ORManager', () => {
   it('Function transferOwnership should succeed', async function () {
     await testRevertedOwner(orManager.transferOwnership(signers[0].address));
 
-    await orManager.connect(signers[1]).transferOwnership(signers[0].address);
+    await orManager
+      .connect(signers[1])
+      .transferOwnership(signers[0].address)
+      .then((t) => t.wait());
   });
 
   it('Function registerChains should succeed', async function () {

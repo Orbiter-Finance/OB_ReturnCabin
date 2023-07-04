@@ -5,27 +5,39 @@ import {
   ORManager__factory,
 } from '../typechain-types';
 
-async function main() {
+export async function deploy() {
   const signers = await ethers.getSigners();
+  const deployer = signers[0];
 
-  const orManager = await new ORManager__factory(signers[0]).deploy(
-    signers[0].address,
+  const orManager = await new ORManager__factory(deployer).deploy(
+    deployer.address,
   );
   console.log('Address of orManager contract:', orManager.address);
   await orManager.deployed();
 
   const orMakerDeposit_impl = await new ORMakerDeposit__factory(
-    signers[0],
+    deployer,
   ).deploy();
   console.log('Address of orMakerDeposit_impl:', orMakerDeposit_impl.address);
   await orMakerDeposit_impl.deployed();
 
-  const orMDCFactory = await new ORMDCFactory__factory(signers[0]).deploy(
+  const orMDCFactory = await new ORMDCFactory__factory(deployer).deploy(
     orManager.address,
     orMakerDeposit_impl.address,
   );
   console.log('Address of orMDCFactory:', orMDCFactory.address);
   await orMDCFactory.deployed();
+
+  return {
+    deployer,
+    orManager,
+    orMakerDeposit_impl,
+    orMDCFactory,
+  };
+}
+
+async function main() {
+  await deploy();
 }
 
 main().catch((error) => {
