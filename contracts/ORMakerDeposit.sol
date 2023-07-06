@@ -282,12 +282,12 @@ contract ORMakerDeposit is IORMakerDeposit {
         require(result, "VF");
 
         // Check chainId, hash
-        bytes32 challengeId = keccak256(abi.encodePacked(uint32(verifyInfo.txInfos[0]), verifyInfo.txInfos[1]));
+        bytes32 challengeId = keccak256(abi.encodePacked(uint32(verifyInfo.txInfo[0]), verifyInfo.txInfo[1]));
         require(_challenges[challengeId].challengeTime > 0, "CTZ");
         require(_challenges[challengeId].verifiedTime0 == 0, "VT0NZ");
 
         // Check to address == owner
-        require(uint160(verifyInfo.txInfos[3]) == uint160(_owner), "TNEO");
+        require(uint160(verifyInfo.txInfo[3]) == uint160(_owner), "TNEO");
 
         // Parse rawDatas
         (address[] memory dealers, address[] memory ebcs, uint32[] memory chainIds, address ebc) = abi.decode(
@@ -302,8 +302,8 @@ contract ORMakerDeposit is IORMakerDeposit {
         require(bytes32(verifyInfo.slots[0].value) == cah, "CAHV");
 
         // Check ebc
-        uint[] memory spilts = IOREventBinding(ebc).splitSecurityCodeFromAmount(verifyInfo.txInfos[5]);
-        require(ebc == ebcs[spilts[1]], "ENE");
+        uint[] memory splits = IOREventBinding(ebc).splitSecurityCodeFromAmount(verifyInfo.txInfo[5]);
+        require(ebc == ebcs[splits[1]], "ENE");
 
         // TODO, check chainInfo.minVerifyChallengeSourceTxSecond,maxVerifyChallengeSourceTxSecond
 
@@ -328,7 +328,7 @@ contract ORMakerDeposit is IORMakerDeposit {
         bool result = IORChallengeSpv(spvAddress).verifyChallenge(proof, spvBlockHash, verifyInfoHash);
         require(result, "VF");
 
-        bytes32 challengeId = keccak256(abi.encodePacked(uint32(verifyInfo.txInfos[0]), verifyInfo.txInfos[1]));
+        bytes32 challengeId = keccak256(abi.encodePacked(uint32(verifyInfo.txInfo[0]), verifyInfo.txInfo[1]));
         require(_challenges[challengeId].verifiedTime0 > 0, "VT0Z");
         require(_challenges[challengeId].verifiedTime1 == 0, "VT1NZ");
 

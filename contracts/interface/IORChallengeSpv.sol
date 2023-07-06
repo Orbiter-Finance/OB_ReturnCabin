@@ -9,7 +9,7 @@ interface IORChallengeSpv {
     }
 
     struct VerifyInfo {
-        uint[] txInfos; // chainId, hash, from, to, token, amount, nonce, timestamp, others...
+        uint[] txInfo; // chainId, hash, from, to, token, amount, nonce, timestamp, others...
         VerifyInfoSlot[] slots;
     }
 
