@@ -6,6 +6,8 @@ interface IOREventBinding {
 
     function splitSecurityCode(uint securityCode) external pure returns (uint[] memory);
 
+    function splitSecurityCodeFromAmount(uint amount) external pure returns (uint[] memory);
+
     function getResponseIntent(
         uint amount,
         address dest,

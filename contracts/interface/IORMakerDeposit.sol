@@ -20,9 +20,9 @@ interface IORMakerDeposit {
         bytes32 columnArrayHash,
         address[] dealers,
         address[] ebcs,
-        uint16[] chainIds
+        uint32[] chainIds
     );
-    event SpvUpdated(address indexed impl, uint16 chainId, address spv);
+    event SpvUpdated(address indexed impl, uint32 chainId, address spv);
     event ResponseMakersUpdated(address indexed impl, address[] responseMakers);
     event RulesRootUpdated(address indexed impl, address ebc, RuleLib.RootWithVersion rootWithVersion);
 
@@ -37,12 +37,12 @@ interface IORMakerDeposit {
     function updateColumnArray(
         address[] calldata dealers,
         address[] calldata ebcs,
-        uint16[] calldata chainIds
+        uint32[] calldata chainIds
     ) external;
 
-    function spv(uint16 chainId) external view returns (address);
+    function spv(uint32 chainId) external view returns (address);
 
-    function updateSpvs(address[] calldata spvs, uint16[] calldata chainIds) external;
+    function updateSpvs(address[] calldata spvs, uint32[] calldata chainIds) external;
 
     function responseMakers() external view returns (address[] memory);
 
@@ -60,7 +60,7 @@ interface IORMakerDeposit {
         address ebc,
         bytes calldata rsc,
         RuleLib.RootWithVersion calldata rootWithVersion,
-        uint16[] calldata sourceChainIds,
+        uint32[] calldata sourceChainIds,
         uint[] calldata pledgeAmounts
     ) external payable;
 
@@ -68,7 +68,7 @@ interface IORMakerDeposit {
         address ebc,
         bytes calldata rsc,
         RuleLib.RootWithVersion calldata rootWithVersion,
-        uint16[] calldata sourceChainIds,
+        uint32[] calldata sourceChainIds,
         uint[] calldata pledgeAmounts,
         address token
     ) external;

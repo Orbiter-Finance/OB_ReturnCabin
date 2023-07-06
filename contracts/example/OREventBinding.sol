@@ -23,6 +23,11 @@ contract OREventBinding is IOREventBinding {
         return splits;
     }
 
+    function splitSecurityCodeFromAmount(uint amount) public pure returns (uint[] memory) {
+        uint sc = getSecurityCode(amount);
+        return splitSecurityCode(sc);
+    }
+
     /**
      * Get preview
      * @param amount Source tx amount

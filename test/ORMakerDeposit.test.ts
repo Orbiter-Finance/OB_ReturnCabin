@@ -438,20 +438,20 @@ describe('ORMakerDeposit', () => {
     );
   });
 
-  // it('Function challenge should success', async function () {
-  //   const sourceChainId = 10;
-  //   const sourceTxHash = utils.keccak256('0x01');
-  //   const freezeToken = constants.AddressZero;
-  //   const freezeAmount = utils.parseEther('0.001');
+  it('Function challenge should success', async function () {
+    const sourceChainId = 10;
+    const sourceTxHash = utils.keccak256('0x01');
+    const freezeToken = constants.AddressZero;
+    const freezeAmount = utils.parseEther('0.001');
 
-  //   const tx = await orMakerDeposit.challenge(
-  //     sourceChainId,
-  //     sourceTxHash,
-  //     freezeToken,
-  //     freezeAmount,
-  //     { value: freezeAmount },
-  //   );
+    const tx = await orMakerDeposit.challenge(
+      sourceChainId,
+      sourceTxHash,
+      freezeToken,
+      freezeAmount,
+      { value: freezeAmount },
+    );
 
-  //   console.warn('tx.hash:', tx.hash);
-  // });
+    console.warn('tx.hash:', tx.hash);
+  });
 });

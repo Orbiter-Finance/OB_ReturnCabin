@@ -3,14 +3,14 @@ pragma solidity ^0.8.17;
 
 import "./interface/IORMakerDeposit.sol";
 import "./interface/IORManager.sol";
-import "./interface/IORProtocal.sol";
-import "./interface/IORProventh.sol";
 import "./interface/IORMDCFactory.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ArrayLib} from "./library/ArrayLib.sol";
 import {RuleLib} from "./library/RuleLib.sol";
+import {ConstantsLib} from "./library/ConstantsLib.sol";
 import {IORChallengeSpv} from "./interface/IORChallengeSpv.sol";
+import {IOREventBinding} from "./interface/IOREventBinding.sol";
 
 // TODO: for dev
 // import "hardhat/console.sol";
@@ -22,7 +22,7 @@ contract ORMakerDeposit is IORMakerDeposit {
     address private _owner;
     IORMDCFactory private _mdcFactory;
     bytes32 private _columnArrayHash;
-    mapping(uint16 => address) private _spvs; // chainId => spvAddress
+    mapping(uint32 => address) private _spvs; // chainId => spvAddress
     address[] private _responseMakers; // Response maker list, not just owner, to improve tps
     mapping(address => RuleLib.RootWithVersion) private _rulesRoots; // ebc => merkleRoot(rules), version
     mapping(address => mapping(bytes32 => uint)) private _pledgeBalances; // ebc => hash(sourceChainId, sourceToken) => pledgeBalance
@@ -60,7 +60,7 @@ contract ORMakerDeposit is IORMakerDeposit {
     function updateColumnArray(
         address[] calldata dealers,
         address[] calldata ebcs,
-        uint16[] calldata chainIds
+        uint32[] calldata chainIds
     ) external onlyOwner {
         require(dealers.length <= 10, "DOF");
         require(ebcs.length <= 10, "EOF");
@@ -90,11 +90,11 @@ contract ORMakerDeposit is IORMakerDeposit {
         emit ColumnArrayUpdated(impl, _columnArrayHash, dealers, ebcs, chainIds);
     }
 
-    function spv(uint16 chainId) external view returns (address) {
+    function spv(uint32 chainId) external view returns (address) {
         return _spvs[chainId];
     }
 
-    function updateSpvs(address[] calldata spvs, uint16[] calldata chainIds) external onlyOwner {
+    function updateSpvs(address[] calldata spvs, uint32[] calldata chainIds) external onlyOwner {
         IORManager manager = IORManager(_mdcFactory.manager());
         address impl = _mdcFactory.implementation();
 
@@ -162,7 +162,7 @@ contract ORMakerDeposit is IORMakerDeposit {
         address ebc,
         bytes calldata rsc,
         RuleLib.RootWithVersion calldata rootWithVersion,
-        uint16[] calldata sourceChainIds,
+        uint32[] calldata sourceChainIds,
         uint[] calldata pledgeAmounts
     ) external payable onlyOwner {
         // Prevent unused hints
@@ -194,7 +194,7 @@ contract ORMakerDeposit is IORMakerDeposit {
         address ebc,
         bytes calldata rsc,
         RuleLib.RootWithVersion calldata rootWithVersion,
-        uint16[] calldata sourceChainIds,
+        uint32[] calldata sourceChainIds,
         uint[] calldata pledgeAmounts,
         address token
     ) external onlyOwner {
@@ -233,7 +233,7 @@ contract ORMakerDeposit is IORMakerDeposit {
     }
 
     function challenge(
-        uint16 sourceChainId,
+        uint32 sourceChainId,
         bytes32 sourceTxHash,
         address freezeToken,
         uint freezeAmount
@@ -261,20 +261,49 @@ contract ORMakerDeposit is IORMakerDeposit {
         // TODO: state machine
     }
 
+    /**
+     *
+     * @param spvAddress The spv's address
+     * @param proof The zk's proof
+     * @param spvBlockHash The block hash used for the proof
+     * @param verifyInfo The public inputs preimage for zk proofs
+     * @param rawDatas The raw data list in preimage. [dealers, ebcs, chainIds, ebc, ...]
+     */
     function verifyChallengeSource(
         address spvAddress,
         bytes calldata proof,
         bytes32 spvBlockHash,
-        IORChallengeSpv.VerifyInfo calldata verifyInfo
+        IORChallengeSpv.VerifyInfo calldata verifyInfo,
+        bytes calldata rawDatas
     ) external {
         bytes32 verifyInfoHash = keccak256(abi.encode(verifyInfo));
 
         bool result = IORChallengeSpv(spvAddress).verifyChallenge(proof, spvBlockHash, verifyInfoHash);
         require(result, "VF");
 
-        bytes32 challengeId = keccak256(abi.encodePacked(uint16(verifyInfo.txInfos[0]), verifyInfo.txInfos[1]));
+        // Check chainId, hash
+        bytes32 challengeId = keccak256(abi.encodePacked(uint32(verifyInfo.txInfos[0]), verifyInfo.txInfos[1]));
         require(_challenges[challengeId].challengeTime > 0, "CTZ");
         require(_challenges[challengeId].verifiedTime0 == 0, "VT0NZ");
+
+        // Check to address == owner
+        require(uint160(verifyInfo.txInfos[3]) == uint160(_owner), "TNEO");
+
+        // Parse rawDatas
+        (address[] memory dealers, address[] memory ebcs, uint32[] memory chainIds, address ebc) = abi.decode(
+            rawDatas,
+            (address[], address[], uint32[], address)
+        );
+
+        // Check _columnArrayHash at the spvBlockHash
+        bytes32 cah = keccak256(abi.encodePacked(dealers, ebcs, chainIds));
+        require(verifyInfo.slots[0].account == address(this), "CAHA");
+        require(verifyInfo.slots[0].key == ConstantsLib.STORAGE_KEY_TWO, "CAHK");
+        require(bytes32(verifyInfo.slots[0].value) == cah, "CAHV");
+
+        // Check ebc
+        uint[] memory spilts = IOREventBinding(ebc).splitSecurityCodeFromAmount(verifyInfo.txInfos[5]);
+        require(ebc == ebcs[spilts[1]], "ENE");
 
         // TODO, check chainInfo.minVerifyChallengeSourceTxSecond,maxVerifyChallengeSourceTxSecond
 
@@ -299,7 +328,7 @@ contract ORMakerDeposit is IORMakerDeposit {
         bool result = IORChallengeSpv(spvAddress).verifyChallenge(proof, spvBlockHash, verifyInfoHash);
         require(result, "VF");
 
-        bytes32 challengeId = keccak256(abi.encodePacked(uint16(verifyInfo.txInfos[0]), verifyInfo.txInfos[1]));
+        bytes32 challengeId = keccak256(abi.encodePacked(uint32(verifyInfo.txInfos[0]), verifyInfo.txInfos[1]));
         require(_challenges[challengeId].verifiedTime0 > 0, "VT0Z");
         require(_challenges[challengeId].verifiedTime1 == 0, "VT1NZ");
 
