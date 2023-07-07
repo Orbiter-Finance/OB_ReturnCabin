@@ -59,4 +59,9 @@ contract TestStorage {
     function updateMappingStruct(uint32 key, TestStorageStruct memory struct_) external {
         _mappingStruct[key] = struct_;
     }
+
+    function calcSecondKey(uint position, uint sub) external pure returns (bytes32) {
+        bytes32 k = keccak256(abi.encode(sub, position));
+        return k;
+    }
 }

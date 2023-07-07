@@ -3,8 +3,8 @@ pragma solidity ^0.8.17;
 
 library BridgeLib {
     struct TokenInfo {
-        uint8 decimals;
         uint token; // uint160(address) will overflow in the token used for starknet
+        uint8 decimals;
         address mainnetToken;
     }
 

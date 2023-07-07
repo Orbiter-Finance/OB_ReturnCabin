@@ -2,25 +2,15 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
 import { BigNumber, BigNumberish } from 'ethers';
 import {
-  RLP,
+  defaultAbiCoder,
   hexConcat,
   hexDataSlice,
   hexZeroPad,
-  hexlify,
   keccak256,
   parseEther,
-  stripZeros,
-  zeroPad,
 } from 'ethers/lib/utils';
-import { ethers, network } from 'hardhat';
-import { BaseTrie } from 'merkle-patricia-tree';
-import {
-  TestStorage,
-  TestStorage__factory,
-  TestToken,
-  TestToken__factory,
-} from '../typechain-types';
-import { hexToBuffer } from './utils.test';
+import { ethers } from 'hardhat';
+import { TestStorage, TestStorage__factory } from '../typechain-types';
 
 describe('TestStorage', () => {
   let signers: SignerWithAddress[];
@@ -141,5 +131,21 @@ describe('TestStorage', () => {
     );
     const storageU128_3 = hexDataSlice(storageValue1, 16, 32);
     expect(hexZeroPad(struct.u128_3.toHexString(), 16)).to.eq(storageU128_3);
+  });
+
+  it('Function calcSecondKey', async function () {
+    const position = '0x00';
+    const sub = '0x01';
+    const k_byConcat = keccak256(
+      hexConcat([hexZeroPad(sub, 32), hexZeroPad(position, 32)]),
+    );
+
+    const k_byEncode = keccak256(
+      defaultAbiCoder.encode(['uint', 'uint'], [sub, position]),
+    );
+    expect(k_byConcat).to.eq(k_byEncode);
+
+    const secondKey = await testStorage.calcSecondKey(position, sub);
+    expect(k_byConcat).to.eq(secondKey);
   });
 });
