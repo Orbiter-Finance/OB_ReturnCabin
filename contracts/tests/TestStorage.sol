@@ -5,6 +5,7 @@ struct TestStorageStruct {
     uint128 u128_1;
     uint128 u128_2;
     uint128 u128_3;
+    uint[] uarr;
 }
 
 contract TestStorage {

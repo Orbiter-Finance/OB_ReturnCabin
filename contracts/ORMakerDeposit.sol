@@ -268,6 +268,8 @@ contract ORMakerDeposit is IORMakerDeposit {
      * @param proof The zk's proof
      * @param spvBlockHash The block hash used for the proof
      * @param verifyInfo The public inputs preimage for zk proofs
+     *        verifyInfo.data: [chainId, txHash, from, to, token, amount, nonce, timestamp, ruleHash]
+     *        verifyInfo.slots: [this._columnArrayHash, Manager._chains, this._rulesRoots]
      * @param rawDatas The raw data list in preimage. [dealers, ebcs, chainIds, ebc, ...]
      */
     function verifyChallengeSource(
@@ -283,19 +285,22 @@ contract ORMakerDeposit is IORMakerDeposit {
         require(result, "VF");
 
         // Check chainId, hash
-        bytes32 challengeId = keccak256(abi.encodePacked(verifyInfo.txInfo.chainId, verifyInfo.txInfo.txHash));
+        bytes32 challengeId = keccak256(abi.encodePacked(uint32(verifyInfo.data[0]), verifyInfo.data[1]));
         require(_challenges[challengeId].challengeTime > 0, "CTZ");
         require(_challenges[challengeId].verifiedTime0 == 0, "VT0NZ");
 
         // Check to address == owner
         // TODO: Not compatible with starknet network
-        require(verifyInfo.txInfo.from == uint(uint160(_owner)), "TNEO");
+        require(uint160(verifyInfo.data[2]) == uint160(_owner), "TNEO");
 
         // Parse rawDatas
-        (address[] memory dealers, address[] memory ebcs, uint32[] memory chainIds, address ebc) = abi.decode(
-            rawDatas,
-            (address[], address[], uint32[], address)
-        );
+        (
+            address[] memory dealers,
+            address[] memory ebcs,
+            uint32[] memory chainIds,
+            address ebc,
+            RuleLib.Rule memory rule
+        ) = abi.decode(rawDatas, (address[], address[], uint32[], address, RuleLib.Rule));
 
         // Check _columnArrayHash at the spvBlockHash
         {
@@ -305,24 +310,35 @@ contract ORMakerDeposit is IORMakerDeposit {
             require(bytes32(verifyInfo.slots[0].value) == cah, "CAHV");
         }
 
-        // Check ebc
+        // Check ebc address
         {
-            uint[] memory splits = IOREventBinding(ebc).splitSecurityCodeFromAmount(verifyInfo.txInfo.amount);
+            uint[] memory splits = IOREventBinding(ebc).splitSecurityCodeFromAmount(verifyInfo.data[5]);
             require(ebc == ebcs[splits[1]], "ENE");
         }
 
         // Check manager's chainInfo.minVerifyChallengeSourceTxSecond,maxVerifyChallengeSourceTxSecond
         {
             require(verifyInfo.slots[1].account == _mdcFactory.manager(), "VCSTA");
-            uint slotK1 = uint(keccak256(abi.encode(verifyInfo.txInfo.chainId, 0)));
+            uint slotK1 = uint(keccak256(abi.encode(verifyInfo.data[0], 0))); // abi.encode no need to convert type
             require(uint(verifyInfo.slots[1].key) == slotK1 + 2, "VCSTK");
 
-            uint timeDiff = block.timestamp - verifyInfo.txInfo.timestamp;
+            uint timeDiff = block.timestamp - verifyInfo.data[7];
             require(timeDiff >= ((verifyInfo.slots[1].value << 192) >> 192), "MINTOF");
             require(timeDiff <= ((verifyInfo.slots[1].value << 128) >> 192), "MAXTOF");
         }
 
-        // TODO: Check that freezeToken and freezeAmount are correct
+        // Check ruleRoot key and rule
+        {
+            // Rule root
+            require(verifyInfo.slots[2].account == address(this), "RRA");
+            uint slotK2 = uint(keccak256(abi.encode(ebc, 5)));
+            require(uint(verifyInfo.slots[2].key) == slotK2, "RRK");
+
+            // Rule
+            require(uint(keccak256(abi.encode(rule))) == verifyInfo.data[8], "RH");
+        }
+
+        // Check freezeToken and freezeAmount
 
         _challenges[challengeId].verifiedTime0 = uint64(block.timestamp);
 
@@ -343,7 +359,7 @@ contract ORMakerDeposit is IORMakerDeposit {
         bool result = IORChallengeSpv(spvAddress).verifyChallenge(proof, spvBlockHash, verifyInfoHash);
         require(result, "VF");
 
-        bytes32 challengeId = keccak256(abi.encodePacked(verifyInfo.txInfo.chainId, verifyInfo.txInfo.txHash));
+        bytes32 challengeId = keccak256(abi.encodePacked(uint32(verifyInfo.data[0]), verifyInfo.data[1]));
         require(_challenges[challengeId].verifiedTime0 > 0, "VT0Z");
         require(_challenges[challengeId].verifiedTime1 == 0, "VT1NZ");
 

@@ -11,11 +11,10 @@ library BridgeLib {
     struct ChainInfo {
         uint32 id;
         uint224 batchLimit;
-        address[] spvs;
         uint64 minVerifyChallengeSourceTxSecond;
         uint64 maxVerifyChallengeSourceTxSecond;
         uint64 minVerifyChallengeDestTxSecond;
         uint64 maxVerifyChallengeDestTxSecond;
-        TokenInfo[] tokens;
+        address[] spvs;
     }
 }

@@ -8,19 +8,8 @@ interface IORChallengeSpv {
         uint value;
     }
 
-    struct VerifyInfoTxInfo {
-        uint32 chainId;
-        bytes32 txHash;
-        uint from;
-        uint to;
-        uint token;
-        uint amount;
-        uint nonce;
-        uint64 timestamp;
-    }
-
     struct VerifyInfo {
-        VerifyInfoTxInfo txInfo;
+        uint[] data;
         VerifyInfoSlot[] slots;
     }
 

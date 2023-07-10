@@ -61,16 +61,6 @@ describe('Test ORManager', () => {
         event.args!.chainInfo,
       );
 
-      for (const j in chainInfo.tokens) {
-        expect(lodash.toPlainObject(chainInfo.tokens[j])).to.deep.includes(
-          chains[i].tokens[j],
-        );
-      }
-
-      // ignore tokens
-      chainInfo['tokens'] = [];
-      chains[i]['tokens'] = [];
-
       expect(lodash.toPlainObject(chainInfo)).to.deep.includes(chains[i]);
 
       const storageChainInfo = await orManager.getChainInfo(chains[i].id);
@@ -96,30 +86,36 @@ describe('Test ORManager', () => {
   });
 
   it('Function updateChainTokens should succeed', async function () {
-    const chainId = defaultChainInfo.id;
-
+    const chainIds: number[] = [];
     const tokens: BridgeLib.TokenInfoStruct[] = [];
-    const indexs: BigNumberish[] = [BigNumber.from(0)];
-    for (let i = 0; i < 10; i++) {
+    for (let i = 1; i <= 10; i++) {
+      chainIds.push(Number(defaultChainInfo.id));
       tokens.push({
-        decimals: i * 2,
         token: BigNumber.from(ethers.Wallet.createRandom().address).add(0), // add(0), convert _hex uppercase to lowercase
+        decimals: i * 2,
         mainnetToken: constants.AddressZero,
       });
     }
 
     const { events } = await orManager
-      .updateChainTokens(chainId, tokens, indexs)
+      .updateChainTokens(chainIds, tokens)
       .then((t) => t.wait());
 
-    const args = events![0].args!;
-
-    expect(args.id).eq(chainId);
-    for (const i in args.chainInfo.tokens) {
-      expect(lodash.toPlainObject(args.chainInfo.tokens[i])).to.deep.includes(
-        tokens[Number(i)],
+    (events || []).forEach((event, i) => {
+      expect(event.args?.id).to.eq(chainIds[i]);
+      expect(lodash.toPlainObject(event.args?.tokenInfo)).to.deep.includes(
+        tokens[i],
       );
-    }
+    });
+
+    const latestIndex = tokens.length - 1;
+    const tokenInfo = await orManager.getChainTokenInfo(
+      chainIds[latestIndex],
+      tokens[latestIndex].mainnetToken,
+    );
+    expect(lodash.toPlainObject(tokenInfo)).to.deep.includes(
+      tokens[latestIndex],
+    );
   });
 
   it('Function updateEbcs should succeed', async function () {

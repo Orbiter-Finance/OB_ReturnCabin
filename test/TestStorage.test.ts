@@ -113,6 +113,7 @@ describe('TestStorage', () => {
       u128_1: parseEther('400'),
       u128_2: parseEther('500'),
       u128_3: parseEther('600'),
+      uarr: ['0x1000', '0x2000', '0x3000'],
     };
 
     await testStorage.updateMappingStruct(key, struct).then((t) => t.wait());
@@ -131,6 +132,21 @@ describe('TestStorage', () => {
     );
     const storageU128_3 = hexDataSlice(storageValue1, 16, 32);
     expect(hexZeroPad(struct.u128_3.toHexString(), 16)).to.eq(storageU128_3);
+
+    for (let i = 0; i < 200000; i++) {
+      const s = await getStorageAt(
+        hexZeroPad(BigNumber.from(storageKey).add(i).toHexString(), 32),
+      );
+
+      if (BigNumber.from(s).gt(0)) {
+        console.warn('index:', i, ', s:', s);
+      }
+    }
+
+    const storageValue2_0 = await getStorageAt(
+      hexZeroPad(BigNumber.from(storageKey).add(5).toHexString(), 32),
+    );
+    console.warn('storageValue2_0:', storageValue2_0);
   });
 
   it('Function calcSecondKey', async function () {

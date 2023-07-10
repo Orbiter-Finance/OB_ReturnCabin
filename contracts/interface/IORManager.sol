@@ -5,6 +5,7 @@ import {BridgeLib} from "../library/BridgeLib.sol";
 
 interface IORManager {
     event ChainInfoUpdated(uint32 indexed id, BridgeLib.ChainInfo chainInfo);
+    event ChainTokenUpdated(uint32 indexed id, BridgeLib.TokenInfo tokenInfo);
     event EbcsUpdated(address[] ebcs, bool[] statuses);
     event SubmitterFeeUpdated(address submitter);
     event ProtocolFeeUpdated(uint64 protocolFee);
@@ -18,9 +19,11 @@ interface IORManager {
 
     function updateChainSpvs(uint32 id, address[] calldata spvs, uint[] calldata indexs) external;
 
-    function updateChainTokens(uint32 id, BridgeLib.TokenInfo[] calldata token, uint[] calldata indexs) external;
-
     function getChainInfo(uint32 id) external view returns (BridgeLib.ChainInfo memory);
+
+    function updateChainTokens(uint32[] memory ids, BridgeLib.TokenInfo[] calldata tokenInfos) external;
+
+    function getChainTokenInfo(uint32 id, address mainnetToken) external view returns (BridgeLib.TokenInfo memory);
 
     function ebcIncludes(address ebc) external view returns (bool);
 
