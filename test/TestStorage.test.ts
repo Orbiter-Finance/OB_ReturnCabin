@@ -119,7 +119,7 @@ describe('TestStorage', () => {
     await testStorage.updateMappingStruct(key, struct).then((t) => t.wait());
 
     const storageKey = keccak256(
-      hexConcat([hexZeroPad(key, 32), hexZeroPad('0x05', 32)]),
+      defaultAbiCoder.encode(['uint', 'uint'], [key, '0x05']),
     );
     const storageValue = await getStorageAt(storageKey);
     const storageU128_1 = hexDataSlice(storageValue, 16, 32);
@@ -133,26 +133,18 @@ describe('TestStorage', () => {
     const storageU128_3 = hexDataSlice(storageValue1, 16, 32);
     expect(hexZeroPad(struct.u128_3.toHexString(), 16)).to.eq(storageU128_3);
 
-    for (let i = 0; i < 20; i++) {
-      const s = await getStorageAt(
-        keccak256(
-          hexConcat([
-            hexZeroPad(key, 32),
-            hexZeroPad('0x02', 32),
-            hexZeroPad('0x05', 32),
-          ]),
-        ),
-      );
-
-      if (BigNumber.from(s).gt(0)) {
-        console.warn('index:', i, ', s:', s);
-      }
-    }
-
-    const storageValue2_0 = await getStorageAt(
-      hexZeroPad(BigNumber.from(storageKey).add(5).toHexString(), 32),
+    const storageKeyUarr = keccak256(
+      hexZeroPad(BigNumber.from(storageKey).add(2).toHexString(), 32),
     );
-    console.warn('storageValue2_0:', storageValue2_0);
+    for (let i = 0; i < struct.uarr.length; i++) {
+      const key = hexZeroPad(
+        BigNumber.from(storageKeyUarr).add(i).toHexString(),
+        32,
+      );
+      const value = await getStorageAt(key);
+
+      expect(BigNumber.from(value)).to.eq(BigNumber.from(struct.uarr[i]));
+    }
   });
 
   it('Function calcSecondKey', async function () {
