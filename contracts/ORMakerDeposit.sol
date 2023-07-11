@@ -325,13 +325,13 @@ contract ORMakerDeposit is IORMakerDeposit {
             require(_challenges[challengeId].freezeToken == address(uint160(verifyInfo.slots[1].value)), "FTV");
 
             // FreezeAmount
-            // require(verifyInfo.slots[2].account == _mdcFactory.manager(), "FAA");
-            // uint slotK = uint(
-            //     keccak256(abi.encode(keccak256(abi.encodePacked(uint32(verifyInfo.data[0]), verifyInfo.data[4])), 1))
-            // );
-            // require(uint(verifyInfo.slots[1].key) == slotK + 1, "FAK");
-            // require(_challenges[challengeId].freezeToken == address(uint160(verifyInfo.slots[1].value)), "FTV");
-            // require(_challenges[challengeId].freezeAmount1 >= verifyInfo.slots[1].value, "FTV");
+            require(verifyInfo.slots[2].account == _mdcFactory.manager(), "FAA");
+            require(uint(verifyInfo.slots[2].key) == 4, "FAK");
+            uint64 _minChallengeRatio = uint64(verifyInfo.slots[2].value >> 192);
+            require(
+                _challenges[challengeId].freezeAmount1 >= (verifyInfo.data[5] * _minChallengeRatio) / 10000,
+                "FALV"
+            );
         }
 
         // Check _columnArrayHash at the spvBlockHash
