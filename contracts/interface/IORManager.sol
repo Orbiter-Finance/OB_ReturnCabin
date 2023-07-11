@@ -23,7 +23,7 @@ interface IORManager {
 
     function updateChainTokens(uint32[] memory ids, BridgeLib.TokenInfo[] calldata tokenInfos) external;
 
-    function getChainTokenInfo(uint32 id, address mainnetToken) external view returns (BridgeLib.TokenInfo memory);
+    function getChainTokenInfo(uint32 id, uint token) external view returns (BridgeLib.TokenInfo memory);
 
     function ebcIncludes(address ebc) external view returns (bool);
 

@@ -237,23 +237,24 @@ contract ORMakerDeposit is IORMakerDeposit {
         uint32 sourceChainId,
         bytes32 sourceTxHash,
         address freezeToken,
-        uint freezeAmount
+        uint freezeAmount1
     ) external payable {
         bytes32 k = keccak256(abi.encodePacked(sourceChainId, sourceTxHash));
         require(_challenges[k].challengeTime == 0, "CE");
 
         if (freezeToken == address(0)) {
-            require(freezeAmount == msg.value, "IF");
+            require(freezeAmount1 == msg.value, "IF");
         } else {
-            IERC20(freezeToken).safeTransferFrom(msg.sender, address(this), freezeAmount);
+            IERC20(freezeToken).safeTransferFrom(msg.sender, address(this), freezeAmount1);
         }
 
         // TODO: Currently it is assumed that the pledged assets of the challenger and the owner are the same
+        uint freezeAmount0 = freezeAmount1;
 
-        // Freeze mdc's owner assets
-        _freezeAssets[freezeToken] += freezeAmount;
+        // Freeze mdc's owner assets and the assets in of challenger
+        _freezeAssets[freezeToken] += freezeAmount0 + freezeAmount1;
 
-        _challenges[k] = ChallengeInfo(freezeToken, freezeAmount, 0, uint64(block.timestamp), 0, 0, 0);
+        _challenges[k] = ChallengeInfo(freezeToken, freezeAmount0, freezeAmount1, uint64(block.timestamp), 0, 0, 0);
 
         // TODO: emit event
     }
@@ -302,12 +303,43 @@ contract ORMakerDeposit is IORMakerDeposit {
             RuleLib.Rule memory rule
         ) = abi.decode(rawDatas, (address[], address[], uint32[], address, RuleLib.Rule));
 
+        // Check manager's chainInfo.minVerifyChallengeSourceTxSecond,maxVerifyChallengeSourceTxSecond
+        {
+            require(verifyInfo.slots[0].account == _mdcFactory.manager(), "VCSTA");
+            uint slotK = uint(keccak256(abi.encode(verifyInfo.data[0], 0))); // abi.encode no need to convert type
+            require(uint(verifyInfo.slots[0].key) == slotK + 2, "VCSTK");
+
+            uint timeDiff = block.timestamp - verifyInfo.data[7];
+            require(timeDiff >= ((verifyInfo.slots[0].value << 192) >> 192), "MINTOF");
+            require(timeDiff <= ((verifyInfo.slots[0].value << 128) >> 192), "MAXTOF");
+        }
+
+        // Check freezeToken and freezeAmount
+        {
+            // FreezeToken
+            require(verifyInfo.slots[1].account == _mdcFactory.manager(), "FTA");
+            uint slotK = uint(
+                keccak256(abi.encode(keccak256(abi.encodePacked(uint32(verifyInfo.data[0]), verifyInfo.data[4])), 1))
+            );
+            require(uint(verifyInfo.slots[1].key) == slotK + 1, "FTK");
+            require(_challenges[challengeId].freezeToken == address(uint160(verifyInfo.slots[1].value)), "FTV");
+
+            // FreezeAmount
+            // require(verifyInfo.slots[2].account == _mdcFactory.manager(), "FAA");
+            // uint slotK = uint(
+            //     keccak256(abi.encode(keccak256(abi.encodePacked(uint32(verifyInfo.data[0]), verifyInfo.data[4])), 1))
+            // );
+            // require(uint(verifyInfo.slots[1].key) == slotK + 1, "FAK");
+            // require(_challenges[challengeId].freezeToken == address(uint160(verifyInfo.slots[1].value)), "FTV");
+            // require(_challenges[challengeId].freezeAmount1 >= verifyInfo.slots[1].value, "FTV");
+        }
+
         // Check _columnArrayHash at the spvBlockHash
         {
             bytes32 cah = keccak256(abi.encodePacked(dealers, ebcs, chainIds));
-            require(verifyInfo.slots[0].account == address(this), "CAHA");
-            require(verifyInfo.slots[0].key == ConstantsLib.STORAGE_KEY_TWO, "CAHK");
-            require(bytes32(verifyInfo.slots[0].value) == cah, "CAHV");
+            require(verifyInfo.slots[2].account == address(this), "CAHA");
+            require(verifyInfo.slots[2].key == ConstantsLib.STORAGE_KEY_TWO, "CAHK");
+            require(bytes32(verifyInfo.slots[2].value) == cah, "CAHV");
         }
 
         // Check ebc address
@@ -316,29 +348,16 @@ contract ORMakerDeposit is IORMakerDeposit {
             require(ebc == ebcs[splits[1]], "ENE");
         }
 
-        // Check manager's chainInfo.minVerifyChallengeSourceTxSecond,maxVerifyChallengeSourceTxSecond
-        {
-            require(verifyInfo.slots[1].account == _mdcFactory.manager(), "VCSTA");
-            uint slotK1 = uint(keccak256(abi.encode(verifyInfo.data[0], 0))); // abi.encode no need to convert type
-            require(uint(verifyInfo.slots[1].key) == slotK1 + 2, "VCSTK");
-
-            uint timeDiff = block.timestamp - verifyInfo.data[7];
-            require(timeDiff >= ((verifyInfo.slots[1].value << 192) >> 192), "MINTOF");
-            require(timeDiff <= ((verifyInfo.slots[1].value << 128) >> 192), "MAXTOF");
-        }
-
         // Check ruleRoot key and rule
         {
             // Rule root
-            require(verifyInfo.slots[2].account == address(this), "RRA");
+            require(verifyInfo.slots[3].account == address(this), "RRA");
             uint slotK2 = uint(keccak256(abi.encode(ebc, 5)));
-            require(uint(verifyInfo.slots[2].key) == slotK2, "RRK");
+            require(uint(verifyInfo.slots[3].key) == slotK2, "RRK");
 
             // Rule
             require(uint(keccak256(abi.encode(rule))) == verifyInfo.data[8], "RH");
         }
-
-        // Check freezeToken and freezeAmount
 
         _challenges[challengeId].verifiedTime0 = uint64(block.timestamp);
 

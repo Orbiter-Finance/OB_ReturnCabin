@@ -6,11 +6,11 @@ import "./interface/IORManager.sol";
 
 contract ORManager is IORManager, Ownable {
     mapping(uint32 => BridgeLib.ChainInfo) private _chains;
-    mapping(bytes32 => BridgeLib.TokenInfo) private _chainTokens; // hash(chainId, mainnetToken) => TokenInfo
+    mapping(bytes32 => BridgeLib.TokenInfo) private _chainTokens; // hash(chainId, token) => TokenInfo
     mapping(address => bool) private _ebcs;
     address private _submitter;
     uint64 private _protocolFee;
-    uint64 private _minChallengeRatio = 200;
+    uint64 private _minChallengeRatio = 20000; // 10,000 percent
     uint64 private _challengeUserRatio;
     uint64 private _feeChallengeSecond;
     uint64 private _feeTakeOnChallengeSecond;
@@ -50,15 +50,15 @@ contract ORManager is IORManager, Ownable {
     function updateChainTokens(uint32[] calldata ids, BridgeLib.TokenInfo[] calldata tokenInfos) external onlyOwner {
         unchecked {
             for (uint i = 0; i < ids.length; i++) {
-                bytes32 key = keccak256(abi.encodePacked(ids[i], tokenInfos[i].mainnetToken));
+                bytes32 key = keccak256(abi.encodePacked(ids[i], tokenInfos[i].token));
                 _chainTokens[key] = tokenInfos[i];
                 emit ChainTokenUpdated(ids[i], tokenInfos[i]);
             }
         }
     }
 
-    function getChainTokenInfo(uint32 id, address mainnetToken) external view returns (BridgeLib.TokenInfo memory) {
-        bytes32 key = keccak256(abi.encodePacked(id, mainnetToken));
+    function getChainTokenInfo(uint32 id, uint token) external view returns (BridgeLib.TokenInfo memory) {
+        bytes32 key = keccak256(abi.encodePacked(id, token));
         return _chainTokens[key];
     }
 

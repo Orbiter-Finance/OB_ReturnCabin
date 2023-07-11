@@ -92,8 +92,8 @@ describe('Test ORManager', () => {
       chainIds.push(Number(defaultChainInfo.id));
       tokens.push({
         token: BigNumber.from(ethers.Wallet.createRandom().address).add(0), // add(0), convert _hex uppercase to lowercase
-        decimals: i * 2,
         mainnetToken: constants.AddressZero,
+        decimals: i * 2,
       });
     }
 
@@ -111,7 +111,7 @@ describe('Test ORManager', () => {
     const latestIndex = tokens.length - 1;
     const tokenInfo = await orManager.getChainTokenInfo(
       chainIds[latestIndex],
-      tokens[latestIndex].mainnetToken,
+      tokens[latestIndex].token,
     );
     expect(lodash.toPlainObject(tokenInfo)).to.deep.includes(
       tokens[latestIndex],

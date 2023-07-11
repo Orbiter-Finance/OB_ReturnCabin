@@ -8,7 +8,7 @@ interface IORMakerDeposit {
     struct ChallengeInfo {
         address freezeToken; // Freeze token on L1
         uint freezeAmount0; // Owner's freeze amount
-        uint freezeAmount1; // Challenger's free amount
+        uint freezeAmount1; // Challenger's freeze amount
         uint64 challengeTime; // Time of challenge
         uint64 verifiedTime0; // Time of verifyChallengeSource. Greater than 0 means verification passed
         uint64 verifiedTime1; // Time of verifyChallengeDest. Greater than 0 means verification passed
