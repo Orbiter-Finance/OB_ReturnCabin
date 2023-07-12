@@ -2,7 +2,7 @@ import { BigNumber, constants, ethers } from 'ethers';
 import { BridgeLib } from '../typechain-types/contracts/ORManager';
 
 export const defaultChainInfo: BridgeLib.ChainInfoStruct = {
-  id: 5,
+  id: BigNumber.from(5),
   batchLimit: BigNumber.from(1000),
   minVerifyChallengeSourceTxSecond: BigNumber.from(100),
   maxVerifyChallengeSourceTxSecond: BigNumber.from(200),

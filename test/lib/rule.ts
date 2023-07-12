@@ -6,8 +6,8 @@ import Pako from 'pako';
 import { hexToBuffer } from '../utils.test';
 
 export const ruleTypes = [
-  'uint32', // chain0's id
-  'uint32', // chain1's id
+  'uint64', // chain0's id
+  'uint64', // chain1's id
   'uint8', // chain0's status
   'uint8', // chain1's status
   'uint', // chain0's token
@@ -26,8 +26,8 @@ export const ruleTypes = [
 
 export function createRandomRule() {
   return [
-    1,
-    2,
+    BigNumber.from(1),
+    BigNumber.from(2),
     0,
     1,
     Wallet.createRandom().address,
@@ -48,8 +48,8 @@ export function createRandomRule() {
 export function calculateRuleKey(rule: BigNumberish[]) {
   return utils.keccak256(
     utils.solidityPack(
-      ['uint16', 'uint16', 'uint8', 'uint8'],
-      rule.slice(0, 4),
+      ['uint16', 'uint16', 'uint', 'uint'],
+      rule.slice(0, 2).concat(rule.slice(4, 6)),
     ),
   );
 }

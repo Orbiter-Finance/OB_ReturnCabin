@@ -5,7 +5,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import "./interface/IORManager.sol";
 
 contract ORManager is IORManager, Ownable {
-    mapping(uint32 => BridgeLib.ChainInfo) private _chains;
+    mapping(uint64 => BridgeLib.ChainInfo) private _chains;
     mapping(bytes32 => BridgeLib.TokenInfo) private _chainTokens; // hash(chainId, token) => TokenInfo
     mapping(address => bool) private _ebcs;
     address private _submitter;
@@ -24,13 +24,15 @@ contract ORManager is IORManager, Ownable {
     function registerChains(BridgeLib.ChainInfo[] calldata chains_) external onlyOwner {
         unchecked {
             for (uint i = 0; i < chains_.length; i++) {
+                // TODO: There may be some settings that need to restrict modification
+
                 _chains[chains_[i].id] = chains_[i];
                 emit ChainInfoUpdated(chains_[i].id, chains_[i]);
             }
         }
     }
 
-    function updateChainSpvs(uint32 id, address[] calldata spvs, uint[] calldata indexs) external onlyOwner {
+    function updateChainSpvs(uint64 id, address[] calldata spvs, uint[] calldata indexs) external onlyOwner {
         unchecked {
             for (uint i = 0; i < spvs.length; i++) {
                 if (i < indexs.length) {
@@ -43,11 +45,11 @@ contract ORManager is IORManager, Ownable {
         emit ChainInfoUpdated(id, _chains[id]);
     }
 
-    function getChainInfo(uint32 id) external view returns (BridgeLib.ChainInfo memory) {
+    function getChainInfo(uint64 id) external view returns (BridgeLib.ChainInfo memory) {
         return _chains[id];
     }
 
-    function updateChainTokens(uint32[] calldata ids, BridgeLib.TokenInfo[] calldata tokenInfos) external onlyOwner {
+    function updateChainTokens(uint64[] calldata ids, BridgeLib.TokenInfo[] calldata tokenInfos) external onlyOwner {
         unchecked {
             for (uint i = 0; i < ids.length; i++) {
                 bytes32 key = keccak256(abi.encodePacked(ids[i], tokenInfos[i].token));
@@ -57,7 +59,7 @@ contract ORManager is IORManager, Ownable {
         }
     }
 
-    function getChainTokenInfo(uint32 id, uint token) external view returns (BridgeLib.TokenInfo memory) {
+    function getChainTokenInfo(uint64 id, uint token) external view returns (BridgeLib.TokenInfo memory) {
         bytes32 key = keccak256(abi.encodePacked(id, token));
         return _chainTokens[key];
     }

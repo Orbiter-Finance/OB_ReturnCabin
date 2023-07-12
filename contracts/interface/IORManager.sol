@@ -4,8 +4,8 @@ pragma solidity ^0.8.17;
 import {BridgeLib} from "../library/BridgeLib.sol";
 
 interface IORManager {
-    event ChainInfoUpdated(uint32 indexed id, BridgeLib.ChainInfo chainInfo);
-    event ChainTokenUpdated(uint32 indexed id, BridgeLib.TokenInfo tokenInfo);
+    event ChainInfoUpdated(uint64 indexed id, BridgeLib.ChainInfo chainInfo);
+    event ChainTokenUpdated(uint64 indexed id, BridgeLib.TokenInfo tokenInfo);
     event EbcsUpdated(address[] ebcs, bool[] statuses);
     event SubmitterFeeUpdated(address submitter);
     event ProtocolFeeUpdated(uint64 protocolFee);
@@ -17,13 +17,13 @@ interface IORManager {
 
     function registerChains(BridgeLib.ChainInfo[] calldata chains_) external;
 
-    function updateChainSpvs(uint32 id, address[] calldata spvs, uint[] calldata indexs) external;
+    function updateChainSpvs(uint64 id, address[] calldata spvs, uint[] calldata indexs) external;
 
-    function getChainInfo(uint32 id) external view returns (BridgeLib.ChainInfo memory);
+    function getChainInfo(uint64 id) external view returns (BridgeLib.ChainInfo memory);
 
-    function updateChainTokens(uint32[] memory ids, BridgeLib.TokenInfo[] calldata tokenInfos) external;
+    function updateChainTokens(uint64[] memory ids, BridgeLib.TokenInfo[] calldata tokenInfos) external;
 
-    function getChainTokenInfo(uint32 id, uint token) external view returns (BridgeLib.TokenInfo memory);
+    function getChainTokenInfo(uint64 id, uint token) external view returns (BridgeLib.TokenInfo memory);
 
     function ebcIncludes(address ebc) external view returns (bool);
 

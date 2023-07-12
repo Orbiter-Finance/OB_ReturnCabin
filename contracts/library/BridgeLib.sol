@@ -9,8 +9,8 @@ library BridgeLib {
     }
 
     struct ChainInfo {
-        uint32 id;
-        uint224 batchLimit;
+        uint64 id;
+        uint192 batchLimit;
         uint64 minVerifyChallengeSourceTxSecond;
         uint64 maxVerifyChallengeSourceTxSecond;
         uint64 minVerifyChallengeDestTxSecond;

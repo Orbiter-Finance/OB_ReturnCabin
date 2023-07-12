@@ -22,7 +22,7 @@ contract ORMakerDeposit is IORMakerDeposit {
     address private _owner;
     IORMDCFactory private _mdcFactory;
     bytes32 private _columnArrayHash;
-    mapping(uint32 => address) private _spvs; // chainId => spvAddress
+    mapping(uint64 => address) private _spvs; // chainId => spvAddress
     address[] private _responseMakers; // Response maker list, not just owner, to improve tps
     mapping(address => RuleLib.RootWithVersion) private _rulesRoots; // ebc => merkleRoot(rules), version
     mapping(address => mapping(bytes32 => uint)) private _pledgeBalances; // ebc => hash(sourceChainId, sourceToken) => pledgeBalance
@@ -60,7 +60,7 @@ contract ORMakerDeposit is IORMakerDeposit {
     function updateColumnArray(
         address[] calldata dealers,
         address[] calldata ebcs,
-        uint32[] calldata chainIds
+        uint64[] calldata chainIds
     ) external onlyOwner {
         require(dealers.length <= 10, "DOF");
         require(ebcs.length <= 10, "EOF");
@@ -90,11 +90,11 @@ contract ORMakerDeposit is IORMakerDeposit {
         emit ColumnArrayUpdated(impl, _columnArrayHash, dealers, ebcs, chainIds);
     }
 
-    function spv(uint32 chainId) external view returns (address) {
+    function spv(uint64 chainId) external view returns (address) {
         return _spvs[chainId];
     }
 
-    function updateSpvs(address[] calldata spvs, uint32[] calldata chainIds) external onlyOwner {
+    function updateSpvs(address[] calldata spvs, uint64[] calldata chainIds) external onlyOwner {
         IORManager manager = IORManager(_mdcFactory.manager());
         address impl = _mdcFactory.implementation();
 
@@ -163,7 +163,7 @@ contract ORMakerDeposit is IORMakerDeposit {
         address ebc,
         bytes calldata rsc,
         RuleLib.RootWithVersion calldata rootWithVersion,
-        uint32[] calldata sourceChainIds,
+        uint64[] calldata sourceChainIds,
         uint[] calldata pledgeAmounts
     ) external payable onlyOwner {
         // Prevent unused hints
@@ -195,7 +195,7 @@ contract ORMakerDeposit is IORMakerDeposit {
         address ebc,
         bytes calldata rsc,
         RuleLib.RootWithVersion calldata rootWithVersion,
-        uint32[] calldata sourceChainIds,
+        uint64[] calldata sourceChainIds,
         uint[] calldata pledgeAmounts,
         address token
     ) external onlyOwner {
@@ -234,7 +234,7 @@ contract ORMakerDeposit is IORMakerDeposit {
     }
 
     function challenge(
-        uint32 sourceChainId,
+        uint64 sourceChainId,
         bytes32 sourceTxHash,
         address freezeToken,
         uint freezeAmount1
@@ -254,13 +254,51 @@ contract ORMakerDeposit is IORMakerDeposit {
         // Freeze mdc's owner assets and the assets in of challenger
         _freezeAssets[freezeToken] += freezeAmount0 + freezeAmount1;
 
-        _challenges[k] = ChallengeInfo(freezeToken, freezeAmount0, freezeAmount1, uint64(block.timestamp), 0, 0, 0);
+        _challenges[k] = ChallengeInfo(
+            msg.sender,
+            freezeToken,
+            freezeAmount0,
+            freezeAmount1,
+            uint64(block.timestamp),
+            0,
+            0,
+            0,
+            0
+        );
 
         // TODO: emit event
     }
 
-    function checkChallenge(bytes32 challengeId) external {
-        // TODO: state machine
+    function checkChallenge(uint64 sourceChainId, bytes32 sourceTxHash, uint[] calldata verifiedData0) external {
+        bytes32 challengeId = keccak256(abi.encodePacked(uint64(sourceChainId), sourceTxHash));
+        ChallengeInfo memory challengeInfo = _challenges[challengeId];
+
+        // Make sure the challenge exists
+        require(challengeInfo.challengeTime > 0, "CNE");
+
+        // Make sure verifyChallengeDest is not done yet
+        require(challengeInfo.verifiedTime1 == 0, "VT1NZ");
+
+        // Ensure the correctness of verifiedData0
+        require(keccak256(abi.encode(verifiedData0)) == challengeInfo.verifiedDataHash0, "VDH");
+
+        IORManager manager = IORManager(_mdcFactory.manager());
+
+        if (challengeInfo.verifiedTime0 == 0) {
+            BridgeLib.ChainInfo memory chainInfo = manager.getChainInfo(sourceChainId);
+
+            // TODO: Should the start time be sourceTx's time or challengeTime?
+            //       If it is sourceTx's time, sourceTx's time needs to be submit when challenge
+            if (block.timestamp > chainInfo.maxVerifyChallengeSourceTxSecond + challengeInfo.challengeTime) {
+                // TODO: challenger failed
+            }
+        } else {
+            BridgeLib.ChainInfo memory chainInfo = manager.getChainInfo(uint64(verifiedData0[0]));
+
+            if (block.timestamp > chainInfo.maxVerifyChallengeDestTxSecond + challengeInfo.challengeTime) {
+                // TODO: mdc failed
+            }
+        }
     }
 
     /**
@@ -286,7 +324,7 @@ contract ORMakerDeposit is IORMakerDeposit {
         require(result, "VF");
 
         // Check chainId, hash
-        bytes32 challengeId = keccak256(abi.encodePacked(uint32(verifyInfo.data[0]), verifyInfo.data[1]));
+        bytes32 challengeId = keccak256(abi.encodePacked(uint64(verifyInfo.data[0]), verifyInfo.data[1]));
         require(_challenges[challengeId].challengeTime > 0, "CTZ");
         require(_challenges[challengeId].verifiedTime0 == 0, "VT0NZ");
 
@@ -298,10 +336,10 @@ contract ORMakerDeposit is IORMakerDeposit {
         (
             address[] memory dealers,
             address[] memory ebcs,
-            uint32[] memory chainIds,
+            uint64[] memory chainIds,
             address ebc,
             RuleLib.Rule memory rule
-        ) = abi.decode(rawDatas, (address[], address[], uint32[], address, RuleLib.Rule));
+        ) = abi.decode(rawDatas, (address[], address[], uint64[], address, RuleLib.Rule));
 
         // Check manager's chainInfo.minVerifyChallengeSourceTxSecond,maxVerifyChallengeSourceTxSecond
         {
@@ -310,8 +348,8 @@ contract ORMakerDeposit is IORMakerDeposit {
             require(uint(verifyInfo.slots[0].key) == slotK + 2, "VCSTK");
 
             uint timeDiff = block.timestamp - verifyInfo.data[7];
-            require(timeDiff >= ((verifyInfo.slots[0].value << 192) >> 192), "MINTOF");
-            require(timeDiff <= ((verifyInfo.slots[0].value << 128) >> 192), "MAXTOF");
+            require(timeDiff >= uint64(verifyInfo.slots[0].value), "MINTOF");
+            require(timeDiff <= uint64(verifyInfo.slots[0].value >> 64), "MAXTOF");
         }
 
         // Check freezeToken and freezeAmount
@@ -319,7 +357,7 @@ contract ORMakerDeposit is IORMakerDeposit {
             // FreezeToken
             require(verifyInfo.slots[1].account == _mdcFactory.manager(), "FTA");
             uint slotK = uint(
-                keccak256(abi.encode(keccak256(abi.encodePacked(uint32(verifyInfo.data[0]), verifyInfo.data[4])), 1))
+                keccak256(abi.encode(keccak256(abi.encodePacked(uint64(verifyInfo.data[0]), verifyInfo.data[4])), 1))
             );
             require(uint(verifyInfo.slots[1].key) == slotK + 1, "FTK");
             require(_challenges[challengeId].freezeToken == address(uint160(verifyInfo.slots[1].value)), "FTV");
@@ -327,7 +365,7 @@ contract ORMakerDeposit is IORMakerDeposit {
             // FreezeAmount
             require(verifyInfo.slots[2].account == _mdcFactory.manager(), "FAA");
             require(uint(verifyInfo.slots[2].key) == 4, "FAK");
-            uint64 _minChallengeRatio = uint64(verifyInfo.slots[2].value >> 192);
+            uint64 _minChallengeRatio = uint64(verifyInfo.slots[2].value >> 64);
             require(
                 _challenges[challengeId].freezeAmount1 >= (verifyInfo.data[5] * _minChallengeRatio) / 10000,
                 "FALV"
@@ -378,7 +416,7 @@ contract ORMakerDeposit is IORMakerDeposit {
         bool result = IORChallengeSpv(spvAddress).verifyChallenge(proof, spvBlockHash, verifyInfoHash);
         require(result, "VF");
 
-        bytes32 challengeId = keccak256(abi.encodePacked(uint32(verifyInfo.data[0]), verifyInfo.data[1]));
+        bytes32 challengeId = keccak256(abi.encodePacked(uint64(verifyInfo.data[0]), verifyInfo.data[1]));
         require(_challenges[challengeId].verifiedTime0 > 0, "VT0Z");
         require(_challenges[challengeId].verifiedTime1 == 0, "VT1NZ");
 
