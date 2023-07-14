@@ -236,11 +236,15 @@ contract ORMakerDeposit is IORMakerDeposit {
     function challenge(
         uint64 sourceChainId,
         bytes32 sourceTxHash,
+        uint64 sourceTxTime,
         address freezeToken,
         uint freezeAmount1
     ) external payable {
-        bytes32 k = keccak256(abi.encodePacked(sourceChainId, sourceTxHash));
-        require(_challenges[k].challengeTime == 0, "CE");
+        bytes32 challengeId = keccak256(abi.encodePacked(sourceChainId, sourceTxHash));
+        require(_challenges[challengeId].challengeTime == 0, "CE");
+
+        // Make sure the source timestamp is before the challenge
+        require(uint64(block.timestamp) >= sourceTxTime, "STOF");
 
         if (freezeToken == address(0)) {
             require(freezeAmount1 == msg.value, "IF");
@@ -254,9 +258,12 @@ contract ORMakerDeposit is IORMakerDeposit {
         // Freeze mdc's owner assets and the assets in of challenger
         _freezeAssets[freezeToken] += freezeAmount0 + freezeAmount1;
 
-        _challenges[k] = ChallengeInfo(
+        _challenges[challengeId] = ChallengeInfo(
+            sourceTxTime,
+            0,
             msg.sender,
             freezeToken,
+            0,
             freezeAmount0,
             freezeAmount1,
             uint64(block.timestamp),
@@ -266,7 +273,7 @@ contract ORMakerDeposit is IORMakerDeposit {
             0
         );
 
-        // TODO: emit event
+        emit ChallengeInfoUpdated(challengeId, _challenges[challengeId]);
     }
 
     function checkChallenge(uint64 sourceChainId, bytes32 sourceTxHash, uint[] calldata verifiedData0) external {
@@ -279,26 +286,26 @@ contract ORMakerDeposit is IORMakerDeposit {
         // Make sure verifyChallengeDest is not done yet
         require(challengeInfo.verifiedTime1 == 0, "VT1NZ");
 
-        // Ensure the correctness of verifiedData0
-        require(keccak256(abi.encode(verifiedData0)) == challengeInfo.verifiedDataHash0, "VDH");
-
         IORManager manager = IORManager(_mdcFactory.manager());
 
         if (challengeInfo.verifiedTime0 == 0) {
             BridgeLib.ChainInfo memory chainInfo = manager.getChainInfo(sourceChainId);
 
-            // TODO: Should the start time be sourceTx's time or challengeTime?
-            //       If it is sourceTx's time, sourceTx's time needs to be submit when challenge
-            if (block.timestamp > chainInfo.maxVerifyChallengeSourceTxSecond + challengeInfo.challengeTime) {
-                // TODO: challenger failed
-            }
-        } else {
-            BridgeLib.ChainInfo memory chainInfo = manager.getChainInfo(uint64(verifiedData0[0]));
+            require(block.timestamp > chainInfo.maxVerifyChallengeSourceTxSecond + challengeInfo.sourceTxTime, "VCST");
 
-            if (block.timestamp > chainInfo.maxVerifyChallengeDestTxSecond + challengeInfo.challengeTime) {
-                // TODO: mdc failed
-            }
+            _challengerFailed(challengeInfo);
+        } else {
+            // Ensure the correctness of verifiedData0
+            require(keccak256(abi.encode(verifiedData0)) == challengeInfo.verifiedDataHash0, "VDH");
+
+            BridgeLib.ChainInfo memory chainInfo = manager.getChainInfo(uint64(verifiedData0[0]));
+            require(block.timestamp > chainInfo.maxVerifyChallengeDestTxSecond + challengeInfo.sourceTxTime, "VCDT");
+
+            _makerFailed(challengeInfo);
         }
+        _challenges[challengeId].abortTime = uint64(block.timestamp);
+
+        emit ChallengeInfoUpdated(challengeId, _challenges[challengeId]);
     }
 
     /**
@@ -314,7 +321,7 @@ contract ORMakerDeposit is IORMakerDeposit {
     function verifyChallengeSource(
         address spvAddress,
         bytes calldata proof,
-        bytes32 spvBlockHash,
+        bytes32 spvBlockHash, // TODO: Should be made here between state block and transaction block
         IORChallengeSpv.VerifyInfo calldata verifyInfo,
         bytes calldata rawDatas
     ) external {
@@ -323,10 +330,11 @@ contract ORMakerDeposit is IORMakerDeposit {
         bool result = IORChallengeSpv(spvAddress).verifyChallenge(proof, spvBlockHash, verifyInfoHash);
         require(result, "VF");
 
-        // Check chainId, hash
+        // Check chainId, hash, timestamp
         bytes32 challengeId = keccak256(abi.encodePacked(uint64(verifyInfo.data[0]), verifyInfo.data[1]));
         require(_challenges[challengeId].challengeTime > 0, "CTZ");
         require(_challenges[challengeId].verifiedTime0 == 0, "VT0NZ");
+        require(uint64(verifyInfo.data[7]) == _challenges[challengeId].sourceTxTime, "ST");
 
         // Check to address == owner
         // TODO: Not compatible with starknet network
@@ -352,7 +360,9 @@ contract ORMakerDeposit is IORMakerDeposit {
             require(timeDiff <= uint64(verifyInfo.slots[0].value >> 64), "MAXTOF");
         }
 
-        // Check freezeToken and freezeAmount
+        // 1. Check freezeToken and freezeAmount
+        // 2. Get Manager._challengeUserRatio
+        uint64 _challengeUserRatio;
         {
             // FreezeToken
             require(verifyInfo.slots[1].account == _mdcFactory.manager(), "FTA");
@@ -365,7 +375,8 @@ contract ORMakerDeposit is IORMakerDeposit {
             // FreezeAmount
             require(verifyInfo.slots[2].account == _mdcFactory.manager(), "FAA");
             require(uint(verifyInfo.slots[2].key) == 4, "FAK");
-            uint64 _minChallengeRatio = uint64(verifyInfo.slots[2].value >> 64);
+            uint64 _minChallengeRatio = uint64(verifyInfo.slots[2].value);
+            _challengeUserRatio = uint64(verifyInfo.slots[2].value >> 64);
             require(
                 _challenges[challengeId].freezeAmount1 >= (verifyInfo.data[5] * _minChallengeRatio) / 10000,
                 "FALV"
@@ -390,18 +401,25 @@ contract ORMakerDeposit is IORMakerDeposit {
         {
             // Rule root
             require(verifyInfo.slots[3].account == address(this), "RRA");
-            uint slotK2 = uint(keccak256(abi.encode(ebc, 5)));
-            require(uint(verifyInfo.slots[3].key) == slotK2, "RRK");
+            uint slotK = uint(keccak256(abi.encode(ebc, 5)));
+            require(uint(verifyInfo.slots[3].key) == slotK, "RRK");
 
             // Rule
             require(uint(keccak256(abi.encode(rule))) == verifyInfo.data[8], "RH");
         }
 
+        // Save tx'from address, and compensate tx'from on the mainnet when the maker failed
+        _challenges[challengeId].sourceTxFrom = verifyInfo.data[7];
+
+        // Save manager._challengeUserRatio
+        _challenges[challengeId].challengeUserRatio = _challengeUserRatio;
+
         _challenges[challengeId].verifiedTime0 = uint64(block.timestamp);
 
         // TODO: Save verified data's hash. [nonce, destChainId, destAmount, responeMakers]
+        _challenges[challengeId].verifiedDataHash0 = keccak256(abi.encode([verifyInfo.data[0], 0, 0]));
 
-        // TODO: emit events
+        emit ChallengeInfoUpdated(challengeId, _challenges[challengeId]);
     }
 
     function verifyChallengeDest(
@@ -431,6 +449,22 @@ contract ORMakerDeposit is IORMakerDeposit {
 
         // TODO: Confiscate challenger assets and unfreeze owner assets
 
-        // TODO: emit events
+        emit ChallengeInfoUpdated(challengeId, _challenges[challengeId]);
+    }
+
+    function _challengerFailed(ChallengeInfo memory challengeInfo) internal {
+        _freezeAssets[challengeInfo.freezeToken] -= (challengeInfo.freezeAmount0 + challengeInfo.freezeAmount1);
+    }
+
+    function _makerFailed(ChallengeInfo memory challengeInfo) internal {
+        //
+        // if (challengeInfo.freezeToken == address(0)) {
+        //     (bool sent, ) = payable(msg.sender).call{value: amount}("");
+        //     require(sent, "ETH: SE");
+        // } else {
+        //     IERC20(challengeInfo.freezeToken).safeTransfer(challengeInfo.challenger, challengeInfo.freezeAmount1);
+        // }
+        // TODO: Transfer to challenger
+        // TODO: Transfer to user
     }
 }

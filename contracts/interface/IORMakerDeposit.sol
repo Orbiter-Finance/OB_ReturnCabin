@@ -6,8 +6,11 @@ import {RuleLib} from "../library/RuleLib.sol";
 
 interface IORMakerDeposit {
     struct ChallengeInfo {
+        uint sourceTxFrom; // From of the source tx. Uint to support other networks
+        uint64 sourceTxTime; // Timestamp of the source tx
         address challenger; // Challenger
         address freezeToken; // Freeze token on L1
+        uint64 challengeUserRatio; // Manager's _challengeUserRatio
         uint freezeAmount0; // Owner's freeze amount
         uint freezeAmount1; // Challenger's freeze amount
         uint64 challengeTime; // Time of challenge
@@ -27,6 +30,7 @@ interface IORMakerDeposit {
     event SpvUpdated(address indexed impl, uint64 chainId, address spv);
     event ResponseMakersUpdated(address indexed impl, address[] responseMakers);
     event RulesRootUpdated(address indexed impl, address ebc, RuleLib.RootWithVersion rootWithVersion);
+    event ChallengeInfoUpdated(bytes32 indexed challengeId, ChallengeInfo challengeInfo);
 
     function initialize(address owner_) external;
 

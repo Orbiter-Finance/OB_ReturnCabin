@@ -11,7 +11,7 @@ contract ORManager is IORManager, Ownable {
     address private _submitter;
     uint64 private _protocolFee;
     uint64 private _minChallengeRatio = 20000; // 10,000 percent
-    uint64 private _challengeUserRatio;
+    uint64 private _challengeUserRatio; // 10,000 percent
     uint64 private _feeChallengeSecond;
     uint64 private _feeTakeOnChallengeSecond;
     uint64 private _maxMDCLimit = 2 ** 64 - 1;
@@ -25,6 +25,9 @@ contract ORManager is IORManager, Ownable {
         unchecked {
             for (uint i = 0; i < chains_.length; i++) {
                 // TODO: There may be some settings that need to restrict modification
+
+                // TODO: ORMakerDeposit.checkChallenge use maxVerifyChallengeSourceTxSecond, maxVerifyChallengeSourceTxSecond cannot be modified.
+                //       Or make some adjustments when using
 
                 _chains[chains_[i].id] = chains_[i];
                 emit ChainInfoUpdated(chains_[i].id, chains_[i]);
