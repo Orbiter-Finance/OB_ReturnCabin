@@ -11,11 +11,11 @@ import {RuleLib} from "./library/RuleLib.sol";
 import {ConstantsLib} from "./library/ConstantsLib.sol";
 import {IORChallengeSpv} from "./interface/IORChallengeSpv.sol";
 import {IOREventBinding} from "./interface/IOREventBinding.sol";
+import {StorageVersion} from "./StorageVersion.sol";
 
-// TODO: for dev
-// import "hardhat/console.sol";
+contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
+    // StorageVersion._storageVersion use a slot
 
-contract ORMakerDeposit is IORMakerDeposit {
     using ArrayLib for address[];
     using SafeERC20 for IERC20;
 
@@ -23,19 +23,19 @@ contract ORMakerDeposit is IORMakerDeposit {
     IORMDCFactory private _mdcFactory;
     bytes32 private _columnArrayHash;
     mapping(uint64 => address) private _spvs; // chainId => spvAddress
-    address[] private _responseMakers; // Response maker list, not just owner, to improve tps
+    bytes32 private _responseMakersHash; // hash(response maker list), not just owner, to improve tps
     mapping(address => RuleLib.RootWithVersion) private _rulesRoots; // ebc => merkleRoot(rules), version
     mapping(address => mapping(bytes32 => uint)) private _pledgeBalances; // ebc => hash(sourceChainId, sourceToken) => pledgeBalance
     mapping(address => uint) private _freezeAssets; // token(ETH: 0) => freezeAmount
     mapping(bytes32 => ChallengeInfo) private _challenges; // hash(sourceChainId, transactionHash) => ChallengeInfo
 
-    // solhint-disable-next-line no-empty-blocks
-    receive() external payable {}
-
     modifier onlyOwner() {
         require(msg.sender == _owner, "Ownable: caller is not the owner");
         _;
     }
+
+    // solhint-disable-next-line no-empty-blocks
+    receive() external payable {}
 
     function initialize(address owner_) external {
         require(_owner == address(0), "_ONZ");
@@ -61,7 +61,7 @@ contract ORMakerDeposit is IORMakerDeposit {
         address[] calldata dealers,
         address[] calldata ebcs,
         uint64[] calldata chainIds
-    ) external onlyOwner {
+    ) external storageVersionIncrease onlyOwner {
         require(dealers.length <= 10, "DOF");
         require(ebcs.length <= 10, "EOF");
         require(chainIds.length <= 100, "COF");
@@ -94,7 +94,7 @@ contract ORMakerDeposit is IORMakerDeposit {
         return _spvs[chainId];
     }
 
-    function updateSpvs(address[] calldata spvs, uint64[] calldata chainIds) external onlyOwner {
+    function updateSpvs(address[] calldata spvs, uint64[] calldata chainIds) external storageVersionIncrease onlyOwner {
         IORManager manager = IORManager(_mdcFactory.manager());
         address impl = _mdcFactory.implementation();
 
@@ -110,22 +110,13 @@ contract ORMakerDeposit is IORMakerDeposit {
         }
     }
 
-    function responseMakers() external view returns (address[] memory) {
-        return _responseMakers;
+    function responseMakersHash() external view returns (bytes32) {
+        return _responseMakersHash;
     }
 
-    // TODO: Not compatible with starknet network
-    function updateResponseMakers(address[] calldata responseMakers_, uint[] calldata indexs) external onlyOwner {
-        unchecked {
-            for (uint i = 0; i < responseMakers_.length; i++) {
-                if (i < indexs.length) {
-                    _responseMakers[indexs[i]] = responseMakers_[i];
-                } else {
-                    _responseMakers.push(responseMakers_[i]);
-                }
-            }
-        }
-        emit ResponseMakersUpdated(_mdcFactory.implementation(), _responseMakers);
+    function updateResponseMakers(uint[] calldata responseMakers_) external storageVersionIncrease onlyOwner {
+        keccak256(abi.encode(responseMakers_));
+        emit ResponseMakersUpdated(_mdcFactory.implementation(), responseMakers_);
     }
 
     function freezeAssets(address token) external view returns (uint) {
@@ -165,7 +156,7 @@ contract ORMakerDeposit is IORMakerDeposit {
         RuleLib.RootWithVersion calldata rootWithVersion,
         uint64[] calldata sourceChainIds,
         uint[] calldata pledgeAmounts
-    ) external payable onlyOwner {
+    ) external payable storageVersionIncrease onlyOwner {
         // Prevent unused hints
         rsc;
 
@@ -198,7 +189,7 @@ contract ORMakerDeposit is IORMakerDeposit {
         uint64[] calldata sourceChainIds,
         uint[] calldata pledgeAmounts,
         address token
-    ) external onlyOwner {
+    ) external storageVersionIncrease onlyOwner {
         // Prevent unused hints
         rsc;
 
@@ -387,7 +378,7 @@ contract ORMakerDeposit is IORMakerDeposit {
         {
             bytes32 cah = keccak256(abi.encodePacked(dealers, ebcs, chainIds));
             require(verifyInfo.slots[2].account == address(this), "CAHA");
-            require(verifyInfo.slots[2].key == ConstantsLib.STORAGE_KEY_TWO, "CAHK");
+            require(uint(verifyInfo.slots[2].key) == 2, "CAHK");
             require(bytes32(verifyInfo.slots[2].value) == cah, "CAHV");
         }
 

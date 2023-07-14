@@ -28,7 +28,7 @@ interface IORMakerDeposit {
         uint64[] chainIds
     );
     event SpvUpdated(address indexed impl, uint64 chainId, address spv);
-    event ResponseMakersUpdated(address indexed impl, address[] responseMakers);
+    event ResponseMakersUpdated(address indexed impl, uint[] responseMakers);
     event RulesRootUpdated(address indexed impl, address ebc, RuleLib.RootWithVersion rootWithVersion);
     event ChallengeInfoUpdated(bytes32 indexed challengeId, ChallengeInfo challengeInfo);
 
@@ -50,9 +50,9 @@ interface IORMakerDeposit {
 
     function updateSpvs(address[] calldata spvs, uint64[] calldata chainIds) external;
 
-    function responseMakers() external view returns (address[] memory);
+    function responseMakersHash() external view returns (bytes32);
 
-    function updateResponseMakers(address[] calldata responseMakers_, uint[] calldata indexs) external;
+    function updateResponseMakers(uint[] calldata responseMakers_) external;
 
     function freezeAssets(address token) external view returns (uint);
 

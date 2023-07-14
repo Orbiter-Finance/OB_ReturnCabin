@@ -2,15 +2,4 @@
 
 pragma solidity ^0.8.17;
 
-library ConstantsLib {
-    bytes32 constant STORAGE_KEY_ZERO = 0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563;
-    bytes32 constant STORAGE_KEY_ONE = 0xb10e2d527612073b26eecdfd717e6a320cf44b4afac2b0732d9fcbe2b7fa0cf6;
-    bytes32 constant STORAGE_KEY_TWO = 0x405787fa12a823e0f2b7631cc41b3ba8828b3321ca811111fa75cd3aa3bb5ace;
-    bytes32 constant STORAGE_KEY_THREE = 0xc2575a0e9e593c00f959f8c92f12db2869c3395a3b0502d05e2516446f71f85b;
-    bytes32 constant STORAGE_KEY_FOUR = 0x8a35acfbc15ff81a39ae7d344fd709f28e8600b4aa8c65c6b64bfe7fe36bd19b;
-    bytes32 constant STORAGE_KEY_FIVE = 0x036b6384b5eca791c62761152d0c79bb0604c104a5fb6f4eb0703f3154bb3db0;
-    bytes32 constant STORAGE_KEY_SIX = 0xf652222313e28459528d920b65115c16c04f3efc82aaedc97be59f3f377c0d3f;
-    bytes32 constant STORAGE_KEY_SEVEN = 0xa66cc928b5edb82af9bd49922954155ab7b0942694bea4ce44661d9a8736c688;
-    bytes32 constant STORAGE_KEY_EIGHT = 0xf3f7a9fe364faab93b216da50a3214154f22a0a2b415b23a84c8169e8b636ee3;
-    bytes32 constant STORAGE_KEY_NINE = 0x6e1540171b6c0c960b71a7020d9f60077f6af931a8bbf590da0223dacf75c7af;
-}
+library ConstantsLib {}

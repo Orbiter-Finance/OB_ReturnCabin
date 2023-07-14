@@ -3,8 +3,12 @@ pragma solidity ^0.8.17;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import "./interface/IORManager.sol";
+import "./StorageVersion.sol";
 
-contract ORManager is IORManager, Ownable {
+contract ORManager is IORManager, Ownable, StorageVersion {
+    // Ownable._owner use a slot
+    // StorageVersion._storageVersion use a slot
+
     mapping(uint64 => BridgeLib.ChainInfo) private _chains;
     mapping(bytes32 => BridgeLib.TokenInfo) private _chainTokens; // hash(chainId, token) => TokenInfo
     mapping(address => bool) private _ebcs;
@@ -21,7 +25,7 @@ contract ORManager is IORManager, Ownable {
     }
 
     // TODO: setting the same chainId or token affect the protocol?
-    function registerChains(BridgeLib.ChainInfo[] calldata chains_) external onlyOwner {
+    function registerChains(BridgeLib.ChainInfo[] calldata chains_) external storageVersionIncrease onlyOwner {
         unchecked {
             for (uint i = 0; i < chains_.length; i++) {
                 // TODO: There may be some settings that need to restrict modification
@@ -35,7 +39,11 @@ contract ORManager is IORManager, Ownable {
         }
     }
 
-    function updateChainSpvs(uint64 id, address[] calldata spvs, uint[] calldata indexs) external onlyOwner {
+    function updateChainSpvs(
+        uint64 id,
+        address[] calldata spvs,
+        uint[] calldata indexs
+    ) external storageVersionIncrease onlyOwner {
         unchecked {
             for (uint i = 0; i < spvs.length; i++) {
                 if (i < indexs.length) {
@@ -52,7 +60,10 @@ contract ORManager is IORManager, Ownable {
         return _chains[id];
     }
 
-    function updateChainTokens(uint64[] calldata ids, BridgeLib.TokenInfo[] calldata tokenInfos) external onlyOwner {
+    function updateChainTokens(
+        uint64[] calldata ids,
+        BridgeLib.TokenInfo[] calldata tokenInfos
+    ) external storageVersionIncrease onlyOwner {
         unchecked {
             for (uint i = 0; i < ids.length; i++) {
                 bytes32 key = keccak256(abi.encodePacked(ids[i], tokenInfos[i].token));
@@ -71,7 +82,7 @@ contract ORManager is IORManager, Ownable {
         return _ebcs[ebc];
     }
 
-    function updateEbcs(address[] calldata ebcs_, bool[] calldata statuses) external onlyOwner {
+    function updateEbcs(address[] calldata ebcs_, bool[] calldata statuses) external storageVersionIncrease onlyOwner {
         unchecked {
             for (uint i = 0; i < ebcs_.length; i++) {
                 if (i < statuses.length) {
@@ -88,7 +99,7 @@ contract ORManager is IORManager, Ownable {
         return _submitter;
     }
 
-    function updateSubmitter(address submitter_) external onlyOwner {
+    function updateSubmitter(address submitter_) external storageVersionIncrease onlyOwner {
         _submitter = submitter_;
         emit SubmitterFeeUpdated(_submitter);
     }
@@ -97,7 +108,7 @@ contract ORManager is IORManager, Ownable {
         return _protocolFee;
     }
 
-    function updateProtocolFee(uint64 protocolFee_) external onlyOwner {
+    function updateProtocolFee(uint64 protocolFee_) external storageVersionIncrease onlyOwner {
         _protocolFee = protocolFee_;
         emit ProtocolFeeUpdated(_protocolFee);
     }
@@ -106,7 +117,7 @@ contract ORManager is IORManager, Ownable {
         return _minChallengeRatio;
     }
 
-    function updateMinChallengeRatio(uint64 minChallengeRatio_) external onlyOwner {
+    function updateMinChallengeRatio(uint64 minChallengeRatio_) external storageVersionIncrease onlyOwner {
         _minChallengeRatio = minChallengeRatio_;
         emit MinChallengeRatioUpdated(_minChallengeRatio);
     }
@@ -115,7 +126,7 @@ contract ORManager is IORManager, Ownable {
         return _challengeUserRatio;
     }
 
-    function updateChallengeUserRatio(uint64 challengeUserRatio_) external onlyOwner {
+    function updateChallengeUserRatio(uint64 challengeUserRatio_) external storageVersionIncrease onlyOwner {
         _challengeUserRatio = challengeUserRatio_;
         emit ChallengeUserRatioUpdated(_challengeUserRatio);
     }
@@ -124,7 +135,7 @@ contract ORManager is IORManager, Ownable {
         return _feeChallengeSecond;
     }
 
-    function updateFeeChallengeSecond(uint64 feeChallengeSecond_) external onlyOwner {
+    function updateFeeChallengeSecond(uint64 feeChallengeSecond_) external storageVersionIncrease onlyOwner {
         _feeChallengeSecond = feeChallengeSecond_;
         emit FeeChallengeSecondUpdated(_feeChallengeSecond);
     }
@@ -133,7 +144,9 @@ contract ORManager is IORManager, Ownable {
         return _feeTakeOnChallengeSecond;
     }
 
-    function updateFeeTakeOnChallengeSecond(uint64 feeTakeOnChallengeSecond_) external onlyOwner {
+    function updateFeeTakeOnChallengeSecond(
+        uint64 feeTakeOnChallengeSecond_
+    ) external storageVersionIncrease onlyOwner {
         _feeTakeOnChallengeSecond = feeTakeOnChallengeSecond_;
         emit FeeTakeOnChallengeSecondUpdated(_feeTakeOnChallengeSecond);
     }
@@ -142,7 +155,7 @@ contract ORManager is IORManager, Ownable {
         return _maxMDCLimit;
     }
 
-    function updateMaxMDCLimit(uint64 maxMDCLimit_) external onlyOwner {
+    function updateMaxMDCLimit(uint64 maxMDCLimit_) external storageVersionIncrease onlyOwner {
         _maxMDCLimit = maxMDCLimit_;
         emit MaxMDCLimitUpdated(_maxMDCLimit);
     }
