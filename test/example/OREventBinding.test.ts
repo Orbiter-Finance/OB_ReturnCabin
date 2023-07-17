@@ -1,15 +1,13 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { ethers } from 'hardhat';
 
-import { OREventBinding, OREventBinding__factory } from '../../typechain-types';
-import { BigNumber, utils } from 'ethers';
 import { expect } from 'chai';
-import { AbiCoder, RLP, defaultAbiCoder } from 'ethers/lib/utils';
-import { toPlainObject } from 'lodash';
+import { BigNumber, utils } from 'ethers';
+import { defaultAbiCoder } from 'ethers/lib/utils';
+import { OREventBinding, OREventBinding__factory } from '../../typechain-types';
 
 describe('OREventBinding', () => {
   let signers: SignerWithAddress[];
-  let mdcOwner: SignerWithAddress;
   let orEventBinding: OREventBinding;
 
   before(async function () {
@@ -46,7 +44,6 @@ describe('OREventBinding', () => {
 
   it('Function getResponseIntent should succeed', async function () {
     const amount = utils.parseEther('0.101200000000003721');
-    const dest = signers[1].address;
     const ruleValues = [
       utils.parseEther('0.1'),
       utils.parseEther('0.2'),
@@ -55,19 +52,14 @@ describe('OREventBinding', () => {
         .mul(10 ** 9),
       30,
     ];
-    const intent = await orEventBinding.getResponseIntent(
-      amount,
-      dest,
-      ruleValues,
-    );
+    const intent = await orEventBinding.getResponseIntent(amount, ruleValues);
 
     const securityCode = await orEventBinding.getSecurityCode(amount);
     const tradeAmount = amount.sub(securityCode);
     const fee = tradeAmount.mul(ruleValues[3]).div(10000).add(ruleValues[2]);
     const responseAmount = tradeAmount.sub(fee);
 
-    const intentDecode = defaultAbiCoder.decode(['address', 'uint'], intent);
-    expect(intentDecode[0]).eq(dest);
-    expect(intentDecode[1]).deep.eq(responseAmount);
+    const intentDecode = defaultAbiCoder.decode(['uint'], intent);
+    expect(intentDecode[0]).deep.eq(responseAmount);
   });
 });

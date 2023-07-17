@@ -16,6 +16,7 @@ import {StorageVersion} from "./StorageVersion.sol";
 contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
     // StorageVersion._storageVersion use a slot
 
+    using ArrayLib for uint[];
     using ArrayLib for address[];
     using SafeERC20 for IERC20;
 
@@ -102,7 +103,7 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
             BridgeLib.ChainInfo memory chainInfo = manager.getChainInfo(chainIds[i]);
             require(chainInfo.id > 0, "CI"); // Invalid chainId
 
-            require(chainInfo.spvs.addressIncludes(spvs[i]), "SI"); // Invalid spv
+            require(chainInfo.spvs.includes(spvs[i]), "SI"); // Invalid spv
 
             _spvs[chainIds[i]] = spvs[i];
 
@@ -115,7 +116,7 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
     }
 
     function updateResponseMakers(uint[] calldata responseMakers_) external storageVersionIncrease onlyOwner {
-        keccak256(abi.encode(responseMakers_));
+        _responseMakersHash = keccak256(abi.encode(responseMakers_));
         emit ResponseMakersUpdated(_mdcFactory.implementation(), responseMakers_);
     }
 
@@ -303,23 +304,23 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
      *
      * @param spvAddress The spv's address
      * @param proof The zk's proof
-     * @param spvBlockHash The block hash used for the proof
+     * @param spvBlockHashs If the blocks of the state proof and tx proof are not in the same segment, you need to verify the two blocks
      * @param verifyInfo The public inputs preimage for zk proofs
      *        verifyInfo.data: [chainId, txHash, from, to, token, amount, nonce, timestamp, ruleHash]
-     *        verifyInfo.slots: [this._columnArrayHash, Manager._chains, this._rulesRoots]
-     * @param rawDatas The raw data list in preimage. [dealers, ebcs, chainIds, ebc, ...]
+     *        verifyInfo.slots: [...see code]
+     * @param rawDatas The raw data list in preimage. [dealers, ebcs, chainIds, ebc, rule]
      */
     function verifyChallengeSource(
         address spvAddress,
         bytes calldata proof,
-        bytes32 spvBlockHash, // TODO: Should be made here between state block and transaction block
+        bytes32[2] calldata spvBlockHashs,
         IORChallengeSpv.VerifyInfo calldata verifyInfo,
         bytes calldata rawDatas
     ) external {
-        bytes32 verifyInfoHash = keccak256(abi.encode(verifyInfo));
-
-        bool result = IORChallengeSpv(spvAddress).verifyChallenge(proof, spvBlockHash, verifyInfoHash);
-        require(result, "VF");
+        require(
+            IORChallengeSpv(spvAddress).verifyChallenge(proof, spvBlockHashs, keccak256(abi.encode(verifyInfo))),
+            "VF"
+        );
 
         // Check chainId, hash, timestamp
         bytes32 challengeId = keccak256(abi.encodePacked(uint64(verifyInfo.data[0]), verifyInfo.data[1]));
@@ -327,7 +328,7 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
         require(_challenges[challengeId].verifiedTime0 == 0, "VT0NZ");
         require(uint64(verifyInfo.data[7]) == _challenges[challengeId].sourceTxTime, "ST");
 
-        // Check to address == owner
+        // Check to address equal owner
         // TODO: Not compatible with starknet network
         require(uint160(verifyInfo.data[2]) == uint160(_owner), "TNEO");
 
@@ -341,19 +342,18 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
         ) = abi.decode(rawDatas, (address[], address[], uint64[], address, RuleLib.Rule));
 
         // Check manager's chainInfo.minVerifyChallengeSourceTxSecond,maxVerifyChallengeSourceTxSecond
+        // Get minVerifyChallengeDestTxSecond, maxVerifyChallengeDestTxSecond
         {
             require(verifyInfo.slots[0].account == _mdcFactory.manager(), "VCSTA");
-            uint slotK = uint(keccak256(abi.encode(verifyInfo.data[0], 0))); // abi.encode no need to convert type
-            require(uint(verifyInfo.slots[0].key) == slotK + 2, "VCSTK");
+            uint slotK = uint(keccak256(abi.encode(verifyInfo.data[0], 2))); // abi.encode no need to convert type
+            require(uint(verifyInfo.slots[0].key) == slotK + 1, "VCSTK");
 
             uint timeDiff = block.timestamp - verifyInfo.data[7];
             require(timeDiff >= uint64(verifyInfo.slots[0].value), "MINTOF");
             require(timeDiff <= uint64(verifyInfo.slots[0].value >> 64), "MAXTOF");
         }
 
-        // 1. Check freezeToken and freezeAmount
-        // 2. Get Manager._challengeUserRatio
-        uint64 _challengeUserRatio;
+        // Check freezeToken and freezeAmount
         {
             // FreezeToken
             require(verifyInfo.slots[1].account == _mdcFactory.manager(), "FTA");
@@ -367,14 +367,14 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
             require(verifyInfo.slots[2].account == _mdcFactory.manager(), "FAA");
             require(uint(verifyInfo.slots[2].key) == 4, "FAK");
             uint64 _minChallengeRatio = uint64(verifyInfo.slots[2].value);
-            _challengeUserRatio = uint64(verifyInfo.slots[2].value >> 64);
             require(
-                _challenges[challengeId].freezeAmount1 >= (verifyInfo.data[5] * _minChallengeRatio) / 10000,
+                _challenges[challengeId].freezeAmount1 >=
+                    (verifyInfo.data[5] * _minChallengeRatio) / ConstantsLib.RATIO_MULTIPLE,
                 "FALV"
             );
         }
 
-        // Check _columnArrayHash at the spvBlockHash
+        // Check _columnArrayHash
         {
             bytes32 cah = keccak256(abi.encodePacked(dealers, ebcs, chainIds));
             require(verifyInfo.slots[2].account == address(this), "CAHA");
@@ -382,63 +382,120 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
             require(bytes32(verifyInfo.slots[2].value) == cah, "CAHV");
         }
 
-        // Check ebc address
+        // Check ebc address, destChainId
+        uint destChainId;
         {
-            uint[] memory splits = IOREventBinding(ebc).splitSecurityCodeFromAmount(verifyInfo.data[5]);
-            require(ebc == ebcs[splits[1]], "ENE");
+            IOREventBinding.AmountParams memory ap = IOREventBinding(ebc).getAmountParams(verifyInfo.data[5]);
+            require(ebc == ebcs[ap.ebcIndex], "ENE");
+
+            require(ap.chainIdIndex < chainIds.length, "COF");
+            destChainId = chainIds[ap.chainIdIndex];
+        }
+
+        // Check _responseMakersHash
+        {
+            require(verifyInfo.slots[3].account == address(this), "RMHA");
+            require(uint(verifyInfo.slots[3].key) == 5, "RMHK");
         }
 
         // Check ruleRoot key and rule
         {
-            // Rule root
-            require(verifyInfo.slots[3].account == address(this), "RRA");
-            uint slotK = uint(keccak256(abi.encode(ebc, 5)));
-            require(uint(verifyInfo.slots[3].key) == slotK, "RRK");
+            // Sure rule root storage position
+            // Warnning: In the circuit, it is necessary to ensure that the rule exists in the mpt
+            require(verifyInfo.slots[4].account == address(this), "RRA");
+            uint slotK = uint(keccak256(abi.encode(ebc, 6)));
+            require(uint(verifyInfo.slots[4].key) == slotK, "RRK");
 
             // Rule
             require(uint(keccak256(abi.encode(rule))) == verifyInfo.data[8], "RH");
         }
 
+        // TODO: calculate dest amount
+
         // Save tx'from address, and compensate tx'from on the mainnet when the maker failed
         _challenges[challengeId].sourceTxFrom = verifyInfo.data[7];
 
         // Save manager._challengeUserRatio
-        _challenges[challengeId].challengeUserRatio = _challengeUserRatio;
+        _challenges[challengeId].challengeUserRatio = uint64(verifyInfo.slots[2].value >> 64);
 
         _challenges[challengeId].verifiedTime0 = uint64(block.timestamp);
 
-        // TODO: Save verified data's hash. [nonce, destChainId, destAmount, responeMakers]
-        _challenges[challengeId].verifiedDataHash0 = keccak256(abi.encode([verifyInfo.data[0], 0, 0]));
+        // TODO: Save verified data's hash.
+        // [minVerifyChallengeDestTxSecond, maxVerifyChallengeDestTxSecond, nonce, destChainId, destAddress, destAmount, responeMakersHash]
+        _challenges[challengeId].verifiedDataHash0 = keccak256(
+            abi.encode(
+                [
+                    uint64(verifyInfo.slots[0].value >> 128),
+                    uint64(verifyInfo.slots[0].value >> 128),
+                    verifyInfo.data[0],
+                    destChainId,
+                    0,
+                    0,
+                    verifyInfo.slots[3].value
+                ]
+            )
+        );
 
         emit ChallengeInfoUpdated(challengeId, _challenges[challengeId]);
     }
 
+    /**
+     *
+     * @param spvAddress The spv's address
+     * @param proof The zk's proof
+     * @param spvBlockHashs If the blocks of the state proof and tx proof are not in the same segment, you need to verify the two blocks
+     * @param verifyInfo The public inputs preimage for zk proofs
+     *        verifyInfo.data: [chainId, txHash, from, to, token, amount, nonce, timestamp]
+     *        verifyInfo.slots: [...see code]
+     * @param verifiedData0 [minVerifyChallengeDestTxSecond, maxVerifyChallengeDestTxSecond, nonce, destChainId, destAddress, destAmount, responeMakersHash]
+     * @param rawDatas The raw data list in preimage. [responeMakers]
+     */
     function verifyChallengeDest(
         address spvAddress,
         bytes calldata proof,
-        bytes32 spvBlockHash,
+        bytes32[2] calldata spvBlockHashs,
         IORChallengeSpv.VerifyInfo calldata verifyInfo,
-        uint[] calldata verifiedData0
+        uint[] calldata verifiedData0,
+        bytes calldata rawDatas
     ) external {
-        bytes32 verifyInfoHash = keccak256(abi.encode(verifyInfo));
-
-        bool result = IORChallengeSpv(spvAddress).verifyChallenge(proof, spvBlockHash, verifyInfoHash);
-        require(result, "VF");
+        require(
+            IORChallengeSpv(spvAddress).verifyChallenge(proof, spvBlockHashs, keccak256(abi.encode(verifyInfo))),
+            "VF"
+        );
 
         bytes32 challengeId = keccak256(abi.encodePacked(uint64(verifyInfo.data[0]), verifyInfo.data[1]));
         require(_challenges[challengeId].verifiedTime0 > 0, "VT0Z");
         require(_challenges[challengeId].verifiedTime1 == 0, "VT1NZ");
 
-        // TODO, check chainInfo.minVerifyChallengeDestTxSecond, maxVerifyChallengeDestTxSecond
+        // Parse rawDatas
+        uint[] memory responseMakers = abi.decode(rawDatas, (uint[]));
 
-        // TODO: Check the address and key of the slot
+        // Check verifiedData0
+        require(keccak256(abi.encode(verifiedData0)) == _challenges[challengeId].verifiedDataHash0, "VDH0");
+        require(keccak256(abi.encode(responseMakers)) == bytes32(verifiedData0[3]), "RMH");
 
-        bytes32 verifiedDataHash0 = keccak256(abi.encode(verifiedData0));
-        require(_challenges[challengeId].verifiedDataHash0 == verifiedDataHash0, "VDHI");
+        // Check minVerifyChallengeDestTxSecond, maxVerifyChallengeDestTxSecond
+        {
+            uint timeDiff = block.timestamp - _challenges[challengeId].sourceTxTime;
+            require(timeDiff >= verifiedData0[0], "MINTOF");
+            require(timeDiff <= verifiedData0[1], "MAXTOF");
+        }
+
+        // Check dest chainId
+        require(verifyInfo.data[0] == verifiedData0[3], "DCID");
+
+        // Check dest from address in responseMakers
+        require(responseMakers.includes(verifyInfo.data[2]), "MIC");
+
+        // TODO: Check dest address
+
+        // TODO: Check dest token
+
+        // TODO: Check dest amount
+
+        _challengerFailed(_challenges[challengeId]);
 
         _challenges[challengeId].verifiedTime1 = uint64(block.timestamp);
-
-        // TODO: Confiscate challenger assets and unfreeze owner assets
 
         emit ChallengeInfoUpdated(challengeId, _challenges[challengeId]);
     }
@@ -448,14 +505,28 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
     }
 
     function _makerFailed(ChallengeInfo memory challengeInfo) internal {
-        //
-        // if (challengeInfo.freezeToken == address(0)) {
-        //     (bool sent, ) = payable(msg.sender).call{value: amount}("");
-        //     require(sent, "ETH: SE");
-        // } else {
-        //     IERC20(challengeInfo.freezeToken).safeTransfer(challengeInfo.challenger, challengeInfo.freezeAmount1);
-        // }
-        // TODO: Transfer to challenger
-        // TODO: Transfer to user
+        uint challengeUserAmount = (challengeInfo.freezeAmount0 * challengeInfo.challengeUserRatio) /
+            ConstantsLib.RATIO_MULTIPLE;
+        require(challengeUserAmount <= challengeInfo.freezeAmount0, "UAOF");
+
+        uint challengerAmount = challengeInfo.freezeAmount0 + challengeInfo.freezeAmount1 - challengeUserAmount;
+
+        // TODO: Not compatible with starknet network
+        address user = address(uint160(challengeInfo.sourceTxFrom));
+
+        if (challengeInfo.freezeToken == address(0)) {
+            (bool sent1, ) = payable(user).call{value: challengeUserAmount}("");
+            require(sent1, "ETH: SE1");
+
+            (bool sent2, ) = payable(challengeInfo.challenger).call{value: challengerAmount}("");
+            require(sent2, "ETH: SE2");
+        } else {
+            IERC20(challengeInfo.freezeToken).safeTransfer(user, challengeUserAmount);
+
+            IERC20(challengeInfo.freezeToken).safeTransfer(challengeInfo.challenger, challengerAmount);
+        }
+
+        // Unfreeze
+        _freezeAssets[challengeInfo.freezeToken] -= (challengeInfo.freezeAmount0 + challengeInfo.freezeAmount1);
     }
 }

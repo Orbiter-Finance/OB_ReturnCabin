@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import 'cross-fetch/polyfill';
-import { ContractTransaction, utils } from 'ethers';
+import { BigNumber, BigNumberish, ContractTransaction, utils } from 'ethers';
 import { ORManager } from '../typechain-types';
 import { writeFileSync } from 'fs';
 
@@ -69,4 +69,17 @@ export async function getEffectiveEbcsFromLogs(orManager: ORManager) {
   }
 
   return effectiveEbcs;
+}
+
+export function embedStorageVersionIncrease(
+  svFn: () => Promise<BigNumberish>,
+  fn: () => Promise<void>,
+  increase = 1,
+) {
+  return async () => {
+    const sv0 = await svFn();
+    await fn();
+    const sv1 = await svFn();
+    expect(BigNumber.from(sv1).sub(sv0).toNumber()).eq(increase);
+  };
 }

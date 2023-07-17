@@ -15,7 +15,7 @@ interface IORChallengeSpv {
 
     function verifyChallenge(
         bytes calldata proof,
-        bytes32 spvBlockHash,
+        bytes32[2] calldata spvBlockHashs,
         bytes32 verifyInfoHash
     ) external view returns (bool);
 }

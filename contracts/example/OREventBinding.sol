@@ -3,9 +3,6 @@ pragma solidity ^0.8.17;
 
 import {IOREventBinding} from "../interface/IOREventBinding.sol";
 
-// TODO: for dev
-// import "hardhat/console.sol";
-
 contract OREventBinding is IOREventBinding {
     function getSecurityCode(uint amount) public pure returns (uint) {
         return uint16(amount % 10000);
@@ -23,22 +20,17 @@ contract OREventBinding is IOREventBinding {
         return splits;
     }
 
-    function splitSecurityCodeFromAmount(uint amount) public pure returns (uint[] memory) {
-        uint sc = getSecurityCode(amount);
-        return splitSecurityCode(sc);
+    function getAmountParams(uint amount) public pure returns (AmountParams memory) {
+        uint[] memory splits = splitSecurityCode(getSecurityCode(amount));
+        return AmountParams(splits[0], splits[1], splits[2]);
     }
 
     /**
      * Get preview
      * @param amount Source tx amount
-     * @param dest Dest account address
      * @param ruleValues [minPrice, maxPrice, withholdingFee, tradeFee]
      */
-    function getResponseIntent(
-        uint amount,
-        address dest,
-        uint[] calldata ruleValues
-    ) external pure returns (bytes memory) {
+    function getResponseIntent(uint amount, uint[] calldata ruleValues) external pure returns (bytes memory) {
         uint securityCode = getSecurityCode(amount);
         require(securityCode > 0, "SCZ");
 
@@ -51,6 +43,6 @@ contract OREventBinding is IOREventBinding {
 
         uint responseAmount = tradeAmount - fee;
 
-        return abi.encode(dest, responseAmount);
+        return abi.encode(responseAmount);
     }
 }

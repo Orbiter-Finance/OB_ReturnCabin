@@ -2,4 +2,6 @@
 
 pragma solidity ^0.8.17;
 
-library ConstantsLib {}
+library ConstantsLib {
+    uint constant RATIO_MULTIPLE = 10000;
+}
