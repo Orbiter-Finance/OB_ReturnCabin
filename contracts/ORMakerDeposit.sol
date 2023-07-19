@@ -306,7 +306,7 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
      * @param proof The zk's proof
      * @param spvBlockHashs If the blocks of the state proof and tx proof are not in the same segment, you need to verify the two blocks
      * @param verifyInfo The public inputs preimage for zk proofs
-     *        verifyInfo.data: [chainId, txHash, from, to, token, amount, nonce, timestamp, ruleHash]
+     *        verifyInfo.data: [chainId, txHash, from, to, token, amount, nonce, timestamp, dest, ruleHash]
      *        verifyInfo.slots: [...see code]
      * @param rawDatas The raw data list in preimage. [dealers, ebcs, chainIds, ebc, rule]
      */
@@ -407,10 +407,28 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
             require(uint(verifyInfo.slots[4].key) == slotK, "RRK");
 
             // Rule
-            require(uint(keccak256(abi.encode(rule))) == verifyInfo.data[8], "RH");
+            require(uint(keccak256(abi.encode(rule))) == verifyInfo.data[9], "RH");
         }
 
-        // TODO: calculate dest amount
+        // Calculate dest amount
+        // TODO: Is there a more general solution. That is not only amount
+        uint[] memory ruleValues;
+        ruleValues[0] = rule.minPrice;
+        ruleValues[1] = rule.maxPrice;
+        if (rule.chainId0 == verifyInfo.data[0]) {
+            require(rule.chainId1 == destChainId, "DC1");
+            ruleValues[2] = uint(rule.withholdingFee0);
+            ruleValues[3] = uint(rule.tradingFee0);
+        }
+        if (rule.chainId1 == verifyInfo.data[0]) {
+            require(rule.chainId0 == destChainId, "DC0");
+            ruleValues[2] = uint(rule.withholdingFee1);
+            ruleValues[3] = uint(rule.tradingFee1);
+        }
+        require(ruleValues.length >= 4, "RVL");
+        uint destAmount = IOREventBinding(ebc).getResponseAmountFromIntent(
+            IOREventBinding(ebc).getResponseIntent(verifyInfo.data[5], ruleValues)
+        );
 
         // Save tx'from address, and compensate tx'from on the mainnet when the maker failed
         _challenges[challengeId].sourceTxFrom = verifyInfo.data[7];
@@ -429,8 +447,8 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
                     uint64(verifyInfo.slots[0].value >> 128),
                     verifyInfo.data[0],
                     destChainId,
-                    0,
-                    0,
+                    verifyInfo.data[8],
+                    destAmount,
                     verifyInfo.slots[3].value
                 ]
             )
@@ -487,7 +505,8 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
         // Check dest from address in responseMakers
         require(responseMakers.includes(verifyInfo.data[2]), "MIC");
 
-        // TODO: Check dest address
+        // Check dest address
+        require(verifiedData0[8] == verifyInfo.data[3], "DA");
 
         // TODO: Check dest token
 
@@ -501,6 +520,7 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
     }
 
     function _challengerFailed(ChallengeInfo memory challengeInfo) internal {
+        // Unfreeze
         _freezeAssets[challengeInfo.freezeToken] -= (challengeInfo.freezeAmount0 + challengeInfo.freezeAmount1);
     }
 

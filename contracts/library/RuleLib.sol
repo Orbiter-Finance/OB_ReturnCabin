@@ -4,8 +4,8 @@ pragma solidity ^0.8.17;
 
 library RuleLib {
     struct Rule {
-        uint32 chainId0;
-        uint32 chainId1;
+        uint64 chainId0;
+        uint64 chainId1;
         uint8 status0;
         uint8 status1;
         uint token0;

@@ -26,7 +26,7 @@ contract OREventBinding is IOREventBinding {
     }
 
     /**
-     * Get preview
+     * Get intent
      * @param amount Source tx amount
      * @param ruleValues [minPrice, maxPrice, withholdingFee, tradeFee]
      */
@@ -44,5 +44,14 @@ contract OREventBinding is IOREventBinding {
         uint responseAmount = tradeAmount - fee;
 
         return abi.encode(responseAmount);
+    }
+
+    /**
+     * Get response amount from intent
+     * @param intent Intent
+     */
+    function getResponseAmountFromIntent(bytes calldata intent) external pure returns (uint) {
+        uint responseAmount = abi.decode(intent, (uint));
+        return responseAmount;
     }
 }

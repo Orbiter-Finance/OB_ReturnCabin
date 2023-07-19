@@ -15,4 +15,6 @@ interface IOREventBinding {
     function getAmountParams(uint amount) external pure returns (AmountParams memory);
 
     function getResponseIntent(uint amount, uint[] calldata ruleValues) external pure returns (bytes memory);
+
+    function getResponseAmountFromIntent(bytes calldata intent) external pure returns (uint);
 }

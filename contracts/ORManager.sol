@@ -19,6 +19,7 @@ contract ORManager is IORManager, Ownable, StorageVersion {
     uint64 private _feeChallengeSecond;
     uint64 private _feeTakeOnChallengeSecond;
     uint64 private _maxMDCLimit = 2 ** 64 - 1;
+    uint private _extraTransferContract; // Cross-address transfer contract
 
     constructor(address owner_) {
         _transferOwnership(owner_);
@@ -158,5 +159,14 @@ contract ORManager is IORManager, Ownable, StorageVersion {
     function updateMaxMDCLimit(uint64 maxMDCLimit_) external storageVersionIncrease onlyOwner {
         _maxMDCLimit = maxMDCLimit_;
         emit MaxMDCLimitUpdated(_maxMDCLimit);
+    }
+
+    function extraTransferContract() external view returns (uint) {
+        return _extraTransferContract;
+    }
+
+    function updateExtraTransferContract(uint extraTransferContract_) external storageVersionIncrease onlyOwner {
+        _extraTransferContract = extraTransferContract_;
+        emit ExtraTransferContractUpdated(_extraTransferContract);
     }
 }

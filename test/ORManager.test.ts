@@ -1,6 +1,12 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
-import { BigNumber, BigNumberish, CallOverrides, constants } from 'ethers';
+import {
+  BigNumber,
+  BigNumberish,
+  CallOverrides,
+  Wallet,
+  constants,
+} from 'ethers';
 import { ethers } from 'hardhat';
 import lodash from 'lodash';
 import { ORManager, ORManager__factory } from '../typechain-types';
@@ -305,6 +311,28 @@ describe('Test ORManager', () => {
 
         const storageMaxMDCLimit = await orManager.maxMDCLimit();
         expect(storageMaxMDCLimit).to.deep.eq(maxMDCLimit);
+      },
+    ),
+  );
+
+  it(
+    'Function updateExtraTransferContract should succeed',
+    embedStorageVersionIncrease(
+      () => orManager.storageVersion(),
+      async function () {
+        const extraTransferContract = BigNumber.from(
+          Wallet.createRandom().address.toLowerCase(),
+        ).toHexString();
+
+        const { events } = await orManager
+          .updateExtraTransferContract(extraTransferContract)
+          .then((t) => t.wait());
+
+        const args = events![0].args!;
+        expect(args.extraTransferContract).to.deep.eq(extraTransferContract);
+
+        const storageETC = await orManager.extraTransferContract();
+        expect(storageETC).to.deep.eq(extraTransferContract);
       },
     ),
   );
