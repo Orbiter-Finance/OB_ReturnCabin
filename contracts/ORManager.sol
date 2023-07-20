@@ -9,6 +9,7 @@ contract ORManager is IORManager, Ownable, StorageVersion {
     // Ownable._owner use a slot
     // StorageVersion._storageVersion use a slot
 
+    // Warning: the following order and type changes will cause state verification changes
     mapping(uint64 => BridgeLib.ChainInfo) private _chains;
     mapping(bytes32 => BridgeLib.TokenInfo) private _chainTokens; // hash(chainId, token) => TokenInfo
     mapping(address => bool) private _ebcs;

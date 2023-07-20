@@ -20,6 +20,7 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
     using ArrayLib for address[];
     using SafeERC20 for IERC20;
 
+    // Warning: the following order and type changes will cause state verification changes
     address private _owner;
     IORMDCFactory private _mdcFactory;
     bytes32 private _columnArrayHash;
@@ -304,9 +305,9 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
      *
      * @param spvAddress The spv's address
      * @param proof The zk's proof
-     * @param spvBlockHashs If the blocks of the state proof and tx proof are not in the same segment, you need to verify the two blocks
+     * @param spvBlockHashs If the blocks of the state proof and tx proof are not in the same segment, need to verify the two blocks
      * @param verifyInfo The public inputs preimage for zk proofs
-     *        verifyInfo.data: [chainId, txHash, from, to, token, amount, nonce, timestamp, dest, ruleHash]
+     *        verifyInfo.data: [chainId, txHash, from, to, token, amount, nonce, timestamp, ruleHash, dest, destToken]
      *        verifyInfo.slots: [...see code]
      * @param rawDatas The raw data list in preimage. [dealers, ebcs, chainIds, ebc, rule]
      */
@@ -353,19 +354,19 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
             require(timeDiff <= uint64(verifyInfo.slots[0].value >> 64), "MAXTOF");
         }
 
-        // Check freezeToken and freezeAmount
+        // Check freezeToken, freezeAmount
         {
             // FreezeToken
             require(verifyInfo.slots[1].account == _mdcFactory.manager(), "FTA");
             uint slotK = uint(
-                keccak256(abi.encode(keccak256(abi.encodePacked(uint64(verifyInfo.data[0]), verifyInfo.data[4])), 1))
+                keccak256(abi.encode(keccak256(abi.encodePacked(uint64(verifyInfo.data[0]), verifyInfo.data[4])), 3))
             );
             require(uint(verifyInfo.slots[1].key) == slotK + 1, "FTK");
             require(_challenges[challengeId].freezeToken == address(uint160(verifyInfo.slots[1].value)), "FTV");
 
             // FreezeAmount
             require(verifyInfo.slots[2].account == _mdcFactory.manager(), "FAA");
-            require(uint(verifyInfo.slots[2].key) == 4, "FAK");
+            require(uint(verifyInfo.slots[2].key) == 6, "FAK");
             uint64 _minChallengeRatio = uint64(verifyInfo.slots[2].value);
             require(
                 _challenges[challengeId].freezeAmount1 >=
@@ -377,9 +378,9 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
         // Check _columnArrayHash
         {
             bytes32 cah = keccak256(abi.encodePacked(dealers, ebcs, chainIds));
-            require(verifyInfo.slots[2].account == address(this), "CAHA");
-            require(uint(verifyInfo.slots[2].key) == 2, "CAHK");
-            require(bytes32(verifyInfo.slots[2].value) == cah, "CAHV");
+            require(verifyInfo.slots[3].account == address(this), "CAHA");
+            require(uint(verifyInfo.slots[3].key) == 2, "CAHK");
+            require(bytes32(verifyInfo.slots[3].value) == cah, "CAHV");
         }
 
         // Check ebc address, destChainId
@@ -392,26 +393,38 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
             destChainId = chainIds[ap.chainIdIndex];
         }
 
+        // Check dest token
+        {
+            require(verifyInfo.slots[4].account == _mdcFactory.manager(), "DTA");
+            uint slotK = uint(
+                keccak256(abi.encode(keccak256(abi.encodePacked(uint64(destChainId), verifyInfo.data[10])), 3))
+            );
+            require(uint(verifyInfo.slots[4].key) == slotK + 1, "DTK");
+
+            // TODO: At present, freezeToken and mainnetToken remain the same, and may change later
+            require(_challenges[challengeId].freezeToken == address(uint160(verifyInfo.slots[4].value)), "DTV");
+        }
+
         // Check _responseMakersHash
         {
-            require(verifyInfo.slots[3].account == address(this), "RMHA");
-            require(uint(verifyInfo.slots[3].key) == 5, "RMHK");
+            require(verifyInfo.slots[5].account == address(this), "RMHA");
+            require(uint(verifyInfo.slots[5].key) == 5, "RMHK");
         }
 
         // Check ruleRoot key and rule
         {
             // Sure rule root storage position
             // Warnning: In the circuit, it is necessary to ensure that the rule exists in the mpt
-            require(verifyInfo.slots[4].account == address(this), "RRA");
+            require(verifyInfo.slots[6].account == address(this), "RRA");
             uint slotK = uint(keccak256(abi.encode(ebc, 6)));
-            require(uint(verifyInfo.slots[4].key) == slotK, "RRK");
+            require(uint(verifyInfo.slots[6].key) == slotK, "RRK");
 
             // Rule
-            require(uint(keccak256(abi.encode(rule))) == verifyInfo.data[9], "RH");
+            require(uint(keccak256(abi.encode(rule))) == verifyInfo.data[8], "RH");
         }
 
         // Calculate dest amount
-        // TODO: Is there a more general solution. That is not only amount
+        // TODO: Is there a more general solution. Not only amount
         uint[] memory ruleValues;
         ruleValues[0] = rule.minPrice;
         ruleValues[1] = rule.maxPrice;
@@ -438,8 +451,8 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
 
         _challenges[challengeId].verifiedTime0 = uint64(block.timestamp);
 
-        // TODO: Save verified data's hash.
-        // [minVerifyChallengeDestTxSecond, maxVerifyChallengeDestTxSecond, nonce, destChainId, destAddress, destAmount, responeMakersHash]
+        // Save verified data's hash.
+        // [minVerifyChallengeDestTxSecond, maxVerifyChallengeDestTxSecond, nonce, destChainId, destAddress, destToken, destAmount, responeMakersHash]
         _challenges[challengeId].verifiedDataHash0 = keccak256(
             abi.encode(
                 [
@@ -447,7 +460,8 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
                     uint64(verifyInfo.slots[0].value >> 128),
                     verifyInfo.data[0],
                     destChainId,
-                    verifyInfo.data[8],
+                    verifyInfo.data[9],
+                    verifyInfo.data[10],
                     destAmount,
                     verifyInfo.slots[3].value
                 ]
@@ -465,7 +479,7 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
      * @param verifyInfo The public inputs preimage for zk proofs
      *        verifyInfo.data: [chainId, txHash, from, to, token, amount, nonce, timestamp]
      *        verifyInfo.slots: [...see code]
-     * @param verifiedData0 [minVerifyChallengeDestTxSecond, maxVerifyChallengeDestTxSecond, nonce, destChainId, destAddress, destAmount, responeMakersHash]
+     * @param verifiedData0 [minVerifyChallengeDestTxSecond, maxVerifyChallengeDestTxSecond, nonce, destChainId, destAddress, destToken, destAmount, responeMakersHash]
      * @param rawDatas The raw data list in preimage. [responeMakers]
      */
     function verifyChallengeDest(
@@ -490,7 +504,7 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
 
         // Check verifiedData0
         require(keccak256(abi.encode(verifiedData0)) == _challenges[challengeId].verifiedDataHash0, "VDH0");
-        require(keccak256(abi.encode(responseMakers)) == bytes32(verifiedData0[3]), "RMH");
+        require(keccak256(abi.encode(responseMakers)) == bytes32(verifiedData0[7]), "RMH");
 
         // Check minVerifyChallengeDestTxSecond, maxVerifyChallengeDestTxSecond
         {
@@ -506,11 +520,13 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
         require(responseMakers.includes(verifyInfo.data[2]), "MIC");
 
         // Check dest address
-        require(verifiedData0[8] == verifyInfo.data[3], "DA");
+        require(verifiedData0[4] == verifyInfo.data[3], "DADDR");
 
-        // TODO: Check dest token
+        // Check dest token
+        require(verifiedData0[5] == verifyInfo.data[4], "DT");
 
-        // TODO: Check dest amount
+        // Check dest amount (Warning: The nonce is at the end of the amount)
+        require(verifiedData0[6] - verifiedData0[2] == verifyInfo.data[5], "DT");
 
         _challengerFailed(_challenges[challengeId]);
 
