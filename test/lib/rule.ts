@@ -12,8 +12,10 @@ export const ruleTypes = [
   'uint8', // chain1's status
   'uint', // chain0's token
   'uint', // chain1's token
-  'uint128', // minPrice
-  'uint128', // maxPrice
+  'uint128', // chain0's minPrice
+  'uint128', // chain1's minPrice
+  'uint128', // chain0's maxPrice
+  'uint128', // chain1's maxPrice
   'uint128', // chain0's withholdingFee
   'uint128', // chain1's withholdingFee
   'uint16', // chain0's tradeFee. 10,000 percent
@@ -32,6 +34,8 @@ export function createRandomRule() {
     1,
     Wallet.createRandom().address,
     Wallet.createRandom().address,
+    BigNumber.from(5).pow(parseInt(Math.random() * 40 + '') + 1),
+    BigNumber.from(5).pow(parseInt(Math.random() * 40 + '') + 1),
     BigNumber.from(5).pow(parseInt(Math.random() * 40 + '') + 1),
     BigNumber.from(5).pow(parseInt(Math.random() * 40 + '') + 1),
     BigNumber.from(5).pow(parseInt(Math.random() * 40 + '') + 1),
