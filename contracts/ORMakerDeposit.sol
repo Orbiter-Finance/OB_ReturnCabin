@@ -426,15 +426,17 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
         // Calculate dest amount
         // TODO: Is there a more general solution. Not only amount
         uint[] memory ruleValues;
-        ruleValues[0] = rule.minPrice;
-        ruleValues[1] = rule.maxPrice;
         if (rule.chainId0 == verifyInfo.data[0]) {
             require(rule.chainId1 == destChainId, "DC1");
+            ruleValues[0] = rule.minPrice0;
+            ruleValues[1] = rule.maxPrice0;
             ruleValues[2] = uint(rule.withholdingFee0);
             ruleValues[3] = uint(rule.tradingFee0);
         }
         if (rule.chainId1 == verifyInfo.data[0]) {
             require(rule.chainId0 == destChainId, "DC0");
+            ruleValues[0] = rule.minPrice1;
+            ruleValues[1] = rule.maxPrice1;
             ruleValues[2] = uint(rule.withholdingFee1);
             ruleValues[3] = uint(rule.tradingFee1);
         }

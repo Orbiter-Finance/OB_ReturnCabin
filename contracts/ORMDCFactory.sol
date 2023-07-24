@@ -13,7 +13,7 @@ contract ORMDCFactory is IORMDCFactory {
 
     constructor(address manager_, address implementation_) {
         require(manager_ != address(0), "MZ");
-        require(manager_ != address(0), "IZ");
+        require(implementation_ != address(0), "IZ");
 
         _manager = IORManager(manager_);
         _implementation = implementation_;

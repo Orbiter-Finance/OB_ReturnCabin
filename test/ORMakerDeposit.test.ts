@@ -50,7 +50,7 @@ describe('ORMakerDeposit', () => {
     const envORMDCFactoryAddress = process.env['OR_MDC_FACTORY_ADDRESS'];
     assert(
       !!envORMDCFactoryAddress,
-      'Env miss [OR_MDC_FACTORY_ADDRESS]. You may need to test ORMDCFactory.test.ts first. Example: npx hardhat test test/ORManager.test test/ORMDCFactory.test.ts test/ORMakerDeposit.test.ts',
+      'Env miss [OR_MDC_FACTORY_ADDRESS]. You may need to test ORMDCFactory.test.ts first. Example: npx hardhat test test/ORManager.test test/ORFeeManager.test.ts test/ORMDCFactory.test.ts test/ORMakerDeposit.test.ts',
     );
 
     orMDCFactory = new ORMDCFactory__factory(signers[0]).attach(
@@ -293,7 +293,7 @@ describe('ORMakerDeposit', () => {
       () => orMakerDeposit.storageVersion(),
       async function () {
         const rules: any[] = [];
-        for (let i = 0; i < 20; i++) {
+        for (let i = 0; i < 5 * 4; i++) {
           const _rule = createRandomRule();
           _rule[0] = Number(_rule[0]) + i;
           _rule[1] = Number(_rule[1]) + i;
@@ -305,8 +305,11 @@ describe('ORMakerDeposit', () => {
         const rsc = gzipRules(rules);
         ebcSample = lodash.sample(orManagerEbcs)!;
         const rootWithVersion = { root, version: 1 };
-        const sourceChainIds = [1];
-        const pledgeAmounts = [utils.parseEther('0.0001')];
+        const sourceChainIds = [1, 2];
+        const pledgeAmounts = [
+          utils.parseEther('0.0001'),
+          utils.parseEther('0.0002'),
+        ];
 
         await testReverted(
           orMakerDeposit.updateRulesRoot(

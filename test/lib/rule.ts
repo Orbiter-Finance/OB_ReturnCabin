@@ -24,6 +24,8 @@ export const ruleTypes = [
   'uint32', // chain1's response time
   'uint32', // chain0's compensation ratio
   'uint32', // chain1's compensation ratio
+  'uint64', // chain0's stop block
+  'uint64', // chain1's stop block
 ];
 
 export function createRandomRule() {
@@ -46,6 +48,8 @@ export function createRandomRule() {
     (2 ^ 31) - 1,
     (2 ^ 30) - 1,
     (2 ^ 29) - 1,
+    BigNumber.from(2).pow(64).sub(1),
+    BigNumber.from(2).pow(64).sub(1),
   ];
 }
 
@@ -136,11 +140,13 @@ export function gzipRules(rules: BigNumberish[][]) {
     [`tuple(${ruleTypes.join(',')})[]`],
     [rules],
   );
-  return utils.hexlify(Pako.gzip(utils.arrayify(rsEncode), { level: 9 }));
+  return utils.hexlify(utils.arrayify(rsEncode));
+  // return utils.hexlify(Pako.gzip(utils.arrayify(rsEncode), { level: 9 }));
 }
 
 export function ungzipRules(rsc: BytesLike | Hexable | number) {
-  const ungzipData = Pako.ungzip(utils.arrayify(rsc));
+  // const ungzipData = Pako.ungzip(utils.arrayify(rsc));
+  const ungzipData = utils.arrayify(rsc);
 
   const [rules] = utils.defaultAbiCoder.decode(
     [`tuple(${ruleTypes.join(',')})[]`],

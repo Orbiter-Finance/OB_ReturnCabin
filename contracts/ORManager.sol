@@ -23,6 +23,7 @@ contract ORManager is IORManager, Ownable, StorageVersion {
     uint private _extraTransferContract; // Cross-address transfer contract
 
     constructor(address owner_) {
+        require(owner_ != address(0), "OZ");
         _transferOwnership(owner_);
     }
 
