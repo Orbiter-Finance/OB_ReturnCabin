@@ -4,8 +4,8 @@ pragma solidity ^0.8.17;
 
 library RuleLib {
     struct Rule {
-        uint64 chainId0;
-        uint64 chainId1;
+        uint64 chainId0; // 59144
+        uint64 chainId1; // 10
         uint8 status0;
         uint8 status1;
         uint token0;
@@ -22,10 +22,7 @@ library RuleLib {
         uint32 responseTime1;
         uint32 compensationRatio0;
         uint32 compensationRatio1;
-        // The block height of maker want to stop.
-        // For transactions exceeding this block, the maker has the right not to response in the dest chain.
-        uint64 stopBlock0;
-        uint64 stopBlock1;
+        uint64 enableBlockNumber;
     }
 
     struct RootWithVersion {
