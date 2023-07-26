@@ -3,6 +3,7 @@ import { assert, expect } from 'chai';
 import { BigNumberish, constants, utils } from 'ethers';
 import { ethers } from 'hardhat';
 
+import { defaultAbiCoder, keccak256 } from 'ethers/lib/utils';
 import lodash from 'lodash';
 import { BaseTrie } from 'merkle-patricia-tree';
 import {
@@ -21,7 +22,6 @@ import {
   calculateRulesTree,
   createRandomRule,
   getRulesRootUpdatedLogs,
-  gzipRules,
 } from './lib/rule';
 import {
   embedStorageVersionIncrease,
@@ -30,7 +30,7 @@ import {
   testReverted,
   testRevertedOwner,
 } from './utils.test';
-import { defaultAbiCoder, keccak256 } from 'ethers/lib/utils';
+import { writeFile, writeFileSync } from 'fs';
 
 describe('ORMakerDeposit', () => {
   let signers: SignerWithAddress[];
@@ -292,32 +292,28 @@ describe('ORMakerDeposit', () => {
     embedStorageVersionIncrease(
       () => orMakerDeposit.storageVersion(),
       async function () {
-        const currentBlockNumber = await signers[0].provider?.getBlockNumber();
+        const currentBlockNumber = await mdcOwner.provider?.getBlockNumber();
 
         const rules: any[] = [];
         for (let i = 0; i < 5 * 4; i++) {
           const _rule = createRandomRule();
           _rule[0] = Number(_rule[0]) + i;
           _rule[1] = Number(_rule[1]) + i;
-          _rule[18] = currentBlockNumber;
+          _rule[18] = (currentBlockNumber || 0) + 12;
           rules.push(_rule);
         }
 
         const tree = await calculateRulesTree(rules);
         const root = utils.hexlify(tree.root);
-        const rsc = gzipRules(rules);
         ebcSample = lodash.sample(orManagerEbcs)!;
         const rootWithVersion = { root, version: 1 };
-        const sourceChainIds = [1, 2];
-        const pledgeAmounts = [
-          utils.parseEther('0.0001'),
-          utils.parseEther('0.0002'),
-        ];
+        const sourceChainIds = [1];
+        const pledgeAmounts = [utils.parseEther('0.0001')];
 
         await testReverted(
           orMakerDeposit.updateRulesRoot(
             ebcSample,
-            rsc,
+            rules,
             rootWithVersion,
             sourceChainIds,
             pledgeAmounts,
@@ -325,21 +321,8 @@ describe('ORMakerDeposit', () => {
           'IV',
         );
 
-        // const { events } = await orMakerDeposit
-        //   .updateRulesRoot(
-        //     ebcSample,
-        //     rsc,
-        //     rootWithVersion,
-        //     sourceChainIds,
-        //     pledgeAmounts,
-        //     {
-        //       value: pledgeAmounts.reduce((pv, cv) => pv.add(cv)),
-        //     },
-        //   )
-        //   .then((t) => t.wait());
-
         const { events } = await orMakerDeposit
-          .updateRulesRoot2(
+          .updateRulesRoot(
             ebcSample,
             rules,
             rootWithVersion,
@@ -359,7 +342,7 @@ describe('ORMakerDeposit', () => {
         await testReverted(
           orMakerDeposit.updateRulesRoot(
             ebcSample,
-            rsc,
+            rules,
             rootWithVersion,
             [],
             [],
@@ -371,7 +354,7 @@ describe('ORMakerDeposit', () => {
             .connect(signers[2])
             .updateRulesRoot(
               ebcSample,
-              rsc,
+              rules,
               { ...rootWithVersion, version: 2 },
               [],
               [],
@@ -394,110 +377,108 @@ describe('ORMakerDeposit', () => {
     ),
   );
 
-  // it('Event RulesRootUpdated should emit logs', async function () {
-  //   const rules = await getRulesRootUpdatedLogs(
-  //     signers[0].provider,
-  //     orMakerDeposit.address,
-  //     implementation,
-  //   );
-  //   const tree = await calculateRulesTree(rules);
-  //   const root = utils.hexlify(tree.root);
+  it('Event RulesRootUpdated should emit logs', async function () {
+    const rules = await getRulesRootUpdatedLogs(
+      signers[0].provider,
+      orMakerDeposit.address,
+      implementation,
+    );
+    const tree = await calculateRulesTree(rules);
+    const root = utils.hexlify(tree.root);
 
-  //   const storageRWV = await orMakerDeposit.rulesRoot(ebcSample);
-  //   expect(storageRWV.root).eq(root);
-  // });
+    const storageRWV = await orMakerDeposit.rulesRoot(ebcSample);
+    expect(storageRWV.root).eq(root);
+  });
 
-  // it(
-  //   'Function updateRulesRootErc20 should emit events and update storage',
-  //   embedStorageVersionIncrease(
-  //     () => orMakerDeposit.storageVersion(),
-  //     async function () {
-  //       const rules = await getRulesRootUpdatedLogs(
-  //         signers[0].provider,
-  //         orMakerDeposit.address,
-  //         implementation,
-  //       );
+  it(
+    'Function updateRulesRootErc20 should emit events and update storage',
+    embedStorageVersionIncrease(
+      () => orMakerDeposit.storageVersion(),
+      async function () {
+        const totalRules: any[] = await getRulesRootUpdatedLogs(
+          signers[0].provider,
+          orMakerDeposit.address,
+          implementation,
+        );
 
-  //       for (let i = 0; i < 10; i++) {
-  //         const _rule = createRandomRule();
-  //         _rule[0] = Number(rules[rules.length - 1][0]) + 1;
-  //         _rule[1] = Number(rules[rules.length - 1][1]) + 1;
-  //         rules.push(_rule);
-  //       }
+        const currentBlockNumber = await mdcOwner.provider?.getBlockNumber();
 
-  //       const rootWithVersion = await orMakerDeposit.rulesRoot(ebcSample);
+        const rules: any[] = [];
+        for (let i = 0; i < 5 * 4; i++) {
+          const _rule = createRandomRule();
+          _rule[0] = Number(_rule[0]) + 1;
+          _rule[1] = Number(_rule[1]) + 1;
+          _rule[18] = (currentBlockNumber || 0) + 12;
+          totalRules.push(_rule);
+          rules.push(_rule);
+        }
 
-  //       const rsc = gzipRules(rules);
-  //       const tree = await calculateRulesTree(rules);
-  //       const root = utils.hexlify(tree.root);
-  //       const sourceChainIds = [
-  //         rules[rules.length - 1][0],
-  //         rules[rules.length - 2][0],
-  //       ];
-  //       const pledgeAmounts = [
-  //         utils.parseEther('0.0001'),
-  //         utils.parseEther('0.0002'),
-  //       ];
+        const rootWithVersion = await orMakerDeposit.rulesRoot(ebcSample);
 
-  //       const balanceBefore = await testToken.balanceOf(mdcOwner.address);
+        const tree = await calculateRulesTree(totalRules);
+        const root = utils.hexlify(tree.root);
+        const sourceChainIds = [rules[rules.length - 1][0]];
+        const pledgeAmounts = [utils.parseEther('0.0001')];
 
-  //       // Approve
-  //       const approveAmount = pledgeAmounts.reduce((pv, cv) => pv.add(cv));
-  //       await testToken
-  //         .approve(orMakerDeposit.address, approveAmount)
-  //         .then((t) => t.wait());
+        const balanceBefore = await testToken.balanceOf(mdcOwner.address);
 
-  //       await orMakerDeposit
-  //         .updateRulesRootERC20(
-  //           ebcSample,
-  //           rsc,
-  //           { root, version: rootWithVersion.version + 1 },
-  //           sourceChainIds,
-  //           pledgeAmounts,
-  //           testToken.address,
-  //         )
-  //         .then((t) => t.wait());
+        // Approve
+        const approveAmount = pledgeAmounts.reduce((pv, cv) => pv.add(cv));
+        await testToken
+          .approve(orMakerDeposit.address, approveAmount)
+          .then((t) => t.wait());
 
-  //       const balanceAfter = await testToken.balanceOf(mdcOwner.address);
-  //       expect(balanceBefore.sub(balanceAfter)).eq(approveAmount);
+        await orMakerDeposit
+          .updateRulesRootERC20(
+            ebcSample,
+            rules,
+            { root, version: rootWithVersion.version + 1 },
+            sourceChainIds,
+            pledgeAmounts,
+            testToken.address,
+          )
+          .then((t) => t.wait());
 
-  //       await testReverted(
-  //         orMakerDeposit.updateRulesRootERC20(
-  //           ebcSample,
-  //           rsc,
-  //           { root, version: rootWithVersion.version + 1 },
-  //           sourceChainIds,
-  //           pledgeAmounts,
-  //           testToken.address,
-  //         ),
-  //         'VE',
-  //       );
-  //       await testReverted(
-  //         orMakerDeposit.updateRulesRootERC20(
-  //           ebcSample,
-  //           rsc,
-  //           { root, version: rootWithVersion.version + 2 },
-  //           [],
-  //           pledgeAmounts,
-  //           testToken.address,
-  //         ),
-  //         'SPL',
-  //       );
-  //       await testRevertedOwner(
-  //         orMakerDeposit
-  //           .connect(signers[2])
-  //           .updateRulesRootERC20(
-  //             ebcSample,
-  //             rsc,
-  //             { root, version: rootWithVersion.version + 2 },
-  //             sourceChainIds,
-  //             pledgeAmounts,
-  //             testToken.address,
-  //           ),
-  //       );
-  //     },
-  //   ),
-  // );
+        const balanceAfter = await testToken.balanceOf(mdcOwner.address);
+        expect(balanceBefore.sub(balanceAfter)).eq(approveAmount);
+
+        await testReverted(
+          orMakerDeposit.updateRulesRootERC20(
+            ebcSample,
+            rules,
+            { root, version: rootWithVersion.version + 1 },
+            sourceChainIds,
+            pledgeAmounts,
+            testToken.address,
+          ),
+          'VE',
+        );
+        await testReverted(
+          orMakerDeposit.updateRulesRootERC20(
+            ebcSample,
+            rules,
+            { root, version: rootWithVersion.version + 2 },
+            [],
+            pledgeAmounts,
+            testToken.address,
+          ),
+          'SPL',
+        );
+        await testRevertedOwner(
+          orMakerDeposit
+            .connect(signers[2])
+            .updateRulesRootERC20(
+              ebcSample,
+              rules,
+              { root, version: rootWithVersion.version + 2 },
+              sourceChainIds,
+              pledgeAmounts,
+              testToken.address,
+            ),
+        );
+      },
+    ),
+  );
 
   it('Function challenge should success', async function () {
     const sourceChainId = 10;

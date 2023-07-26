@@ -100,12 +100,16 @@ export async function getRulesRootUpdatedLogs(
     const transaction = await provider?.getTransaction(item.transactionHash);
     if (!transaction) continue;
 
-    const [_, rsc] = utils.defaultAbiCoder.decode(
-      ['address', 'bytes', 'tuple(bytes32,uint32)', 'uint16[]', 'uint[]'],
+    const [_, _rules] = utils.defaultAbiCoder.decode(
+      [
+        'address',
+        `tuple(${ruleTypes.join(',')})[]`,
+        'tuple(bytes32,uint32)',
+        'uint16[]',
+        'uint[]',
+      ],
       utils.hexDataSlice(transaction.data, 4),
     );
-
-    const _rules = ungzipRules(rsc);
 
     for (const _rule of _rules) {
       const k = calculateRuleKey(_rule);
@@ -138,13 +142,11 @@ export function gzipRules(rules: BigNumberish[][]) {
     [`tuple(${ruleTypes.join(',')})[]`],
     [rules],
   );
-  return utils.hexlify(utils.arrayify(rsEncode));
-  // return utils.hexlify(Pako.gzip(utils.arrayify(rsEncode), { level: 9 }));
+  return utils.hexlify(Pako.gzip(utils.arrayify(rsEncode), { level: 9 }));
 }
 
 export function ungzipRules(rsc: BytesLike | Hexable | number) {
-  // const ungzipData = Pako.ungzip(utils.arrayify(rsc));
-  const ungzipData = utils.arrayify(rsc);
+  const ungzipData = Pako.ungzip(utils.arrayify(rsc));
 
   const [rules] = utils.defaultAbiCoder.decode(
     [`tuple(${ruleTypes.join(',')})[]`],

@@ -65,7 +65,7 @@ interface IORMakerDeposit {
 
     function updateRulesRoot(
         address ebc,
-        bytes calldata rsc,
+        RuleLib.Rule[] calldata rules,
         RuleLib.RootWithVersion calldata rootWithVersion,
         uint64[] calldata sourceChainIds,
         uint[] calldata pledgeAmounts
@@ -73,7 +73,7 @@ interface IORMakerDeposit {
 
     function updateRulesRootERC20(
         address ebc,
-        bytes calldata rsc,
+        RuleLib.Rule[] calldata rules,
         RuleLib.RootWithVersion calldata rootWithVersion,
         uint64[] calldata sourceChainIds,
         uint[] calldata pledgeAmounts,

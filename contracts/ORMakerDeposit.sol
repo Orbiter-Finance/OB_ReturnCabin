@@ -154,51 +154,12 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
 
     function updateRulesRoot(
         address ebc,
-        bytes calldata rsc,
-        RuleLib.RootWithVersion calldata rootWithVersion,
-        uint64[] calldata sourceChainIds,
-        uint[] calldata pledgeAmounts
-    ) external payable storageVersionIncrease onlyOwner {
-        // Prevent unused hints
-        rsc;
-
-        _updateRulesRoot(ebc, rootWithVersion);
-
-        require(sourceChainIds.length == pledgeAmounts.length, "SPL");
-
-        uint totalAmount;
-        for (uint i = 0; i < sourceChainIds.length; ) {
-            bytes32 k = keccak256(abi.encodePacked(sourceChainIds[i], address(0)));
-
-            if (pledgeAmounts[i] > _pledgeBalances[ebc][k]) {
-                totalAmount += pledgeAmounts[i] - _pledgeBalances[ebc][k];
-            }
-
-            _pledgeBalances[ebc][k] = pledgeAmounts[i];
-
-            unchecked {
-                i++;
-            }
-        }
-
-        require(totalAmount <= msg.value, "IV"); // Insufficient value
-    }
-
-    function updateRulesRoot2(
-        address ebc,
         RuleLib.Rule[] calldata rules,
         RuleLib.RootWithVersion calldata rootWithVersion,
         uint64[] calldata sourceChainIds,
         uint[] calldata pledgeAmounts
     ) external payable storageVersionIncrease onlyOwner {
-        // Prevent unused hints
-        rules;
-
-        for (uint i = 0; i < rules.length; i++) {
-            require(rules[i].enableBlockNumber - block.number >= ConstantsLib.RULE_ENABLE_DELAY, "OFEBN");
-        }
-
-        _updateRulesRoot(ebc, rootWithVersion);
+        _updateRulesRoot(ebc, rules, rootWithVersion);
 
         require(sourceChainIds.length == pledgeAmounts.length, "SPL");
 
@@ -222,16 +183,13 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
 
     function updateRulesRootERC20(
         address ebc,
-        bytes calldata rsc,
+        RuleLib.Rule[] calldata rules,
         RuleLib.RootWithVersion calldata rootWithVersion,
         uint64[] calldata sourceChainIds,
         uint[] calldata pledgeAmounts,
         address token
     ) external storageVersionIncrease onlyOwner {
-        // Prevent unused hints
-        rsc;
-
-        _updateRulesRoot(ebc, rootWithVersion);
+        _updateRulesRoot(ebc, rules, rootWithVersion);
 
         require(sourceChainIds.length == pledgeAmounts.length, "SPL");
 
@@ -248,7 +206,15 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
         }
     }
 
-    function _updateRulesRoot(address ebc, RuleLib.RootWithVersion calldata rootWithVersion) private {
+    function _updateRulesRoot(
+        address ebc,
+        RuleLib.Rule[] calldata rules,
+        RuleLib.RootWithVersion calldata rootWithVersion
+    ) private {
+        for (uint i = 0; i < rules.length; i++) {
+            require(rules[i].enableBlockNumber - block.number >= ConstantsLib.RULE_MIN_ENABLE_DELAY, "OFEBN");
+        }
+
         IORManager manager = IORManager(_mdcFactory.manager());
         require(manager.ebcIncludes(ebc), "EI"); // Invalid ebc
 
