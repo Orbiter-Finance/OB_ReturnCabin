@@ -30,7 +30,6 @@ import {
   testReverted,
   testRevertedOwner,
 } from './utils.test';
-import { writeFile, writeFileSync } from 'fs';
 
 describe('ORMakerDeposit', () => {
   let signers: SignerWithAddress[];
@@ -292,14 +291,14 @@ describe('ORMakerDeposit', () => {
     embedStorageVersionIncrease(
       () => orMakerDeposit.storageVersion(),
       async function () {
-        const currentBlockNumber = await mdcOwner.provider?.getBlockNumber();
+        const currentBlock = await mdcOwner.provider?.getBlock('latest');
 
         const rules: any[] = [];
         for (let i = 0; i < 5 * 4; i++) {
           const _rule = createRandomRule();
           _rule[0] = Number(_rule[0]) + i;
           _rule[1] = Number(_rule[1]) + i;
-          _rule[18] = (currentBlockNumber || 0) + 12;
+          _rule[18] = (currentBlock?.timestamp || 0) + 200;
           rules.push(_rule);
         }
 
@@ -401,14 +400,14 @@ describe('ORMakerDeposit', () => {
           implementation,
         );
 
-        const currentBlockNumber = await mdcOwner.provider?.getBlockNumber();
+        const currentBlock = await mdcOwner.provider?.getBlock('latest');
 
         const rules: any[] = [];
         for (let i = 0; i < 5 * 4; i++) {
           const _rule = createRandomRule();
           _rule[0] = Number(_rule[0]) + 1;
           _rule[1] = Number(_rule[1]) + 1;
-          _rule[18] = (currentBlockNumber || 0) + 12;
+          _rule[18] = (currentBlock?.timestamp || 0) + 200;
           totalRules.push(_rule);
           rules.push(_rule);
         }

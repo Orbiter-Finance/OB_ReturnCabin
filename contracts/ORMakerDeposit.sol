@@ -212,7 +212,7 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
         RuleLib.RootWithVersion calldata rootWithVersion
     ) private {
         for (uint i = 0; i < rules.length; i++) {
-            require(rules[i].enableBlockNumber - block.number >= ConstantsLib.RULE_MIN_ENABLE_DELAY, "OFEBN");
+            require(rules[i].enableTimestamp - block.timestamp >= ConstantsLib.RULE_MIN_ENABLE_DELAY, "OFEBN");
         }
 
         IORManager manager = IORManager(_mdcFactory.manager());

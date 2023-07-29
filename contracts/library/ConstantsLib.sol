@@ -5,5 +5,5 @@ pragma solidity ^0.8.17;
 library ConstantsLib {
     uint constant RATIO_MULTIPLE = 10000;
 
-    uint constant RULE_MIN_ENABLE_DELAY = 10;
+    uint constant RULE_MIN_ENABLE_DELAY = 120; // Unit: second
 }

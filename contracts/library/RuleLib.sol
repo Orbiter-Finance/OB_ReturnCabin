@@ -22,7 +22,7 @@ library RuleLib {
         uint32 responseTime1;
         uint32 compensationRatio0;
         uint32 compensationRatio1;
-        uint64 enableBlockNumber;
+        uint64 enableTimestamp;
     }
 
     struct RootWithVersion {
