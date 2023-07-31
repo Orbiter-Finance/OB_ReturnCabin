@@ -99,7 +99,7 @@ describe('ORMakerDeposit', () => {
       () => orMakerDeposit.storageVersion(),
       async function () {
         const ebcs = lodash.cloneDeep(orManagerEbcs);
-        const mdcEbcs: string[] = ebcs.slice(0, 10);
+        const mdcEbcs: string[] = ebcs.slice(0, 9);
         mdcEbcs.sort(() => Math.random() - 0.5);
 
         const columnArrayHash = utils.keccak256(

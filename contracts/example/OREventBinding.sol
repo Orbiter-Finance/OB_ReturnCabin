@@ -21,8 +21,13 @@ contract OREventBinding is IOREventBinding {
     }
 
     function getAmountParams(uint amount) public pure returns (AmountParams memory) {
-        uint[] memory splits = splitSecurityCode(getSecurityCode(amount));
-        return AmountParams(splits[0], splits[1], splits[2]);
+        uint[] memory params = splitSecurityCode(getSecurityCode(amount));
+
+        require(params[0] > 0, "P0Z");
+        require(params[1] > 0, "P1Z");
+        require(params[2] > 0, "P2Z");
+
+        return AmountParams(params[0], params[1], params[2]);
     }
 
     /**

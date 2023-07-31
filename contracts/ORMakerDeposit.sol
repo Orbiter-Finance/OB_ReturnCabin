@@ -27,7 +27,7 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
     mapping(uint64 => address) private _spvs; // chainId => spvAddress
     bytes32 private _responseMakersHash; // hash(response maker list), not just owner, to improve tps
     mapping(address => RuleLib.RootWithVersion) private _rulesRoots; // ebc => merkleRoot(rules), version
-    mapping(address => mapping(bytes32 => uint)) private _pledgeBalances; // ebc => hash(sourceChainId, sourceToken) => pledgeBalance
+    mapping(bytes32 => uint) private _pledgeBalances; // hash(ebc, sourceChainId, sourceToken) => pledgeBalance
     mapping(address => uint) private _freezeAssets; // token(ETH: 0) => freezeAmount
     mapping(bytes32 => ChallengeInfo) private _challenges; // hash(sourceChainId, transactionHash) => ChallengeInfo
 
@@ -64,9 +64,9 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
         address[] calldata ebcs,
         uint64[] calldata chainIds
     ) external storageVersionIncrease onlyOwner {
-        require(dealers.length <= 10, "DOF");
-        require(ebcs.length <= 10, "EOF");
-        require(chainIds.length <= 100, "COF");
+        require(dealers.length < 10, "DOF");
+        require(ebcs.length < 10, "EOF");
+        require(chainIds.length < 100, "COF");
 
         IORManager manager = IORManager(_mdcFactory.manager());
         for (uint i = 0; i < ebcs.length; ) {
@@ -165,13 +165,13 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
 
         uint totalAmount;
         for (uint i = 0; i < sourceChainIds.length; ) {
-            bytes32 k = keccak256(abi.encodePacked(sourceChainIds[i], address(0)));
+            bytes32 k = keccak256(abi.encode(ebc, sourceChainIds[i], address(0)));
 
-            if (pledgeAmounts[i] > _pledgeBalances[ebc][k]) {
-                totalAmount += pledgeAmounts[i] - _pledgeBalances[ebc][k];
+            if (pledgeAmounts[i] > _pledgeBalances[k]) {
+                totalAmount += pledgeAmounts[i] - _pledgeBalances[k];
             }
 
-            _pledgeBalances[ebc][k] = pledgeAmounts[i];
+            _pledgeBalances[k] = pledgeAmounts[i];
 
             unchecked {
                 i++;
@@ -194,10 +194,10 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
         require(sourceChainIds.length == pledgeAmounts.length, "SPL");
 
         for (uint i = 0; i < sourceChainIds.length; ) {
-            bytes32 k = keccak256(abi.encodePacked(sourceChainIds[i], token));
+            bytes32 k = keccak256(abi.encode(ebc, sourceChainIds[i], token));
 
-            if (pledgeAmounts[i] > _pledgeBalances[ebc][k]) {
-                IERC20(token).safeTransferFrom(msg.sender, address(this), pledgeAmounts[i] - _pledgeBalances[ebc][k]);
+            if (pledgeAmounts[i] > _pledgeBalances[k]) {
+                IERC20(token).safeTransferFrom(msg.sender, address(this), pledgeAmounts[i] - _pledgeBalances[k]);
             }
 
             unchecked {
@@ -389,10 +389,10 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
         uint destChainId;
         {
             IOREventBinding.AmountParams memory ap = IOREventBinding(ebc).getAmountParams(verifyInfo.data[5]);
-            require(ebc == ebcs[ap.ebcIndex], "ENE");
+            require(ebc == ebcs[ap.ebcIndex - 1], "ENE");
 
-            require(ap.chainIdIndex < chainIds.length, "COF");
-            destChainId = chainIds[ap.chainIdIndex];
+            require(ap.chainIdIndex <= chainIds.length, "COF");
+            destChainId = chainIds[ap.chainIdIndex - 1];
         }
 
         // Check dest token
