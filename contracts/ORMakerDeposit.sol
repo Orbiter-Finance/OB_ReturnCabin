@@ -163,12 +163,15 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
 
         require(sourceChainIds.length == pledgeAmounts.length, "SPL");
 
-        uint totalAmount;
+        uint increaseAmount;
         for (uint i = 0; i < sourceChainIds.length; ) {
+            // TODO: Must save pledge amount by sourceChainId?
+            //       Is it feasible to only by token?
             bytes32 k = keccak256(abi.encode(ebc, sourceChainIds[i], address(0)));
 
             if (pledgeAmounts[i] > _pledgeBalances[k]) {
-                totalAmount += pledgeAmounts[i] - _pledgeBalances[k];
+                uint _d = pledgeAmounts[i] - _pledgeBalances[k];
+                increaseAmount += _d;
             }
 
             _pledgeBalances[k] = pledgeAmounts[i];
@@ -178,7 +181,7 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
             }
         }
 
-        require(totalAmount <= msg.value, "IV"); // Insufficient value
+        require(increaseAmount <= msg.value, "IV"); // Insufficient value
     }
 
     function updateRulesRootERC20(
