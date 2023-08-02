@@ -1,9 +1,9 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { assert, expect } from 'chai';
-import { BigNumberish, constants, utils } from 'ethers';
+import { BigNumber, BigNumberish, constants, utils } from 'ethers';
 import { ethers } from 'hardhat';
 
-import { defaultAbiCoder, keccak256 } from 'ethers/lib/utils';
+import { BytesLike, defaultAbiCoder, keccak256 } from 'ethers/lib/utils';
 import lodash from 'lodash';
 import { BaseTrie } from 'merkle-patricia-tree';
 import {
@@ -207,13 +207,31 @@ describe('ORMakerDeposit', () => {
     embedStorageVersionIncrease(
       () => orMakerDeposit.storageVersion(),
       async function () {
+        const responseSigners = signers.slice(10, 20);
         const responseMakers: BigNumberish[] = [];
-        for (let i = 0; i < 10; i++) {
-          responseMakers.push(ethers.Wallet.createRandom().address);
+        const responseMakerSignatures: BytesLike[] = [];
+        const message = keccak256(
+          defaultAbiCoder.encode(['address'], [orMakerDeposit.address]),
+        );
+        console.warn('message:', message);
+
+        for (const s of responseSigners) {
+          const signature = await s.signMessage(message);
+
+          responseMakers.push(BigNumber.from(s.address));
+          responseMakerSignatures.push(signature);
         }
 
+        const address = utils.recoverAddress(
+          message,
+          responseMakerSignatures[0],
+        );
+        console.warn('address:', address);
+        console.warn('address BN:', BigNumber.from(address));
+        console.warn('address0:', responseSigners[0].address);
+
         const { events } = await orMakerDeposit
-          .updateResponseMakers(responseMakers)
+          .updateResponseMakers(responseMakerSignatures)
           .then((t) => t.wait());
 
         const args = events![0].args!;
@@ -227,7 +245,7 @@ describe('ORMakerDeposit', () => {
         await testRevertedOwner(
           orMakerDeposit
             .connect(signers[2])
-            .updateResponseMakers(responseMakers),
+            .updateResponseMakers(responseMakerSignatures),
         );
       },
     ),

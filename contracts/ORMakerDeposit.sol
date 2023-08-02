@@ -6,6 +6,7 @@ import "./interface/IORManager.sol";
 import "./interface/IORMDCFactory.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {ArrayLib} from "./library/ArrayLib.sol";
 import {RuleLib} from "./library/RuleLib.sol";
 import {ConstantsLib} from "./library/ConstantsLib.sol";
@@ -19,6 +20,7 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
     using ArrayLib for uint[];
     using ArrayLib for address[];
     using SafeERC20 for IERC20;
+    using ECDSA for bytes32;
 
     // Warning: the following order and type changes will cause state verification changes
     address private _owner;
@@ -116,7 +118,14 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
         return _responseMakersHash;
     }
 
-    function updateResponseMakers(uint[] calldata responseMakers_) external storageVersionIncrease onlyOwner {
+    function updateResponseMakers(bytes[] calldata responseMakerSignatures) external storageVersionIncrease onlyOwner {
+        bytes32 data = keccak256(abi.encode(address(this)));
+
+        uint[] memory responseMakers_ = new uint[](responseMakerSignatures.length);
+        for (uint i = 0; i < responseMakerSignatures.length; i++) {
+            responseMakers_[i] = uint(uint160(data.toEthSignedMessageHash().recover(responseMakerSignatures[i])));
+        }
+
         _responseMakersHash = keccak256(abi.encode(responseMakers_));
         emit ResponseMakersUpdated(_mdcFactory.implementation(), responseMakers_);
     }

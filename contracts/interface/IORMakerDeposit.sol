@@ -53,7 +53,7 @@ interface IORMakerDeposit {
 
     function responseMakersHash() external view returns (bytes32);
 
-    function updateResponseMakers(uint[] calldata responseMakers_) external;
+    function updateResponseMakers(bytes[] calldata responseMakerSignatures) external;
 
     function freezeAssets(address token) external view returns (uint);
 

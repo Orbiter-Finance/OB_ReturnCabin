@@ -82,7 +82,7 @@ const config: HardhatUserConfig = {
       hardfork: 'shanghai',
       accounts: {
         mnemonic,
-        count: 10,
+        count: 20,
         accountsBalance: utils.parseEther('100') + '',
       },
       chainId: chainIds.hardhat,
