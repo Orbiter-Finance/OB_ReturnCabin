@@ -544,6 +544,8 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
         // Check dest amount (Warning: The nonce is at the end of the amount)
         require(verifiedData0[6] - verifiedData0[2] == verifyInfo.data[5], "DT");
 
+        // TODO: check responseTime. Source tx timestamp may be more than dest tx timestamp.
+
         _challengerFailed(_challenges[challengeId]);
 
         _challenges[challengeId].verifiedTime1 = uint64(block.timestamp);
