@@ -14,7 +14,7 @@ interface IORManager {
     event FeeChallengeSecondUpdated(uint64 feeChallengeSecond);
     event FeeTakeOnChallengeSecondUpdated(uint64 feeTakeOnChallengeSecond);
     event MaxMDCLimitUpdated(uint64 maxMDCLimit);
-    event ExtraTransferContractUpdated(uint extraTransferContract);
+    event ExtraTransferContractsUpdated(uint64[] chainIds, uint[] extraTransferContracts);
 
     function registerChains(BridgeLib.ChainInfo[] calldata chains_) external;
 
@@ -57,4 +57,8 @@ interface IORManager {
     function maxMDCLimit() external view returns (uint64);
 
     function updateMaxMDCLimit(uint64 maxMDCLimit_) external;
+
+    function getExtraTransferContract(uint64 chainId) external view returns (uint);
+
+    function updateExtraTransferContracts(uint64[] calldata chainIds, uint[] calldata extraTransferContracts) external;
 }

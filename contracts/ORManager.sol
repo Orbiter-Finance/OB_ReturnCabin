@@ -20,7 +20,7 @@ contract ORManager is IORManager, Ownable, StorageVersion {
     uint64 private _feeChallengeSecond;
     uint64 private _feeTakeOnChallengeSecond;
     uint64 private _maxMDCLimit = 2 ** 64 - 1;
-    uint private _extraTransferContract; // Cross-address transfer contract
+    mapping(uint64 => uint) private _extraTransferContracts; // Cross-address transfer contracts. chainId => contractAddress
 
     constructor(address owner_) {
         require(owner_ != address(0), "OZ");
@@ -163,12 +163,19 @@ contract ORManager is IORManager, Ownable, StorageVersion {
         emit MaxMDCLimitUpdated(_maxMDCLimit);
     }
 
-    function extraTransferContract() external view returns (uint) {
-        return _extraTransferContract;
+    function getExtraTransferContract(uint64 chainId) external view returns (uint) {
+        return _extraTransferContracts[chainId];
     }
 
-    function updateExtraTransferContract(uint extraTransferContract_) external storageVersionIncrease onlyOwner {
-        _extraTransferContract = extraTransferContract_;
-        emit ExtraTransferContractUpdated(_extraTransferContract);
+    function updateExtraTransferContracts(
+        uint64[] calldata chainIds,
+        uint[] calldata extraTransferContracts
+    ) external storageVersionIncrease onlyOwner {
+        require(chainIds.length == extraTransferContracts.length, "CEOF");
+
+        for (uint i = 0; i < chainIds.length; i++) {
+            _extraTransferContracts[chainIds[i]] = extraTransferContracts[i];
+        }
+        emit ExtraTransferContractsUpdated(chainIds, extraTransferContracts);
     }
 }

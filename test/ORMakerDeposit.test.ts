@@ -3,7 +3,12 @@ import { assert, expect } from 'chai';
 import { BigNumber, BigNumberish, constants, utils } from 'ethers';
 import { ethers } from 'hardhat';
 
-import { BytesLike, defaultAbiCoder, keccak256 } from 'ethers/lib/utils';
+import {
+  BytesLike,
+  arrayify,
+  defaultAbiCoder,
+  keccak256,
+} from 'ethers/lib/utils';
 import lodash from 'lodash';
 import { BaseTrie } from 'merkle-patricia-tree';
 import {
@@ -207,13 +212,14 @@ describe('ORMakerDeposit', () => {
     embedStorageVersionIncrease(
       () => orMakerDeposit.storageVersion(),
       async function () {
-        const responseSigners = signers.slice(10, 20);
+        const responseSigners = signers.slice(10, 11);
         const responseMakers: BigNumberish[] = [];
         const responseMakerSignatures: BytesLike[] = [];
-        const message = keccak256(
-          defaultAbiCoder.encode(['address'], [orMakerDeposit.address]),
-        );
-        console.warn('message:', message);
+        const message = arrayify(
+          keccak256(
+            defaultAbiCoder.encode(['address'], [orMakerDeposit.address]),
+          ),
+        ); // Convert to byte array to prevent utf-8 decode when signMessage
 
         for (const s of responseSigners) {
           const signature = await s.signMessage(message);
@@ -222,13 +228,10 @@ describe('ORMakerDeposit', () => {
           responseMakerSignatures.push(signature);
         }
 
-        const address = utils.recoverAddress(
+        const address = utils.verifyMessage(
           message,
           responseMakerSignatures[0],
         );
-        console.warn('address:', address);
-        console.warn('address BN:', BigNumber.from(address));
-        console.warn('address0:', responseSigners[0].address);
 
         const { events } = await orMakerDeposit
           .updateResponseMakers(responseMakerSignatures)

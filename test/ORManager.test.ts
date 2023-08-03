@@ -316,23 +316,29 @@ describe('Test ORManager', () => {
   );
 
   it(
-    'Function updateExtraTransferContract should succeed',
+    'Function updateExtraTransferContracts should succeed',
     embedStorageVersionIncrease(
       () => orManager.storageVersion(),
       async function () {
-        const extraTransferContract = BigNumber.from(
-          Wallet.createRandom().address.toLowerCase(),
-        ).toHexString();
+        const chainIds = [defaultChainInfo.id];
+        const extraTransferContracts = [
+          BigNumber.from(
+            Wallet.createRandom().address.toLowerCase(),
+          ).toHexString(),
+        ];
 
         const { events } = await orManager
-          .updateExtraTransferContract(extraTransferContract)
+          .updateExtraTransferContracts(chainIds, extraTransferContracts)
           .then((t) => t.wait());
 
         const args = events![0].args!;
-        expect(args.extraTransferContract).to.deep.eq(extraTransferContract);
+        expect(args.chainIds).to.deep.eq(chainIds);
+        expect(args.extraTransferContracts).to.deep.eq(extraTransferContracts);
 
-        const storageETC = await orManager.extraTransferContract();
-        expect(storageETC).to.deep.eq(extraTransferContract);
+        const storageValue = await orManager.getExtraTransferContract(
+          chainIds[0],
+        );
+        expect(storageValue).to.deep.eq(extraTransferContracts[0]);
       },
     ),
   );
