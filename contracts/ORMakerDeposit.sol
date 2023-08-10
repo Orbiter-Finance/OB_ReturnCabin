@@ -224,6 +224,8 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
         RuleLib.RootWithVersion calldata rootWithVersion
     ) private {
         for (uint i = 0; i < rules.length; i++) {
+            require(rules[i].chainId0 < rules[i].chainId1, "C0LC1");
+
             require(rules[i].enableTimestamp - block.timestamp >= ConstantsLib.RULE_MIN_ENABLE_DELAY, "OFEBN");
         }
 
