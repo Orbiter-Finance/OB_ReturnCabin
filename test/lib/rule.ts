@@ -24,7 +24,6 @@ export const ruleTypes = [
   'uint32', // chain1's response time
   'uint32', // chain0's compensation ratio
   'uint32', // chain1's compensation ratio
-  'uint64', // enable timestamp
 ];
 
 export function createRandomRule() {

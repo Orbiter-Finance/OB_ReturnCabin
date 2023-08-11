@@ -12,10 +12,10 @@ import {RuleLib} from "./library/RuleLib.sol";
 import {ConstantsLib} from "./library/ConstantsLib.sol";
 import {IORChallengeSpv} from "./interface/IORChallengeSpv.sol";
 import {IOREventBinding} from "./interface/IOREventBinding.sol";
-import {StorageVersion} from "./StorageVersion.sol";
+import {VersionAndEnableTime} from "./VersionAndEnableTime.sol";
 
-contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
-    // StorageVersion._storageVersion use a slot
+contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
+    // VersionAndEnableTime._version and _enableTime use a slot
 
     using ArrayLib for uint[];
     using ArrayLib for address[];
@@ -62,10 +62,11 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
     }
 
     function updateColumnArray(
+        uint64 enableTime,
         address[] calldata dealers,
         address[] calldata ebcs,
         uint64[] calldata chainIds
-    ) external storageVersionIncrease onlyOwner {
+    ) external versionIncreaseAndEnableTime(enableTime) onlyOwner {
         require(dealers.length < 10, "DOF");
         require(ebcs.length < 10, "EOF");
         require(chainIds.length < 100, "COF");
@@ -89,23 +90,24 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
         }
 
         _columnArrayHash = keccak256(abi.encodePacked(dealers, ebcs, chainIds));
-
-        address impl = _mdcFactory.implementation();
-        emit ColumnArrayUpdated(impl, _columnArrayHash, dealers, ebcs, chainIds);
+        emit ColumnArrayUpdated(_mdcFactory.implementation(), _columnArrayHash, dealers, ebcs, chainIds);
     }
 
     function spv(uint64 chainId) external view returns (address) {
         return _spvs[chainId];
     }
 
-    function updateSpvs(address[] calldata spvs, uint64[] calldata chainIds) external storageVersionIncrease onlyOwner {
+    function updateSpvs(
+        uint64 enableTime,
+        address[] calldata spvs,
+        uint64[] calldata chainIds
+    ) external versionIncreaseAndEnableTime(enableTime) onlyOwner {
         IORManager manager = IORManager(_mdcFactory.manager());
         address impl = _mdcFactory.implementation();
 
         for (uint i = 0; i < chainIds.length; i++) {
             BridgeLib.ChainInfo memory chainInfo = manager.getChainInfo(chainIds[i]);
             require(chainInfo.id > 0, "CI"); // Invalid chainId
-
             require(chainInfo.spvs.includes(spvs[i]), "SI"); // Invalid spv
 
             _spvs[chainIds[i]] = spvs[i];
@@ -118,7 +120,10 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
         return _responseMakersHash;
     }
 
-    function updateResponseMakers(bytes[] calldata responseMakerSignatures) external storageVersionIncrease onlyOwner {
+    function updateResponseMakers(
+        uint64 enableTime,
+        bytes[] calldata responseMakerSignatures
+    ) external versionIncreaseAndEnableTime(enableTime) onlyOwner {
         bytes32 data = keccak256(abi.encode(address(this)));
 
         uint[] memory responseMakers_ = new uint[](responseMakerSignatures.length);
@@ -162,12 +167,13 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
     }
 
     function updateRulesRoot(
+        uint64 enableTime,
         address ebc,
         RuleLib.Rule[] calldata rules,
         RuleLib.RootWithVersion calldata rootWithVersion,
         uint64[] calldata sourceChainIds,
         uint[] calldata pledgeAmounts
-    ) external payable storageVersionIncrease onlyOwner {
+    ) external payable versionIncreaseAndEnableTime(enableTime) onlyOwner {
         _updateRulesRoot(ebc, rules, rootWithVersion);
 
         require(sourceChainIds.length == pledgeAmounts.length, "SPL");
@@ -194,13 +200,14 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
     }
 
     function updateRulesRootERC20(
+        uint64 enableTime,
         address ebc,
         RuleLib.Rule[] calldata rules,
         RuleLib.RootWithVersion calldata rootWithVersion,
         uint64[] calldata sourceChainIds,
         uint[] calldata pledgeAmounts,
         address token
-    ) external storageVersionIncrease onlyOwner {
+    ) external versionIncreaseAndEnableTime(enableTime) onlyOwner {
         _updateRulesRoot(ebc, rules, rootWithVersion);
 
         require(sourceChainIds.length == pledgeAmounts.length, "SPL");
@@ -225,8 +232,6 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
     ) private {
         for (uint i = 0; i < rules.length; i++) {
             require(rules[i].chainId0 < rules[i].chainId1, "C0LC1");
-
-            require(rules[i].enableTimestamp - block.timestamp >= ConstantsLib.RULE_MIN_ENABLE_DELAY, "OFEBN");
         }
 
         IORManager manager = IORManager(_mdcFactory.manager());
@@ -441,24 +446,9 @@ contract ORMakerDeposit is IORMakerDeposit, StorageVersion {
 
         // Calculate dest amount
         // TODO: Is there a more general solution. Not only amount
-        uint[] memory ruleValues;
-        if (rule.chainId0 == verifyInfo.data[0]) {
-            require(rule.chainId1 == destChainId, "DC1");
-            ruleValues[0] = rule.minPrice0;
-            ruleValues[1] = rule.maxPrice0;
-            ruleValues[2] = uint(rule.withholdingFee0);
-            ruleValues[3] = uint(rule.tradingFee0);
-        }
-        if (rule.chainId1 == verifyInfo.data[0]) {
-            require(rule.chainId0 == destChainId, "DC0");
-            ruleValues[0] = rule.minPrice1;
-            ruleValues[1] = rule.maxPrice1;
-            ruleValues[2] = uint(rule.withholdingFee1);
-            ruleValues[3] = uint(rule.tradingFee1);
-        }
-        require(ruleValues.length >= 4, "RVL");
+        RuleLib.RuleOneway memory ro = RuleLib.convertToOneway(rule, uint64(verifyInfo.data[0]));
         uint destAmount = IOREventBinding(ebc).getResponseAmountFromIntent(
-            IOREventBinding(ebc).getResponseIntent(verifyInfo.data[5], ruleValues)
+            IOREventBinding(ebc).getResponseIntent(verifyInfo.data[5], ro)
         );
 
         // Save tx'from address, and compensate tx'from on the mainnet when the maker failed

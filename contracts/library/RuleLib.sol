@@ -22,11 +22,63 @@ library RuleLib {
         uint32 responseTime1;
         uint32 compensationRatio0;
         uint32 compensationRatio1;
-        uint64 enableTimestamp;
     }
 
     struct RootWithVersion {
         bytes32 root;
         uint32 version;
+    }
+
+    struct RuleOneway {
+        uint64 sourceChainId;
+        uint64 destChainId;
+        uint8 status;
+        uint sourceToken;
+        uint destToken;
+        uint128 minPrice;
+        uint128 maxPrice;
+        uint128 withholdingFee;
+        uint16 tradingFee;
+        uint32 responseTime;
+        uint32 compensationRatio;
+    }
+
+    function convertToOneway(
+        Rule memory rule,
+        uint64 sourceChainId
+    ) internal pure returns (RuleOneway memory ruleOneway) {
+        require(sourceChainId == rule.chainId0 || sourceChainId == rule.chainId1, "SCI");
+
+        if (sourceChainId == rule.chainId0) {
+            return
+                RuleOneway(
+                    rule.chainId0,
+                    rule.chainId1,
+                    rule.status0,
+                    rule.token0,
+                    rule.token1,
+                    rule.minPrice0,
+                    rule.maxPrice0,
+                    rule.withholdingFee0,
+                    rule.tradingFee0,
+                    rule.responseTime0,
+                    rule.compensationRatio0
+                );
+        } else {
+            return
+                RuleOneway(
+                    rule.chainId1,
+                    rule.chainId0,
+                    rule.status1,
+                    rule.token1,
+                    rule.token0,
+                    rule.minPrice1,
+                    rule.maxPrice1,
+                    rule.withholdingFee1,
+                    rule.tradingFee1,
+                    rule.responseTime1,
+                    rule.compensationRatio1
+                );
+        }
     }
 }

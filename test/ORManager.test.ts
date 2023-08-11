@@ -1,18 +1,16 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
-import {
-  BigNumber,
-  BigNumberish,
-  CallOverrides,
-  Wallet,
-  constants,
-} from 'ethers';
+import { BigNumber, BigNumberish, Wallet, constants } from 'ethers';
 import { ethers } from 'hardhat';
 import lodash from 'lodash';
 import { ORManager, ORManager__factory } from '../typechain-types';
 import { BridgeLib } from '../typechain-types/contracts/interface/IORManager';
 import { defaultChainInfo, defaultsEbcs } from './defaults';
-import { embedStorageVersionIncrease, testRevertedOwner } from './utils.test';
+import {
+  embedVersionIncreaseAndEnableTime,
+  getMinEnableTime,
+  testRevertedOwner,
+} from './utils.test';
 
 describe('Test ORManager', () => {
   let signers: SignerWithAddress[];
@@ -53,8 +51,8 @@ describe('Test ORManager', () => {
 
   it(
     'Function registerChains should succeed',
-    embedStorageVersionIncrease(
-      () => orManager.storageVersion(),
+    embedVersionIncreaseAndEnableTime(
+      () => orManager.getVersionAndEnableTime().then((r) => r.version),
       async function () {
         const chains = [
           lodash.cloneDeepWith(defaultChainInfo),
@@ -62,7 +60,7 @@ describe('Test ORManager', () => {
         ];
 
         const { events } = await orManager
-          .registerChains(chains)
+          .registerChains(getMinEnableTime(), chains)
           .then((i) => i.wait());
 
         for (const i in chains) {
@@ -82,8 +80,8 @@ describe('Test ORManager', () => {
 
   it(
     'Function updateChainSpvs should succeed',
-    embedStorageVersionIncrease(
-      () => orManager.storageVersion(),
+    embedVersionIncreaseAndEnableTime(
+      () => orManager.getVersionAndEnableTime().then((r) => r.version),
       async function () {
         const chainId = defaultChainInfo.id;
 
@@ -94,7 +92,7 @@ describe('Test ORManager', () => {
         }
 
         const { events } = await orManager
-          .updateChainSpvs(chainId, spvs, indexs)
+          .updateChainSpvs(getMinEnableTime(), chainId, spvs, indexs)
           .then((t) => t.wait());
 
         expect(events![0].args!.id).eq(chainId);
@@ -105,8 +103,8 @@ describe('Test ORManager', () => {
 
   it(
     'Function updateChainTokens should succeed',
-    embedStorageVersionIncrease(
-      () => orManager.storageVersion(),
+    embedVersionIncreaseAndEnableTime(
+      () => orManager.getVersionAndEnableTime().then((r) => r.version),
       async function () {
         const chainIds: number[] = [];
         const tokens: BridgeLib.TokenInfoStruct[] = [];
@@ -120,7 +118,7 @@ describe('Test ORManager', () => {
         }
 
         const { events } = await orManager
-          .updateChainTokens(chainIds, tokens)
+          .updateChainTokens(getMinEnableTime(), chainIds, tokens)
           .then((t) => t.wait());
 
         (events || []).forEach((event, i) => {
@@ -142,43 +140,37 @@ describe('Test ORManager', () => {
     ),
   );
 
-  it(
-    'Function updateEbcs should succeed',
-    embedStorageVersionIncrease(
-      () => orManager.storageVersion(),
-      async function () {
-        const ebcs = lodash.cloneDeep(defaultsEbcs);
-        const statuses: boolean[] = [];
+  it('Function updateEbcs should succeed', async function () {
+    const ebcs = lodash.cloneDeep(defaultsEbcs);
+    const statuses: boolean[] = [];
 
-        const { events } = await orManager
-          .updateEbcs(ebcs, statuses)
-          .then((t) => t.wait());
+    const { events } = await orManager
+      .updateEbcs(ebcs, statuses)
+      .then((t) => t.wait());
 
-        const args = events![0].args!;
-        expect(args.ebcs).to.deep.eq(ebcs);
-        expect(args.statuses).to.deep.eq(statuses);
+    const args = events![0].args!;
+    expect(args.ebcs).to.deep.eq(ebcs);
+    expect(args.statuses).to.deep.eq(statuses);
 
-        for (const ebc of ebcs) {
-          const status = await orManager.ebcIncludes(ebc);
-          expect(status).to.deep.eq(true);
-        }
+    for (const ebc of ebcs) {
+      const status = await orManager.ebcIncludes(ebc);
+      expect(status).to.deep.eq(true);
+    }
 
-        expect(await orManager.ebcIncludes(constants.AddressZero)).to.deep.eq(
-          false,
-        );
-      },
-    ),
-  );
+    expect(await orManager.ebcIncludes(constants.AddressZero)).to.deep.eq(
+      false,
+    );
+  });
 
   it(
     'Function updateSubmitter should succeed',
-    embedStorageVersionIncrease(
-      () => orManager.storageVersion(),
+    embedVersionIncreaseAndEnableTime(
+      () => orManager.getVersionAndEnableTime().then((r) => r.version),
       async function () {
         const submitter = ethers.Wallet.createRandom().address;
 
         const { events } = await orManager
-          .updateSubmitter(submitter)
+          .updateSubmitter(getMinEnableTime(), submitter)
           .then((t) => t.wait());
 
         const args = events![0].args!;
@@ -192,13 +184,13 @@ describe('Test ORManager', () => {
 
   it(
     'Function updateProtocolFee should succeed',
-    embedStorageVersionIncrease(
-      () => orManager.storageVersion(),
+    embedVersionIncreaseAndEnableTime(
+      () => orManager.getVersionAndEnableTime().then((r) => r.version),
       async function () {
         const protocolFee = 10;
 
         const { events } = await orManager
-          .updateProtocolFee(protocolFee)
+          .updateProtocolFee(getMinEnableTime(), protocolFee)
           .then((t) => t.wait());
 
         const args = events![0].args!;
@@ -212,13 +204,13 @@ describe('Test ORManager', () => {
 
   it(
     'Function updateMinChallengeRatio should succeed',
-    embedStorageVersionIncrease(
-      () => orManager.storageVersion(),
+    embedVersionIncreaseAndEnableTime(
+      () => orManager.getVersionAndEnableTime().then((r) => r.version),
       async function () {
         const minChallengeRatio = 20;
 
         const { events } = await orManager
-          .updateMinChallengeRatio(minChallengeRatio)
+          .updateMinChallengeRatio(getMinEnableTime(), minChallengeRatio)
           .then((t) => t.wait());
 
         const args = events![0].args!;
@@ -232,13 +224,13 @@ describe('Test ORManager', () => {
 
   it(
     'Function updateChallengeUserRatio should succeed',
-    embedStorageVersionIncrease(
-      () => orManager.storageVersion(),
+    embedVersionIncreaseAndEnableTime(
+      () => orManager.getVersionAndEnableTime().then((r) => r.version),
       async function () {
         const challengeUserRatio = 15;
 
         const { events } = await orManager
-          .updateChallengeUserRatio(challengeUserRatio)
+          .updateChallengeUserRatio(getMinEnableTime(), challengeUserRatio)
           .then((t) => t.wait());
 
         const args = events![0].args!;
@@ -252,13 +244,13 @@ describe('Test ORManager', () => {
 
   it(
     'Function updateFeeChallengeSecond should succeed',
-    embedStorageVersionIncrease(
-      () => orManager.storageVersion(),
+    embedVersionIncreaseAndEnableTime(
+      () => orManager.getVersionAndEnableTime().then((r) => r.version),
       async function () {
         const feeChallengeSecond = 25;
 
         const { events } = await orManager
-          .updateFeeChallengeSecond(feeChallengeSecond)
+          .updateFeeChallengeSecond(getMinEnableTime(), feeChallengeSecond)
           .then((t) => t.wait());
 
         const args = events![0].args!;
@@ -272,13 +264,16 @@ describe('Test ORManager', () => {
 
   it(
     'Function updateFeeTakeOnChallengeSecond should succeed',
-    embedStorageVersionIncrease(
-      () => orManager.storageVersion(),
+    embedVersionIncreaseAndEnableTime(
+      () => orManager.getVersionAndEnableTime().then((r) => r.version),
       async function () {
         const feeTakeOnChallengeSecond = 25;
 
         const { events } = await orManager
-          .updateFeeTakeOnChallengeSecond(feeTakeOnChallengeSecond)
+          .updateFeeTakeOnChallengeSecond(
+            getMinEnableTime(),
+            feeTakeOnChallengeSecond,
+          )
           .then((t) => t.wait());
 
         const args = events![0].args!;
@@ -295,30 +290,24 @@ describe('Test ORManager', () => {
     ),
   );
 
-  it(
-    'Function updateMaxMDCLimit should succeed',
-    embedStorageVersionIncrease(
-      () => orManager.storageVersion(),
-      async function () {
-        const maxMDCLimit = BigNumber.from(2).pow(64).sub(1);
+  it('Function updateMaxMDCLimit should succeed', async function () {
+    const maxMDCLimit = BigNumber.from(2).pow(64).sub(1);
 
-        const { events } = await orManager
-          .updateMaxMDCLimit(maxMDCLimit)
-          .then((t) => t.wait());
+    const { events } = await orManager
+      .updateMaxMDCLimit(maxMDCLimit)
+      .then((t) => t.wait());
 
-        const args = events![0].args!;
-        expect(args.maxMDCLimit).to.deep.eq(maxMDCLimit);
+    const args = events![0].args!;
+    expect(args.maxMDCLimit).to.deep.eq(maxMDCLimit);
 
-        const storageMaxMDCLimit = await orManager.maxMDCLimit();
-        expect(storageMaxMDCLimit).to.deep.eq(maxMDCLimit);
-      },
-    ),
-  );
+    const storageMaxMDCLimit = await orManager.maxMDCLimit();
+    expect(storageMaxMDCLimit).to.deep.eq(maxMDCLimit);
+  });
 
   it(
     'Function updateExtraTransferContracts should succeed',
-    embedStorageVersionIncrease(
-      () => orManager.storageVersion(),
+    embedVersionIncreaseAndEnableTime(
+      () => orManager.getVersionAndEnableTime().then((r) => r.version),
       async function () {
         const chainIds = [defaultChainInfo.id];
         const extraTransferContracts = [
@@ -328,7 +317,11 @@ describe('Test ORManager', () => {
         ];
 
         const { events } = await orManager
-          .updateExtraTransferContracts(chainIds, extraTransferContracts)
+          .updateExtraTransferContracts(
+            getMinEnableTime(),
+            chainIds,
+            extraTransferContracts,
+          )
           .then((t) => t.wait());
 
         const args = events![0].args!;

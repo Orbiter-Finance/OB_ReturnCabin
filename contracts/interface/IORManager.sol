@@ -16,13 +16,17 @@ interface IORManager {
     event MaxMDCLimitUpdated(uint64 maxMDCLimit);
     event ExtraTransferContractsUpdated(uint64[] chainIds, uint[] extraTransferContracts);
 
-    function registerChains(BridgeLib.ChainInfo[] calldata chains_) external;
+    function registerChains(uint64 enableTime, BridgeLib.ChainInfo[] calldata chains_) external;
 
-    function updateChainSpvs(uint64 id, address[] calldata spvs, uint[] calldata indexs) external;
+    function updateChainSpvs(uint64 enableTime, uint64 id, address[] calldata spvs, uint[] calldata indexs) external;
 
     function getChainInfo(uint64 id) external view returns (BridgeLib.ChainInfo memory);
 
-    function updateChainTokens(uint64[] memory ids, BridgeLib.TokenInfo[] calldata tokenInfos) external;
+    function updateChainTokens(
+        uint64 enableTime,
+        uint64[] memory ids,
+        BridgeLib.TokenInfo[] calldata tokenInfos
+    ) external;
 
     function getChainTokenInfo(uint64 id, uint token) external view returns (BridgeLib.TokenInfo memory);
 
@@ -32,27 +36,27 @@ interface IORManager {
 
     function submitter() external view returns (address);
 
-    function updateSubmitter(address submitter_) external;
+    function updateSubmitter(uint64 enableTime, address submitter_) external;
 
     function protocolFee() external view returns (uint64);
 
-    function updateProtocolFee(uint64 protocolFee_) external;
+    function updateProtocolFee(uint64 enableTime, uint64 protocolFee_) external;
 
     function minChallengeRatio() external view returns (uint64);
 
-    function updateMinChallengeRatio(uint64 minChallengeRatio_) external;
+    function updateMinChallengeRatio(uint64 enableTime, uint64 minChallengeRatio_) external;
 
     function challengeUserRatio() external view returns (uint64);
 
-    function updateChallengeUserRatio(uint64 challengeUserRatio_) external;
+    function updateChallengeUserRatio(uint64 enableTime, uint64 challengeUserRatio_) external;
 
     function feeChallengeSecond() external view returns (uint64);
 
-    function updateFeeChallengeSecond(uint64 feeChallengeSecond_) external;
+    function updateFeeChallengeSecond(uint64 enableTime, uint64 feeChallengeSecond_) external;
 
     function feeTakeOnChallengeSecond() external view returns (uint64);
 
-    function updateFeeTakeOnChallengeSecond(uint64 feeTakeOnChallengeSecond_) external;
+    function updateFeeTakeOnChallengeSecond(uint64 enableTime, uint64 feeTakeOnChallengeSecond_) external;
 
     function maxMDCLimit() external view returns (uint64);
 
@@ -60,5 +64,9 @@ interface IORManager {
 
     function getExtraTransferContract(uint64 chainId) external view returns (uint);
 
-    function updateExtraTransferContracts(uint64[] calldata chainIds, uint[] calldata extraTransferContracts) external;
+    function updateExtraTransferContracts(
+        uint64 enableTime,
+        uint64[] calldata chainIds,
+        uint[] calldata extraTransferContracts
+    ) external;
 }

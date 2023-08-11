@@ -71,7 +71,7 @@ export async function getEffectiveEbcsFromLogs(orManager: ORManager) {
   return effectiveEbcs;
 }
 
-export function embedStorageVersionIncrease(
+export function embedVersionIncreaseAndEnableTime(
   svFn: () => Promise<BigNumberish>,
   fn: () => Promise<void>,
   increase = 1,
@@ -82,4 +82,12 @@ export function embedStorageVersionIncrease(
     const sv1 = await svFn();
     expect(BigNumber.from(sv1).sub(sv0).toNumber()).eq(increase);
   };
+}
+
+export const MIN_ENABLE_DELAY = 120; // Unit: second
+export function getMinEnableTime() {
+  const minEnableTime = BigNumber.from(
+    Date.now() + MIN_ENABLE_DELAY * 1000,
+  ).div(1000);
+  return minEnableTime.add(200); // Keep time
 }

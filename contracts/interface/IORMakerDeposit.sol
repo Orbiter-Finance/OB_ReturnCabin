@@ -42,6 +42,7 @@ interface IORMakerDeposit {
     function columnArrayHash() external view returns (bytes32);
 
     function updateColumnArray(
+        uint64 enableTime,
         address[] calldata dealers,
         address[] calldata ebcs,
         uint64[] calldata chainIds
@@ -49,11 +50,11 @@ interface IORMakerDeposit {
 
     function spv(uint64 chainId) external view returns (address);
 
-    function updateSpvs(address[] calldata spvs, uint64[] calldata chainIds) external;
+    function updateSpvs(uint64 enableTime, address[] calldata spvs, uint64[] calldata chainIds) external;
 
     function responseMakersHash() external view returns (bytes32);
 
-    function updateResponseMakers(bytes[] calldata responseMakerSignatures) external;
+    function updateResponseMakers(uint64 enableTime, bytes[] calldata responseMakerSignatures) external;
 
     function freezeAssets(address token) external view returns (uint);
 
@@ -64,6 +65,7 @@ interface IORMakerDeposit {
     function rulesRoot(address ebc) external view returns (RuleLib.RootWithVersion memory);
 
     function updateRulesRoot(
+        uint64 enableTime,
         address ebc,
         RuleLib.Rule[] calldata rules,
         RuleLib.RootWithVersion calldata rootWithVersion,
@@ -72,6 +74,7 @@ interface IORMakerDeposit {
     ) external payable;
 
     function updateRulesRootERC20(
+        uint64 enableTime,
         address ebc,
         RuleLib.Rule[] calldata rules,
         RuleLib.RootWithVersion calldata rootWithVersion,

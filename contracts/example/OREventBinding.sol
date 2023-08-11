@@ -2,6 +2,7 @@
 pragma solidity ^0.8.17;
 
 import {IOREventBinding} from "../interface/IOREventBinding.sol";
+import {RuleLib} from "../library/RuleLib.sol";
 
 contract OREventBinding is IOREventBinding {
     function getSecurityCode(uint amount) public pure returns (uint) {
@@ -33,17 +34,17 @@ contract OREventBinding is IOREventBinding {
     /**
      * Get intent
      * @param amount Source tx amount
-     * @param ruleValues [minPrice, maxPrice, withholdingFee, tradeFee]
+     * @param ro Rule oneway
      */
-    function getResponseIntent(uint amount, uint[] calldata ruleValues) external pure returns (bytes memory) {
+    function getResponseIntent(uint amount, RuleLib.RuleOneway calldata ro) external pure returns (bytes memory) {
         uint securityCode = getSecurityCode(amount);
         require(securityCode > 0, "SCZ");
 
         uint tradeAmount = amount - securityCode;
-        require(tradeAmount > ruleValues[0], "MINOF");
-        require(tradeAmount < ruleValues[1], "MAXOF");
+        require(tradeAmount > ro.minPrice, "MINOF");
+        require(tradeAmount < ro.maxPrice, "MAXOF");
 
-        uint fee = (tradeAmount * ruleValues[3]) / 10000 + ruleValues[2];
+        uint fee = (tradeAmount * ro.tradingFee) / 10000 + ro.withholdingFee;
         require(tradeAmount > fee, "FOF");
 
         uint responseAmount = tradeAmount - fee;
