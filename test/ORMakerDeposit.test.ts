@@ -139,7 +139,7 @@ describe('ORMakerDeposit', () => {
             [],
             [],
           ),
-          'DOF',
+          'DECOF',
         );
         await testReverted(
           orMakerDeposit.updateColumnArray(
@@ -148,7 +148,7 @@ describe('ORMakerDeposit', () => {
             new Array(11).fill(constants.AddressZero),
             [],
           ),
-          'EOF',
+          'DECOF',
         );
         await testReverted(
           orMakerDeposit.updateColumnArray(
@@ -157,7 +157,7 @@ describe('ORMakerDeposit', () => {
             [],
             new Array(101).fill(1),
           ),
-          'COF',
+          'DECOF',
         );
 
         // Test validity

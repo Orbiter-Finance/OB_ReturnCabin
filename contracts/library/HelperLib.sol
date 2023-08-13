@@ -2,7 +2,11 @@
 
 pragma solidity ^0.8.17;
 
-library ArrayLib {
+library HelperLib {
+    function hash(bytes memory data) internal pure returns (bytes32) {
+        return keccak256(data);
+    }
+
     function includes(uint[] memory arr, uint element) internal pure returns (bool) {
         for (uint i = 0; i < arr.length; ) {
             if (element == arr[i]) {

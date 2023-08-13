@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
+import {HelperLib} from "../library/HelperLib.sol";
+
 struct TestStorageStruct {
     uint128 u128_1;
     uint128 u128_2;
@@ -9,6 +11,8 @@ struct TestStorageStruct {
 }
 
 contract TestStorage {
+    using HelperLib for bytes;
+
     uint private _u256;
 
     uint64 private _u64_1;
@@ -62,7 +66,7 @@ contract TestStorage {
     }
 
     function calcSecondKey(uint position, uint sub) external pure returns (bytes32) {
-        bytes32 k = keccak256(abi.encode(sub, position));
+        bytes32 k = abi.encode(sub, position).hash();
         return k;
     }
 }

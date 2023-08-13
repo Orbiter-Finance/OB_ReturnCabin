@@ -46,7 +46,6 @@ export function createRandomRule() {
     (2 ^ 31) - 1,
     (2 ^ 30) - 1,
     (2 ^ 29) - 1,
-    0,
   ];
 }
 
@@ -99,8 +98,9 @@ export async function getRulesRootUpdatedLogs(
     const transaction = await provider?.getTransaction(item.transactionHash);
     if (!transaction) continue;
 
-    const [_, _rules] = utils.defaultAbiCoder.decode(
+    const decodes = utils.defaultAbiCoder.decode(
       [
+        'uint64',
         'address',
         `tuple(${ruleTypes.join(',')})[]`,
         'tuple(bytes32,uint32)',
@@ -110,7 +110,7 @@ export async function getRulesRootUpdatedLogs(
       utils.hexDataSlice(transaction.data, 4),
     );
 
-    for (const _rule of _rules) {
+    for (const _rule of decodes[2]) {
       const k = calculateRuleKey(_rule);
       const index = rules.findIndex((r) => calculateRuleKey(r) == k);
 

@@ -5,8 +5,11 @@ import "@openzeppelin/contracts/proxy/Clones.sol";
 import "./interface/IORMDCFactory.sol";
 import "./interface/IORMakerDeposit.sol";
 import "./interface/IORManager.sol";
+import {HelperLib} from "./library/HelperLib.sol";
 
 contract ORMDCFactory is IORMDCFactory {
+    using HelperLib for bytes;
+
     IORManager private _manager;
     address private _implementation;
     uint256 private _mdcCreatedTotal;
@@ -35,7 +38,7 @@ contract ORMDCFactory is IORMDCFactory {
         require(_mdcCreatedTotal < _manager.maxMDCLimit(), "MML");
         address mdcAddress = Clones.cloneDeterministic(
             _implementation,
-            keccak256(abi.encodePacked(address(this), msg.sender))
+            abi.encodePacked(address(this), msg.sender).hash()
         );
 
         unchecked {
@@ -50,7 +53,7 @@ contract ORMDCFactory is IORMDCFactory {
     function predictMDCAddress() external view returns (address) {
         address mdcAddress = Clones.predictDeterministicAddress(
             _implementation,
-            keccak256(abi.encodePacked(address(this), msg.sender))
+            abi.encodePacked(address(this), msg.sender).hash()
         );
         return mdcAddress;
     }

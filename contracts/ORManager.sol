@@ -4,8 +4,11 @@ pragma solidity ^0.8.17;
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import "./interface/IORManager.sol";
 import {VersionAndEnableTime} from "./VersionAndEnableTime.sol";
+import {HelperLib} from "./library/HelperLib.sol";
 
 contract ORManager is IORManager, Ownable, VersionAndEnableTime {
+    using HelperLib for bytes;
+
     // Ownable._owner use a slot
     // VersionAndEnableTime._version and _enableTime use a slot
 
@@ -28,10 +31,9 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
     }
 
     // TODO: setting the same chainId or token affect the protocol?
-    function registerChains(
-        uint64 enableTime,
-        BridgeLib.ChainInfo[] calldata chains_
-    ) external versionIncreaseAndEnableTime(enableTime) onlyOwner {
+    function registerChains(uint64 enableTime, BridgeLib.ChainInfo[] calldata chains_) external onlyOwner {
+        versionIncreaseAndEnableTime(enableTime);
+
         unchecked {
             for (uint i = 0; i < chains_.length; i++) {
                 // TODO: There may be some settings that need to restrict modification
@@ -50,7 +52,9 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
         uint64 id,
         address[] calldata spvs,
         uint[] calldata indexs
-    ) external versionIncreaseAndEnableTime(enableTime) onlyOwner {
+    ) external onlyOwner {
+        versionIncreaseAndEnableTime(enableTime);
+
         unchecked {
             for (uint i = 0; i < spvs.length; i++) {
                 if (i < indexs.length) {
@@ -71,10 +75,12 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
         uint64 enableTime,
         uint64[] calldata ids,
         BridgeLib.TokenInfo[] calldata tokenInfos
-    ) external versionIncreaseAndEnableTime(enableTime) onlyOwner {
+    ) external onlyOwner {
+        versionIncreaseAndEnableTime(enableTime);
+
         unchecked {
             for (uint i = 0; i < ids.length; i++) {
-                bytes32 key = keccak256(abi.encodePacked(ids[i], tokenInfos[i].token));
+                bytes32 key = abi.encodePacked(ids[i], tokenInfos[i].token).hash();
                 _chainTokens[key] = tokenInfos[i];
                 emit ChainTokenUpdated(ids[i], tokenInfos[i]);
             }
@@ -82,7 +88,7 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
     }
 
     function getChainTokenInfo(uint64 id, uint token) external view returns (BridgeLib.TokenInfo memory) {
-        bytes32 key = keccak256(abi.encodePacked(id, token));
+        bytes32 key = abi.encodePacked(id, token).hash();
         return _chainTokens[key];
     }
 
@@ -107,10 +113,9 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
         return _submitter;
     }
 
-    function updateSubmitter(
-        uint64 enableTime,
-        address submitter_
-    ) external versionIncreaseAndEnableTime(enableTime) onlyOwner {
+    function updateSubmitter(uint64 enableTime, address submitter_) external onlyOwner {
+        versionIncreaseAndEnableTime(enableTime);
+
         _submitter = submitter_;
         emit SubmitterFeeUpdated(_submitter);
     }
@@ -119,10 +124,9 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
         return _protocolFee;
     }
 
-    function updateProtocolFee(
-        uint64 enableTime,
-        uint64 protocolFee_
-    ) external versionIncreaseAndEnableTime(enableTime) onlyOwner {
+    function updateProtocolFee(uint64 enableTime, uint64 protocolFee_) external onlyOwner {
+        versionIncreaseAndEnableTime(enableTime);
+
         _protocolFee = protocolFee_;
         emit ProtocolFeeUpdated(_protocolFee);
     }
@@ -131,10 +135,9 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
         return _minChallengeRatio;
     }
 
-    function updateMinChallengeRatio(
-        uint64 enableTime,
-        uint64 minChallengeRatio_
-    ) external versionIncreaseAndEnableTime(enableTime) onlyOwner {
+    function updateMinChallengeRatio(uint64 enableTime, uint64 minChallengeRatio_) external onlyOwner {
+        versionIncreaseAndEnableTime(enableTime);
+
         _minChallengeRatio = minChallengeRatio_;
         emit MinChallengeRatioUpdated(_minChallengeRatio);
     }
@@ -143,10 +146,9 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
         return _challengeUserRatio;
     }
 
-    function updateChallengeUserRatio(
-        uint64 enableTime,
-        uint64 challengeUserRatio_
-    ) external versionIncreaseAndEnableTime(enableTime) onlyOwner {
+    function updateChallengeUserRatio(uint64 enableTime, uint64 challengeUserRatio_) external onlyOwner {
+        versionIncreaseAndEnableTime(enableTime);
+
         _challengeUserRatio = challengeUserRatio_;
         emit ChallengeUserRatioUpdated(_challengeUserRatio);
     }
@@ -155,10 +157,9 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
         return _feeChallengeSecond;
     }
 
-    function updateFeeChallengeSecond(
-        uint64 enableTime,
-        uint64 feeChallengeSecond_
-    ) external versionIncreaseAndEnableTime(enableTime) onlyOwner {
+    function updateFeeChallengeSecond(uint64 enableTime, uint64 feeChallengeSecond_) external onlyOwner {
+        versionIncreaseAndEnableTime(enableTime);
+
         _feeChallengeSecond = feeChallengeSecond_;
         emit FeeChallengeSecondUpdated(_feeChallengeSecond);
     }
@@ -167,10 +168,9 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
         return _feeTakeOnChallengeSecond;
     }
 
-    function updateFeeTakeOnChallengeSecond(
-        uint64 enableTime,
-        uint64 feeTakeOnChallengeSecond_
-    ) external versionIncreaseAndEnableTime(enableTime) onlyOwner {
+    function updateFeeTakeOnChallengeSecond(uint64 enableTime, uint64 feeTakeOnChallengeSecond_) external onlyOwner {
+        versionIncreaseAndEnableTime(enableTime);
+
         _feeTakeOnChallengeSecond = feeTakeOnChallengeSecond_;
         emit FeeTakeOnChallengeSecondUpdated(_feeTakeOnChallengeSecond);
     }
@@ -192,7 +192,9 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
         uint64 enableTime,
         uint64[] calldata chainIds,
         uint[] calldata extraTransferContracts
-    ) external versionIncreaseAndEnableTime(enableTime) onlyOwner {
+    ) external onlyOwner {
+        versionIncreaseAndEnableTime(enableTime);
+
         require(chainIds.length == extraTransferContracts.length, "CEOF");
 
         for (uint i = 0; i < chainIds.length; i++) {

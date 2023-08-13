@@ -7,17 +7,20 @@ contract VersionAndEnableTime {
     uint192 private _version;
     uint64 private _enableTime;
 
-    modifier onlyVersionIncrease() {
-        _;
-        _version += 1;
-    }
+    // TODO: modify requires more gas
+    // modifier versionIncreaseAndEnableTime(uint64 enableTime) {
+    //     require(enableTime - block.timestamp >= ConstantsLib.MIN_ENABLE_DELAY, "OFET");
 
-    modifier versionIncreaseAndEnableTime(uint64 enableTime) {
+    //     _;
+    //     _version += 1;
+
+    //     _enableTime = enableTime;
+    // }
+
+    function versionIncreaseAndEnableTime(uint64 enableTime) public {
         require(enableTime - block.timestamp >= ConstantsLib.MIN_ENABLE_DELAY, "OFET");
 
-        _;
         _version += 1;
-
         _enableTime = enableTime;
     }
 

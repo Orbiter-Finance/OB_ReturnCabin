@@ -2,10 +2,13 @@
 pragma solidity ^0.8.17;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import "./interface/IORFeeManager.sol";
-import "./interface/IORManager.sol";
+import {IORFeeManager} from "./interface/IORFeeManager.sol";
+import {IORManager} from "./interface/IORManager.sol";
+import {HelperLib} from "./library/HelperLib.sol";
 
 contract ORFeeManager is IORFeeManager, Ownable {
+    using HelperLib for bytes;
+
     // Ownable._owner use a slot
 
     IORManager private _manager;
@@ -20,7 +23,7 @@ contract ORFeeManager is IORFeeManager, Ownable {
     }
 
     function updateDealer(uint feeRatio, bytes calldata extraInfo) external {
-        bytes32 extraInfoHash = keccak256(extraInfo);
+        bytes32 extraInfoHash = extraInfo.hash();
 
         _dealers[msg.sender] = DealerInfo(feeRatio, extraInfoHash);
 
