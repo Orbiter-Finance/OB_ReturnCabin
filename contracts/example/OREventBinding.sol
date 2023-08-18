@@ -44,7 +44,7 @@ contract OREventBinding is IOREventBinding {
         require(tradeAmount > ro.minPrice, "MINOF");
         require(tradeAmount < ro.maxPrice, "MAXOF");
 
-        uint fee = (tradeAmount * ro.tradingFee) / 10000 + ro.withholdingFee;
+        uint fee = ((tradeAmount - ro.withholdingFee) * ro.tradingFee) / 10000 + ro.withholdingFee;
         require(tradeAmount > fee, "FOF");
 
         uint responseAmount = tradeAmount - fee;
