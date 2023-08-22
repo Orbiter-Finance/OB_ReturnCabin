@@ -80,6 +80,7 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
 
         unchecked {
             for (uint i = 0; i < ids.length; i++) {
+                // TODO: If the token of layer2 changes, how should it be handled here?
                 bytes32 key = abi.encodePacked(ids[i], tokenInfos[i].token).hash();
                 _chainTokens[key] = tokenInfos[i];
                 emit ChainTokenUpdated(ids[i], tokenInfos[i]);
