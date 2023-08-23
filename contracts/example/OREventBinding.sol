@@ -2,6 +2,7 @@
 pragma solidity ^0.8.17;
 
 import {IOREventBinding} from "../interface/IOREventBinding.sol";
+import {ConstantsLib} from "../library/ConstantsLib.sol";
 import {RuleLib} from "../library/RuleLib.sol";
 
 contract OREventBinding is IOREventBinding {
@@ -44,10 +45,12 @@ contract OREventBinding is IOREventBinding {
         require(tradeAmount > ro.minPrice, "MINOF");
         require(tradeAmount < ro.maxPrice, "MAXOF");
 
-        uint fee = ((tradeAmount - ro.withholdingFee) * ro.tradingFee) / 10000 + ro.withholdingFee;
+        uint amountRatio = 10 ** ConstantsLib.EBC_AMOUNT_PARAMS_DIGITS;
+
+        uint fee = ((tradeAmount - ro.withholdingFee) * ro.tradingFee) / amountRatio + ro.withholdingFee;
         require(tradeAmount > fee, "FOF");
 
-        uint responseAmount = tradeAmount - fee;
+        uint responseAmount = ((tradeAmount - fee) / amountRatio) * amountRatio; // Clear out empty digits
 
         return abi.encode(responseAmount);
     }
