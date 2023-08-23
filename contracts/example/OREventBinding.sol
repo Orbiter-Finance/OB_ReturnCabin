@@ -45,12 +45,12 @@ contract OREventBinding is IOREventBinding {
         require(tradeAmount > ro.minPrice, "MINOF");
         require(tradeAmount < ro.maxPrice, "MAXOF");
 
-        uint amountRatio = 10 ** ConstantsLib.EBC_AMOUNT_PARAMS_DIGITS;
+        uint amountParamsRatio = 10 ** ConstantsLib.EBC_AMOUNT_PARAMS_DIGITS;
 
-        uint fee = ((tradeAmount - ro.withholdingFee) * ro.tradingFee) / amountRatio + ro.withholdingFee;
+        uint fee = ((tradeAmount - ro.withholdingFee) * ro.tradingFee) / 100000 + ro.withholdingFee;
         require(tradeAmount > fee, "FOF");
 
-        uint responseAmount = ((tradeAmount - fee) / amountRatio) * amountRatio; // Clear out empty digits
+        uint responseAmount = ((tradeAmount - fee) / amountParamsRatio) * amountParamsRatio; // Clear out empty digits
 
         return abi.encode(responseAmount);
     }
