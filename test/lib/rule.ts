@@ -18,8 +18,8 @@ export const ruleTypes = [
   'uint128', // chain1's maxPrice
   'uint128', // chain0's withholdingFee
   'uint128', // chain1's withholdingFee
-  'uint16', // chain0's tradeFee. 10,000 percent
-  'uint16', // chain1's tradeFee
+  'uint32', // chain0's tradeFee. 1000,000 percent
+  'uint32', // chain1's tradeFee
   'uint32', // chain0's response time
   'uint32', // chain1's response time
   'uint32', // chain0's compensation ratio
@@ -52,7 +52,7 @@ export function createRandomRule() {
 export function calculateRuleKey(rule: BigNumberish[]) {
   return utils.keccak256(
     utils.solidityPack(
-      ['uint16', 'uint16', 'uint', 'uint'],
+      ['uint64', 'uint64', 'uint', 'uint'],
       rule.slice(0, 2).concat(rule.slice(4, 6)),
     ),
   );
@@ -104,7 +104,7 @@ export async function getRulesRootUpdatedLogs(
         'address',
         `tuple(${ruleTypes.join(',')})[]`,
         'tuple(bytes32,uint32)',
-        'uint16[]',
+        'uint64[]',
         'uint[]',
       ],
       utils.hexDataSlice(transaction.data, 4),

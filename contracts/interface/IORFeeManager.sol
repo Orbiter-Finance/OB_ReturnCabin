@@ -3,7 +3,7 @@ pragma solidity ^0.8.17;
 
 interface IORFeeManager {
     struct DealerInfo {
-        uint feeRatio; // 10,000 percent
+        uint feeRatio; // 1000,000 percent
         bytes32 extraInfoHash;
     }
 

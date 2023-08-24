@@ -16,8 +16,8 @@ library RuleLib {
         uint128 maxPrice1;
         uint128 withholdingFee0;
         uint128 withholdingFee1;
-        uint16 tradingFee0;
-        uint16 tradingFee1;
+        uint32 tradingFee0;
+        uint32 tradingFee1;
         uint32 responseTime0;
         uint32 responseTime1;
         uint32 compensationRatio0;
@@ -38,9 +38,13 @@ library RuleLib {
         uint128 minPrice;
         uint128 maxPrice;
         uint128 withholdingFee;
-        uint16 tradingFee;
+        uint32 tradingFee;
         uint32 responseTime;
         uint32 compensationRatio;
+    }
+
+    function checkChainIds(uint64 chainId0, uint64 chainId1) internal pure {
+        require(chainId0 < chainId1, "C0LC1");
     }
 
     function convertToOneway(

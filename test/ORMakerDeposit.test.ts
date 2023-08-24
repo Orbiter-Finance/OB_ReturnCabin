@@ -338,8 +338,6 @@ describe('ORMakerDeposit', () => {
     embedVersionIncreaseAndEnableTime(
       () => orMakerDeposit.getVersionAndEnableTime().then((r) => r.version),
       async function () {
-        const currentBlock = await mdcOwner.provider?.getBlock('latest');
-
         const rules: any[] = [];
         for (let i = 0; i < 5 * 4; i++) {
           const _rule = createRandomRule();

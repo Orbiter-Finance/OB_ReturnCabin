@@ -233,8 +233,12 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         RuleLib.Rule[] calldata rules,
         RuleLib.RootWithVersion calldata rootWithVersion
     ) private {
-        for (uint i = 0; i < rules.length; i++) {
-            require(rules[i].chainId0 < rules[i].chainId1, "C0LC1");
+        for (uint i = 0; i < rules.length; ) {
+            RuleLib.checkChainIds(rules[i].chainId0, rules[i].chainId1);
+
+            unchecked {
+                i++;
+            }
         }
 
         IORManager manager = IORManager(_mdcFactory.manager());

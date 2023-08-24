@@ -2,8 +2,8 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { ethers } from 'hardhat';
 
 import { expect } from 'chai';
-import { BigNumber, utils } from 'ethers';
-import { defaultAbiCoder, formatUnits } from 'ethers/lib/utils';
+import { utils } from 'ethers';
+import { defaultAbiCoder } from 'ethers/lib/utils';
 import { OREventBinding, OREventBinding__factory } from '../../typechain-types';
 import { defaultRuleOneway } from '../defaults';
 
@@ -44,13 +44,14 @@ describe('OREventBinding', () => {
   });
 
   it('Function getResponseIntent should succeed', async function () {
-    const amount = utils.parseUnits('3.609002', 6);
+    const decimals = 6;
+    const amount = utils.parseUnits('3.609002', decimals);
     const ruleOneway = {
       ...defaultRuleOneway,
 
-      minPrice: utils.parseUnits('0.1', 6),
-      maxPrice: utils.parseUnits('10', 6),
-      withholdingFee: utils.parseUnits('1.6', 6),
+      minPrice: utils.parseUnits('0.1', decimals),
+      maxPrice: utils.parseUnits('10', decimals),
+      withholdingFee: utils.parseUnits('1.6', decimals),
       tradingFee: 10,
     };
 
@@ -61,7 +62,7 @@ describe('OREventBinding', () => {
     const fee = tradeAmount
       .sub(ruleOneway.withholdingFee)
       .mul(ruleOneway.tradingFee)
-      .div(10000)
+      .div(1000000)
       .add(ruleOneway.withholdingFee);
     const responseAmount = tradeAmount.sub(fee).div(10000).mul(10000); // Clear out empty digits
 
