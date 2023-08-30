@@ -235,6 +235,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
     ) private {
         for (uint i = 0; i < rules.length; ) {
             RuleLib.checkChainIds(rules[i].chainId0, rules[i].chainId1);
+            RuleLib.checkWithholdingFees(rules[i].withholdingFee0, rules[i].withholdingFee1);
 
             unchecked {
                 i++;

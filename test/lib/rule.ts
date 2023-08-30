@@ -1,6 +1,6 @@
 import { Provider } from '@ethersproject/providers';
 import { BigNumber, BigNumberish, BytesLike, Wallet, utils } from 'ethers';
-import { Hexable } from 'ethers/lib/utils';
+import { Hexable, parseEther } from 'ethers/lib/utils';
 import { BaseTrie } from 'merkle-patricia-tree';
 import Pako from 'pako';
 import { hexToBuffer } from '../utils.test';
@@ -38,8 +38,8 @@ export function createRandomRule() {
     BigNumber.from(5).pow(parseInt(Math.random() * 40 + '') + 1),
     BigNumber.from(5).pow(parseInt(Math.random() * 40 + '') + 1),
     BigNumber.from(5).pow(parseInt(Math.random() * 40 + '') + 1),
-    BigNumber.from(5).pow(parseInt(Math.random() * 40 + '') + 1),
-    BigNumber.from(5).pow(parseInt(Math.random() * 40 + '') + 1),
+    parseEther(Math.random().toFixed(2)),
+    parseEther(Math.random().toFixed(2)),
     1,
     2,
     (2 ^ 32) - 1,

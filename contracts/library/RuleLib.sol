@@ -2,6 +2,8 @@
 
 pragma solidity ^0.8.17;
 
+import {ConstantsLib} from "./ConstantsLib.sol";
+
 library RuleLib {
     struct Rule {
         uint64 chainId0; // 59144
@@ -45,6 +47,19 @@ library RuleLib {
 
     function checkChainIds(uint64 chainId0, uint64 chainId1) internal pure {
         require(chainId0 < chainId1, "C0LC1");
+    }
+
+    function checkWithholdingFees(uint128 withholdingFee0, uint128 withholdingFee1) internal pure {
+        require(
+            (withholdingFee0 / ConstantsLib.EBC_AMOUNT_PARAMS_MODULUS) * ConstantsLib.EBC_AMOUNT_PARAMS_MODULUS ==
+                withholdingFee0,
+            "WFI0"
+        );
+        require(
+            (withholdingFee1 / ConstantsLib.EBC_AMOUNT_PARAMS_MODULUS) * ConstantsLib.EBC_AMOUNT_PARAMS_MODULUS ==
+                withholdingFee1,
+            "WFI1"
+        );
     }
 
     function convertToOneway(
