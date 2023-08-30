@@ -50,16 +50,8 @@ library RuleLib {
     }
 
     function checkWithholdingFees(uint128 withholdingFee0, uint128 withholdingFee1) internal pure {
-        require(
-            (withholdingFee0 / ConstantsLib.EBC_AMOUNT_PARAMS_MODULUS) * ConstantsLib.EBC_AMOUNT_PARAMS_MODULUS ==
-                withholdingFee0,
-            "WFI0"
-        );
-        require(
-            (withholdingFee1 / ConstantsLib.EBC_AMOUNT_PARAMS_MODULUS) * ConstantsLib.EBC_AMOUNT_PARAMS_MODULUS ==
-                withholdingFee1,
-            "WFI1"
-        );
+        require(withholdingFee0 % ConstantsLib.EBC_AMOUNT_PARAMS_MODULUS == 0, "WFI0");
+        require(withholdingFee1 % ConstantsLib.EBC_AMOUNT_PARAMS_MODULUS == 0, "WFI1");
     }
 
     function convertToOneway(

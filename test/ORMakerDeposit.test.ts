@@ -365,6 +365,25 @@ describe('ORMakerDeposit', () => {
           'IV',
         );
 
+        await testReverted(
+          orMakerDeposit.updateRulesRoot(
+            getMinEnableTime(),
+            ebcSample,
+            rules.map((r) => {
+              const _r = lodash.clone(r);
+              _r[10] = 10001;
+              return _r;
+            }),
+            rootWithVersion,
+            sourceChainIds,
+            pledgeAmounts,
+            {
+              value: pledgeAmounts.reduce((pv, cv) => pv.add(cv)),
+            },
+          ),
+          'WFI0',
+        );
+
         const { events } = await orMakerDeposit
           .updateRulesRoot(
             getMinEnableTime(),
