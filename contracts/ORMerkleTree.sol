@@ -3,7 +3,6 @@ pragma solidity ^0.8.17;
 import {IORMerkleTree} from "./interface/IORMerkleTree.sol";
 import {HelperLib} from "./library/HelperLib.sol";
 
-
 abstract contract MerkleTreeVerification is IORMerkleTree {
     using HelperLib for uint256;
     using HelperLib for bytes32;
@@ -11,6 +10,8 @@ abstract contract MerkleTreeVerification is IORMerkleTree {
     uint8 immutable MERGE_NORMAL = 1;
     uint8 immutable MERGE_ZEROS = 2;
     uint8 immutable MAX_TREE_LEVEL = 255;
+
+    error InvalidMergeValue();
 
     function zeroMergeValue() internal pure returns (MergeValue memory value) {
         value = set_VALUE(bytes32(0));
@@ -43,17 +44,22 @@ abstract contract MerkleTreeVerification is IORMerkleTree {
     ) internal pure returns (bool) {
         bytes32 current_path = key;
         uint256 n = 0;
-        MergeValue memory current_v = zeroMergeValue();
-        MergeValue memory left = zeroMergeValue();
-        MergeValue memory right = zeroMergeValue();
+        MergeValue memory current_v;
+        MergeValue memory left;
+        MergeValue memory right;
+        current_v = left = right = zeroMergeValue();
 
         for (uint i = 0; i <= MAX_TREE_LEVEL; ) {
             bytes32 parent_path = current_path.parentPath(i);
-            if (leaves_bitmap.getBit(MAX_TREE_LEVEL - i)) {
+            uint iReverse;
+            unchecked {
+                iReverse = MAX_TREE_LEVEL - i;
+            }
+            if (leaves_bitmap.getBit(iReverse)) {
                 if (n == 0) {
                     current_v = intoMergeValue(key, v, uint8(i));
                 }
-                if (current_path.isRight(MAX_TREE_LEVEL - i)) {
+                if (current_path.isRight(iReverse)) {
                     left = siblings[n];
                     right = current_v;
                 } else {
@@ -65,7 +71,7 @@ abstract contract MerkleTreeVerification is IORMerkleTree {
                 }
             } else {
                 if (n > 0) {
-                    if (current_path.isRight(MAX_TREE_LEVEL - i)) {
+                    if (current_path.isRight(iReverse)) {
                         left = zeroMergeValue();
                         right = current_v;
                     } else {
@@ -117,9 +123,8 @@ abstract contract MerkleTreeVerification is IORMerkleTree {
                 ? value.mergeValue.value3.setBit(MAX_TREE_LEVEL - height)
                 : value.mergeValue.value3;
             return set_MERGE_WITH_ZERO(value.mergeValue.value1 + 1, value.mergeValue.value2, zeroBits);
-        }
-        else {
-            revert("Invalid MergeValue type");
+        } else {
+            revert InvalidMergeValue();
         }
     }
 
@@ -139,8 +144,12 @@ abstract contract MerkleTreeVerification is IORMerkleTree {
             bytes32 baseNode = hashBaseNode(0, baseKey, value);
             bytes32 zeroBits = key;
             for (uint i = height; i <= MAX_TREE_LEVEL; ) {
-                if (key.getBit(MAX_TREE_LEVEL - i)) {
-                    zeroBits = zeroBits.clearBit(MAX_TREE_LEVEL - i);
+                uint iReverse;
+                unchecked {
+                    iReverse = MAX_TREE_LEVEL - i;
+                }
+                if (key.getBit(iReverse)) {
+                    zeroBits = zeroBits.clearBit(iReverse);
                 }
                 unchecked {
                     i += 1;
@@ -167,8 +176,8 @@ abstract contract MerkleTreeVerification is IORMerkleTree {
                         mergeValue.mergeValue.value1 // zeroCount
                     )
                 );
-        }else {
-            revert("Invalid MergeValue type");
+        } else {
+            revert InvalidMergeValue();
         }
     }
 }

@@ -224,51 +224,56 @@ describe('test FeeManger on local', () => {
   });
 
   it('verify should succeed', async function () {
-    const durationStatus = await durationCheck();
-
-    if (durationStatus == durationStatusEnum['withdraw']) {
-      const submissions = await orFeeManager.submissions();
-      console.log('submissions:', submissions);
-
-      // const smtLeaf: SMTLeaf[] = [smtLeavesMock];
-      // const siblings: MergeValue[][] = [[mergeValueMock]];
-      // const bitmap: Bytes[] = [bitmapMock];
-
-      const smtLeaf: SMTLeaf[] = [smtLeavesMock];
-      const siblings: MergeValue[][] = [mergeValueMock];
-      const bitmaps: BytesLike[] = [];
-      const withdrawAmount: BigNumber[] = [];
-
-      for (let i = 0; i < bitmapMock.length; i++) {
-        bitmaps.push(bitmapMock[i]);
+    if ((await durationCheck()) != durationStatusEnum['withdraw']) {
+      while (1) {
+        await mineXMinutes(2);
+        if ((await durationCheck()) == durationStatusEnum['withdraw']) {
+          break;
+        }
       }
-
-      for (let i = 0; i < smtLeaf.length; i++) {
-        withdrawAmount.push(smtLeaf[i].value.amount);
-      }
-
-      console.log(
-        'bitmaps:',
-        bitmaps,
-        'SMTLeaf:',
-        smtLeaf,
-        'siblings:',
-        siblings,
-        'withdrawAmount:',
-        withdrawAmount,
-      );
-
-      const tx = await orFeeManager.withdrawVerification(
-        smtLeaf,
-        siblings,
-        bitmaps,
-        withdrawAmount,
-        {
-          gasLimit: 10000000,
-        },
-      );
-    } else {
-      console.warn('not in withdrawDuration');
     }
+
+    const submissions = await orFeeManager.submissions();
+    console.log('submissions:', submissions);
+
+    // const smtLeaf: SMTLeaf[] = [smtLeavesMock];
+    // const siblings: MergeValue[][] = [[mergeValueMock]];
+    // const bitmap: Bytes[] = [bitmapMock];
+
+    const smtLeaf: SMTLeaf[] = [smtLeavesMock];
+    const siblings: MergeValue[][] = [mergeValueMock];
+    const bitmaps: BytesLike[] = [];
+    const withdrawAmount: BigNumber[] = [];
+
+    for (let i = 0; i < bitmapMock.length; i++) {
+      bitmaps.push(bitmapMock[i]);
+    }
+
+    for (let i = 0; i < smtLeaf.length; i++) {
+      withdrawAmount.push(smtLeaf[i].value.amount);
+    }
+
+    console.log(
+      'bitmaps:',
+      bitmaps,
+      'SMTLeaf:',
+      smtLeaf,
+      'siblings:',
+      siblings,
+      'withdrawAmount:',
+      withdrawAmount,
+    );
+
+    const tx = await orFeeManager
+      .withdrawVerification(smtLeaf, siblings, bitmaps, withdrawAmount, {
+        gasLimit: 10000000,
+      })
+      .then((t) => t.wait());
+    const gasPrice = 20;
+    const ethused = tx.gasUsed.mul(gasPrice);
+    const ethAmount = ethers.utils.formatEther(ethused);
+    console.log(
+      `withdrawVerification gas used: ${tx.gasUsed}, ETH used: ${ethAmount}`,
+    );
   });
 });

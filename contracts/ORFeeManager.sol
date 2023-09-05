@@ -71,28 +71,24 @@ contract ORFeeManager is IORFeeManager, MerkleTreeVerification, Ownable, Reentra
     ) external nonReentrant {
         require(durationCheck() == FeeMangerDuration.withdraw, "WE");
         require(challengeStatus == ChallengeStatus.none, "WDC");
-        bytes32 profitRoot = submissions.profitRoot;
+
         for (uint i = 0; i < smtLeaves.length; ) {
             require(msg.sender == smtLeaves[i].key.user, "NU");
-            require(withdrawLock[keccak256(abi.encode(smtLeaves[i], submissions.submitTimestamp))] == false, "WL");
+            bytes32 withdrawLockKey = keccak256(abi.encode(smtLeaves[i].key, submissions.submitTimestamp));
+            require(withdrawLock[withdrawLockKey] == false, "WL");
             require(withdrawAmount[i] <= smtLeaves[i].value.amount, "UIF");
             require(
                 MerkleTreeVerification.verify(
                     keccak256(abi.encode(smtLeaves[i].key)),
                     keccak256(abi.encode(smtLeaves[i].value)),
                     bitmaps[i],
-                    profitRoot,
+                    submissions.profitRoot,
                     siblings[i]
                 ),
                 "merkle root verify failed"
             );
-            unchecked {
-                i += 1;
-            }
-        }
 
-        for (uint i = 0; i < smtLeaves.length; ) {
-            withdrawLock[keccak256(abi.encode(smtLeaves[i], submissions.submitTimestamp))] = true;
+            withdrawLock[withdrawLockKey] = true;
             if (smtLeaves[i].value.token != address(0)) {
                 IERC20(smtLeaves[i].value.token).safeTransfer(msg.sender, withdrawAmount[i]);
             } else {
