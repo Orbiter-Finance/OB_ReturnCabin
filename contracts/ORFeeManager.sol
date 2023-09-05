@@ -67,7 +67,7 @@ contract ORFeeManager is IORFeeManager, MerkleTreeVerification, Ownable, Reentra
         SMTLeaf[] calldata smtLeaves,
         MergeValue[][] calldata siblings,
         uint256[] calldata bitmaps,
-        uint256[] calldata widrawAmount
+        uint256[] calldata withdrawAmount
     ) external nonReentrant {
         require(durationCheck() == FeeMangerDuration.withdraw, "WE");
         require(challengeStatus == ChallengeStatus.none, "WDC");
@@ -75,7 +75,7 @@ contract ORFeeManager is IORFeeManager, MerkleTreeVerification, Ownable, Reentra
         for (uint i = 0; i < smtLeaves.length; ) {
             require(msg.sender == smtLeaves[i].key.user, "NU");
             require(withdrawLock[keccak256(abi.encode(smtLeaves[i], submissions.submitTimestamp))] == false, "WL");
-            require(widrawAmount[i] <= smtLeaves[i].value.amount, "UIF");
+            require(withdrawAmount[i] <= smtLeaves[i].value.amount, "UIF");
             require(
                 MerkleTreeVerification.verify(
                     keccak256(abi.encode(smtLeaves[i].key)),
@@ -94,9 +94,9 @@ contract ORFeeManager is IORFeeManager, MerkleTreeVerification, Ownable, Reentra
         for (uint i = 0; i < smtLeaves.length; ) {
             withdrawLock[keccak256(abi.encode(smtLeaves[i], submissions.submitTimestamp))] = true;
             if (smtLeaves[i].value.token != address(0)) {
-                IERC20(smtLeaves[i].value.token).safeTransfer(msg.sender, widrawAmount[i]);
+                IERC20(smtLeaves[i].value.token).safeTransfer(msg.sender, withdrawAmount[i]);
             } else {
-                (bool success, ) = payable(msg.sender).call{value: widrawAmount[i], gas: type(uint256).max}("");
+                (bool success, ) = payable(msg.sender).call{value: withdrawAmount[i], gas: type(uint256).max}("");
                 require(success, "ETH: IF");
             }
             emit Withdraw(
@@ -104,7 +104,7 @@ contract ORFeeManager is IORFeeManager, MerkleTreeVerification, Ownable, Reentra
                 smtLeaves[i].value.chainId,
                 smtLeaves[i].value.token,
                 smtLeaves[i].value.debt,
-                widrawAmount[i]
+                withdrawAmount[i]
             );
             unchecked {
                 i += 1;
