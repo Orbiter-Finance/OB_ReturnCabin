@@ -24,7 +24,7 @@ export const defaultChainTokens: {
   ],
 };
 
-export const defaultsEbcs: string[] = new Array(10)
+export const defaultsEbcs: string[] = new Array(9)
   .fill(undefined)
   .map(() => ethers.Wallet.createRandom().address);
 

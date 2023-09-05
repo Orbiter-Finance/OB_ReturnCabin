@@ -21,11 +21,14 @@ if (!infuraApiKey) {
 
 export const chainIds = {
   'arbitrum-mainnet': 42161,
+  'arbitrum-goerli': 421613,
+  'zkSync-Era-Testnet': 280,
   avalanche: 43114,
   bsc: 56,
   hardhat: 31337,
   mainnet: 1,
   'optimism-mainnet': 10,
+  'optimism-goerli': 420,
   'polygon-mainnet': 137,
   'polygon-mumbai': 80001,
   sepolia: 11155111,
@@ -40,6 +43,15 @@ function getChainConfig(chain: keyof typeof chainIds): NetworkUserConfig {
       break;
     case 'bsc':
       jsonRpcUrl = 'https://bsc-dataseed1.binance.org';
+      break;
+    case 'arbitrum-goerli':
+      jsonRpcUrl = 'https://endpoints.omniatech.io/v1/arbitrum/goerli/public';
+      break;
+    case 'optimism-goerli':
+      jsonRpcUrl = 'https://optimism-goerli.public.blastapi.io';
+      break;
+    case 'zkSync-Era-Testnet':
+      jsonRpcUrl = 'https://zksync-era-testnet.blockpi.network/v1/rpc/public';
       break;
     default:
       jsonRpcUrl = 'https://' + chain + '.infura.io/v3/' + infuraApiKey;
@@ -96,6 +108,9 @@ const config: HardhatUserConfig = {
     'polygon-mumbai': getChainConfig('polygon-mumbai'),
     sepolia: getChainConfig('sepolia'),
     goerli: getChainConfig('goerli'),
+    'arbitrum-goerli': getChainConfig('arbitrum-goerli'),
+    'optimism-goerli': getChainConfig('optimism-goerli'),
+    'era-goerli': getChainConfig('zkSync-Era-Testnet')
   },
   paths: {
     artifacts: './artifacts',

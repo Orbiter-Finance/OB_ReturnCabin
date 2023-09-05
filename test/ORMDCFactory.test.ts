@@ -12,6 +12,7 @@ import {
   ORManager__factory,
 } from '../typechain-types';
 import { testReverted } from './utils.test';
+import { initTestToken } from './lib/mockData';
 
 describe('ORMDCFactory', () => {
   let signers: SignerWithAddress[];
@@ -19,9 +20,12 @@ describe('ORMDCFactory', () => {
   let orMakerDeposit_impl: ORMakerDeposit;
   let orMakerDeposit: ORMakerDeposit;
   let orMDCFactory: ORMDCFactory;
+  let signerMaker: SignerWithAddress;
 
   before(async function () {
+    initTestToken();
     signers = await ethers.getSigners();
+    signerMaker = signers[1];
 
     const envORManagerAddress = process.env['OR_MANAGER_ADDRESS'];
     assert(
@@ -32,21 +36,32 @@ describe('ORMDCFactory', () => {
     orManager = new ORManager__factory(signers[0]).attach(envORManagerAddress);
     await orManager.deployed();
 
-    orMakerDeposit_impl = await new ORMakerDeposit__factory(
-      signers[0],
-    ).deploy();
+    if (process.env['OR_MDC_IMPL'] == undefined) {
+      orMakerDeposit_impl = await new ORMakerDeposit__factory(
+        signers[0],
+      ).deploy();
+      await orMakerDeposit_impl.deployed();
+      process.env['OR_MDC_IMPL'] = orMakerDeposit_impl.address;
+    } else {
+      orMakerDeposit_impl = new ORMakerDeposit__factory(signers[0]).attach(
+        process.env['OR_MDC_IMPL']!,
+      );
+    }
     console.log('Address of orMakerDeposit_impl:', orMakerDeposit_impl.address);
-    await orMakerDeposit_impl.deployed();
 
-    orMDCFactory = await new ORMDCFactory__factory(signers[0]).deploy(
-      orManager.address,
-      orMakerDeposit_impl.address,
-    );
+    if (process.env['OR_MDC_FACTORY_ADDRESS'] == undefined) {
+      orMDCFactory = await new ORMDCFactory__factory(signers[0]).deploy(
+        orManager.address,
+        orMakerDeposit_impl.address,
+      );
+      await orMDCFactory.deployed();
+      process.env['OR_MDC_FACTORY_ADDRESS'] = orMDCFactory.address;
+    } else {
+      orMDCFactory = new ORMDCFactory__factory(signers[0]).attach(
+        process.env['OR_MDC_FACTORY_ADDRESS']!,
+      );
+    }
     console.log('Address of orMDCFactory:', orMDCFactory.address);
-    await orMDCFactory.deployed();
-
-    // set environment variables
-    process.env['OR_MDC_FACTORY_ADDRESS'] = orMDCFactory.address;
   });
 
   it("ORMDCFactory's functions prefixed with _ should be private", async function () {
@@ -64,7 +79,7 @@ describe('ORMDCFactory', () => {
   });
 
   it('Function createMDC should succeed', async function () {
-    const signerMaker = signers[1];
+    // const signerMaker = signers[1];
 
     const { events } = await orMDCFactory
       .connect(signerMaker)
@@ -91,7 +106,7 @@ describe('ORMDCFactory', () => {
       utils.keccak256(creationCode),
     );
     expect(args.mdc).eq(mdcAddress);
-    console.warn('mdcAddress:', mdcAddress);
+    console.warn('Address of mdcAddress:', mdcAddress);
 
     orMakerDeposit = new ORMakerDeposit__factory(signerMaker).attach(
       mdcAddress,
@@ -99,7 +114,7 @@ describe('ORMDCFactory', () => {
   });
 
   it("Function createMDC should cann't recreate", async function () {
-    const signerMaker = signers[1];
+    // const signerMaker = signers[1];
 
     await testReverted(
       orMDCFactory.connect(signerMaker).createMDC(),
@@ -124,7 +139,7 @@ describe('ORMDCFactory', () => {
   });
 
   it("ORMakerDeposit's owner should be maker", async function () {
-    const signerMaker = signers[1];
+    // const signerMaker = signers[1];
 
     const owner = await orMakerDeposit.owner();
 

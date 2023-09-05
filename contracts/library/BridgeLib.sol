@@ -15,6 +15,7 @@ library BridgeLib {
         uint64 maxVerifyChallengeSourceTxSecond;
         uint64 minVerifyChallengeDestTxSecond;
         uint64 maxVerifyChallengeDestTxSecond;
+        uint nativeToken;
         address[] spvs;
     }
 }
