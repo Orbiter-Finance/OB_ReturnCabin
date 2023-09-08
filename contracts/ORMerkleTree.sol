@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
-import {IORMerkleTree} from "./interface/IORMerkleTree.sol";
-import {HelperLib} from "./library/HelperLib.sol";
+import {MerkleTreeLib} from "./library/MerkleTreeLib.sol";
 
-abstract contract MerkleTreeVerification is IORMerkleTree {
-    using HelperLib for uint256;
-    using HelperLib for bytes32;
+abstract contract MerkleTreeVerification {
+    using MerkleTreeLib for uint256;
+    using MerkleTreeLib for bytes32;
+    using MerkleTreeLib for MerkleTreeLib.MergeValue;
 
     uint8 immutable MERGE_NORMAL = 1;
     uint8 immutable MERGE_ZEROS = 2;
@@ -13,58 +13,43 @@ abstract contract MerkleTreeVerification is IORMerkleTree {
 
     error InvalidMergeValue();
 
-    function zeroMergeValue() internal pure returns (MergeValue memory value) {
-        value = set_VALUE(bytes32(0));
-    }
-
-    function set_VALUE(bytes32 Value) internal pure returns (MergeValue memory value) {
-        value = MergeValue({
-            mergeType: MergeValueType.VALUE,
-            mergeValue: MergeValueSingle({value1: 0, value2: Value, value3: bytes32(0)})
-        });
-    }
-
-    function set_MERGE_WITH_ZERO(
-        uint8 ZeroCount,
-        bytes32 BaseNode,
-        bytes32 ZeroBits
-    ) internal pure returns (MergeValue memory value) {
-        value = MergeValue({
-            mergeType: MergeValueType.MERGE_WITH_ZERO,
-            mergeValue: MergeValueSingle({value1: ZeroCount, value2: BaseNode, value3: ZeroBits})
-        });
-    }
-
     function verify(
         bytes32 key,
         bytes32 v,
         uint256 leaves_bitmap,
         bytes32 root,
-        MergeValue[] calldata siblings
+        bytes32 firstZeroBits,
+        uint8 startIndex,
+        MerkleTreeLib.MergeValue[] calldata siblings
     ) internal pure returns (bool) {
         bytes32 current_path = key;
-        uint256 n = 0;
-        MergeValue memory current_v;
-        MergeValue memory left;
-        MergeValue memory right;
-        current_v = left = right = zeroMergeValue();
-
-        for (uint i = 0; i <= MAX_TREE_LEVEL; ) {
-            bytes32 parent_path = current_path.parentPath(i);
-            uint iReverse;
+        bytes32 parent_path;
+        uint8 n = 0;
+        uint iReverse;
+        MerkleTreeLib.MergeValue memory current_v;
+        MerkleTreeLib.MergeValue memory left;
+        MerkleTreeLib.MergeValue memory right;
+        if (!(v.isZero() || startIndex == 0)) {
+            current_v.mergeType = MerkleTreeLib.MergeValueType.MERGE_WITH_ZERO;
+            current_v.mergeValue.value1 = startIndex;
+            current_v.mergeValue.value2 = keccak256(abi.encode(0, key.parentPath(0), v));
+            current_v.mergeValue.value3 = firstZeroBits;
+        }
+        for (uint i = startIndex; i <= MAX_TREE_LEVEL; ) {
             unchecked {
                 iReverse = MAX_TREE_LEVEL - i;
             }
+
             if (leaves_bitmap.getBit(iReverse)) {
-                if (n == 0) {
-                    current_v = intoMergeValue(key, v, uint8(i));
-                }
+                parent_path = current_path.parentPath(i);
                 if (current_path.isRight(iReverse)) {
-                    left = siblings[n];
-                    right = current_v;
+                    left.setSibling(siblings[n]);
+                    right.setCurrent(current_v);
+                    merge(uint8(i), parent_path, siblings[n], current_v, current_v);
                 } else {
-                    left = current_v;
-                    right = siblings[n];
+                    left.setCurrent(current_v);
+                    right.setSibling(siblings[n]);
+                    merge(uint8(i), parent_path, current_v, siblings[n], current_v);
                 }
                 unchecked {
                     n += 1;
@@ -72,57 +57,87 @@ abstract contract MerkleTreeVerification is IORMerkleTree {
             } else {
                 if (n > 0) {
                     if (current_path.isRight(iReverse)) {
-                        left = zeroMergeValue();
-                        right = current_v;
+                        left.set_VALUE(bytes32(0));
+                        merge(uint8(i), parent_path, left, current_v, current_v);
                     } else {
-                        left = current_v;
-                        right = zeroMergeValue();
+                        right.set_VALUE(bytes32(0));
+                        merge(uint8(i), parent_path, current_v, right, current_v);
                     }
                 }
             }
-            current_v = merge(uint8(i), parent_path, left, right);
+
             current_path = parent_path;
             unchecked {
                 i += 1;
             }
         }
-        return getHash(current_v) == root;
+
+        return current_v.getHash() == root;
     }
 
     function merge(
         uint8 height,
         bytes32 nodeKey,
-        MergeValue memory lhs,
-        MergeValue memory rhs
-    ) internal pure returns (MergeValue memory) {
-        if (isZero(lhs) && isZero(rhs)) {
-            return zeroMergeValue();
+        MerkleTreeLib.MergeValue memory lhs,
+        MerkleTreeLib.MergeValue memory rhs,
+        MerkleTreeLib.MergeValue memory v
+    ) internal pure {
+        if (lhs.mergeValue.value2.isZero() && rhs.mergeValue.value2.isZero()) {
+            // return same value
+        } else if (lhs.mergeValue.value2.isZero()) {
+            mergeWithZero(height, nodeKey, rhs, v, true);
+        } else if (rhs.mergeValue.value2.isZero()) {
+            mergeWithZero(height, nodeKey, lhs, v, false);
+        } else {
+            bytes32 hashValueLeft;
+            bytes32 hashValueRight;
+            if (lhs.mergeType == MerkleTreeLib.MergeValueType.VALUE) {
+                hashValueLeft = lhs.mergeValue.value2;
+            } else {
+                hashValueLeft = keccak256(
+                    abi.encode(
+                        MERGE_ZEROS,
+                        lhs.mergeValue.value2, // baseNode
+                        lhs.mergeValue.value3, // zeroBits
+                        lhs.mergeValue.value1 // zeroCount
+                    )
+                );
+            }
+            if (rhs.mergeType == MerkleTreeLib.MergeValueType.VALUE) {
+                hashValueRight = rhs.mergeValue.value2;
+            } else {
+                hashValueRight = keccak256(
+                    abi.encode(
+                        MERGE_ZEROS,
+                        rhs.mergeValue.value2, // baseNode
+                        rhs.mergeValue.value3, // zeroBits
+                        rhs.mergeValue.value1 // zeroCount
+                    )
+                );
+            }
+            bytes32 hashValue = keccak256(abi.encode(MERGE_NORMAL, height, nodeKey, hashValueLeft, hashValueRight));
+            v.set_VALUE(hashValue);
         }
-        if (isZero(lhs)) {
-            return mergeWithZero(height, nodeKey, rhs, true);
-        }
-        if (isZero(rhs)) {
-            return mergeWithZero(height, nodeKey, lhs, false);
-        }
-
-        return set_VALUE(keccak256(abi.encode(MERGE_NORMAL, height, nodeKey, getHash(lhs), getHash(rhs))));
     }
 
     function mergeWithZero(
         uint8 height,
         bytes32 nodeKey,
-        MergeValue memory value,
+        MerkleTreeLib.MergeValue memory value,
+        MerkleTreeLib.MergeValue memory v,
         bool setBit
-    ) public pure returns (MergeValue memory) {
-        if (value.mergeType == MergeValueType.VALUE) {
+    ) public pure {
+        if (value.mergeType == MerkleTreeLib.MergeValueType.VALUE) {
             bytes32 zeroBits = setBit ? bytes32(0).setBit(MAX_TREE_LEVEL - height) : bytes32(0);
             bytes32 baseNode = hashBaseNode(height, nodeKey, value.mergeValue.value2);
-            return set_MERGE_WITH_ZERO(1, baseNode, zeroBits);
-        } else if (value.mergeType == MergeValueType.MERGE_WITH_ZERO) {
+            v.set_MERGE_WITH_ZERO(1, baseNode, zeroBits);
+        } else if (value.mergeType == MerkleTreeLib.MergeValueType.MERGE_WITH_ZERO) {
             bytes32 zeroBits = setBit
                 ? value.mergeValue.value3.setBit(MAX_TREE_LEVEL - height)
                 : value.mergeValue.value3;
-            return set_MERGE_WITH_ZERO(value.mergeValue.value1 + 1, value.mergeValue.value2, zeroBits);
+            unchecked {
+                v.set_MERGE_WITH_ZERO(value.mergeValue.value1 + 1, value.mergeValue.value2, zeroBits);
+            }
         } else {
             revert InvalidMergeValue();
         }
@@ -132,52 +147,32 @@ abstract contract MerkleTreeVerification is IORMerkleTree {
         return keccak256(abi.encode(height, key, value));
     }
 
-    function intoMergeValue(bytes32 key, bytes32 value, uint8 height) internal pure returns (MergeValue memory) {
-        if (value == bytes32(0) || height == 0) {
-            return
-                MergeValue({
-                    mergeType: MergeValueType.VALUE,
-                    mergeValue: MergeValueSingle({value1: height, value2: value, value3: bytes32(0)})
-                });
-        } else {
-            bytes32 baseKey = key.parentPath(0);
-            bytes32 baseNode = hashBaseNode(0, baseKey, value);
-            bytes32 zeroBits = key;
-            for (uint i = height; i <= MAX_TREE_LEVEL; ) {
-                uint iReverse;
-                unchecked {
-                    iReverse = MAX_TREE_LEVEL - i;
-                }
-                if (key.getBit(iReverse)) {
-                    zeroBits = zeroBits.clearBit(iReverse);
-                }
-                unchecked {
-                    i += 1;
-                }
-            }
-            return set_MERGE_WITH_ZERO(height, baseNode, zeroBits);
+    function intoMergeValue(
+        MerkleTreeLib.MergeValue memory mergeValue,
+        bytes32 key,
+        bytes32 value,
+        uint8 height
+    ) internal pure {
+        if (value.isZero() || height == 0) {
+            return;
         }
+        processNextLevel(mergeValue, key, MAX_TREE_LEVEL - height);
     }
 
-    function isZero(MergeValue memory mergeValue) internal pure returns (bool) {
-        return ((mergeValue.mergeType == MergeValueType.VALUE) && (mergeValue.mergeValue.value2 == bytes32(0)));
-    }
-
-    function getHash(MergeValue memory mergeValue) internal pure returns (bytes32) {
-        if (mergeValue.mergeType == MergeValueType.VALUE) {
-            return mergeValue.mergeValue.value2;
-        } else if (mergeValue.mergeType == MergeValueType.MERGE_WITH_ZERO) {
-            return
-                keccak256(
-                    abi.encode(
-                        MERGE_ZEROS,
-                        mergeValue.mergeValue.value2, // baseNode
-                        mergeValue.mergeValue.value3, // zeroBits
-                        mergeValue.mergeValue.value1 // zeroCount
-                    )
-                );
-        } else {
-            revert InvalidMergeValue();
+    function processNextLevel(
+        MerkleTreeLib.MergeValue memory mergeValue,
+        bytes32 zeroBits,
+        uint iReverse
+    ) internal pure {
+        if (zeroBits.getBit(iReverse)) {
+            zeroBits = zeroBits.clearBit(iReverse);
         }
+
+        if (iReverse == 0) {
+            mergeValue.mergeValue.value3 = zeroBits;
+            return;
+        }
+
+        processNextLevel(mergeValue, zeroBits, iReverse - 1);
     }
 }

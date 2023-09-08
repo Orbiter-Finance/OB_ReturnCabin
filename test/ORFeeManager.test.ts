@@ -14,10 +14,7 @@ import {
 } from '../typechain-types';
 import { log } from 'console';
 import {
-  SubmitInfo,
-  SubmitInfoMock,
   dealersSignersMock,
-  getCurrentTime,
   initTestToken,
   submitterMock,
 } from './lib/mockData';
@@ -93,8 +90,7 @@ describe('ORFeeManger', () => {
     const extraInfoValues = ['https://orbiter.finance/', '@Orbiter_Finance'];
     const extraInfo = defaultAbiCoder.encode(extraInfoTypes, extraInfoValues);
 
-    let dealersigners: SignerWithAddress[];
-    dealersigners = await dealersSignersMock();
+    const dealersigners: SignerWithAddress[] = await dealersSignersMock();
 
     await Promise.all(
       dealersigners.map(async (dealersigner) => {
@@ -119,96 +115,26 @@ describe('ORFeeManger', () => {
   });
 
   async function registerSubmitter() {
-    const submitter = await submitterMock();
-    const marginAmount = BigNumber.from(1000);
-    await orFeeManager.registerSubmitter(marginAmount, submitter);
-  }
-
-  async function submit() {
-    const submitInfo: SubmitInfo = await SubmitInfoMock();
-    let events;
-    events = await orFeeManager
-      .submit(
-        submitInfo.stratBlock,
-        submitInfo.endBlock,
-        submitInfo.profitRoot,
-        submitInfo.stateTransTreeRoot,
-      )
-      .then((t) => t.wait());
-    return events;
-  }
-
-  const durationStatus: { [key: number]: string } = {
-    0: 'lock',
-    1: 'challenge',
-    2: 'withdraw',
-  };
-
-  enum durationStatusEnum {
-    lock = 0,
-    challenge = 1,
-    withdraw = 2,
-  }
-
-  async function durationCheck() {
-    const feeMnagerDuration = await orFeeManager.durationCheck();
-    console.log(
-      'Current Duration:',
-      durationStatus[feeMnagerDuration],
-      ', Current time:',
-      await getCurrentTime(),
-    );
-    return feeMnagerDuration;
+    if (process.env['REGISTER_SUBMITTER'] != undefined) {
+      if (process.env['REGISTER_SUBMITTER'] == (await submitterMock())) {
+        const submitter = await submitterMock();
+        const marginAmount = BigNumber.from(1000);
+        await orFeeManager.registerSubmitter(marginAmount, submitter);
+      }
+    } else {
+      const submitter = await submitterMock();
+      const marginAmount = BigNumber.from(1000);
+      await orFeeManager.registerSubmitter(marginAmount, submitter);
+    }
   }
 
   it('registerSubmitter should succeed', async function () {
-    await registerSubmitter();
-    expect(await orFeeManager.submitter(await submitterMock())).eq(
-      BigNumber.from(1000),
-    );
+    if (process.env['REGISTER_SUBMITTER'] == undefined) {
+      console.log('Please set env REGISTER_SUBMITTER');
+      await registerSubmitter();
+      expect(await orFeeManager.submitter(await submitterMock())).eq(
+        BigNumber.from(1000),
+      );
+    }
   });
-
-  // it("mine to test should succeed", async function () {
-  //     expect(await durationCheck()).eq(durationStatusEnum["challenge"]);
-  //     await registerSubmitter();
-  //     await mineXMinutes(DEALER_WITHDRAW_DELAY/secondsInMinute);
-  //     expect(await durationCheck()).eq(durationStatusEnum["withdraw"]);
-  //     await mineXMinutes(WITHDRAW_DURATION/secondsInMinute);
-  //     expect(await durationCheck()).eq(durationStatusEnum["lock"]);
-  //     const receipt = await submit();
-  //     const events = receipt.events ?? [];
-  //     const args = events[0]?.args ?? {};
-  //     const submissions = await orFeeManager.submissions();
-  //     // console.log(args);
-  //     expect(submissions.profitRoot).eq(profitRootMock);
-  //     expect(submissions.stateTransTreeRoot).eq(stateTransTreeRootMock);
-
-  //     expect(await durationCheck()).eq(durationStatusEnum["challenge"]);
-  //     await mineXMinutes(DEALER_WITHDRAW_DELAY/secondsInMinute + 1);
-  //     expect(await durationCheck()).eq(durationStatusEnum["withdraw"]);
-  //     await mineXMinutes(WITHDRAW_DURATION/secondsInMinute);
-  //     expect(await durationCheck()).eq(durationStatusEnum["lock"]);
-  //     await mineXMinutes(DEALER_WITHDRAW_DELAY/secondsInMinute -10);
-  //     expect(await durationCheck()).eq(durationStatusEnum["withdraw"]);
-  //   });
-
-  // it("verify should succeed", async function () {
-  //   const durationStatus = await durationCheck()
-
-  //   if(durationStatus == durationStatusEnum["withdraw"]){
-  //     const submissions = await orFeeManager.submissions();
-  //     console.log("submissions:", submissions);
-
-  //     const smtLeaf: SMTLeaf = smtLeavesMock;
-  //     const siblings: MergeValue[][] = [[mergeValueMock]];
-
-  //     const bitmap: Bytes = ethers.utils.keccak256(ethers.utils.toUtf8Bytes('bitmap')) as unknown as Bytes
-
-  //     const tx = await orFeeManager.withdrawVerification([smtLeaf], siblings, bitmap);
-  //     // console.log("tx:", tx);
-  //   }else{
-  //     console.warn("not in withdrawDuration")
-  //   }
-
-  // });
 });

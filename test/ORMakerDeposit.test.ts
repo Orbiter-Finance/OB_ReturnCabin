@@ -113,7 +113,11 @@ describe('ORMakerDeposit', () => {
       () => orMakerDeposit.getVersionAndEnableTime().then((r) => r.version),
       async function () {
         const mdcEbcs: string[] = ebcs.slice(0, 8);
-        mdcEbcs.push(ebcMock);
+        if (process.env['EVENT_BINDING_CONTRACT'] != undefined) {
+          mdcEbcs.push(process.env['EVENT_BINDING_CONTRACT']);
+        } else {
+          mdcEbcs.push(ebcMock);
+        }
         mdcEbcs.sort(() => Math.random() - 0.5);
 
         const mdcDealers: string[] = await dealersMock();
@@ -381,7 +385,12 @@ describe('ORMakerDeposit', () => {
 
         const tree = await calculateRulesTree(rules);
         const root = utils.hexlify(tree.root);
-        ebcSample = ebcMock;
+        if (process.env['EVENT_BINDING_CONTRACT'] != undefined) {
+          ebcSample = process.env['EVENT_BINDING_CONTRACT'];
+        } else {
+          ebcSample = ebcMock;
+        }
+
         const rootWithVersion = { root, version: 1 };
         const sourceChainIds = [1];
         const pledgeAmounts = [utils.parseEther('0.0001')];

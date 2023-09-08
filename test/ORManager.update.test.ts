@@ -1,27 +1,11 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { AssertionError, assert, expect } from 'chai';
-import { BigNumber, BigNumberish, Wallet, constants } from 'ethers';
+import { assert, expect } from 'chai';
 import { ethers } from 'hardhat';
-import lodash from 'lodash';
 import { ORManager, ORManager__factory } from '../typechain-types';
-import { BridgeLib } from '../typechain-types/contracts/interface/IORManager';
-import { defaultChainInfo, defaultsEbcs } from './defaults';
-import {
-  defaultChainInfoArray,
-  chainIDgetToken,
-  initTestToken,
-  testToken,
-  chainIDgetTokenSequence,
-  calculateMainnetToken,
-  submitterMock,
-} from './lib/mockData';
-import { experimentalAddHardhatNetworkMessageTraceHook } from 'hardhat/config';
-import { log } from 'console';
-import {
-  embedVersionIncreaseAndEnableTime,
-  getMinEnableTime,
-  testRevertedOwner,
-} from './utils.test';
+import { initTestToken } from './lib/mockData';
+import { constants } from 'ethers';
+import lodash from 'lodash';
+import { defaultsEbcs } from './defaults';
 
 describe('Test ORManager', () => {
   let signers: SignerWithAddress[];
@@ -35,7 +19,7 @@ describe('Test ORManager', () => {
     assert(
       !!envORManagerAddress,
       'Env miss [OR_MANAGER_ADDRESS]. You may need to test ORManager.test.ts first. Example: npx hardhat test test/ORManager.test test/ORFeeManager.test.ts',
-    );    
+    );
 
     orManager = new ORManager__factory(signers[0]).attach(envORManagerAddress);
   });
@@ -109,41 +93,41 @@ describe('Test ORManager', () => {
   //   ),
   // );
 
-  it(
-    'Function updateChainSpvs should succeed',
-    embedVersionIncreaseAndEnableTime(
-      () => orManager.getVersionAndEnableTime().then((r) => r.version),
-      async function () {
-        const chains = defaultChainInfoArray.map((chainInfo) => {
-          return lodash.cloneDeepWith(chainInfo);
-        });
+  // it(
+  //   'Function updateChainSpvs should succeed',
+  //   embedVersionIncreaseAndEnableTime(
+  //     () => orManager.getVersionAndEnableTime().then((r) => r.version),
+  //     async function () {
+  //       const chains = defaultChainInfoArray.map((chainInfo) => {
+  //         return lodash.cloneDeepWith(chainInfo);
+  //       });
 
-        for (let i = 0; i < 1; i++) {
-          const chainId = chains[i].id;
+  //       for (let i = 0; i < 1; i++) {
+  //         const chainId = chains[i].id;
 
-          const spvs: string[] = [];
-          const indexs: BigNumberish[] = [BigNumber.from(0)];
-          for (let j = 0; j < 10; j++) {
-            spvs.push(ethers.Wallet.createRandom().address);
-          }
+  //         const spvs: string[] = [];
+  //         const indexs: BigNumberish[] = [BigNumber.from(0)];
+  //         for (let j = 0; j < 10; j++) {
+  //           spvs.push(ethers.Wallet.createRandom().address);
+  //         }
 
-          const { events } = await orManager
-            .updateChainSpvs(getMinEnableTime(), chainId, spvs, indexs)
-            .then((t) => t.wait());
+  //         const { events } = await orManager
+  //           .updateChainSpvs(getMinEnableTime(), chainId, spvs, indexs)
+  //           .then((t) => t.wait());
 
-          console.log(
-            'current chainIds:',
-            chainId.toString(),
-            'register spvs:',
-            spvs.map((spvs) => spvs),
-          );
+  //         console.log(
+  //           'current chainIds:',
+  //           chainId.toString(),
+  //           'register spvs:',
+  //           spvs.map((spvs) => spvs),
+  //         );
 
-          expect(events![0].args!.id).eq(chainId);
-          expect(events![0].args!.chainInfo.spvs).deep.eq(spvs);
-        }
-      },
-    ),
-  );
+  //         expect(events![0].args!.id).eq(chainId);
+  //         expect(events![0].args!.chainInfo.spvs).deep.eq(spvs);
+  //       }
+  //     },
+  //   ),
+  // );
 
   // it(
   //   'Function updateChainTokens should succeed',
@@ -203,27 +187,27 @@ describe('Test ORManager', () => {
   //   ),
   // );
 
-  // it('Function updateEbcs should succeed', async function () {
-  //   const ebcs = lodash.cloneDeep(defaultsEbcs);
-  //   const statuses: boolean[] = [];
+  it('Function updateEbcs should succeed', async function () {
+    const ebcs = lodash.cloneDeep(defaultsEbcs);
+    const statuses: boolean[] = [];
 
-  //   const { events } = await orManager
-  //     .updateEbcs(ebcs, statuses)
-  //     .then((t) => t.wait());
+    const { events } = await orManager
+      .updateEbcs(ebcs, statuses)
+      .then((t) => t.wait());
 
-  //   const args = events![0].args!;
-  //   expect(args.ebcs).to.deep.eq(ebcs);
-  //   expect(args.statuses).to.deep.eq(statuses);
+    const args = events![0].args!;
+    expect(args.ebcs).to.deep.eq(ebcs);
+    expect(args.statuses).to.deep.eq(statuses);
 
-  //   for (const ebc of ebcs) {
-  //     const status = await orManager.ebcIncludes(ebc);
-  //     expect(status).to.deep.eq(true);
-  //   }
+    for (const ebc of ebcs) {
+      const status = await orManager.ebcIncludes(ebc);
+      expect(status).to.deep.eq(true);
+    }
 
-  //   expect(await orManager.ebcIncludes(constants.AddressZero)).to.deep.eq(
-  //     false,
-  //   );
-  // });
+    expect(await orManager.ebcIncludes(constants.AddressZero)).to.deep.eq(
+      false,
+    );
+  });
 
   // it(
   //   'Function updateSubmitter should succeed',

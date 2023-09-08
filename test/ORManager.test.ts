@@ -197,7 +197,16 @@ describe('Test ORManager', () => {
   it('Function updateEbcs should succeed', async function () {
     const ebcs = lodash.cloneDeep(defaultsEbcs);
     const statuses: boolean[] = [];
-    ebcs.push(ebcMock);
+    statuses.push(true);
+    if (process.env['EVENT_BINDING_CONTRACT'] != undefined) {
+      ebcs.push(process.env['EVENT_BINDING_CONTRACT']);
+      console.log(
+        'Address of Orbiter ebc:',
+        process.env['EVENT_BINDING_CONTRACT'],
+      );
+    } else {
+      ebcs.push(ebcMock);
+    }
 
     const { events } = await orManager
       .updateEbcs(ebcs, statuses)
@@ -223,8 +232,13 @@ describe('Test ORManager', () => {
       () => orManager.getVersionAndEnableTime().then((r) => r.version),
       async function () {
         // const submitter = ethers.Wallet.createRandom().address;
-        const submitter = await submitterMock();
-
+        let submitter;
+        if (process.env['REGISTER_SUBMITTER'] != undefined) {
+          submitter = process.env['REGISTER_SUBMITTER'];
+        } else {
+          submitter = await submitterMock();
+        }
+        // const submitter: string = submitter2Mock;
         const { events } = await orManager
           .updateSubmitter(getMinEnableTime(), submitter)
           .then((t) => t.wait());

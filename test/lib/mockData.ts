@@ -1,6 +1,6 @@
 import hre, { ethers } from 'hardhat';
 import { BridgeLib } from '../../typechain-types/contracts/ORManager';
-import { BigNumber, Bytes, constants } from 'ethers';
+import { BigNumber, Bytes, constants, utils } from 'ethers';
 import lodash from 'lodash';
 
 export const chainNames = {
@@ -70,12 +70,23 @@ export interface MergeValue {
   mergeValue: MergeValueSingle;
 }
 
-// export interface SMTProof {
-//   proofs: string[][];
-//   siblings: string[];
-//   smtLeaves: SMTLeaf[];
-// }
+// MerkleTreeLib.SMTLeaf[] calldata smtLeaves,
+// MerkleTreeLib.MergeValue[][] calldata siblings,
+// // bytes32[][] calldata siblingsHashes,
+// uint8[] calldata startIndex,
+// bytes32[] calldata firstZeroBits,
+// uint256[] calldata bitmaps,
+// uint256[] calldata withdrawAmount
 
+export interface withdrawVerification {
+  smtLeaf: SMTLeaf[];
+  siblings: MergeValue[][];
+  startIndex: BigNumber[];
+  firstZeroBits: Bytes[];
+  bitmaps: Bytes[];
+  // withdrawAmount: BigNumber[];
+  root: string[];
+}
 /************************ Mock Data ***************************/
 
 export const dealersMock = async () => {
@@ -108,7 +119,7 @@ export const SubmitInfoMock = async (): Promise<SubmitInfo> => {
   const submitInfo: SubmitInfo = {
     stratBlock: 0,
     endBlock: 2,
-    profitRoot: profitRootMock,
+    profitRoot: profitRootMock[0],
     stateTransTreeRoot: stateTransTreeRootMock,
   };
   return submitInfo;
@@ -120,47 +131,525 @@ export const proofsMock: string[][] = [
 
 export const mockKey: SMTKey = {
   chainId: BigNumber.from(5),
-  token: '0xa3a8a6b323e3d38f5284db9337e7c6d74af3366a',
+  token: '0xa0321efeb50c46c17a7d72a52024eea7221b215a',
   user: '0x15962f38e6998875F9F75acDF8c6Ddc743F11041',
 };
 
 export const mockValue: SMTValue = {
-  token: '0xa3a8a6b323e3d38f5284db9337e7c6d74af3366a',
+  token: '0xa0321efeb50c46c17a7d72a52024eea7221b215a',
   chainId: BigNumber.from(5),
   amount: BigNumber.from(200),
   debt: BigNumber.from(0),
 };
 
-export const smtLeavesMock: SMTLeaf = {
-  key: {
-    chainId: mockKey.chainId,
-    token: mockKey.token,
-    user: mockKey.user,
+export const smtLeavesMock: SMTLeaf[] = [
+  {
+    key: {
+      chainId: mockKey.chainId,
+      token: mockKey.token,
+      user: mockKey.user,
+    },
+    value: {
+      token: mockValue.token,
+      chainId: mockValue.chainId,
+      amount: mockValue.amount,
+      debt: mockValue.debt,
+    },
   },
-  value: {
-    token: mockValue.token,
-    chainId: mockValue.chainId,
-    amount: mockValue.amount,
-    debt: mockValue.debt,
+  {
+    key: {
+      chainId: BigNumber.from(100),
+      token: '0x0000000000000000000000000000000000000021',
+      user: '0x0000000000000000000000000000000000000022',
+    },
+    value: {
+      token: '0x0000000000000000000000000000000000000021',
+      chainId: BigNumber.from(100),
+      amount: BigNumber.from(100),
+      debt: BigNumber.from(80),
+    },
   },
-};
+  {
+    key: {
+      chainId: BigNumber.from(5),
+      token: '0xa3a8a6b323e3d38f5284db9337e7c6d74af3366a',
+      user: '0x15962f38e6998875F9F75acDF8c6Ddc743F11041',
+    },
+    value: {
+      token: '0xa3a8a6b323e3d38f5284db9337e7c6d74af3366a',
+      chainId: BigNumber.from(5),
+      amount: BigNumber.from(200),
+      debt: BigNumber.from(0),
+    },
+  },
+  {
+    key: {
+      chainId: BigNumber.from(5),
+      token: '0xa3a8a6b323e3d38f5284db9337e7c6d74af3366a',
+      user: '0x15962f38e6998875F9F75acDF8c6Ddc743F11041',
+    },
+    value: {
+      token: '0xa3a8a6b323e3d38f5284db9337e7c6d74af3366a',
+      chainId: BigNumber.from(5),
+      amount: BigNumber.from(238860800000000000000n),
+      debt: BigNumber.from(0),
+    },
+  },
+];
 
-export const profitRootMock =
-  '0xae517a5d3749f085aad5db3021f96a33fb1d15794d1b8586c19b4cb9e167d33e';
+// export const smtLeavesMock1: SMTLeaf = {};
 
-export const bitmapMock: string[] = [
-  '0x000000000000000000000000000000000000000000000000000000000000000a',
+export const submitter2Mock = '0xD6Cec62CE67E09b240B84A3FB53cC1EbA05795d6';
+
+export const profitRootMock: string[] = [
+  '0xfbfcd98ac0c411b5d62d56e8d37e1f79dde7de67fa17bdbb12a5f942703ac7ff',
+  '0x7079a474f9bec927bf070f5e1b9b21da95facd7bdbd43d52c2505b26473b5de3',
+  '0xfbfcd98ac0c411b5d62d56e8d37e1f79dde7de67fa17bdbb12a5f942703ac7ff',
+  '0x95f0ec76ab0a7457c24aecde2f52206e26e00a7bc467f20b4f5abbb7f99bc495',
+];
+export const bitmapMock: Bytes[] = [
+  '0x00000000000000000000000000000000000000000000000000000000000003ff' as unknown as Bytes,
+  '0x0000000000000000000000000000000000000000000000000000000000000007' as unknown as Bytes,
+  '0x00000000000000000000000000000000000000000000000000000000000001ff' as unknown as Bytes,
+  '0x00000000000000000000000000000000000000000000000000000000000fffff' as unknown as Bytes,
+];
+
+export const zeroBitsMock: Bytes[] = [
+  '0x0bb3696cdbd7208860e9d53efd6c0f72a10597148be66b509d7659ff07f06c00' as unknown as Bytes,
+  '0x31364e4bce7c348943fc7a2e69fd4d912c32581a672f651dbf04f56d5b028ec0' as unknown as Bytes,
+  '0x474ee95d5fdac65dc465f56a38291858027c6c57bbe25f7d9cdce74760aebf48' as unknown as Bytes,
+  '0x474ee95d5fdac65dc465f56a38291858027c6c57bbe25f7d9cdce74760a00000' as unknown as Bytes,
 ];
 
 export const mergeValueMock: MergeValue[] = [
   {
+    mergeType: 0,
+    mergeValue: {
+      value1: 0,
+      value2:
+        '0xd01d78e416f465601c781101318c55fb5e152f67cb577466214699a56efd601a' as unknown as Bytes,
+      value3:
+        '0x0000000000000000000000000000000000000000000000000000000000000000' as unknown as Bytes,
+    },
+  },
+  {
     mergeType: 1,
     mergeValue: {
-      value1: 252,
+      value1: 247,
       value2:
-        '0x32b10436b3679210be2e0a4d7334b16dc58e9a2505e5ad698ddab7bfbebfee70' as unknown as Bytes,
+        '0xb689a06a09b91a18de59fadc7cca5c7184c53ae1a66f387b779c8667bb5d2a7b' as unknown as Bytes,
       value3:
-        '0xaef908a902e98808f76e42b87aec4c4910a39aa9edd656553e7c028ac91e67f0' as unknown as Bytes,
+        '0xfe3cc51e7d9c295e18aaf17f3797a513975dea955dd36d153693b3218e111000' as unknown as Bytes,
+    },
+  },
+  {
+    mergeType: 0,
+    mergeValue: {
+      value1: 0,
+      value2:
+        '0x3e5e9bfbc87aa4266c0715dc94594e0330b2833738290c209471050738a543c1' as unknown as Bytes,
+      value3:
+        '0x0000000000000000000000000000000000000000000000000000000000000000' as unknown as Bytes,
+    },
+  },
+  {
+    mergeType: 0,
+    mergeValue: {
+      value1: 0,
+      value2:
+        '0x7b3ad91d21a584cfaafda5c04c849f1fada93ccfa156a8d0720c301c49140292' as unknown as Bytes,
+      value3:
+        '0x0000000000000000000000000000000000000000000000000000000000000000' as unknown as Bytes,
+    },
+  },
+  {
+    mergeType: 0,
+    mergeValue: {
+      value1: 0,
+      value2:
+        '0xd11b18c99f447881b09f71a0e58a6fb7d82922016edc1db9fbc27aa98543d997' as unknown as Bytes,
+      value3:
+        '0x0000000000000000000000000000000000000000000000000000000000000000' as unknown as Bytes,
+    },
+  },
+  {
+    mergeType: 0,
+    mergeValue: {
+      value1: 0,
+      value2:
+        '0xbc7c4f1f03f4fdaa1262aa59848242fe4c51c3212c2ce2d1af763f520c668e49' as unknown as Bytes,
+      value3:
+        '0x0000000000000000000000000000000000000000000000000000000000000000' as unknown as Bytes,
+    },
+  },
+  {
+    mergeType: 0,
+    mergeValue: {
+      value1: 0,
+      value2:
+        '0x1414e7a1cedd79f29a1097e284e59782d05dd15fa82e32564d6f6cd3e367d7b1' as unknown as Bytes,
+      value3:
+        '0x0000000000000000000000000000000000000000000000000000000000000000' as unknown as Bytes,
+    },
+  },
+  {
+    mergeType: 0,
+    mergeValue: {
+      value1: 0,
+      value2:
+        '0x937cdb71a7a8ca9e6317423c8af41147f7112fc6e5a20b3e758aa928c9729712' as unknown as Bytes,
+      value3:
+        '0x0000000000000000000000000000000000000000000000000000000000000000' as unknown as Bytes,
+    },
+  },
+  {
+    mergeType: 0,
+    mergeValue: {
+      value1: 0,
+      value2:
+        '0x30659a1e41f23a9dcda6335bd66455707532d15b5f00b1f7e77d69635e63c8f5' as unknown as Bytes,
+      value3:
+        '0x0000000000000000000000000000000000000000000000000000000000000000' as unknown as Bytes,
+    },
+  },
+  {
+    mergeType: 0,
+    mergeValue: {
+      value1: 0,
+      value2:
+        '0xc1a7860320fdfaded0b6d9081e7379b32004b5c6094dd658d49391663808ea60' as unknown as Bytes,
+      value3:
+        '0x0000000000000000000000000000000000000000000000000000000000000000' as unknown as Bytes,
+    },
+  },
+];
+
+export const siblingHashesMock: string[] = [
+  '0xfeb88050122b8b29452c711954d89cfb08c41b4bb59ff23e64550ff690de1d38',
+  '0x7f7ad78356188e55a8008aa31a869fa52cffd6d16080808429597269006c5b61',
+  '0xc6659fbbf925aeb2bf68f766ddca17bd264df89ce7fcd9c1841e7a3c04acd068',
+  '0x487c7ae678a58e61950a0f559db410a748858b175286ada094715001e7364f76',
+  '0x93991f18c409de8bcf12697d43a9d149cafc6de185b4c8bda444b43ff6faaada',
+  '0x3b9de1657cf100425edd73d8c0950e1f795883ccfece78386b60fd00fd19f60c',
+  '0xca0ec6f9f2fb43ea397fe655ad8b4b96a64ca55ea6fd43264421e0c23a49aae6',
+  '0xa667ee71eed6f7007a72307ab7b6b210a7894f8116de4ba0bcdb85f4a5abe7f7',
+  '0x6942ad62f3b333d9ed3814135bc7360301e21b6c403900a31122f4722fdf18ad',
+  '0xfbfcd98ac0c411b5d62d56e8d37e1f79dde7de67fa17bdbb12a5f942703ac7ff',
+];
+
+export const startIndexMock: BigNumber[] = [
+  BigNumber.from(246),
+  BigNumber.from(253),
+  BigNumber.from(247),
+  BigNumber.from(236),
+];
+
+export const mergeValueMock3: MergeValue[] = [
+  {
+    mergeType: 1,
+    mergeValue: {
+      value1: 236,
+      value2:
+        '0xba4c891b9a6a3a56dfc36c9f81a4f1de723f3316ca018dce106cef6f4bcb1a0c' as unknown as Bytes,
+      value3:
+        '0x49f3654d97439f91d31d6f3f94e23b17574ba3595694a6900890ea675f000000' as unknown as Bytes,
+    },
+  },
+  {
+    mergeType: 1,
+    mergeValue: {
+      value1: 2,
+      value2:
+        '0x14778c9bba4250f7855e37fa8cc84ce0aac4733138ee6dd466e1059f792c8700' as unknown as Bytes,
+      value3:
+        '0x0000000000000000000000000000000000000000000000000000000000180000' as unknown as Bytes,
+    },
+  },
+  {
+    mergeType: 0,
+    mergeValue: {
+      value1: 0,
+      value2:
+        '0x39c89458ab84a9d9dac360feba7fe5710a25308296d4b2f7d6c816505e909e01' as unknown as Bytes,
+      value3:
+        '0x0000000000000000000000000000000000000000000000000000000000000000' as unknown as Bytes,
+    },
+  },
+  {
+    mergeType: 1,
+    mergeValue: {
+      value1: 239,
+      value2:
+        '0xd6a8cd4d12aa7c56823c79a26fe619e4b771920c1c8ce6bfa55cd10672bd9c14' as unknown as Bytes,
+      value3:
+        '0xafd886ee1fb9b135fc7fd9e13eb440bba78c48b86e5d032581bfc30c6b700000' as unknown as Bytes,
+    },
+  },
+  {
+    mergeType: 0,
+    mergeValue: {
+      value1: 0,
+      value2:
+        '0xc79b33768ab2106f6d0d1059cbc834fb8557ad43dee0a7e609c39c6ea992a896' as unknown as Bytes,
+      value3:
+        '0x0000000000000000000000000000000000000000000000000000000000000000' as unknown as Bytes,
+    },
+  },
+  {
+    mergeType: 0,
+    mergeValue: {
+      value1: 0,
+      value2:
+        '0x4e0aefbabecd68bf5b9e9f4e117a939cc318539d956170db139ecb77a5af5862' as unknown as Bytes,
+      value3:
+        '0x0000000000000000000000000000000000000000000000000000000000000000' as unknown as Bytes,
+    },
+  },
+  {
+    mergeType: 0,
+    mergeValue: {
+      value1: 0,
+      value2:
+        '0xb3fbf012f2f25d30052b48a1b7b8132450e014e5a6f4aa053600eb6b07a4d2d0' as unknown as Bytes,
+      value3:
+        '0x0000000000000000000000000000000000000000000000000000000000000000' as unknown as Bytes,
+    },
+  },
+  {
+    mergeType: 0,
+    mergeValue: {
+      value1: 0,
+      value2:
+        '0xf5c0c820c55bf750b65c05cacb8f3bd2aa53d2677a32f12384769d8a4ffdc54f' as unknown as Bytes,
+      value3:
+        '0x0000000000000000000000000000000000000000000000000000000000000000' as unknown as Bytes,
+    },
+  },
+  {
+    mergeType: 0,
+    mergeValue: {
+      value1: 0,
+      value2:
+        '0x0e22940d75380233b00fd96531ff2cadf970fb9456ba6ef1b9fe9c4339acddce' as unknown as Bytes,
+      value3:
+        '0x0000000000000000000000000000000000000000000000000000000000000000' as unknown as Bytes,
+    },
+  },
+
+  {
+    mergeType: 0,
+    mergeValue: {
+      value1: 0,
+      value2:
+        '0x967ed679c2075987b803ce81af794ab8b95c26935ddc09d13ebd7937f107172c' as unknown as Bytes,
+      value3:
+        '0x0000000000000000000000000000000000000000000000000000000000000000' as unknown as Bytes,
+    },
+  },
+  {
+    mergeType: 0,
+    mergeValue: {
+      value1: 0,
+      value2:
+        '0x0a4d18b7a19cb3ad4dc6b47c1e24c401232f0ad732b13e6115a15e8c8887af50' as unknown as Bytes,
+      value3:
+        '0x0000000000000000000000000000000000000000000000000000000000000000' as unknown as Bytes,
+    },
+  },
+  {
+    mergeType: 0,
+    mergeValue: {
+      value1: 0,
+      value2:
+        '0x3ac4cc5c12b2dd9c9d0da1d0a545c52c2ba21c64eb2065ceb927f2230b4b6d62' as unknown as Bytes,
+      value3:
+        '0x0000000000000000000000000000000000000000000000000000000000000000' as unknown as Bytes,
+    },
+  },
+  {
+    mergeType: 0,
+    mergeValue: {
+      value1: 0,
+      value2:
+        '0x0d36aadf8e0f76cfdc74dfe4722a65523d3e7495667887954479df84adb849c7' as unknown as Bytes,
+      value3:
+        '0x0000000000000000000000000000000000000000000000000000000000000000' as unknown as Bytes,
+    },
+  },
+  {
+    mergeType: 0,
+    mergeValue: {
+      value1: 0,
+      value2:
+        '0x7a1b141b25686a1f4edc26193c7706f7bc0be796d0b6cb552c90b656ed0e72ca' as unknown as Bytes,
+      value3:
+        '0x0000000000000000000000000000000000000000000000000000000000000000' as unknown as Bytes,
+    },
+  },
+  {
+    mergeType: 0,
+    mergeValue: {
+      value1: 0,
+      value2:
+        '0x91679e670e24094eec5c7b70059b2bf23a239838fe029f1ea62e0e83d3c64614' as unknown as Bytes,
+      value3:
+        '0x0000000000000000000000000000000000000000000000000000000000000000' as unknown as Bytes,
+    },
+  },
+  {
+    mergeType: 0,
+    mergeValue: {
+      value1: 0,
+      value2:
+        '0x92c86ebdd08b14a5ab94131ed1c936265452f4e6dc7790df0d49ae27003be6ae' as unknown as Bytes,
+      value3:
+        '0x0000000000000000000000000000000000000000000000000000000000000000' as unknown as Bytes,
+    },
+  },
+  {
+    mergeType: 0,
+    mergeValue: {
+      value1: 0,
+      value2:
+        '0x71738b3990582ea50cac7a0750eaa301ad3aec9611b7686c0178b2994e97f52f' as unknown as Bytes,
+      value3:
+        '0x0000000000000000000000000000000000000000000000000000000000000000' as unknown as Bytes,
+    },
+  },
+  {
+    mergeType: 0,
+    mergeValue: {
+      value1: 0,
+      value2:
+        '0x7d2d89f67bb5d62066fca84f6f8461b7359c64f446832f0da282673304815190' as unknown as Bytes,
+      value3:
+        '0x0000000000000000000000000000000000000000000000000000000000000000' as unknown as Bytes,
+    },
+  },
+  {
+    mergeType: 0,
+    mergeValue: {
+      value1: 0,
+      value2:
+        '0xec7242a15d45d0ada37ab5866a0d5d2a2b7c305a765c475a10f31d6b25cc5ecd' as unknown as Bytes,
+      value3:
+        '0x0000000000000000000000000000000000000000000000000000000000000000' as unknown as Bytes,
+    },
+  },
+  {
+    mergeType: 0,
+    mergeValue: {
+      value1: 0,
+      value2:
+        '0xa15b5cf14730f10d672696002c8dfd01f3c2a357053401efd11a0da355568f1c' as unknown as Bytes,
+      value3:
+        '0x0000000000000000000000000000000000000000000000000000000000000000' as unknown as Bytes,
+    },
+  },
+];
+
+export const mergeValueMock2: MergeValue[] = [
+  {
+    mergeType: 1,
+    mergeValue: {
+      value1: 247,
+      value2:
+        '0xa22b79d36210c6691a5e3759439e4adcaed509a3785838a951edcd0d73ae83d2' as unknown as Bytes,
+      value3:
+        '0x73be92482c0d4c40d1df614f2e741fabd20d00ed19293c63d16fa3992eb20400' as unknown as Bytes,
+    },
+  },
+  {
+    mergeType: 0,
+    mergeValue: {
+      value1: 0,
+      value2:
+        '0x41d7d033fee3c95ad6897050fdfdfc2bffd1231ece912c6ed63cd8d0b5d48f14' as unknown as Bytes,
+      value3:
+        '0x0000000000000000000000000000000000000000000000000000000000000000' as unknown as Bytes,
+    },
+  },
+  {
+    mergeType: 0,
+    mergeValue: {
+      value1: 0,
+      value2:
+        '0x570f42f91b41e62872e04d7d25fb540cf56e151c385c752b01281d8345ae6009' as unknown as Bytes,
+      value3:
+        '0x0000000000000000000000000000000000000000000000000000000000000000' as unknown as Bytes,
+    },
+  },
+  {
+    mergeType: 0,
+    mergeValue: {
+      value1: 0,
+      value2:
+        '0x6aeaf8f526fb6ce91cef54be000cf84fefae6316e23e3952189d9a4b1b87077c' as unknown as Bytes,
+      value3:
+        '0x0000000000000000000000000000000000000000000000000000000000000000' as unknown as Bytes,
+    },
+  },
+  {
+    mergeType: 0,
+    mergeValue: {
+      value1: 0,
+      value2:
+        '0xbd88b50d1e6ea8a56f56ab4c52470c864a8480985bbc3f00156d5b124754ef39' as unknown as Bytes,
+      value3:
+        '0x0000000000000000000000000000000000000000000000000000000000000000' as unknown as Bytes,
+    },
+  },
+  {
+    mergeType: 0,
+    mergeValue: {
+      value1: 0,
+      value2:
+        '0x7c7e536961ae26a8c068d49dccc39c6e51095fe85bd8110a3b98943af4f1fd59' as unknown as Bytes,
+      value3:
+        '0x0000000000000000000000000000000000000000000000000000000000000000' as unknown as Bytes,
+    },
+  },
+  {
+    mergeType: 0,
+    mergeValue: {
+      value1: 0,
+      value2:
+        '0x35379709f346f80e0420afb130f62782b8f66ca38ee63168a8ae6277866e1d5d' as unknown as Bytes,
+      value3:
+        '0x0000000000000000000000000000000000000000000000000000000000000000' as unknown as Bytes,
+    },
+  },
+  {
+    mergeType: 0,
+    mergeValue: {
+      value1: 0,
+      value2:
+        '0xa667ee71eed6f7007a72307ab7b6b210a7894f8116de4ba0bcdb85f4a5abe7f7' as unknown as Bytes,
+      value3:
+        '0x0000000000000000000000000000000000000000000000000000000000000000' as unknown as Bytes,
+    },
+  },
+  {
+    mergeType: 0,
+    mergeValue: {
+      value1: 0,
+      value2:
+        '0xc1a7860320fdfaded0b6d9081e7379b32004b5c6094dd658d49391663808ea60' as unknown as Bytes,
+      value3:
+        '0x0000000000000000000000000000000000000000000000000000000000000000' as unknown as Bytes,
+    },
+  },
+];
+
+export const mergeValueMock1: MergeValue[] = [
+  {
+    mergeType: 1,
+    mergeValue: {
+      value1: 253,
+      value2:
+        '0xa4366628111703a3b0bb5cec1fceab50f570e0dd51d56dd6eb7a2a54bab3849b' as unknown as Bytes,
+      value3:
+        '0x1fd30ea2d276c20bec69f8ea60934f416cf0fed1dd41d1bf14bce37dbea5ab60' as unknown as Bytes,
     },
   },
   {
@@ -168,65 +657,57 @@ export const mergeValueMock: MergeValue[] = [
     mergeValue: {
       value1: 254,
       value2:
-        '0x70816add9a4e5c06656e76cc3bf11ee3c5bb0e463b422d6902ae4c4463a50fd9' as unknown as Bytes,
+        '0x2a05c298a79e5e065d6ed28d4e3740bbd6ecee14cd6321be5d5039ed2db785ba' as unknown as Bytes,
       value3:
-        '0x0bb3696cdbd7208860e9d53efd6c0f72a10597148be66b509d7659ff07f06cb8' as unknown as Bytes,
+        '0xda95503be5e50362f74ec227db12634ff5ddb055409910557ec6d12735b410b4' as unknown as Bytes,
+    },
+  },
+  {
+    mergeType: 1,
+    mergeValue: {
+      value1: 255,
+      value2:
+        '0x086f5ccd56d9fe6db616a7420c05d3192c2374f6d0405f6d463464a6aca7952f' as unknown as Bytes,
+      value3:
+        '0x6436bc10c965a82e3ced8b386e05b84c8a3d7193701a4019a46237abd5d31afa' as unknown as Bytes,
     },
   },
 ];
 
-// export const mockKey: SMTKey = {
-//   chainId: BigNumber.from(100),
-//   token: '0x0000000000000000000000000000000000000021',
-//   user: '0x0000000000000000000000000000000000000022',
-// };
-
-// export const mockValue: SMTValue = {
-//   token: '0x0000000000000000000000000000000000000021',
-//   chainId: BigNumber.from(100),
-//   amount: BigNumber.from(100),
-//   debt: BigNumber.from(80),
-// };
-
-// export const profitRootMock =
-//   '0x7079a474f9bec927bf070f5e1b9b21da95facd7bdbd43d52c2505b26473b5de3';
-
-// export const bitmapMock: string[] = [
-//   '0x0000000000000000000000000000000000000000000000000000000000000007',
-// ];
-
-// export const mergeValueMock: MergeValue[] = [
-//   {
-//     mergeType: 1,
-//     mergeValue: {
-//       value1: 253,
-//       value2:
-//         '0xa4366628111703a3b0bb5cec1fceab50f570e0dd51d56dd6eb7a2a54bab3849b' as unknown as Bytes,
-//       value3:
-//         '0x1fd30ea2d276c20bec69f8ea60934f416cf0fed1dd41d1bf14bce37dbea5ab60' as unknown as Bytes,
-//     },
-//   },
-//   {
-//     mergeType: 1,
-//     mergeValue: {
-//       value1: 254,
-//       value2:
-//         '0x2a05c298a79e5e065d6ed28d4e3740bbd6ecee14cd6321be5d5039ed2db785ba' as unknown as Bytes,
-//       value3:
-//         '0xda95503be5e50362f74ec227db12634ff5ddb055409910557ec6d12735b410b4' as unknown as Bytes,
-//     },
-//   },
-//   {
-//     mergeType: 1,
-//     mergeValue: {
-//       value1: 255,
-//       value2:
-//         '0x086f5ccd56d9fe6db616a7420c05d3192c2374f6d0405f6d463464a6aca7952f' as unknown as Bytes,
-//       value3:
-//         '0x6436bc10c965a82e3ced8b386e05b84c8a3d7193701a4019a46237abd5d31afa' as unknown as Bytes,
-//     },
-//   },
-// ];
+export const withdrawArgSetting: withdrawVerification[] = [
+  {
+    smtLeaf: [smtLeavesMock[0]],
+    siblings: [mergeValueMock],
+    startIndex: [startIndexMock[0]],
+    firstZeroBits: [zeroBitsMock[0]],
+    bitmaps: [bitmapMock[0]],
+    root: [profitRootMock[0]],
+  },
+  {
+    smtLeaf: [smtLeavesMock[1]],
+    siblings: [mergeValueMock1],
+    startIndex: [startIndexMock[1]],
+    firstZeroBits: [zeroBitsMock[1]],
+    bitmaps: [bitmapMock[1]],
+    root: [profitRootMock[1]],
+  },
+  {
+    smtLeaf: [smtLeavesMock[2]],
+    siblings: [mergeValueMock2],
+    startIndex: [startIndexMock[2]],
+    firstZeroBits: [zeroBitsMock[2]],
+    bitmaps: [bitmapMock[2]],
+    root: [profitRootMock[2]],
+  },
+  {
+    smtLeaf: [smtLeavesMock[3]],
+    siblings: [mergeValueMock3],
+    startIndex: [startIndexMock[3]],
+    firstZeroBits: [zeroBitsMock[3]],
+    bitmaps: [bitmapMock[3]],
+    root: [profitRootMock[3]],
+  },
+];
 
 /************************ Mock Data ************************** */
 
@@ -659,4 +1140,16 @@ export async function mineXMinutes(minutes: number) {
   console.log(
     `mine ${minutes} minutes, current time: ${await getCurrentTime()}`,
   );
+}
+
+export function callDataCost(data: string): number {
+  return ethers.utils
+    .arrayify(data)
+    .map((x) => (x === 0 ? 4 : 16))
+    .reduce((sum, x) => sum + x);
+}
+
+export function bytesToNumber(bytes: Bytes): number {
+  const hexString = utils.hexlify(bytes);
+  return parseInt(hexString.slice(2), 16);
 }

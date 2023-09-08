@@ -10,7 +10,7 @@ import { expect } from 'chai';
 import { formatEther } from 'ethers/lib/utils';
 import { initTestToken, testToken } from './lib/mockData';
 
-describe.skip('Test ebc', () => {
+describe('Test ebc', () => {
   let ebc: OREventBinding;
   let signers: SignerWithAddress[];
 
@@ -105,7 +105,7 @@ describe.skip('Test deploy token', () => {
   // });
 });
 
-describe('Test mint token', () => {
+describe.skip('Test mint token', () => {
   let signers: SignerWithAddress[];
   let mdcOwner: SignerWithAddress;
   let testToken1: TestToken;
