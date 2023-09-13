@@ -66,6 +66,10 @@ library MerkleTreeLib {
         SHORT_CUT
     }
 
+    uint8 internal constant MERGE_NORMAL = 1;
+    uint8 internal constant MERGE_ZEROS = 2;
+    uint8 internal constant MAX_TREE_LEVEL = 255;
+
     function isRight(bytes32 _hash, uint height) internal pure returns (bool) {
         return getBit(uint256(_hash), height);
     }
@@ -73,26 +77,6 @@ library MerkleTreeLib {
     function setBit(bytes32 bitmap, uint index) internal pure returns (bytes32) {
         return bytes32(uint256(bitmap) | (1 << (index & 0xff)));
     }
-
-    // function setBit(bytes32 bitmap, uint index) internal view returns (bytes32) {
-    //     bytes32 result;
-    //     assembly {
-    //         let bitmapUint := 0
-    //         bitmapUint := or(bitmapUint, bitmap)
-
-    //         let shifted := shl(and(index, 0xff), 1)
-    //         result := or(bitmapUint, shifted)
-    //     }
-    //     return result;
-    // }
-
-    // function getBit(uint256 bitmap, uint index) internal pure returns (bool) {
-    //     return ((bitmap & (1 << index)) > 0) ? true : false;
-    // }
-
-    // function getBit(bytes32 bitmap, uint index) internal pure returns (bool) {
-    //     return ((uint256(bitmap) & (1 << index)) > 0) ? true : false;
-    // }
 
     function getBit(uint256 bitmap, uint index) internal pure returns (bool) {
         bool result;
@@ -144,12 +128,12 @@ library MerkleTreeLib {
         }
     }
 
-    function set_VALUE(MergeValue memory value, bytes32 newValue) internal pure {
+    function setValue(MergeValue memory value, bytes32 newValue) internal pure {
         value.mergeType = MergeValueType.VALUE;
         value.mergeValue.value2 = newValue;
     }
 
-    function set_MERGE_WITH_ZERO(
+    function setMergeWithZero(
         MergeValue memory value,
         uint8 ZeroCount,
         bytes32 BaseNode,
@@ -175,72 +159,12 @@ library MerkleTreeLib {
         } else if (mergeValue.mergeType == MerkleTreeLib.MergeValueType.MERGE_WITH_ZERO) {
             hashValue = keccak256(
                 abi.encode(
-                    2, //MERGE_ZEROS == 2
+                    MERGE_ZEROS, //MERGE_ZEROS == 2
                     mergeValue.mergeValue.value2, // baseNode
                     mergeValue.mergeValue.value3, // zeroBits
                     mergeValue.mergeValue.value1 // zeroCount
                 )
             );
-            // return
-            //     keccak256(
-            //         abi.encode(
-            //             MERGE_ZEROS,
-            //             mergeValue.mergeValue.value2, // baseNode
-            //             mergeValue.mergeValue.value3, // zeroBits
-            //             mergeValue.mergeValue.value1 // zeroCount
-            //         )
-            //     );
-        }
-        // else {
-        //     revert InvalidMergeValue();
-        // }
-    }
-
-    function mergeWithZeroHash(MergeValue calldata mergeValue) internal pure returns (bytes32) {
-        return
-            keccak256(
-                abi.encode(
-                    2, //MERGE_ZEROS == 2
-                    mergeValue.mergeValue.value2, // baseNode
-                    mergeValue.mergeValue.value3, // zeroBits
-                    mergeValue.mergeValue.value1 // zeroCount
-                )
-            );
-    }
-
-    function mergeWithZeroHashM(MergeValue memory mergeValue) internal pure returns (bytes32) {
-        return
-            keccak256(
-                abi.encode(
-                    2, //MERGE_ZEROS == 2
-                    mergeValue.mergeValue.value2, // baseNode
-                    mergeValue.mergeValue.value3, // zeroBits
-                    mergeValue.mergeValue.value1 // zeroCount
-                )
-            );
-    }
-
-    function setSibling(MergeValue memory mergeValue, MergeValue calldata siblingmergeValue) internal pure {
-        if (siblingmergeValue.mergeType == MergeValueType.VALUE) {
-            mergeValue.mergeType = MergeValueType.VALUE;
-            mergeValue.mergeValue.value2 = siblingmergeValue.mergeValue.value2;
-        } else {
-            mergeValue.mergeType = MergeValueType.MERGE_WITH_ZERO;
-            mergeValue.mergeValue.value1 = siblingmergeValue.mergeValue.value1;
-            mergeValue.mergeValue.value2 = siblingmergeValue.mergeValue.value2;
-            mergeValue.mergeValue.value3 = siblingmergeValue.mergeValue.value3;
-        }
-    }
-
-    function setCurrent(MergeValue memory mergeValue, MergeValue memory siblingmergeValue) internal pure {
-        if (siblingmergeValue.mergeType == MergeValueType.VALUE) {
-            mergeValue.mergeType = MergeValueType.VALUE;
-            mergeValue.mergeValue.value2 = siblingmergeValue.mergeValue.value2;
-        } else {
-            mergeValue.mergeType = MergeValueType.MERGE_WITH_ZERO;
-            mergeValue.mergeValue.value1 = siblingmergeValue.mergeValue.value1;
-            mergeValue.mergeValue.value2 = siblingmergeValue.mergeValue.value2;
-            mergeValue.mergeValue.value3 = siblingmergeValue.mergeValue.value3;
         }
     }
 }

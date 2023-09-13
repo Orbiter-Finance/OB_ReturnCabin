@@ -40,6 +40,7 @@ describe('Test ORManager', () => {
     process.env['OR_MANAGER_ADDRESS'] = orManager.address;
 
     const owner = await orManager.owner();
+    console.log('Address of orManager owner:', owner);
     // expect(owner).eq(signers[1].address);
   });
 
@@ -248,7 +249,7 @@ describe('Test ORManager', () => {
 
         const storageSubmitter = await orManager.submitter();
         expect(storageSubmitter).to.deep.eq(submitter);
-        console.log('Submitter:', storageSubmitter);
+        console.log('Address of Submitter:', storageSubmitter);
       },
     ),
   );

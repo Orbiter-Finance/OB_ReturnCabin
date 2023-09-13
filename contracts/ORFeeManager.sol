@@ -10,12 +10,13 @@ import {IORManager} from "./interface/IORManager.sol";
 import {HelperLib} from "./library/HelperLib.sol";
 import {ConstantsLib} from "./library/ConstantsLib.sol";
 import {IVerifier} from "./interface/IVerifier.sol";
-import {MerkleTreeVerification} from "./ORMerkleTree.sol";
 import {MerkleTreeLib} from "./library/MerkleTreeLib.sol";
+import {MerkleTreeVerification} from "./library/ORMerkleTree.sol";
 
-contract ORFeeManager is IORFeeManager, MerkleTreeVerification, Ownable, ReentrancyGuard {
+contract ORFeeManager is IORFeeManager, Ownable, ReentrancyGuard {
     using HelperLib for bytes;
     using SafeERC20 for IERC20;
+    using MerkleTreeVerification for bytes32;
 
     // Ownable._owner use a slot
     IORManager private immutable _manager;
@@ -81,8 +82,7 @@ contract ORFeeManager is IORFeeManager, MerkleTreeVerification, Ownable, Reentra
             require(msg.sender == smtLeaves[i].key.user, "NU");
             require(withdrawAmount[i] <= smtLeaves[i].value.amount, "UIF");
             require(
-                MerkleTreeVerification.verify(
-                    keccak256(abi.encode(smtLeaves[i].key)),
+                keccak256(abi.encode(smtLeaves[i].key)).verify(
                     keccak256(abi.encode(smtLeaves[i].value)),
                     bitmaps[i],
                     submissions.profitRoot,
@@ -147,7 +147,7 @@ contract ORFeeManager is IORFeeManager, MerkleTreeVerification, Ownable, Reentra
     }
 
     function registerSubmitter(uint marginAmount, address _submitter) external override onlyOwner {
-        require(_submitter == IORManager(_manager).submitter(), "NS");
+        require(_submitter == IORManager(_manager).submitter(), "NSR");
         submitter[_submitter] = marginAmount;
         emit SubmitterRegistered(_submitter, marginAmount);
     }

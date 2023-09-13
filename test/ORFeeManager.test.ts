@@ -47,7 +47,8 @@ describe('ORFeeManger', () => {
     );
 
     orManager = new ORManager__factory(signers[0]).attach(envORManagerAddress);
-    await orManager.deployed();
+    console.log('connected to orManager contract:', orManager.address);
+    // await orManager.deployed();
 
     verifier = await new Verifier__factory(signers[0]).deploy();
 
@@ -116,25 +117,30 @@ describe('ORFeeManger', () => {
 
   async function registerSubmitter() {
     if (process.env['REGISTER_SUBMITTER'] != undefined) {
-      if (process.env['REGISTER_SUBMITTER'] == (await submitterMock())) {
-        const submitter = await submitterMock();
-        const marginAmount = BigNumber.from(1000);
-        await orFeeManager.registerSubmitter(marginAmount, submitter);
-      }
+      const submitter = process.env['REGISTER_SUBMITTER'];
+      const marginAmount = BigNumber.from(1000);
+      await orFeeManager.registerSubmitter(marginAmount, submitter);
+      console.log('register submitter:', submitter);
     } else {
       const submitter = await submitterMock();
       const marginAmount = BigNumber.from(1000);
       await orFeeManager.registerSubmitter(marginAmount, submitter);
+      console.log('register submitter:', submitter);
     }
   }
 
   it('registerSubmitter should succeed', async function () {
+    await registerSubmitter();
     if (process.env['REGISTER_SUBMITTER'] == undefined) {
-      console.log('Please set env REGISTER_SUBMITTER');
-      await registerSubmitter();
       expect(await orFeeManager.submitter(await submitterMock())).eq(
         BigNumber.from(1000),
       );
+      console.log('connect to submitter:', await submitterMock());
+    } else {
+      expect(
+        await orFeeManager.submitter(process.env['REGISTER_SUBMITTER']),
+      ).eq(BigNumber.from(1000));
+      console.log('connect to submitter:', process.env['REGISTER_SUBMITTER']);
     }
   });
 });
