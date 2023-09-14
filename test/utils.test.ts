@@ -25,7 +25,6 @@ export async function testReverted(
   } catch (err: any) {
     const reg = new RegExp(`reason=.*?${reason}`, 'i');
     const match = reg.exec(err.message);
-    console.log(`reg: ${reg}, match: ${match}, err: ${err.message}`);
 
     expect(!!match?.[0]).to.be.eq(true);
   }

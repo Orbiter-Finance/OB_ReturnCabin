@@ -63,7 +63,6 @@ contract ORFeeManager is IORFeeManager, Ownable, ReentrancyGuard {
         _transferOwnership(owner_);
         _manager = IORManager(manager_);
         verifier = _verifier;
-        submissions.submitTimestamp = uint64(ConstantsLib.DEALER_WITHDRAW_DELAY + ConstantsLib.WITHDRAW_DURATION);
     }
 
     function withdrawVerification(

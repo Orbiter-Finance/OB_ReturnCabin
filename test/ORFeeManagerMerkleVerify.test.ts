@@ -262,6 +262,11 @@ describe('test ORFeeManager MerkleVerify', () => {
       'Env miss [SUBMITTER_RPC]. You may need to add a RPC node in .env file. Example: SUBMITTER_RPC= http://127.0.0.1:8545',
     );
 
+    const envOFeeRManagerAddress = process.env['OR_FEE_MANAGER_ADDRESS'];
+    assert(
+      !!envOFeeRManagerAddress,
+      'Env miss [OR_FEE_MANAGER_ADDRESS]. You may need to test ORManager.test.ts first. Example: npx hardhat test --bail test/ORManager.test test/ORFeeManager.test test/ORFeeManagerMerkleVerify.test.ts',
+    );
 
     orManager = new ORManager__factory(signers[0]).attach(envORManagerAddress);
     await orManager.deployed();
@@ -324,6 +329,48 @@ describe('test ORFeeManager MerkleVerify', () => {
     }
   });
 
+  it('withdraw during initail state', async function () {
+    const smtLeaf = proof.smtLeaf;
+    const siblings = proof.siblings;
+    const bitmaps = proof.bitmaps;
+    const withdrawAmount: BigNumber[] = [];
+    for (let i = 0; i < smtLeaf.length; i++) {
+      withdrawAmount.push(smtLeaf[i].value.amount);
+    }
+    const startIndex = proof.startIndex;
+    const firstZeroBits = proof.firstZeroBits;
+    await gotoDuration(durationStatusEnum['lock']);
+    await expect(orFeeManager
+      .withdrawVerification(
+        smtLeaf,
+        siblings,
+        startIndex,
+        firstZeroBits,
+        bitmaps,
+        withdrawAmount,
+        {
+          gasLimit: 10000000,
+        },
+      )).to.revertedWith('WE')
+    await gotoDuration(durationStatusEnum['withdraw']);
+    const submissions = await orFeeManager.submissions();
+    console.log(submissions);
+    await expect(orFeeManager
+      .withdrawVerification(
+        smtLeaf,
+        siblings,
+        startIndex,
+        firstZeroBits,
+        bitmaps,
+        withdrawAmount,
+        {
+          gasLimit: 10000000,
+        },
+      )).to.revertedWith('WL')
+
+
+  });
+
   it('Function updateDealer should emit events and update dealerInfo', async function () {
     const feeRatio = BigNumber.from(1000);
     const extraInfoTypes = ['string', 'string'];
@@ -365,7 +412,7 @@ describe('test ORFeeManager MerkleVerify', () => {
     const submissions = await orFeeManager.submissions();
     submitInfo.profitRoot = profitRoot;
     submitInfo.stratBlock = submissions.endBlock.toNumber();
-    submitInfo.endBlock = submissions.endBlock.toNumber() + 1;
+    submitInfo.endBlock = submitInfo.stratBlock + 1;
 
     const events = await orFeeManager
       .submit(
@@ -378,11 +425,11 @@ describe('test ORFeeManager MerkleVerify', () => {
     return events;
   }
 
-  const durationStatus: { [key: number]: string } = {
-    0: 'lock',
-    1: 'challenge',
-    2: 'withdraw',
-  };
+  // const durationStatus: { [key: number]: string } = {
+  //   0: 'lock',
+  //   1: 'challenge',
+  //   2: 'withdraw',
+  // };
 
   enum durationStatusEnum {
     lock = 0,
@@ -429,7 +476,7 @@ describe('test ORFeeManager MerkleVerify', () => {
     const txrc = await ethers.provider.getTransaction(tx.transactionHash);
     const inpudataGas = callDataCost(txrc.data);
     console.log(
-      `loop: [${loop + 1}]-withdrawVerification gas used: ${tx.gasUsed}, input data gas: ${inpudataGas}`,
+      `loop: [${loop + 1}]-withdraw gas used: ${tx.gasUsed}, input data gas: ${inpudataGas}`,
     );
   }
 
@@ -532,10 +579,35 @@ describe('test ORFeeManager MerkleVerify', () => {
           },
         ))
 
-
+    // loop to test
     for (let i = 0; i < 5; i++) {
       await gotoDuration(durationStatusEnum['lock']);
+      await expect(orFeeManager
+        .withdrawVerification(
+          smtLeaf,
+          siblings,
+          startIndex,
+          firstZeroBits,
+          bitmaps,
+          withdrawAmount,
+          {
+            gasLimit: 10000000,
+          },
+        )).to.revertedWith('WE')
       await submit(profitRoot);
+      await gotoDuration(durationStatusEnum['challenge']);
+      await expect(orFeeManager
+        .withdrawVerification(
+          smtLeaf,
+          siblings,
+          startIndex,
+          firstZeroBits,
+          bitmaps,
+          withdrawAmount,
+          {
+            gasLimit: 10000000,
+          },
+        )).to.revertedWith('WE')
       await gotoDuration(durationStatusEnum['withdraw']);
       await withdraw(
         smtLeaf,
@@ -546,6 +618,18 @@ describe('test ORFeeManager MerkleVerify', () => {
         withdrawAmount,
         i
       )
+      await expect(orFeeManager
+        .withdrawVerification(
+          smtLeaf,
+          siblings,
+          startIndex,
+          firstZeroBits,
+          bitmaps,
+          withdrawAmount,
+          {
+            gasLimit: 10000000,
+          },
+        )).to.revertedWith('WL')
     }
 
     await gotoDuration(durationStatusEnum['withdraw']);
