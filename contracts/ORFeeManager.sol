@@ -26,7 +26,8 @@ contract ORFeeManager is IORFeeManager, Ownable, ReentrancyGuard {
 
     mapping(address => DealerInfo) private _dealers;
     mapping(address => uint) public submitter;
-    mapping(bytes32 => bool) public withdrawLock;
+    // mapping(bytes32 => bool) public withdrawLock;
+    mapping(address => uint64) public withdrawLock;
 
     modifier isChanllengerQualified() {
         require(address(msg.sender).balance >= address(IORManager(_manager).submitter()).balance, "NF");
@@ -48,7 +49,7 @@ contract ORFeeManager is IORFeeManager, Ownable, ReentrancyGuard {
     }
 
     function withdrawLockCheck(MerkleTreeLib.SMTKey calldata key) external view returns (bool) {
-        return withdrawLock[keccak256(abi.encode(key.user, submissions.submitTimestamp))];
+        return withdrawLock[key.user] < submissions.submitTimestamp ? true : false;
     }
 
     receive() external payable {
@@ -75,9 +76,8 @@ contract ORFeeManager is IORFeeManager, Ownable, ReentrancyGuard {
     ) external nonReentrant {
         require(durationCheck() == FeeMangerDuration.withdraw, "WE");
         require(challengeStatus == ChallengeStatus.none, "WDC");
-        bytes32 withdrawLockKey = keccak256(abi.encode(msg.sender, submissions.submitTimestamp));
-        require(withdrawLock[withdrawLockKey] == false, "WL");
-        withdrawLock[withdrawLockKey] = true;
+        require(withdrawLock[msg.sender] < submissions.submitTimestamp, "WL");
+        withdrawLock[msg.sender] = submissions.submitTimestamp;
         for (uint i = 0; i < smtLeaves.length; ) {
             require(msg.sender == smtLeaves[i].key.user, "NU");
             require(withdrawAmount[i] <= smtLeaves[i].value.amount, "UIF");
@@ -93,12 +93,12 @@ contract ORFeeManager is IORFeeManager, Ownable, ReentrancyGuard {
                 "merkle root verify failed"
             );
 
-            if (smtLeaves[i].value.token != address(0)) {
-                IERC20(smtLeaves[i].value.token).safeTransfer(msg.sender, withdrawAmount[i]);
-            } else {
-                (bool success, ) = payable(msg.sender).call{value: withdrawAmount[i], gas: type(uint256).max}("");
-                require(success, "ETH: IF");
-            }
+            // if (smtLeaves[i].value.token != address(0)) {
+            //     IERC20(smtLeaves[i].value.token).safeTransfer(msg.sender, withdrawAmount[i]);
+            // } else {
+            //     (bool success, ) = payable(msg.sender).call{value: withdrawAmount[i], gas: type(uint256).max}("");
+            //     require(success, "ETH: IF");
+            // }
             emit Withdraw(
                 msg.sender,
                 smtLeaves[i].value.chainId,

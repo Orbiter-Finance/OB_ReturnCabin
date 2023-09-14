@@ -2,7 +2,6 @@ import { expect } from 'chai';
 import 'cross-fetch/polyfill';
 import { BigNumber, BigNumberish, ContractTransaction, utils } from 'ethers';
 import { ORManager } from '../typechain-types';
-import { writeFileSync } from 'fs';
 
 export function hexToBuffer(hex: string) {
   return Buffer.from(utils.arrayify(hex));
@@ -26,6 +25,7 @@ export async function testReverted(
   } catch (err: any) {
     const reg = new RegExp(`reason=.*?${reason}`, 'i');
     const match = reg.exec(err.message);
+    console.log(`reg: ${reg}, match: ${match}, err: ${err.message}`);
 
     expect(!!match?.[0]).to.be.eq(true);
   }

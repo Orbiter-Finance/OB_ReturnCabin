@@ -24,7 +24,6 @@ import {
   SubmitInfoMock,
   callDataCost,
   dealersSignersMock,
-  getCurrentTime,
   initTestToken,
   mineXMinutes,
   stateTransTreeRootMock,
@@ -32,7 +31,11 @@ import {
   submitter_getProfitProof,
 } from './lib/mockData';
 
-const tokenAddress = '0xa0321efEb50c46C17A7D72A52024eeA7221b215A';
+
+const tokensRequestList: string[] = [
+  '0xa0321efEb50c46C17A7D72A52024eeA7221b215A',
+  '0xA3a8A6b323E3d38f5284db9337e7c6d74Af3366a',
+  '0x29B6a77911c1ce3B3849f28721C65DadA015c768'];
 const userAddress = '0xc3C7A782dda00a8E61Cb9Ba0ea8680bb3f3B9d10';
 
 enum MergeValueType {
@@ -171,7 +174,11 @@ const getWithDrawParams = (result: IProofItem[]) => {
 describe('Test RPC', () => {
   it('should communicate with the external RPC and parse JSON data', async () => {
     if (process.env['SUBMITTER_RPC'] != undefined) {
-      await submitter_getProfitProof(tokenAddress, userAddress);
+      const tokenArray: [number, string][] = [];
+      for (let i = 0; i < tokensRequestList.length; i++) {
+        tokenArray.push([5, tokensRequestList[i]]);
+      }
+      await submitter_getProfitProof(tokenArray, userAddress);
     }
   });
 });
@@ -206,7 +213,7 @@ describe.skip('format RPC json data', () => {
   });
 
   it('should format JSON data', async () => {
-    console.log(`proof: ${JSON.stringify(proof)}`);
+    // console.log(`proof: ${JSON.stringify(proof)}`);
     console.log(proof, profitRoot);
   });
 });
@@ -307,7 +314,7 @@ describe('test ORFeeManager MerkleVerify', () => {
   });
 
   it('should format JSON data', async () => {
-    console.log(`proof: ${JSON.stringify(proof)}`);
+    // console.log(`proof: ${JSON.stringify(proof)}`);
     console.log(proof);
   });
 
@@ -355,8 +362,10 @@ describe('test ORFeeManager MerkleVerify', () => {
 
   async function submit(profitRoot: string) {
     const submitInfo: SubmitInfo = await SubmitInfoMock();
-    // const withdrawArg: withdrawVerification = withdrawArgSetting[testRootIndex];
+    const submissions = await orFeeManager.submissions();
     submitInfo.profitRoot = profitRoot;
+    submitInfo.stratBlock = submissions.endBlock.toNumber();
+    submitInfo.endBlock = submissions.endBlock.toNumber() + 1;
 
     const events = await orFeeManager
       .submit(
@@ -383,13 +392,45 @@ describe('test ORFeeManager MerkleVerify', () => {
 
   async function durationCheck() {
     const feeMnagerDuration = await orFeeManager.durationCheck();
-    console.log(
-      'Current Duration:',
-      durationStatus[feeMnagerDuration],
-      ', Current time:',
-      await getCurrentTime(),
-    );
+    // console.log(
+    //   'Current Duration:',
+    //   durationStatus[feeMnagerDuration],
+    //   ', Current time:',
+    //   await getCurrentTime(),
+    // );
     return feeMnagerDuration;
+  }
+
+  async function withdraw(
+    smtLeaf: SMTLeaf[],
+    siblings: MergeValue[][],
+    startIndex: StartIndex,
+    firstZeroBits: string[],
+    bitmaps: string[],
+    withdrawAmount: WithdrawAmount,
+    loop: number,
+  ) {
+    const tx = await orFeeManager
+      .withdrawVerification(
+        smtLeaf,
+        siblings,
+        startIndex,
+        firstZeroBits,
+        bitmaps,
+        withdrawAmount,
+        {
+          gasLimit: 10000000,
+        },
+      )
+      .then((t) => t.wait());
+    // const gasPrice = 20;
+    // const ethused = tx.gasUsed.mul(gasPrice);
+    // const ethAmount = ethers.utils.formatEther(ethused);
+    const txrc = await ethers.provider.getTransaction(tx.transactionHash);
+    const inpudataGas = callDataCost(txrc.data);
+    console.log(
+      `loop: [${loop + 1}]-withdrawVerification gas used: ${tx.gasUsed}, input data gas: ${inpudataGas}`,
+    );
   }
 
   it('registerSubmitter should succeed', async function () {
@@ -399,16 +440,26 @@ describe('test ORFeeManager MerkleVerify', () => {
     );
   });
 
-  it('mine to test should succeed', async function () {
-    await registerSubmitter();
-    if ((await durationCheck()) == durationStatusEnum['withdraw']) {
+  async function gotoDuration(
+    duration: durationStatusEnum,
+  ) {
+    if ((await durationCheck()) != duration) {
       while (1) {
         await mineXMinutes(3);
-        if ((await durationCheck()) == durationStatusEnum['lock']) {
+        if ((await durationCheck()) == duration) {
           break;
         }
       }
     }
+  }
+
+  // it('test initial state should succeed', async function () {
+
+  // });
+
+  it('mine to test should succeed', async function () {
+    await registerSubmitter();
+    await gotoDuration(durationStatusEnum['lock']);
 
     await submit(profitRoot);
     // const events = receipt.events ?? [];
@@ -465,7 +516,40 @@ describe('test ORFeeManager MerkleVerify', () => {
     const startIndex = proof.startIndex;
     const firstZeroBits = proof.firstZeroBits;
 
-    const tx = await orFeeManager
+    await gotoDuration(durationStatusEnum['withdraw']);
+    console.log("estimateGas-withdrawVerification =",
+      await orFeeManager
+        .estimateGas
+        .withdrawVerification(
+          smtLeaf,
+          siblings,
+          startIndex,
+          firstZeroBits,
+          bitmaps,
+          withdrawAmount,
+          {
+            gasLimit: 10000000,
+          },
+        ))
+
+
+    for (let i = 0; i < 5; i++) {
+      await gotoDuration(durationStatusEnum['lock']);
+      await submit(profitRoot);
+      await gotoDuration(durationStatusEnum['withdraw']);
+      await withdraw(
+        smtLeaf,
+        siblings,
+        startIndex,
+        firstZeroBits,
+        bitmaps,
+        withdrawAmount,
+        i
+      )
+    }
+
+    await gotoDuration(durationStatusEnum['withdraw']);
+    await expect(orFeeManager
       .withdrawVerification(
         smtLeaf,
         siblings,
@@ -476,15 +560,79 @@ describe('test ORFeeManager MerkleVerify', () => {
         {
           gasLimit: 10000000,
         },
-      )
-      .then((t) => t.wait());
-    const gasPrice = 20;
-    const ethused = tx.gasUsed.mul(gasPrice);
-    const ethAmount = ethers.utils.formatEther(ethused);
-    const txrc = await ethers.provider.getTransaction(tx.transactionHash);
-    const inpudataGas = callDataCost(txrc.data);
-    console.log(
-      `withdrawVerification gas used: ${tx.gasUsed}, ETH used: ${ethAmount}, input data gas: ${inpudataGas}`,
-    );
+      )).to.revertedWith('WL')
+    await gotoDuration(durationStatusEnum['lock']);
+    await expect(orFeeManager
+      .withdrawVerification(
+        smtLeaf,
+        siblings,
+        startIndex,
+        firstZeroBits,
+        bitmaps,
+        withdrawAmount,
+        {
+          gasLimit: 10000000,
+        },
+      )).to.revertedWith('WE')
+    await gotoDuration(durationStatusEnum['withdraw']);
+    await expect(orFeeManager
+      .withdrawVerification(
+        smtLeaf,
+        siblings,
+        startIndex,
+        firstZeroBits,
+        bitmaps,
+        withdrawAmount,
+        {
+          gasLimit: 10000000,
+        },
+      )).to.revertedWith('WL')
+
+    await gotoDuration(durationStatusEnum['lock']);
+    await submit(profitRoot);
+    await gotoDuration(durationStatusEnum['withdraw']);
+    expect(orFeeManager
+      .withdrawVerification(
+        smtLeaf,
+        siblings,
+        startIndex,
+        firstZeroBits,
+        bitmaps,
+        withdrawAmount,
+        {
+          gasLimit: 10000000,
+        },
+      )).to.be.satisfy
+
+    await expect(orFeeManager
+      .withdrawVerification(
+        smtLeaf,
+        siblings,
+        startIndex,
+        firstZeroBits,
+        bitmaps,
+        withdrawAmount,
+        {
+          gasLimit: 10000000,
+        },
+      )).to.revertedWith('WL')
+
+    await gotoDuration(durationStatusEnum['lock']);
+    await submit(profitRoot);
+    await gotoDuration(durationStatusEnum['withdraw']);
+    smtLeaf[0].key.user = '0xA00000000000000000000000000000000000000A';
+    await expect(orFeeManager
+      .withdrawVerification(
+        smtLeaf,
+        siblings,
+        startIndex,
+        firstZeroBits,
+        bitmaps,
+        withdrawAmount,
+        {
+          gasLimit: 10000000,
+        },
+      )).to.revertedWith("NU")
+
   });
 });

@@ -1630,7 +1630,7 @@ export async function verifyContract(address: string, args: any[]) {
 
 export async function printCurrentTime() {
   const currentTime = await getCurrentTime();
-  console.log('Current timestamp:', currentTime);
+  // console.log('Current timestamp:', currentTime);
 }
 
 export async function getCurrentTime() {
@@ -1643,9 +1643,9 @@ export async function mineXMinutes(minutes: number) {
   const currentTime = await getCurrentTime();
   await ethers.provider.send('evm_increaseTime', [currentTime]);
   await ethers.provider.send('evm_mine', [currentTime + seconds]);
-  console.log(
-    `mine ${minutes} minutes, current time: ${await getCurrentTime()}`,
-  );
+  // console.log(
+  //   `mine ${minutes} minutes, current time: ${await getCurrentTime()}`,
+  // );
 }
 
 export function callDataCost(data: string): number {
@@ -1661,7 +1661,7 @@ export function bytesToNumber(bytes: Bytes): number {
 }
 
 export async function submitter_getProfitProof(
-  tokens: string,
+  tokens: [number, string][],
   user: string,
 ): Promise<SMTLeaf> {
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -1672,7 +1672,7 @@ export async function submitter_getProfitProof(
     method: 'submitter_getProfitProof',
     params: {
       user: user,
-      tokens: [[5, tokens]],
+      tokens: tokens,
     },
     id: 1,
   };

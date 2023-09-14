@@ -1,6 +1,6 @@
 node_modules/
 hardhat.config.js
-
+/test/RPC_DATA
 
 node_modules
 .env
