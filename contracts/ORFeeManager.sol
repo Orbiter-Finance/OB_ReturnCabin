@@ -92,12 +92,12 @@ contract ORFeeManager is IORFeeManager, Ownable, ReentrancyGuard {
                 "merkle root verify failed"
             );
 
-            // if (smtLeaves[i].value.token != address(0)) {
-            //     IERC20(smtLeaves[i].value.token).safeTransfer(msg.sender, withdrawAmount[i]);
-            // } else {
-            //     (bool success, ) = payable(msg.sender).call{value: withdrawAmount[i], gas: type(uint256).max}("");
-            //     require(success, "ETH: IF");
-            // }
+            if (smtLeaves[i].value.token != address(0)) {
+                IERC20(smtLeaves[i].value.token).safeTransfer(msg.sender, withdrawAmount[i]);
+            } else {
+                (bool success, ) = payable(msg.sender).call{value: withdrawAmount[i], gas: type(uint256).max}("");
+                require(success, "ETH: IF");
+            }
             emit Withdraw(
                 msg.sender,
                 smtLeaves[i].value.chainId,

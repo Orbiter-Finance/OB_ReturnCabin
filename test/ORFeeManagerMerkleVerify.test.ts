@@ -500,10 +500,6 @@ describe('test ORFeeManager MerkleVerify', () => {
     }
   }
 
-  // it('test initial state should succeed', async function () {
-
-  // });
-
   it('mine to test should succeed', async function () {
     await registerSubmitter();
     await gotoDuration(durationStatusEnum['lock']);
