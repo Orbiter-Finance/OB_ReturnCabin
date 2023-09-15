@@ -190,26 +190,51 @@ describe.skip('format RPC json data', () => {
     const fileData = fs.readFileSync('test/RPC_DATA/response.json', 'utf-8');
     const parsedData = JSON.parse(fileData);
     console.log(parsedData.result);
-    const {
-      smtLeaves,
-      siblings,
-      startIndex,
-      firstZeroBits,
-      bitmaps,
-      root,
-      withdrawAmount,
-    } = getWithDrawParams(parsedData.result);
+    try {
+      const {
+        smtLeaves,
+        siblings,
+        startIndex,
+        firstZeroBits,
+        bitmaps,
+        root,
+        withdrawAmount,
+      } = getWithDrawParams(parsedData.result);
+      proof = {
+        smtLeaf: smtLeaves,
+        siblings: siblings,
+        startIndex: startIndex,
+        firstZeroBits: firstZeroBits,
+        bitmaps: bitmaps,
+        withdrawAmount: withdrawAmount,
+      };
+      profitRoot = root[0];
+    } catch (err) {
+      const fileData = fs.readFileSync('test/RPC_DATA/test.json', 'utf-8');
+      const parsedData = JSON.parse(fileData);
+      console.log(`use test data: ${parsedData.result}`);
+      const {
+        smtLeaves,
+        siblings,
+        startIndex,
+        firstZeroBits,
+        bitmaps,
+        root,
+        withdrawAmount,
+      } = getWithDrawParams(parsedData.result);
+      proof = {
+        smtLeaf: smtLeaves,
+        siblings: siblings,
+        startIndex: startIndex,
+        firstZeroBits: firstZeroBits,
+        bitmaps: bitmaps,
+        withdrawAmount: withdrawAmount,
+      };
+      profitRoot = root[0];
+    }
 
-    proof = {
-      smtLeaf: smtLeaves,
-      siblings: siblings,
-      startIndex: startIndex,
-      firstZeroBits: firstZeroBits,
-      bitmaps: bitmaps,
-      withdrawAmount: withdrawAmount,
-    };
 
-    profitRoot = root[0];
+
   });
 
   it('should format JSON data', async () => {
@@ -295,27 +320,51 @@ describe('test ORFeeManager MerkleVerify', () => {
 
     const fileData = fs.readFileSync('test/RPC_DATA/response.json', 'utf-8');
     const parsedData = JSON.parse(fileData);
-    console.log(parsedData.result);
-    const {
-      smtLeaves,
-      siblings,
-      startIndex,
-      firstZeroBits,
-      bitmaps,
-      root,
-      withdrawAmount,
-    } = getWithDrawParams(parsedData.result);
 
-    proof = {
-      smtLeaf: smtLeaves,
-      siblings: siblings,
-      startIndex: startIndex,
-      firstZeroBits: firstZeroBits,
-      bitmaps: bitmaps,
-      withdrawAmount: withdrawAmount,
-    };
+    try {
+      const {
+        smtLeaves,
+        siblings,
+        startIndex,
+        firstZeroBits,
+        bitmaps,
+        root,
+        withdrawAmount,
+      } = getWithDrawParams(parsedData.result);
+      proof = {
+        smtLeaf: smtLeaves,
+        siblings: siblings,
+        startIndex: startIndex,
+        firstZeroBits: firstZeroBits,
+        bitmaps: bitmaps,
+        withdrawAmount: withdrawAmount,
+      };
+      profitRoot = root[0];
+      console.log(`use RPC data: ${parsedData.result}`);
+    } catch (err) {
+      const fileData = fs.readFileSync('test/RPC_DATA/test.json', 'utf-8');
+      const parsedData = JSON.parse(fileData);
 
-    profitRoot = root[0];
+      const {
+        smtLeaves,
+        siblings,
+        startIndex,
+        firstZeroBits,
+        bitmaps,
+        root,
+        withdrawAmount,
+      } = getWithDrawParams(parsedData.result);
+      proof = {
+        smtLeaf: smtLeaves,
+        siblings: siblings,
+        startIndex: startIndex,
+        firstZeroBits: firstZeroBits,
+        bitmaps: bitmaps,
+        withdrawAmount: withdrawAmount,
+      };
+      profitRoot = root[0];
+      console.log(`use test data: ${parsedData.result}`);
+    }
   });
 
   it('should format JSON data', async () => {
@@ -354,7 +403,7 @@ describe('test ORFeeManager MerkleVerify', () => {
       )).to.revertedWith('WE')
     await gotoDuration(durationStatusEnum['withdraw']);
     const submissions = await orFeeManager.submissions();
-    console.log(submissions);
+    // console.log(submissions);
     await expect(orFeeManager
       .withdrawVerification(
         smtLeaf,
@@ -401,9 +450,9 @@ describe('test ORFeeManager MerkleVerify', () => {
     );
   });
 
-  async function registerSubmitter() {
+  async function registerSubmitter(marginAmount: BigNumber) {
     const submitter = await submitterMock();
-    const marginAmount = BigNumber.from(1000);
+    // const marginAmount = BigNumber.from(1000);
     await orFeeManager.registerSubmitter(marginAmount, submitter);
   }
 
@@ -480,13 +529,6 @@ describe('test ORFeeManager MerkleVerify', () => {
     );
   }
 
-  it('registerSubmitter should succeed', async function () {
-    await registerSubmitter();
-    expect(await orFeeManager.submitter(await submitterMock())).eq(
-      BigNumber.from(1000),
-    );
-  });
-
   async function gotoDuration(
     duration: durationStatusEnum,
   ) {
@@ -500,8 +542,71 @@ describe('test ORFeeManager MerkleVerify', () => {
     }
   }
 
+  it('submitter register statues should manually set by feeManager owner', async function () {
+    const marginAmount = BigNumber.from(1000);
+
+    await registerSubmitter(marginAmount);
+    expect(await orFeeManager.submitter(await submitterMock())).eq(
+      marginAmount,
+    )
+    await gotoDuration(durationStatusEnum['lock']);
+    expect(orFeeManager
+      .submit(
+        0,
+        1,
+        keccak256(orFeeManager.address),
+        keccak256(orFeeManager.address),
+      )
+    ).to.be.satisfy
+    await gotoDuration(durationStatusEnum['withdraw']);
+    await expect(orFeeManager
+      .submit(
+        10000,
+        1,
+        keccak256(orFeeManager.address),
+        keccak256(orFeeManager.address),
+      )
+    ).to.revertedWith('NL2')
+
+    await gotoDuration(durationStatusEnum['withdraw']);
+    await gotoDuration(durationStatusEnum['lock']);
+    await expect(orFeeManager
+      .submit(
+        10000,
+        1,
+        keccak256(orFeeManager.address),
+        keccak256(orFeeManager.address),
+      )
+    ).to.revertedWith('EB')
+    await gotoDuration(durationStatusEnum['withdraw']);
+    await gotoDuration(durationStatusEnum['lock']);
+    await expect(orFeeManager
+      .submit(
+        0,
+        1,
+        keccak256(orFeeManager.address),
+        keccak256(orFeeManager.address),
+      )
+    ).to.revertedWith('BE')
+
+    const unregisterMarginAmount = BigNumber.from(0);
+    await registerSubmitter(unregisterMarginAmount);
+    expect(await orFeeManager.submitter(await submitterMock())).eq(
+      unregisterMarginAmount,
+    )
+    await gotoDuration(durationStatusEnum['lock']);
+    await expect(orFeeManager
+      .submit(
+        0,
+        1,
+        keccak256(orFeeManager.address),
+        keccak256(orFeeManager.address),
+      )
+    ).to.revertedWith('NS')
+  })
+
   it('mine to test should succeed', async function () {
-    await registerSubmitter();
+    await registerSubmitter(BigNumber.from(1000));
     await gotoDuration(durationStatusEnum['lock']);
 
     await submit(profitRoot);
@@ -509,7 +614,7 @@ describe('test ORFeeManager MerkleVerify', () => {
     // const args = events[0]?.args ?? {};
     // console.log(args);
     const submissions = await orFeeManager.submissions();
-    console.log(submissions);
+    // console.log(submissions);
     // const withdrawArg: withdrawVerification = withdrawArgSetting[testRootIndex];
     expect(submissions.profitRoot).eq(profitRoot);
     expect(submissions.stateTransTreeRoot).eq(stateTransTreeRootMock);
