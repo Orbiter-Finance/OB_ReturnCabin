@@ -93,10 +93,56 @@ contract ORFeeManager is IORFeeManager, Ownable, ReentrancyGuard {
             );
 
             if (smtLeaves[i].value.token != address(0)) {
-                IERC20(smtLeaves[i].value.token).safeTransfer(msg.sender, withdrawAmount[i]);
+                //                IERC20(smtLeaves[i].value.token).safeTransfer(msg.sender, withdrawAmount[i]);
             } else {
-                (bool success, ) = payable(msg.sender).call{value: withdrawAmount[i], gas: type(uint256).max}("");
-                require(success, "ETH: IF");
+                //                (bool success, ) = payable(msg.sender).call{value: withdrawAmount[i], gas: type(uint256).max}("");
+                //                require(success, "ETH: IF");
+            }
+            emit Withdraw(
+                msg.sender,
+                smtLeaves[i].value.chainId,
+                smtLeaves[i].value.token,
+                smtLeaves[i].value.debt,
+                withdrawAmount[i]
+            );
+            unchecked {
+                i += 1;
+            }
+        }
+    }
+
+    function withdrawVerification2(
+        MerkleTreeLib.SMTLeaf[] calldata smtLeaves,
+        bytes32[][] calldata siblings,
+        uint8[] calldata startIndex,
+        bytes32[] calldata firstZeroBits,
+        uint256[] calldata bitmaps,
+        uint256[] calldata withdrawAmount
+    ) external nonReentrant {
+        require(durationCheck() == FeeMangerDuration.withdraw, "WE");
+        require(challengeStatus == ChallengeStatus.none, "WDC");
+        require(withdrawLock[msg.sender] < submissions.submitTimestamp, "WL");
+        withdrawLock[msg.sender] = submissions.submitTimestamp;
+        for (uint i = 0; i < smtLeaves.length; ) {
+            require(msg.sender == smtLeaves[i].key.user, "NU");
+            require(withdrawAmount[i] <= smtLeaves[i].value.amount, "UIF");
+            require(
+                keccak256(abi.encode(smtLeaves[i].key)).verify2(
+                    keccak256(abi.encode(smtLeaves[i].value)),
+                    bitmaps[i],
+                    submissions.profitRoot,
+                    firstZeroBits[i],
+                    startIndex[i],
+                    siblings[i]
+                ),
+                "merkle root verify failed"
+            );
+
+            if (smtLeaves[i].value.token != address(0)) {
+                //                IERC20(smtLeaves[i].value.token).safeTransfer(msg.sender, withdrawAmount[i]);
+            } else {
+                //                (bool success, ) = payable(msg.sender).call{value: withdrawAmount[i], gas: type(uint256).max}("");
+                //                require(success, "ETH: IF");
             }
             emit Withdraw(
                 msg.sender,
@@ -121,9 +167,7 @@ contract ORFeeManager is IORFeeManager, Ownable, ReentrancyGuard {
         require(challengeStatus == ChallengeStatus.none, "SDC");
         require(durationCheck() == FeeMangerDuration.lock, "NL2");
         require(endBlock > startBlock, "EB");
-        Submission memory submission = submissions;
-        require(startBlock == submission.endBlock, "BE");
-
+        require(startBlock == submissions.endBlock, "BE");
         submissions = Submission(startBlock, endBlock, uint64(block.timestamp), profitRoot, stateTransTreeRoot);
 
         // challengeStatus = ChallengeStatus.challengeDuration;
