@@ -12,8 +12,6 @@ import {
   ORManager__factory,
   TestToken,
   TestToken__factory,
-  Verifier,
-  Verifier__factory,
 } from '../typechain-types';
 import { log } from 'console';
 
@@ -33,9 +31,9 @@ import {
 
 
 const tokensRequestList: string[] = [
-  // '0x0000000000000000000000000000000000000000',
+  '0x0000000000000000000000000000000000000000',
   '0xa0321efEb50c46C17A7D72A52024eeA7221b215A',
-  // '0xA3a8A6b323E3d38f5284db9337e7c6d74Af3366a',
+  '0xA3a8A6b323E3d38f5284db9337e7c6d74Af3366a',
   '0x29B6a77911c1ce3B3849f28721C65DadA015c768'
 ];
 const userAddress = '0xc3C7A782dda00a8E61Cb9Ba0ea8680bb3f3B9d10';
@@ -185,8 +183,6 @@ describe('Test RPC', () => {
 });
 
 describe('format RPC json data', () => {
-  // let proof: withdrawVerification;
-  // let profitRoot: string;
   let fileData: string;
   let parsedData: any;
   before(async function () {
@@ -235,7 +231,6 @@ describe('test ORFeeManager MerkleVerify', () => {
   let signers: SignerWithAddress[];
   let orManager: ORManager;
   let orFeeManager: ORFeeManager;
-  let verifier: Verifier;
   let DEALER_WITHDRAW_DELAY: number;
   let WITHDRAW_DURATION: number;
   let LOCK_DURATION: number;
@@ -270,7 +265,6 @@ describe('test ORFeeManager MerkleVerify', () => {
     orManager = new ORManager__factory(signers[0]).attach(envORManagerAddress);
     await orManager.deployed();
 
-    verifier = await new Verifier__factory(signers[0]).deploy();
 
     if (process.env['OR_FEE_MANAGER_ADDRESS'] != undefined) {
       orFeeManager = new ORFeeManager__factory(signers[0]).attach(
@@ -293,10 +287,6 @@ describe('test ORFeeManager MerkleVerify', () => {
 
   });
 
-  // it('should format JSON data', async () => {
-  //   // console.log(`proof: ${JSON.stringify(proof)}`);
-  //   console.log(`proof: ${proof}, root: ${profitRoot}`);
-  // });
 
   it("ORFeeManager's functions prefixed with _ should be private", async function () {
     for (const key in orFeeManager.functions) {
@@ -306,7 +296,7 @@ describe('test ORFeeManager MerkleVerify', () => {
 
   it('withdraw during initail state', async function () {
     const smtLeaf = proof.smtLeaf;
-    const siblings = proof.siblings;
+    const siblings = getEncodeSbilings(proof.siblings)
     const bitmaps = proof.bitmaps;
     const withdrawAmount: BigNumber[] = [];
     for (let i = 0; i < smtLeaf.length; i++) {
@@ -328,8 +318,6 @@ describe('test ORFeeManager MerkleVerify', () => {
         },
       )).to.revertedWith('WE')
     await gotoDuration(durationStatusEnum['withdraw']);
-    const submissions = await orFeeManager.submissions();
-    // console.log(submissions);
     await expect(orFeeManager
       .withdrawVerification(
         smtLeaf,
@@ -342,8 +330,6 @@ describe('test ORFeeManager MerkleVerify', () => {
           gasLimit: 10000000,
         },
       )).to.revertedWith('WL')
-
-
   });
 
   it('Function updateDealer should emit events and update dealerInfo', async function () {
@@ -406,56 +392,67 @@ describe('test ORFeeManager MerkleVerify', () => {
   }
 
   async function durationCheck() {
-    const feeMnagerDuration = await orFeeManager.durationCheck();
-    // console.log(
-    //   'Current Duration:',
-    //   durationStatus[feeMnagerDuration],
-    //   ', Current time:',
-    //   await getCurrentTime(),
-    // );
-    return feeMnagerDuration;
+    return await orFeeManager.durationCheck();
   }
 
   async function withdraw(
     smtLeaf: SMTLeaf[],
-    siblings: MergeValue[][],
+    siblings: string[][],
     startIndex: StartIndex,
     firstZeroBits: string[],
     bitmaps: string[],
     withdrawAmount: WithdrawAmount,
     loop: number,
   ) {
-    const tx = await orFeeManager
-      .withdrawVerification(
-        smtLeaf,
-        siblings,
-        startIndex,
-        firstZeroBits,
-        bitmaps,
-        withdrawAmount,
-        {
-          gasLimit: 10000000,
-        },
-      )
-      .then((t) => t.wait());
-    const txrc = await ethers.provider.getTransaction(tx.transactionHash);
-    const inpudataGas = callDataCost(txrc.data);
-    console.log(
-      `loop: [${loop + 1}]-withdraw gas used: ${tx.gasUsed}, input data gas: ${inpudataGas}`,
-    );
+    try {
+      const tx = await orFeeManager
+        .withdrawVerification(
+          smtLeaf,
+          siblings,
+          startIndex,
+          firstZeroBits,
+          bitmaps,
+          withdrawAmount,
+          {
+            gasLimit: 10000000,
+          },
+        )
+        .then((t) => t.wait());
+      const txrc = await ethers.provider.getTransaction(tx.transactionHash);
+      const inpudataGas = callDataCost(txrc.data);
+      console.log(
+        `loop: [${loop + 1}]-withdraw gas used: ${tx.gasUsed}, input data gas: ${inpudataGas}`,
+      );
+    } catch (error) {
+      assert(false, "error")
+    }
   }
 
-  async function gotoDuration(
-    duration: durationStatusEnum,
-  ) {
-    if ((await durationCheck()) != duration) {
-      while (1) {
-        await mineXMinutes(3);
-        if ((await durationCheck()) == duration) {
-          break;
-        }
-      }
+  async function gotoDuration(duration: durationStatusEnum) {
+    while ((await durationCheck()) != duration) {
+      await mineXMinutes(3);
     }
+  }
+  /**
+   * Generates an array of encoded siblings.
+   * @param {MergeValue[][]} siblings - The array of siblings to encode.
+   * @return {string[][]} The array of encoded siblings.
+   */
+  function getEncodeSbilings(siblings: MergeValue[][]): string[][] {
+    return siblings.map((sibling) => {
+      return sibling.map((v) => {
+        if (v.mergeType == 1) {
+          return keccak256(
+            defaultAbiCoder.encode(
+              ['uint8', 'bytes32', 'bytes32', 'uint8'],
+              [2, v.mergeValue.value2, v.mergeValue.value3, v.mergeValue.value1]
+            )
+          );
+        } else {
+          return v.mergeValue.value2 as unknown as string;
+        }
+      });
+    });
   }
 
   it('submitter register statues should manually set by feeManager owner', async function () {
@@ -556,22 +553,10 @@ describe('test ORFeeManager MerkleVerify', () => {
   });
 
   it('verify should succeed', async function () {
-    if ((await durationCheck()) != durationStatusEnum['withdraw']) {
-      while (1) {
-        await mineXMinutes(2);
-        if ((await durationCheck()) == durationStatusEnum['withdraw']) {
-          break;
-        }
-      }
-    }
-
     const smtLeaf = proof.smtLeaf;
-    const siblings = proof.siblings;
+    const siblings = getEncodeSbilings(proof.siblings)
     const bitmaps = proof.bitmaps;
-    const withdrawAmount: BigNumber[] = [];
-    for (let i = 0; i < smtLeaf.length; i++) {
-      withdrawAmount.push(smtLeaf[i].value.amount);
-    }
+    const withdrawAmount: BigNumber[] = smtLeaf.map(item => item.value.amount);
     const startIndex = proof.startIndex;
     const firstZeroBits = proof.firstZeroBits;
 
@@ -735,5 +720,56 @@ describe('test ORFeeManager MerkleVerify', () => {
         },
       )).to.revertedWith("NU")
 
+  });
+
+  it('one leaf verify should succeed', async function () {
+    const fileData: string = fs.readFileSync('test/dataSampleOneLeave.json', 'utf-8');
+    const parsedData: any = JSON.parse(fileData);
+    let oneLeafProof: withdrawVerification;
+    let oneLeafprofitRoot: string;
+    try {
+      const {
+        smtLeaves,
+        siblings,
+        startIndex,
+        firstZeroBits,
+        bitmaps,
+        root,
+        withdrawAmount,
+      } = getWithDrawParams(parsedData.result);
+      oneLeafProof = {
+        smtLeaf: smtLeaves,
+        siblings: siblings,
+        startIndex: startIndex,
+        firstZeroBits: firstZeroBits,
+        bitmaps: bitmaps,
+        withdrawAmount: withdrawAmount,
+      };
+      oneLeafprofitRoot = root[0];
+    } catch (error) {
+      assert(false, "error");
+    }
+    // console.log(oneLeafProof.smtLeaf, oneLeafProof);
+
+    const smtLeaf = oneLeafProof.smtLeaf;
+    const siblings = getEncodeSbilings(oneLeafProof.siblings)
+    const bitmaps = oneLeafProof.bitmaps;
+    const withdrawAmount: BigNumber[] = smtLeaf.map(item => item.value.amount);
+    const startIndex = oneLeafProof.startIndex;
+    const firstZeroBits = oneLeafProof.firstZeroBits;
+
+    await gotoDuration(durationStatusEnum['lock']);
+    await submit(oneLeafprofitRoot);
+    await gotoDuration(durationStatusEnum['withdraw']);
+    expect(bitmaps[0]).eq('0x0000000000000000000000000000000000000000000000000000000000000000');
+    await withdraw(
+      smtLeaf,
+      siblings,
+      startIndex,
+      firstZeroBits,
+      bitmaps,
+      withdrawAmount,
+      999
+    )
   });
 });

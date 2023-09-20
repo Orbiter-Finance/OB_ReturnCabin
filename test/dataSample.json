@@ -7,7 +7,7 @@
       "token": {
         "token": "0x0000000000000000000000000000000000000000",
         "token_chain_id": 5,
-        "balance": "0x9184e72a000",
+        "balance": "0x5af3107a4000",
         "debt": "0x0"
       },
       "siblings": [
@@ -80,28 +80,28 @@
           "Value": "7b560d62383fce9273c88c7b36657710a1266b695e1328fa351c2185a16cfac6"
         },
         {
-          "Value": "a6eaac463c88a11be6d78ddb2475fc5ca72406be924c5589d61430a53746d957"
+          "Value": "93f100961228d4aab30cdea9fa4a013d2aea0e6eaf008ff3cd71321f3784d841"
         },
         {
-          "Value": "c2b5470e2411a4e729e5ae7f79e1dd1876a7c6299e9a0c1265a7ea8a498441a3"
+          "Value": "35c1eb01b83ac22cb79d305824864806aca262674c779d15a758a08d61c28432"
         },
         {
           "Value": "60c63eb00ecd7a7b0e2620313f08d441e4b287dfed5c1dca98fe3040c6951bcc"
         },
         {
-          "Value": "b828acddc53a01a6dc90f3043e5258817f9999ff19e337613b54d98cbd043734"
+          "Value": "77c4a9166d3d1caf3f4852b18c013b1eadf69043f7d4e03927cd2edc2df28c27"
         },
         {
-          "Value": "b56a1be9cd24b5c75df80a76108f8695d969f7fbec77e6df527a50c1b8eee5fe"
+          "Value": "45d8de98fac96b3aa693210ff9ff34c82a4db82f364072dae70b40a41a213f59"
         },
         {
-          "Value": "3ddde1c194ba605a31354699ef78eeca4d067a8c278805c7b7546440e4ca2122"
+          "Value": "a9341046c2c4374f8fffaa63505999ce3bbe2c3a7be9b09007ece94563ea952d"
         },
         {
-          "Value": "184d65a6237327dcbf1ea6aa755f80b2c3c577f142e2c4f19c103840e6847de9"
+          "Value": "e048bf28fb2446ce867d5bfbf6a5cb17839fc53c35e8a566a00c5304390b4cc4"
         }
       ],
-      "root": "223395a9aefe2672468363c3fc05113edfdce890bd3ad7fd465bfd0a2544be31",
+      "root": "599e3f92e3b1b0c91430f40d1bf15c6ed0dedc0add6f7e7366e48f16e1c9eee0",
       "no1_merge_value": [
         232,
         "017d8720d10805934ff46b83efdc1755cc676bcae28a6e965e4a20de4e000000"
@@ -113,7 +113,7 @@
       "token": {
         "token": "0xa0321efeb50c46c17a7d72a52024eea7221b215a",
         "token_chain_id": 5,
-        "balance": "0x6124fee993bc00000",
+        "balance": "0x56bc75e2d63100000",
         "debt": "0x0"
       },
       "siblings": [
@@ -162,7 +162,7 @@
           "Value": "52c00bc047f59927e7d369495ec8217d61413b9cb8e100a771b345e4a44c1c10"
         },
         {
-          "Value": "8a0845f712528d0e413813ec65bbc256a02fded4f9cab9743b15d6748ee23fc5"
+          "Value": "db0cdab34becf2f479060405a5418ab170a2583af1801800940e47be408f0c84"
         },
         {
           "Value": "0c456db91bc00110175b9e78d1b6a3e2599dd30d67c3d615377b29a4c46672e2"
@@ -174,19 +174,19 @@
           "Value": "3d3720ce4187642f86fa67b34ce351186678682c5b56e47fac1f1f93d38aa3ab"
         },
         {
-          "Value": "78b02cb7bd4ab75dcfd3904ca1547543c29a8d6369cec09bc9450d1646c54547"
+          "Value": "24517a3ebf156ab8ae3734091899b11ea03e401dea5f9ccec89f90e82fe76e2d"
         },
         {
-          "Value": "5f135f50432de53baf4dfa04ebc3ccd289ecb3d26a5842649c9e761bd0cc6572"
+          "Value": "6bcf9dc3449d94a5bd3f240b9184d8a5939c2f5bcc4b19c77d7d37fc5182d3a2"
         },
         {
-          "Value": "3ddde1c194ba605a31354699ef78eeca4d067a8c278805c7b7546440e4ca2122"
+          "Value": "a9341046c2c4374f8fffaa63505999ce3bbe2c3a7be9b09007ece94563ea952d"
         },
         {
-          "Value": "184d65a6237327dcbf1ea6aa755f80b2c3c577f142e2c4f19c103840e6847de9"
+          "Value": "e048bf28fb2446ce867d5bfbf6a5cb17839fc53c35e8a566a00c5304390b4cc4"
         }
       ],
-      "root": "223395a9aefe2672468363c3fc05113edfdce890bd3ad7fd465bfd0a2544be31",
+      "root": "599e3f92e3b1b0c91430f40d1bf15c6ed0dedc0add6f7e7366e48f16e1c9eee0",
       "no1_merge_value": [
         235,
         "80a03e756483799ea1217bdc67fd7dc8e514537e8e0bfd8fab730a67fc600000"
@@ -198,8 +198,8 @@
       "token": {
         "token": "0xa3a8a6b323e3d38f5284db9337e7c6d74af3366a",
         "token_chain_id": 5,
-        "balance": "0x0",
-        "debt": "0x8ac7230489e80000"
+        "balance": "0x6c6b935b8bbd40000",
+        "debt": "0x0"
       },
       "siblings": [
         {
@@ -250,7 +250,7 @@
           "Value": "244cd5b8e2e20a998a855fd4841ee365a51e60685502a95887527f9a1a074f4a"
         },
         {
-          "Value": "9fd7a1bf5e6de0005b909e3aac2491daadc77cf50408fd922b6d2db13567b4d2"
+          "Value": "89b8579c0855de380f57688b20b6aee3eaebe38e8143549634301af476e3efb4"
         },
         {
           "Value": "0c456db91bc00110175b9e78d1b6a3e2599dd30d67c3d615377b29a4c46672e2"
@@ -262,19 +262,19 @@
           "Value": "3d3720ce4187642f86fa67b34ce351186678682c5b56e47fac1f1f93d38aa3ab"
         },
         {
-          "Value": "78b02cb7bd4ab75dcfd3904ca1547543c29a8d6369cec09bc9450d1646c54547"
+          "Value": "24517a3ebf156ab8ae3734091899b11ea03e401dea5f9ccec89f90e82fe76e2d"
         },
         {
-          "Value": "5f135f50432de53baf4dfa04ebc3ccd289ecb3d26a5842649c9e761bd0cc6572"
+          "Value": "6bcf9dc3449d94a5bd3f240b9184d8a5939c2f5bcc4b19c77d7d37fc5182d3a2"
         },
         {
-          "Value": "3ddde1c194ba605a31354699ef78eeca4d067a8c278805c7b7546440e4ca2122"
+          "Value": "a9341046c2c4374f8fffaa63505999ce3bbe2c3a7be9b09007ece94563ea952d"
         },
         {
-          "Value": "184d65a6237327dcbf1ea6aa755f80b2c3c577f142e2c4f19c103840e6847de9"
+          "Value": "e048bf28fb2446ce867d5bfbf6a5cb17839fc53c35e8a566a00c5304390b4cc4"
         }
       ],
-      "root": "223395a9aefe2672468363c3fc05113edfdce890bd3ad7fd465bfd0a2544be31",
+      "root": "599e3f92e3b1b0c91430f40d1bf15c6ed0dedc0add6f7e7366e48f16e1c9eee0",
       "no1_merge_value": [
         235,
         "d03042d62a0a0982e837fe349f6df8c997c35767bf0aadb8d98f4bae95a00000"
@@ -286,7 +286,7 @@
       "token": {
         "token": "0x29b6a77911c1ce3b3849f28721c65dada015c768",
         "token_chain_id": 5,
-        "balance": "0x1e8480",
+        "balance": "0x5f5e100",
         "debt": "0x0"
       },
       "siblings": [
@@ -345,28 +345,28 @@
           "Value": "1417b46f8e7435132c7e3039d8d10563002dce67cc4a9503106572992317bbf5"
         },
         {
-          "Value": "b176fb5027e9231c5d61b14467a951e921dc7aca192a97bb5ca0ee79fe39851e"
+          "Value": "6d58044649b941fcb7e3aa6504e9ad749553d3cd652026490cd0cc3c6cc3b04e"
         },
         {
           "Value": "dd5331d1238d85a7028f300fc1011fb3576e8ea54e05e48081337845b3afda00"
         },
         {
-          "Value": "d60f9807fdd18fcdd962f2470e1e1189e85f219120de72037bcd87bedc326b76"
+          "Value": "c8c39a37c410e90858f87371f135d781de09efb91976fe46f04b4b99391679b6"
         },
         {
-          "Value": "b3ae46581ff7e9934650f3c4b3fa5ee408a47a86472a154818124675dfb6577c"
+          "Value": "b11d9b26f659febd67fdb75c4c73c7537a1a6e3ea8b25fb918ec1bed080703c2"
         },
         {
-          "Value": "83645d3b485b0b1d6d6960c935576493701efcbbbef6064877560bde80d93dd4"
+          "Value": "bda503ae7d1e0a35da118e4733392cfa1af4cf58c7a4aafa75154374181746f0"
         },
         {
-          "Value": "5eb92c1ef4d085eafa590f6ee86daed022f95e5d7b1fe04d531c053f288823bc"
+          "Value": "cded15047f32b75ae52a1038653fa99feb909c22cf3bf81f32838d2c3ebdcd99"
         },
         {
-          "Value": "184d65a6237327dcbf1ea6aa755f80b2c3c577f142e2c4f19c103840e6847de9"
+          "Value": "e048bf28fb2446ce867d5bfbf6a5cb17839fc53c35e8a566a00c5304390b4cc4"
         }
       ],
-      "root": "223395a9aefe2672468363c3fc05113edfdce890bd3ad7fd465bfd0a2544be31",
+      "root": "599e3f92e3b1b0c91430f40d1bf15c6ed0dedc0add6f7e7366e48f16e1c9eee0",
       "no1_merge_value": [
         235,
         "9a05d89903c318fd4a9bf0ec37a2341918b5d0783eab9743d65d5ef98e400000"

@@ -1,6 +1,7 @@
 import { ethers } from 'hardhat';
 import {
   OREventBinding__factory,
+  ORFeeManager__factory,
   ORMDCFactory__factory,
   ORMakerDeposit__factory,
   ORManager__factory,
@@ -13,7 +14,8 @@ export async function deploy() {
   const orManager = await new ORManager__factory(deployer).deploy(
     deployer.address,
   );
-  console.log('Address of orManager contract:', orManager.address);
+  console.log(`Address of orManager: ${orManager.address}
+Address of orManagerOwner: ${await orManager.owner()}`);
   await orManager.deployed();
 
   const orMakerDeposit_impl = await new ORMakerDeposit__factory(
@@ -30,7 +32,17 @@ export async function deploy() {
   await orMDCFactory.deployed();
 
   const ebc = await new OREventBinding__factory(deployer).deploy();
-  console.log('Address of Orbiter ebc:', ebc.address);
+  console.log('Address of EBC:', ebc.address);
+
+  const feeManager = await new ORFeeManager__factory(deployer).deploy(
+    deployer.address,
+    orManager.address,
+  );
+  await feeManager.deployed();
+  console.log(
+    `Address of feeManager: ${feeManager.address}
+Address of feeManagerOwner: ${await feeManager.owner()}`,
+  );
 
   return {
     deployer,

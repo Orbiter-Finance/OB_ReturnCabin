@@ -6,30 +6,33 @@ pragma solidity ^0.8.17;
 
 library MerkleTreeLib {
     /***************************** 
-     * Considering that there are three types of sparse Merkel leaf nodes, 
-     * to save gas, we reuse a structure to store these three types
-     * and we use mergeType to declare which type of MergeValue
+     * In SMT verification we use three different MergeValueType
+     * and we define those three types in the enumeration structure below
     mergeType --> 0
-    struct Value1 {              struct MergeValueSingle {
-                                    uint8 value1;
-        bytes32 value;  -------->   bytes32 value2;
-                                    bytes32 value3;
-    }                            }
+    struct type1 {     
+        bytes32 value;            
+    }                   
 
     mergeType --> 1
-    struct Value2 {              struct MergeValueSingle {
-        uint8 zeroCount;  ------->  uint8 value1;
-        bytes32 baseNode; ------->  bytes32 value2;
-        bytes32 zeroBits; ------->  bytes32 value3;
-    }                            }
+    struct type2 {       
+        uint8 zeroCount;  
+        bytes32 baseNode; 
+        bytes32 zeroBits; 
+    }                     
 
     mergeType --> 2
-    struct Value3 {              struct MergeValueSingle {
-        uint8 height;  ------->     uint8 value1;
-        bytes32 key;   ------->     bytes32 value2;
-        bytes32 value; ------->     bytes32 value3;
-    }                           }
+    struct type3 {    
+        uint8 height;  
+        bytes32 key;   
+        bytes32 value; 
+    }                           
     *****************************/
+
+    enum MergeValueType {
+        VALUE,
+        MERGE_WITH_ZERO,
+        SHORT_CUT
+    }
 
     struct SMTLeaf {
         SMTKey key;
@@ -53,17 +56,6 @@ library MerkleTreeLib {
         uint8 value1;
         bytes32 value2;
         bytes32 value3;
-    }
-
-    struct MergeValue {
-        MergeValueType mergeType;
-        MergeValueSingle mergeValue;
-    }
-
-    enum MergeValueType {
-        VALUE,
-        MERGE_WITH_ZERO,
-        SHORT_CUT
     }
 
     uint8 internal constant MERGE_NORMAL = 1;
@@ -117,36 +109,6 @@ library MerkleTreeLib {
         }
     }
 
-    function searchIndex(uint256 bitmap) internal pure returns (uint) {
-        unchecked {
-            for (uint i = 255; i >= 0; i--) {
-                if ((bitmap >> i) & 1 == 1) {
-                    return (255 - i);
-                }
-            }
-            return 0;
-        }
-    }
-
-    function setValue(MergeValue memory value, bytes32 newValue) internal pure {
-        value.mergeType = MergeValueType.VALUE;
-        value.mergeValue.value1 = 0;
-        value.mergeValue.value2 = newValue;
-        value.mergeValue.value3 = bytes32(0);
-    }
-
-    function setMergeWithZero(
-        MergeValue memory value,
-        uint8 ZeroCount,
-        bytes32 BaseNode,
-        bytes32 ZeroBits
-    ) internal pure {
-        value.mergeType = MergeValueType.MERGE_WITH_ZERO;
-        value.mergeValue.value1 = ZeroCount;
-        value.mergeValue.value2 = BaseNode;
-        value.mergeValue.value3 = ZeroBits;
-    }
-
     function isZero(bytes32 value) internal pure returns (bool) {
         bool result;
         assembly {
@@ -155,18 +117,11 @@ library MerkleTreeLib {
         return result;
     }
 
-    function getHash(MerkleTreeLib.MergeValue memory mergeValue) internal pure returns (bytes32 hashValue) {
-        if (mergeValue.mergeType == MerkleTreeLib.MergeValueType.VALUE) {
-            hashValue = mergeValue.mergeValue.value2;
-        } else if (mergeValue.mergeType == MerkleTreeLib.MergeValueType.MERGE_WITH_ZERO) {
-            hashValue = keccak256(
-                abi.encode(
-                    MERGE_ZEROS, //MERGE_ZEROS == 2
-                    mergeValue.mergeValue.value2, // baseNode
-                    mergeValue.mergeValue.value3, // zeroBits
-                    mergeValue.mergeValue.value1 // zeroCount
-                )
-            );
+    function isZero(uint256 value) internal pure returns (bool) {
+        bool result;
+        assembly {
+            result := eq(value, 0)
         }
+        return result;
     }
 }
