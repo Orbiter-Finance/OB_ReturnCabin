@@ -9,7 +9,6 @@ import {IORFeeManager} from "./interface/IORFeeManager.sol";
 import {IORManager} from "./interface/IORManager.sol";
 import {HelperLib} from "./library/HelperLib.sol";
 import {ConstantsLib} from "./library/ConstantsLib.sol";
-import {IVerifier} from "./interface/IVerifier.sol";
 import {MerkleTreeLib} from "./library/MerkleTreeLib.sol";
 import {MerkleTreeVerification} from "./library/ORMerkleTree.sol";
 
@@ -20,13 +19,11 @@ contract ORFeeManager is IORFeeManager, Ownable, ReentrancyGuard {
 
     // Ownable._owner use a slot
     IORManager private immutable _manager;
-    IVerifier private immutable verifier;
     ChallengeStatus public challengeStatus;
     Submission public submissions;
 
     mapping(address => DealerInfo) private _dealers;
     mapping(address => uint) public submitter;
-    // mapping(bytes32 => bool) public withdrawLock;
     mapping(address => uint64) public withdrawLock;
 
     modifier isChanllengerQualified() {
@@ -56,13 +53,12 @@ contract ORFeeManager is IORFeeManager, Ownable, ReentrancyGuard {
         emit ETHDeposit(msg.sender, msg.value);
     }
 
-    constructor(address owner_, address manager_, IVerifier _verifier) {
+    constructor(address owner_, address manager_) {
         require(owner_ != address(0), "OZ");
         require(manager_ != address(0), "MZ");
 
         _transferOwnership(owner_);
         _manager = IORManager(manager_);
-        verifier = _verifier;
     }
 
     function withdrawVerification(

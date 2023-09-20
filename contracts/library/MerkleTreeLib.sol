@@ -130,7 +130,9 @@ library MerkleTreeLib {
 
     function setValue(MergeValue memory value, bytes32 newValue) internal pure {
         value.mergeType = MergeValueType.VALUE;
+        value.mergeValue.value1 = 0;
         value.mergeValue.value2 = newValue;
+        value.mergeValue.value3 = bytes32(0);
     }
 
     function setMergeWithZero(

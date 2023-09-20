@@ -39,7 +39,7 @@ interface IORFeeManager {
         bytes32 indexed profitRoot,
         bytes32 indexed stateTransTreeRoot
     );
-    event Withdraw(address indexed user, uint64 chainId, address indexed token, uint indexed debt, uint amount);
+    event Withdraw(address indexed user, uint64 chainId, address token, uint debt, uint amount);
     event ETHDeposit(address indexed sender, uint amount);
 
     function registerSubmitter(uint marginAmount, address submiter) external;

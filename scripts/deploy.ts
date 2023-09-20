@@ -1,5 +1,6 @@
 import { ethers } from 'hardhat';
 import {
+  OREventBinding__factory,
   ORMDCFactory__factory,
   ORMakerDeposit__factory,
   ORManager__factory,
@@ -27,6 +28,9 @@ export async function deploy() {
   );
   console.log('Address of orMDCFactory:', orMDCFactory.address);
   await orMDCFactory.deployed();
+
+  const ebc = await new OREventBinding__factory(deployer).deploy();
+  console.log('Address of Orbiter ebc:', ebc.address);
 
   return {
     deployer,

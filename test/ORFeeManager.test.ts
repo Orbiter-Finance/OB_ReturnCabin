@@ -9,8 +9,6 @@ import {
   ORFeeManager__factory,
   ORManager,
   ORManager__factory,
-  Verifier,
-  Verifier__factory,
 } from '../typechain-types';
 import { log } from 'console';
 import {
@@ -24,21 +22,13 @@ describe('ORFeeManger', () => {
   let orManager: ORManager;
   let orFeeManager: ORFeeManager;
   let dealerSinger: SignerWithAddress;
-  let verifier: Verifier;
   let feeMangerOwner: string;
-  let DEALER_WITHDRAW_DELAY: number;
-  let WITHDRAW_DURATION: number;
-  let LOCK_DURATION: number;
-  const secondsInMinute = 60;
 
   before(async function () {
     initTestToken();
     signers = await ethers.getSigners();
     dealerSinger = signers[2];
     feeMangerOwner = signers[0].address;
-    DEALER_WITHDRAW_DELAY = 3600;
-    WITHDRAW_DURATION = 3360;
-    LOCK_DURATION = 240;
 
     const envORManagerAddress = process.env['OR_MANAGER_ADDRESS'];
     assert(
@@ -50,8 +40,6 @@ describe('ORFeeManger', () => {
     console.log('connected to orManager contract:', orManager.address);
     // await orManager.deployed();
 
-    verifier = await new Verifier__factory(signers[0]).deploy();
-
     if (process.env['OR_FEE_MANAGER_ADDRESS'] != undefined) {
       orFeeManager = new ORFeeManager__factory(signers[1]).attach(
         process.env['OR_FEE_MANAGER_ADDRESS'],
@@ -60,7 +48,14 @@ describe('ORFeeManger', () => {
       orFeeManager = await new ORFeeManager__factory(signers[0]).deploy(
         signers[0].address,
         orManager.address,
-        verifier.address,
+      );
+
+      console.log(
+        'constructor data of FeeManager.sol',
+        defaultAbiCoder.encode(
+          ['address', 'address'],
+          [signers[0].address, orManager.address],
+        ),
       );
       process.env['OR_FEE_MANAGER_ADDRESS'] = orFeeManager.address;
     }
@@ -68,16 +63,6 @@ describe('ORFeeManger', () => {
     console.log('Address of orFeeManager:', orFeeManager.address);
     // await orFeeManager.deployed();
   });
-
-  // it("transferOwnership should succeed", async function () {
-  //   await orFeeManager
-  //     .connect(signers[1])
-  //     .transferOwnership(feeMangerOwner);
-
-  //   const newOwner = await orFeeManager.owner();
-  //   expect(newOwner).eq(feeMangerOwner);
-
-  // });
 
   it("ORFeeManager's functions prefixed with _ should be private", async function () {
     for (const key in orFeeManager.functions) {
@@ -119,12 +104,16 @@ describe('ORFeeManger', () => {
     if (process.env['REGISTER_SUBMITTER'] != undefined) {
       const submitter = process.env['REGISTER_SUBMITTER'];
       const marginAmount = BigNumber.from(1000);
-      await orFeeManager.registerSubmitter(marginAmount, submitter);
+      await orFeeManager
+        .registerSubmitter(marginAmount, submitter)
+        .then((t) => t.wait());
       console.log('register submitter:', submitter);
     } else {
       const submitter = await submitterMock();
       const marginAmount = BigNumber.from(1000);
-      await orFeeManager.registerSubmitter(marginAmount, submitter);
+      await orFeeManager
+        .registerSubmitter(marginAmount, submitter)
+        .then((t) => t.wait());
       console.log('register submitter:', submitter);
     }
   }

@@ -31,13 +31,13 @@ library MerkleTreeVerification {
             current_v.mergeValue.value2 = keccak256(abi.encode(0, key.parentPath(0), v));
             current_v.mergeValue.value3 = firstZeroBits;
         }
+
         for (uint i = startIndex; i <= MerkleTreeLib.MAX_TREE_LEVEL; ) {
             unchecked {
                 iReverse = MerkleTreeLib.MAX_TREE_LEVEL - i;
             }
-
+            parent_path = current_path.parentPath(i);
             if (leaves_bitmap.getBit(iReverse)) {
-                parent_path = current_path.parentPath(i);
                 if (current_path.isRight(iReverse)) {
                     merge(uint8(i), parent_path, siblings[n], current_v, current_v);
                 } else {
@@ -119,12 +119,10 @@ library MerkleTreeVerification {
         bool setBit
     ) public pure {
         if (value.mergeType == MerkleTreeLib.MergeValueType.VALUE) {
-            // console.log("mergeWithZero: VALUE, %s", height);
             bytes32 zeroBits = setBit ? bytes32(0).setBit(MerkleTreeLib.MAX_TREE_LEVEL - height) : bytes32(0);
             bytes32 baseNode = hashBaseNode(height, nodeKey, value.mergeValue.value2);
             v.setMergeWithZero(1, baseNode, zeroBits);
         } else if (value.mergeType == MerkleTreeLib.MergeValueType.MERGE_WITH_ZERO) {
-            // console.log("mergeWithZero: MERGE_WITH_ZERO, %s", height);
             bytes32 zeroBits = setBit
                 ? value.mergeValue.value3.setBit(MerkleTreeLib.MAX_TREE_LEVEL - height)
                 : value.mergeValue.value3;

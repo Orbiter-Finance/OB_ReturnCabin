@@ -33,10 +33,15 @@ import {
 
 
 const tokensRequestList: string[] = [
+  // '0x0000000000000000000000000000000000000000',
   '0xa0321efEb50c46C17A7D72A52024eeA7221b215A',
-  '0xA3a8A6b323E3d38f5284db9337e7c6d74Af3366a',
-  '0x29B6a77911c1ce3B3849f28721C65DadA015c768'];
+  // '0xA3a8A6b323E3d38f5284db9337e7c6d74Af3366a',
+  '0x29B6a77911c1ce3B3849f28721C65DadA015c768'
+];
 const userAddress = '0xc3C7A782dda00a8E61Cb9Ba0ea8680bb3f3B9d10';
+
+let proof: withdrawVerification;
+let profitRoot: string;
 
 enum MergeValueType {
   VALUE = 0,
@@ -44,10 +49,6 @@ enum MergeValueType {
   SHORT_CUT,
 }
 
-// interface ISiblings {
-//   mergeType: number;
-//   mergeValue: object;
-// }
 type Bitmaps = string[];
 
 type WithdrawAmount = BigNumber[];
@@ -183,73 +184,58 @@ describe('Test RPC', () => {
   });
 });
 
-describe.skip('format RPC json data', () => {
-  let proof: withdrawVerification;
-  let profitRoot: string;
+describe('format RPC json data', () => {
+  // let proof: withdrawVerification;
+  // let profitRoot: string;
+  let fileData: string;
+  let parsedData: any;
   before(async function () {
-    const fileData = fs.readFileSync('test/RPC_DATA/response.json', 'utf-8');
-    const parsedData = JSON.parse(fileData);
-    console.log(parsedData.result);
-    try {
-      const {
-        smtLeaves,
-        siblings,
-        startIndex,
-        firstZeroBits,
-        bitmaps,
-        root,
-        withdrawAmount,
-      } = getWithDrawParams(parsedData.result);
-      proof = {
-        smtLeaf: smtLeaves,
-        siblings: siblings,
-        startIndex: startIndex,
-        firstZeroBits: firstZeroBits,
-        bitmaps: bitmaps,
-        withdrawAmount: withdrawAmount,
-      };
-      profitRoot = root[0];
-    } catch (err) {
-      const fileData = fs.readFileSync('test/RPC_DATA/test.json', 'utf-8');
-      const parsedData = JSON.parse(fileData);
-      console.log(`use test data: ${parsedData.result}`);
-      const {
-        smtLeaves,
-        siblings,
-        startIndex,
-        firstZeroBits,
-        bitmaps,
-        root,
-        withdrawAmount,
-      } = getWithDrawParams(parsedData.result);
-      proof = {
-        smtLeaf: smtLeaves,
-        siblings: siblings,
-        startIndex: startIndex,
-        firstZeroBits: firstZeroBits,
-        bitmaps: bitmaps,
-        withdrawAmount: withdrawAmount,
-      };
-      profitRoot = root[0];
+    if (process.env['SUBMITTER_RPC'] != undefined) {
+      fileData = fs.readFileSync('test/RPC_DATA/response.json', 'utf-8');
+      parsedData = JSON.parse(fileData);
+    } else {
+      fileData = fs.readFileSync('test/dataSample.json', 'utf-8');
+      parsedData = JSON.parse(fileData);
     }
 
-
+    try {
+      console.log(parsedData.result);
+      const {
+        smtLeaves,
+        siblings,
+        startIndex,
+        firstZeroBits,
+        bitmaps,
+        root,
+        withdrawAmount,
+      } = getWithDrawParams(parsedData.result);
+      proof = {
+        smtLeaf: smtLeaves,
+        siblings: siblings,
+        startIndex: startIndex,
+        firstZeroBits: firstZeroBits,
+        bitmaps: bitmaps,
+        withdrawAmount: withdrawAmount,
+      };
+      profitRoot = root[0];
+    } catch (error) {
+      assert(false, "error");
+    }
 
   });
 
   it('should format JSON data', async () => {
-    // console.log(`proof: ${JSON.stringify(proof)}`);
-    console.log(proof, profitRoot);
+    console.log(`proof: ${proof}, root: ${profitRoot}`);
   });
+
 });
+
 
 describe('test ORFeeManager MerkleVerify', () => {
   let signers: SignerWithAddress[];
   let orManager: ORManager;
   let orFeeManager: ORFeeManager;
-  // let dealerSinger: SignerWithAddress;
   let verifier: Verifier;
-  // let feeMangerOwner: string;
   let DEALER_WITHDRAW_DELAY: number;
   let WITHDRAW_DURATION: number;
   let LOCK_DURATION: number;
@@ -257,19 +243,13 @@ describe('test ORFeeManager MerkleVerify', () => {
   let challengeTime: number;
   let withdrawTime: number;
   let lockTime: number;
-  // let testRootIndex: number;
-  let proof: withdrawVerification;
-  let profitRoot: string;
 
   before(async function () {
     initTestToken();
     signers = await ethers.getSigners();
-    // dealerSinger = signers[2];
-    // feeMangerOwner = signers[0].address;
     DEALER_WITHDRAW_DELAY = 3600;
     WITHDRAW_DURATION = 3360;
     LOCK_DURATION = 240;
-    // testRootIndex = 4;
 
     challengeTime = DEALER_WITHDRAW_DELAY / secondsInMinute;
     withdrawTime = WITHDRAW_DURATION / secondsInMinute;
@@ -278,19 +258,13 @@ describe('test ORFeeManager MerkleVerify', () => {
     const envORManagerAddress = process.env['OR_MANAGER_ADDRESS'];
     assert(
       !!envORManagerAddress,
-      'Env miss [OR_MANAGER_ADDRESS]. You may need to test ORManager.test.ts first. Example: npx hardhat test test/ORManager.test test/ORFeeManager.test.ts',
-    );
-
-    const envSubmitterRpc = process.env['SUBMITTER_RPC'];
-    assert(
-      !!envSubmitterRpc,
-      'Env miss [SUBMITTER_RPC]. You may need to add a RPC node in .env file. Example: SUBMITTER_RPC= http://127.0.0.1:8545',
+      'Env miss [OR_MANAGER_ADDRESS]. You may need to test ORManager.test.ts first. Example: npx hardhat test --bail test/ORManager.test test/ORFeeManager.test.ts test/ORMDCFactory.test.ts test/ORMakerDeposit.test.ts test/ORFeeManagerMerkleVerify.test.ts',
     );
 
     const envOFeeRManagerAddress = process.env['OR_FEE_MANAGER_ADDRESS'];
     assert(
       !!envOFeeRManagerAddress,
-      'Env miss [OR_FEE_MANAGER_ADDRESS]. You may need to test ORManager.test.ts first. Example: npx hardhat test --bail test/ORManager.test test/ORFeeManager.test test/ORFeeManagerMerkleVerify.test.ts',
+      'Env miss [OR_FEE_MANAGER_ADDRESS]. You may need to test ORManager.test.ts first. Example: npx hardhat test --bail test/ORManager.test test/ORFeeManager.test.ts test/ORMDCFactory.test.ts test/ORMakerDeposit.test.ts test/ORFeeManagerMerkleVerify.test.ts',
     );
 
     orManager = new ORManager__factory(signers[0]).attach(envORManagerAddress);
@@ -306,8 +280,7 @@ describe('test ORFeeManager MerkleVerify', () => {
     } else {
       orFeeManager = await new ORFeeManager__factory(signers[0]).deploy(
         signers[1].address,
-        orManager.address,
-        verifier.address,
+        orManager.address
       );
       console.log('Address of orFeeManager:', orFeeManager.address);
       await orFeeManager.deployed();
@@ -318,59 +291,12 @@ describe('test ORFeeManager MerkleVerify', () => {
     ).deploy('TestToken', 'OTT');
     console.log('Address of testToken:', testToken.address);
 
-    const fileData = fs.readFileSync('test/RPC_DATA/response.json', 'utf-8');
-    const parsedData = JSON.parse(fileData);
-
-    try {
-      const {
-        smtLeaves,
-        siblings,
-        startIndex,
-        firstZeroBits,
-        bitmaps,
-        root,
-        withdrawAmount,
-      } = getWithDrawParams(parsedData.result);
-      proof = {
-        smtLeaf: smtLeaves,
-        siblings: siblings,
-        startIndex: startIndex,
-        firstZeroBits: firstZeroBits,
-        bitmaps: bitmaps,
-        withdrawAmount: withdrawAmount,
-      };
-      profitRoot = root[0];
-      console.log(`use RPC data: ${parsedData.result}`);
-    } catch (err) {
-      const fileData = fs.readFileSync('test/RPC_DATA/test.json', 'utf-8');
-      const parsedData = JSON.parse(fileData);
-
-      const {
-        smtLeaves,
-        siblings,
-        startIndex,
-        firstZeroBits,
-        bitmaps,
-        root,
-        withdrawAmount,
-      } = getWithDrawParams(parsedData.result);
-      proof = {
-        smtLeaf: smtLeaves,
-        siblings: siblings,
-        startIndex: startIndex,
-        firstZeroBits: firstZeroBits,
-        bitmaps: bitmaps,
-        withdrawAmount: withdrawAmount,
-      };
-      profitRoot = root[0];
-      console.log(`use test data: ${parsedData.result}`);
-    }
   });
 
-  it('should format JSON data', async () => {
-    // console.log(`proof: ${JSON.stringify(proof)}`);
-    console.log(proof);
-  });
+  // it('should format JSON data', async () => {
+  //   // console.log(`proof: ${JSON.stringify(proof)}`);
+  //   console.log(`proof: ${proof}, root: ${profitRoot}`);
+  // });
 
   it("ORFeeManager's functions prefixed with _ should be private", async function () {
     for (const key in orFeeManager.functions) {
@@ -452,7 +378,6 @@ describe('test ORFeeManager MerkleVerify', () => {
 
   async function registerSubmitter(marginAmount: BigNumber) {
     const submitter = await submitterMock();
-    // const marginAmount = BigNumber.from(1000);
     await orFeeManager.registerSubmitter(marginAmount, submitter);
   }
 
@@ -473,12 +398,6 @@ describe('test ORFeeManager MerkleVerify', () => {
       .then((t) => t.wait());
     return events;
   }
-
-  // const durationStatus: { [key: number]: string } = {
-  //   0: 'lock',
-  //   1: 'challenge',
-  //   2: 'withdraw',
-  // };
 
   enum durationStatusEnum {
     lock = 0,
@@ -519,9 +438,6 @@ describe('test ORFeeManager MerkleVerify', () => {
         },
       )
       .then((t) => t.wait());
-    // const gasPrice = 20;
-    // const ethused = tx.gasUsed.mul(gasPrice);
-    // const ethAmount = ethers.utils.formatEther(ethused);
     const txrc = await ethers.provider.getTransaction(tx.transactionHash);
     const inpudataGas = callDataCost(txrc.data);
     console.log(
@@ -610,12 +526,7 @@ describe('test ORFeeManager MerkleVerify', () => {
     await gotoDuration(durationStatusEnum['lock']);
 
     await submit(profitRoot);
-    // const events = receipt.events ?? [];
-    // const args = events[0]?.args ?? {};
-    // console.log(args);
     const submissions = await orFeeManager.submissions();
-    // console.log(submissions);
-    // const withdrawArg: withdrawVerification = withdrawArgSetting[testRootIndex];
     expect(submissions.profitRoot).eq(profitRoot);
     expect(submissions.stateTransTreeRoot).eq(stateTransTreeRootMock);
 
@@ -665,22 +576,27 @@ describe('test ORFeeManager MerkleVerify', () => {
     const firstZeroBits = proof.firstZeroBits;
 
     await gotoDuration(durationStatusEnum['withdraw']);
-    console.log("estimateGas-withdrawVerification =",
-      await orFeeManager
-        .estimateGas
-        .withdrawVerification(
-          smtLeaf,
-          siblings,
-          startIndex,
-          firstZeroBits,
-          bitmaps,
-          withdrawAmount,
-          {
-            gasLimit: 10000000,
-          },
-        ))
+    try {
+      console.log("estimateGas-withdrawVerification =",
+        await orFeeManager
+          .estimateGas
+          .withdrawVerification(
+            smtLeaf,
+            siblings,
+            startIndex,
+            firstZeroBits,
+            bitmaps,
+            withdrawAmount,
+            {
+              gasLimit: 10000000,
+            },
+          ))
+    } catch (error: any) {
+      console.log(`error: ${error.message}`)
+      assert(false, "error")
+    }
 
-    // loop to test
+
     for (let i = 0; i < 5; i++) {
       await gotoDuration(durationStatusEnum['lock']);
       await expect(orFeeManager
