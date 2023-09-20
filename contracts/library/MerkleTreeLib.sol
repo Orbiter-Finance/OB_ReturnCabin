@@ -71,7 +71,7 @@ library MerkleTreeLib {
     uint8 internal constant MAX_TREE_LEVEL = 255;
 
     function isRight(bytes32 _hash, uint height) internal pure returns (bool) {
-        return getBit(uint256(_hash), height);
+        return getBit(_hash, height);
     }
 
     function setBit(bytes32 bitmap, uint index) internal pure returns (bytes32) {
