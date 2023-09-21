@@ -21,7 +21,7 @@ export const chainIdsMock = [
   5, // goerli
   420, // optimisim goerli testnet
   421613, // arbitrum goerli testnet
-  // 280,    // zk-sync Era testnet
+  280, // zk-sync Era testnet
 ];
 
 export const chainIdsMockMainnetToken = [
@@ -32,7 +32,7 @@ export const chainIdsMockMainnetToken = [
   '0x0000000000000000000000000000000000000000', // goerli
   '0x0000000000000000000000000000000000000000', // optimisim goerli testnet
   '0x0000000000000000000000000000000000000000', // arbitrum goerli testnet
-  // 280,    // zk-sync Era testnet
+  '0x0000000000000000000000000000000000000000', // 280,    // zk-sync Era testnet
 ];
 
 // struct SubmitInfo
@@ -1274,6 +1274,12 @@ export function initTestToken() {
     });
   }
 
+  if (process.env['ERA_NATIVE_TOKEN'] != undefined) {
+    process.env['ERA_NATIVE_TOKEN'].split(',').forEach((token) => {
+      eraTokens.add(token);
+    });
+  }
+
   if (process.env['MAINNET_TEST_USDT'] != undefined) {
     process.env['MAINNET_TEST_USDT'].split(',').forEach((token) => {
       usdtTokens.add(token);
@@ -1299,6 +1305,15 @@ export function initTestToken() {
     });
   }
 
+  if (process.env['ERA_TEST_USDT'] != undefined) {
+    process.env['ERA_TEST_USDT'].split(',').forEach((token) => {
+      usdtTokens.add(token);
+    });
+    process.env['ERA_TEST_USDT'].split(',').forEach((token) => {
+      eraTokens.add(token);
+    });
+  }
+
   if (process.env['MAINNET_TEST_USDC'] != undefined) {
     process.env['MAINNET_TEST_USDC'].split(',').forEach((token) => {
       usdcTokens.add(token);
@@ -1321,6 +1336,15 @@ export function initTestToken() {
     });
     process.env['OPTIMISM_TEST_USDC'].split(',').forEach((token) => {
       optimismTokens.add(token);
+    });
+  }
+
+  if (process.env['ERA_TEST_USDC'] != undefined) {
+    process.env['ERA_TEST_USDC'].split(',').forEach((token) => {
+      usdcTokens.add(token);
+    });
+    process.env['ERA_TEST_USDC'].split(',').forEach((token) => {
+      eraTokens.add(token);
     });
   }
 
@@ -1351,6 +1375,15 @@ export function initTestToken() {
     });
   }
 
+  if (process.env['ERA_TEST_DAI'] != undefined) {
+    process.env['ERA_TEST_DAI'].split(',').forEach((token) => {
+      daiTokens.add(token);
+    });
+    process.env['ERA_TEST_DAI'].split(',').forEach((token) => {
+      eraTokens.add(token);
+    });
+  }
+
   testToken = {
     USDT_TOKEN: Array.from(usdtTokens),
     UDSC_TOKEN: Array.from(usdcTokens),
@@ -1358,7 +1391,7 @@ export function initTestToken() {
     MAINNET_TOKEN: Array.from(new Set([...mainnetTokens])),
     ARBITRUM_TOKEN: Array.from(new Set([...arbitrumTokens])),
     OPTIMISM_TOKEN: Array.from(new Set([...optimismTokens])),
-    ERA_TOKRN: [],
+    ERA_TOKRN: Array.from(new Set([...eraTokens])),
   };
 
   // console.log(testToken);
@@ -1381,6 +1414,11 @@ export function calculateMainnetToken(
         return testToken.MAINNET_TOKEN[
           testToken.OPTIMISM_TOKEN.indexOf(L2token)
         ];
+      }
+    }
+    case 280: {
+      if (testToken.ERA_TOKRN.indexOf(L2token) != -1) {
+        return testToken.MAINNET_TOKEN[testToken.ERA_TOKRN.indexOf(L2token)];
       }
     }
     case 5: {
@@ -1410,6 +1448,13 @@ export function chainIDgetTokenSequence(chainId: number, idx: number) {
     case 420: {
       if (idx < testToken.OPTIMISM_TOKEN.length) {
         return testToken.OPTIMISM_TOKEN[idx];
+      } else {
+        return ethers.constants.AddressZero;
+      }
+    }
+    case 280: {
+      if (idx < testToken.ERA_TOKRN.length) {
+        return testToken.ERA_TOKRN[idx];
       } else {
         return ethers.constants.AddressZero;
       }

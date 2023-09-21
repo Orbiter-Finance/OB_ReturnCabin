@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import { ethers } from 'hardhat';
 import {
   OREventBinding__factory,
@@ -14,8 +15,9 @@ export async function deploy() {
   const orManager = await new ORManager__factory(deployer).deploy(
     deployer.address,
   );
-  console.log(`Address of orManager: ${orManager.address}
-Address of orManagerOwner: ${await orManager.owner()}`);
+  console.log(
+    `Address of orManager: ${orManager.address}, deployed blockNumber: ${await ethers.provider.getBlockNumber()} `,
+  );
   await orManager.deployed();
 
   const orMakerDeposit_impl = await new ORMakerDeposit__factory(
@@ -28,11 +30,8 @@ Address of orManagerOwner: ${await orManager.owner()}`);
     orManager.address,
     orMakerDeposit_impl.address,
   );
-  console.log('Address of orMDCFactory:', orMDCFactory.address);
+  console.log(`Address of orMDCFactory: ${orMDCFactory.address}, deployed blockNumber: ${await ethers.provider.getBlockNumber()} `);
   await orMDCFactory.deployed();
-
-  const ebc = await new OREventBinding__factory(deployer).deploy();
-  console.log('Address of EBC:', ebc.address);
 
   const feeManager = await new ORFeeManager__factory(deployer).deploy(
     deployer.address,
@@ -40,9 +39,12 @@ Address of orManagerOwner: ${await orManager.owner()}`);
   );
   await feeManager.deployed();
   console.log(
-    `Address of feeManager: ${feeManager.address}
-Address of feeManagerOwner: ${await feeManager.owner()}`,
+    `Address of feeManager: ${feeManager.address}, deployed blockNumber: ${await ethers.provider.getBlockNumber()} 
+Address of feeManagerOwner: ${await feeManager.owner()} `,
   );
+
+  const ebc = await new OREventBinding__factory(deployer).deploy();
+  console.log('Address of EBC:', ebc.address);
 
   return {
     deployer,

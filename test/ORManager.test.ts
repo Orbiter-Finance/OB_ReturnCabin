@@ -15,7 +15,7 @@ import {
   embedVersionIncreaseAndEnableTime,
   getMinEnableTime,
 } from './utils.test';
-import { BigNumberish, BigNumber, constants, Wallet } from 'ethers';
+import { BigNumber, constants, Wallet } from 'ethers';
 import lodash from 'lodash';
 import { BridgeLib } from '../typechain-types/contracts/ORManager';
 import { defaultsEbcs, defaultChainInfo } from './defaults';
@@ -30,14 +30,20 @@ describe('Test ORManager', () => {
   });
 
   it('Owner should be able to be set when deploying the contract', async function () {
-    orManager = await new ORManager__factory(signers[0]).deploy(
-      signers[0].address,
-    );
-    console.log('Address of orManager contract:', orManager.address);
-    await orManager.deployed();
-
-    // set environment variables
-    process.env['OR_MANAGER_ADDRESS'] = orManager.address;
+    if (process.env['OR_MANAGER_ADDRESS'] == undefined) {
+      orManager = await new ORManager__factory(signers[0]).deploy(
+        signers[0].address,
+      );
+      console.log('Address of orManager contract:', orManager.address);
+      await orManager.deployed();
+      // set environment variables
+      process.env['OR_MANAGER_ADDRESS'] = orManager.address;
+    } else {
+      orManager = new ORManager__factory(signers[0]).attach(
+        process.env['OR_MANAGER_ADDRESS'],
+      );
+      console.log('connect to orManager contract:', orManager.address);
+    }
 
     const owner = await orManager.owner();
     console.log('Address of orManager owner:', owner);
@@ -50,24 +56,11 @@ describe('Test ORManager', () => {
     }
   });
 
-  // it('Function transferOwnership should succeed', async function () {
-  //   await testRevertedOwner(orManager.transferOwnership(signers[0].address));
-
-  //   await orManager
-  //     .connect(signers[1])
-  //     .transferOwnership(signers[0].address)
-  //     .then((t) => t.wait());
-  // });
-
   it(
     'Function registerChains should succeed',
     embedVersionIncreaseAndEnableTime(
       () => orManager.getVersionAndEnableTime().then((r) => r.version),
       async function () {
-        // const chains = [
-        //   lodash.cloneDeepWith(defaultChainInfo),
-        //   lodash.cloneDeepWith(defaultChainInfo),
-        // ];
         const chains = defaultChainInfoArray.map((chainInfo) => {
           return lodash.cloneDeepWith(chainInfo);
         });
@@ -163,15 +156,6 @@ describe('Test ORManager', () => {
           }
         }
 
-        console.log(
-          'current chainIds:',
-          chainIds.map((chainId) => chainId.toString()),
-          'register tokens:',
-          tokens.map((token) => BigNumber.from(token.token).toHexString()),
-          'mainnetTokens:',
-          tokens.map((token) => token.mainnetToken),
-        );
-
         const { events } = await orManager
           .updateChainTokens(getMinEnableTime(), chainIds, tokens)
           .then((t) => t.wait());
@@ -182,6 +166,15 @@ describe('Test ORManager', () => {
             tokens[i],
           );
         });
+
+        console.log(
+          'current chainIds:',
+          chainIds.map((chainId) => chainId.toString()),
+          'register tokens:',
+          tokens.map((token) => BigNumber.from(token.token).toHexString()),
+          'mainnetTokens:',
+          tokens.map((token) => token.mainnetToken),
+        );
 
         const latestIndex = tokens.length - 1;
         const tokenInfo = await orManager.getChainTokenInfo(

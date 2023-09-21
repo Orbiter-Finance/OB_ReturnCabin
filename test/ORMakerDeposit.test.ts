@@ -124,9 +124,9 @@ describe('ORMakerDeposit', () => {
         const chainIds: number[] = chainIdsMock;
         const block = await ethers.provider.getBlock('latest');
 
-        console.log(
-          `mdcDealers: ${mdcDealers}, mdcEbcs: ${mdcEbcs}, mdcChainIds: ${chainIds}`,
-        );
+        // console.log(
+        //   `mdcDealers: ${mdcDealers}, mdcEbcs: ${mdcEbcs}, mdcChainIds: ${chainIds}`,
+        // );
 
         const columnArrayHash = utils.keccak256(
           utils.solidityPack(

@@ -463,7 +463,7 @@ describe('test ORFeeManager MerkleVerify', () => {
       marginAmount,
     )
     await gotoDuration(durationStatusEnum['lock']);
-    expect(orFeeManager
+    expect(await orFeeManager
       .submit(
         0,
         1,
@@ -677,7 +677,7 @@ describe('test ORFeeManager MerkleVerify', () => {
     await gotoDuration(durationStatusEnum['lock']);
     await submit(profitRoot);
     await gotoDuration(durationStatusEnum['withdraw']);
-    expect(orFeeManager
+    expect(await orFeeManager
       .withdrawVerification(
         smtLeaf,
         siblings,
@@ -723,7 +723,7 @@ describe('test ORFeeManager MerkleVerify', () => {
   });
 
   it('one leaf verify should succeed', async function () {
-    const fileData: string = fs.readFileSync('test/dataSampleOneLeave.json', 'utf-8');
+    const fileData = '{"jsonrpc":"2.0","result":[{"path":"14953aa729bdd6f80d68dba16f957f915f406553365662cfac4e07b9c3de4b4a","leave_bitmap":"0000000000000000000000000000000000000000000000000000000000000000","token":{"token":"0x0000000000000000000000000000000000000022","token_chain_id":1,"balance":"0xc8","debt":"0xc8"},"siblings":[],"root":"85bcb37624ff5f2c7706f9e56dd23dba5f5faf27083fdd5f5387fff4fbcc3932","no1_merge_value":[255,"0000000000000000000000000000000000000000000000000000000000000000"]}],"id":1}'
     const parsedData: any = JSON.parse(fileData);
     let oneLeafProof: withdrawVerification;
     let oneLeafprofitRoot: string;
@@ -749,7 +749,6 @@ describe('test ORFeeManager MerkleVerify', () => {
     } catch (error) {
       assert(false, "error");
     }
-    // console.log(oneLeafProof.smtLeaf, oneLeafProof);
 
     const smtLeaf = oneLeafProof.smtLeaf;
     const siblings = getEncodeSbilings(oneLeafProof.siblings)
@@ -769,7 +768,21 @@ describe('test ORFeeManager MerkleVerify', () => {
       firstZeroBits,
       bitmaps,
       withdrawAmount,
-      999
+      998
     )
+
+    await expect(orFeeManager
+      .withdrawVerification(
+        smtLeaf,
+        siblings,
+        startIndex,
+        firstZeroBits,
+        bitmaps,
+        withdrawAmount,
+        {
+          gasLimit: 10000000,
+        },
+      )).to.revertedWith('WL')
+
   });
 });

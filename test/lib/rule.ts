@@ -147,6 +147,9 @@ export async function calculateRulesTree(rules: BigNumberish[][]) {
     );
 
     await trie.put(hexToBuffer(key), hexToBuffer(value));
+    const Trieproof = BaseTrie;
+    const proof = await Trieproof.createProof(trie, hexToBuffer(key));
+    await Trieproof.verifyProof(trie.root, hexToBuffer(key), proof);
   }
 
   return trie;
