@@ -111,17 +111,11 @@ const getWithDrawParams = (result: IProofItem[]) => {
     const cBitmap = v.leave_bitmap;
     const cRoot = v.root;
     smtLeaves.push({
-      key: {
-        chainId: BigNumber.from(cToken.token_chain_id),
-        token: cToken.token,
-        user: userAddress,
-      },
-      value: {
-        token: cToken.token,
-        chainId: BigNumber.from(cToken.token_chain_id),
-        amount: BigNumber.from(cToken.balance),
-        debt: BigNumber.from(cToken.debt),
-      },
+      chainId: BigNumber.from(cToken.token_chain_id),
+      token: cToken.token,
+      user: userAddress,
+      amount: BigNumber.from(cToken.balance),
+      debt: BigNumber.from(cToken.debt),
     });
     const vSiblings: MergeValue[] = [];
     cSiblings.forEach((s) => {
@@ -300,7 +294,7 @@ describe('test ORFeeManager MerkleVerify', () => {
     const bitmaps = proof.bitmaps;
     const withdrawAmount: BigNumber[] = [];
     for (let i = 0; i < smtLeaf.length; i++) {
-      withdrawAmount.push(smtLeaf[i].value.amount);
+      withdrawAmount.push(smtLeaf[i].amount);
     }
     const startIndex = proof.startIndex;
     const firstZeroBits = proof.firstZeroBits;
@@ -556,7 +550,7 @@ describe('test ORFeeManager MerkleVerify', () => {
     const smtLeaf = proof.smtLeaf;
     const siblings = getEncodeSbilings(proof.siblings)
     const bitmaps = proof.bitmaps;
-    const withdrawAmount: BigNumber[] = smtLeaf.map(item => item.value.amount);
+    const withdrawAmount: BigNumber[] = smtLeaf.map(item => item.amount);
     const startIndex = proof.startIndex;
     const firstZeroBits = proof.firstZeroBits;
 
@@ -706,7 +700,7 @@ describe('test ORFeeManager MerkleVerify', () => {
     await gotoDuration(durationStatusEnum['lock']);
     await submit(profitRoot);
     await gotoDuration(durationStatusEnum['withdraw']);
-    smtLeaf[0].key.user = '0xA00000000000000000000000000000000000000A';
+    smtLeaf[0].user = '0xA00000000000000000000000000000000000000A';
     await expect(orFeeManager
       .withdrawVerification(
         smtLeaf,
@@ -723,7 +717,7 @@ describe('test ORFeeManager MerkleVerify', () => {
   });
 
   it('one leaf verify should succeed', async function () {
-    const fileData = '{"jsonrpc":"2.0","result":[{"path":"14953aa729bdd6f80d68dba16f957f915f406553365662cfac4e07b9c3de4b4a","leave_bitmap":"0000000000000000000000000000000000000000000000000000000000000000","token":{"token":"0x0000000000000000000000000000000000000022","token_chain_id":1,"balance":"0xc8","debt":"0xc8"},"siblings":[],"root":"85bcb37624ff5f2c7706f9e56dd23dba5f5faf27083fdd5f5387fff4fbcc3932","no1_merge_value":[255,"0000000000000000000000000000000000000000000000000000000000000000"]}],"id":1}'
+    const fileData = '{"jsonrpc":"2.0","result":[{"path":"9a05d89903c318fd4a9bf0ec37a2341918b5d0783eab9743d65d5ef98e43efc2","leave_bitmap":"0000000000000000000000000000000000000000000000000000000000000000","token":{"token":"0x29b6a77911c1ce3b3849f28721c65dada015c768","token_chain_id":5,"balance":"0xa12bc40","debt":"0x0"},"siblings":[{"Value":"ab6804bcf368f7a8b282b27d940d0a213b19fb2d3fe3d12518fd16121849a0b4"}],"root":"a0a75b9687bf81284b0c7bf901f914e1b23356870475ed48e052c771c4bfbff5","no1_merge_value":[255,"0000000000000000000000000000000000000000000000000000000000000000"]}],"id":1}'
     const parsedData: any = JSON.parse(fileData);
     let oneLeafProof: withdrawVerification;
     let oneLeafprofitRoot: string;
@@ -753,7 +747,7 @@ describe('test ORFeeManager MerkleVerify', () => {
     const smtLeaf = oneLeafProof.smtLeaf;
     const siblings = getEncodeSbilings(oneLeafProof.siblings)
     const bitmaps = oneLeafProof.bitmaps;
-    const withdrawAmount: BigNumber[] = smtLeaf.map(item => item.value.amount);
+    const withdrawAmount: BigNumber[] = smtLeaf.map(item => item.amount);
     const startIndex = oneLeafProof.startIndex;
     const firstZeroBits = oneLeafProof.firstZeroBits;
 

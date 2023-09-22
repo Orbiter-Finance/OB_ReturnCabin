@@ -10,12 +10,11 @@ import {IORManager} from "./interface/IORManager.sol";
 import {HelperLib} from "./library/HelperLib.sol";
 import {ConstantsLib} from "./library/ConstantsLib.sol";
 import {MerkleTreeLib} from "./library/MerkleTreeLib.sol";
-import {MerkleTreeVerification} from "./library/ORMerkleTree.sol";
 
 contract ORFeeManager is IORFeeManager, Ownable, ReentrancyGuard {
     using HelperLib for bytes;
     using SafeERC20 for IERC20;
-    using MerkleTreeVerification for bytes32;
+    using MerkleTreeLib for bytes32;
 
     // Ownable._owner use a slot
     IORManager private immutable _manager;
@@ -45,8 +44,8 @@ contract ORFeeManager is IORFeeManager, Ownable, ReentrancyGuard {
         }
     }
 
-    function withdrawLockCheck(MerkleTreeLib.SMTKey calldata key) external view returns (bool) {
-        return withdrawLock[key.user] < submissions.submitTimestamp ? true : false;
+    function withdrawLockCheck(address withdrawUser) external view returns (bool) {
+        return withdrawLock[withdrawUser] < submissions.submitTimestamp ? false : true;
     }
 
     receive() external payable {
@@ -74,11 +73,16 @@ contract ORFeeManager is IORFeeManager, Ownable, ReentrancyGuard {
         require(withdrawLock[msg.sender] < submissions.submitTimestamp, "WL");
         withdrawLock[msg.sender] = submissions.submitTimestamp;
         for (uint i = 0; i < smtLeaves.length; ) {
-            require(msg.sender == smtLeaves[i].key.user, "NU");
-            require(withdrawAmount[i] <= smtLeaves[i].value.amount, "UIF");
+            address token = smtLeaves[i].token;
+            address user = smtLeaves[i].user;
+            uint64 chainId = smtLeaves[i].chainId;
+            uint256 debt = smtLeaves[i].debt;
+            uint256 amount = smtLeaves[i].amount;
+            require(msg.sender == user, "NU");
+            require(withdrawAmount[i] <= amount, "UIF");
             require(
-                keccak256(abi.encode(smtLeaves[i].key)).verify(
-                    keccak256(abi.encode(smtLeaves[i].value)),
+                keccak256(abi.encode(chainId, token, user)).verify(
+                    keccak256(abi.encode(token, chainId, amount, debt)),
                     bitmaps[i],
                     submissions.profitRoot,
                     firstZeroBits[i],
@@ -88,19 +92,13 @@ contract ORFeeManager is IORFeeManager, Ownable, ReentrancyGuard {
                 "merkle root verify failed"
             );
 
-            if (smtLeaves[i].value.token != address(0)) {
-                IERC20(smtLeaves[i].value.token).safeTransfer(msg.sender, withdrawAmount[i]);
+            if (token != address(0)) {
+                IERC20(token).safeTransfer(msg.sender, withdrawAmount[i]);
             } else {
-                (bool success, ) = payable(msg.sender).call{value: withdrawAmount[i], gas: type(uint256).max}("");
+                (bool success, ) = payable(msg.sender).call{value: withdrawAmount[i]}("");
                 require(success, "ETH: IF");
             }
-            emit Withdraw(
-                msg.sender,
-                smtLeaves[i].value.chainId,
-                smtLeaves[i].value.token,
-                smtLeaves[i].value.debt,
-                withdrawAmount[i]
-            );
+            emit Withdraw(msg.sender, chainId, token, debt, withdrawAmount[i]);
             unchecked {
                 i += 1;
             }

@@ -60,8 +60,11 @@ describe('ORFeeManger', () => {
       process.env['OR_FEE_MANAGER_ADDRESS'] = orFeeManager.address;
     }
 
-    console.log('Address of orFeeManager:', orFeeManager.address);
-    // await orFeeManager.deployed();
+    console.log(
+      // eslint-disable-next-line prettier/prettier
+      `Address of orFeeManager: ${orFeeManager.address}, deployed blockNumber: ${await ethers.provider.getBlockNumber()} `,
+    );
+    await orFeeManager.deployed();
   });
 
   it("ORFeeManager's functions prefixed with _ should be private", async function () {
@@ -106,7 +109,8 @@ describe('ORFeeManger', () => {
       const marginAmount = BigNumber.from(1000);
       await orFeeManager
         .registerSubmitter(marginAmount, submitter)
-        .then((t) => t.wait());
+        .then((t) => t.wait(12));
+
       console.log('register submitter:', submitter);
     } else {
       const submitter = await submitterMock();
