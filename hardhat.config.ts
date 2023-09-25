@@ -33,6 +33,7 @@ export const chainIds = {
   'polygon-mumbai': 80001,
   sepolia: 11155111,
   goerli: 5,
+  ganache: 1337,
 };
 
 function getChainConfig(chain: keyof typeof chainIds): NetworkUserConfig {
@@ -52,6 +53,9 @@ function getChainConfig(chain: keyof typeof chainIds): NetworkUserConfig {
       break;
     case 'zkSync-Era-Testnet':
       jsonRpcUrl = 'https://zksync-era-testnet.blockpi.network/v1/rpc/public';
+      break;
+    case 'ganache':
+      jsonRpcUrl = 'http://127.0.0.1:7545';
       break;
     default:
       jsonRpcUrl = 'https://' + chain + '.infura.io/v3/' + infuraApiKey;
@@ -110,7 +114,8 @@ const config: HardhatUserConfig = {
     goerli: getChainConfig('goerli'),
     'arbitrum-goerli': getChainConfig('arbitrum-goerli'),
     'optimism-goerli': getChainConfig('optimism-goerli'),
-    'era-goerli': getChainConfig('zkSync-Era-Testnet')
+    'era-goerli': getChainConfig('zkSync-Era-Testnet'),
+    ganache: getChainConfig('ganache'),
   },
   paths: {
     artifacts: './artifacts',

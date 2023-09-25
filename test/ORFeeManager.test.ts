@@ -62,7 +62,9 @@ describe('ORFeeManger', () => {
 
     console.log(
       // eslint-disable-next-line prettier/prettier
-      `Address of orFeeManager: ${orFeeManager.address}, deployed blockNumber: ${await ethers.provider.getBlockNumber()} `,
+      `Address of orFeeManager: ${
+        orFeeManager.address
+      }, deployed blockNumber: ${await ethers.provider.getBlockNumber()} `,
     );
     await orFeeManager.deployed();
   });

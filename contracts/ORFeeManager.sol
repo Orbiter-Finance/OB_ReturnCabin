@@ -25,7 +25,7 @@ contract ORFeeManager is IORFeeManager, Ownable, ReentrancyGuard {
     mapping(address => uint) public submitter;
     mapping(address => uint64) public withdrawLock;
 
-    modifier isChanllengerQualified() {
+    modifier isChallengerQualified() {
         require(address(msg.sender).balance >= address(IORManager(_manager).submitter()).balance, "NF");
         _;
     }
@@ -143,7 +143,7 @@ contract ORFeeManager is IORFeeManager, Ownable, ReentrancyGuard {
 
     function getCurrentBlockInfo() external view override returns (Submission memory) {}
 
-    function startChallenge(uint marginAmount, address _submitter) public override isChanllengerQualified nonReentrant {
+    function startChallenge(uint marginAmount, address _submitter) public override isChallengerQualified nonReentrant {
         challengeStatus = ChallengeStatus.challengeAccepted;
         (marginAmount, _submitter);
     }
