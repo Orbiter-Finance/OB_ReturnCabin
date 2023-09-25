@@ -83,30 +83,30 @@ interface IORMakerDeposit {
         address token
     ) external;
 
-    function challenge(
-        uint64 sourceChainId,
-        bytes32 sourceTxHash,
-        uint64 sourceTxTime,
-        address freezeToken,
-        uint freezeAmount1
-    ) external payable;
+    // function challenge(
+    //     uint64 sourceChainId,
+    //     bytes32 sourceTxHash,
+    //     uint64 sourceTxTime,
+    //     address freezeToken,
+    //     uint freezeAmount1
+    // ) external payable;
 
-    function checkChallenge(uint64 sourceChainId, bytes32 sourceTxHash, uint[] calldata verifiedData0) external;
+    // function checkChallenge(uint64 sourceChainId, bytes32 sourceTxHash, uint[] calldata verifiedData0) external;
 
-    function verifyChallengeSource(
-        address spvAddress,
-        bytes calldata proof,
-        bytes32[2] calldata spvBlockHashs,
-        IORChallengeSpv.VerifyInfo calldata verifyInfo,
-        bytes calldata rawDatas
-    ) external;
+    // function verifyChallengeSource(
+    //     address spvAddress,
+    //     bytes calldata proof,
+    //     bytes32[2] calldata spvBlockHashs,
+    //     IORChallengeSpv.VerifyInfo calldata verifyInfo,
+    //     bytes calldata rawDatas
+    // ) external;
 
-    function verifyChallengeDest(
-        address spvAddress,
-        bytes calldata proof,
-        bytes32[2] calldata spvBlockHashs,
-        IORChallengeSpv.VerifyInfo calldata verifyInfo,
-        uint[] calldata verifiedData0,
-        bytes calldata rawDatas
-    ) external;
+    // function verifyChallengeDest(
+    //     address spvAddress,
+    //     bytes calldata proof,
+    //     bytes32[2] calldata spvBlockHashs,
+    //     IORChallengeSpv.VerifyInfo calldata verifyInfo,
+    //     uint[] calldata verifiedData0,
+    //     bytes calldata rawDatas
+    // ) external;
 }

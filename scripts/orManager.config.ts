@@ -2,9 +2,9 @@ import { constants } from 'ethers';
 
 export default {
   chains: [
-    // Goerli
+    // Mainnet
     {
-      id: 5,
+      id: 1,
       batchLimit: 100, // TODO: mock
       minVerifyChallengeSourceTxSecond: 900, // TODO: mock
       maxVerifyChallengeSourceTxSecond: 1800, // TODO: mock
@@ -15,7 +15,6 @@ export default {
 
       tokens: [
         {
-          chainId: 5,
           token: constants.AddressZero,
           mainnetToken: constants.AddressZero,
           decimals: 18,
@@ -23,9 +22,9 @@ export default {
       ],
     },
 
-    // Arbitrum Goerli
+    // Arbitrum One
     {
-      id: 421613,
+      id: 42161,
       batchLimit: 100, // TODO: mock
       minVerifyChallengeSourceTxSecond: 900, // TODO: mock
       maxVerifyChallengeSourceTxSecond: 1800, // TODO: mock
@@ -36,7 +35,6 @@ export default {
 
       tokens: [
         {
-          chainId: 421613,
           token: constants.AddressZero,
           mainnetToken: constants.AddressZero,
           decimals: 18,
@@ -44,9 +42,9 @@ export default {
       ],
     },
 
-    // Optimism Goerli Testnet
+    // Optimism
     {
-      id: 420,
+      id: 10,
       batchLimit: 100, // TODO: mock
       minVerifyChallengeSourceTxSecond: 900, // TODO: mock
       maxVerifyChallengeSourceTxSecond: 1800, // TODO: mock
@@ -57,7 +55,6 @@ export default {
 
       tokens: [
         {
-          chainId: 420,
           token: constants.AddressZero,
           mainnetToken: constants.AddressZero,
           decimals: 18,
@@ -65,9 +62,9 @@ export default {
       ],
     },
 
-    // zkSync Era Testnet
+    // zkSync Era
     {
-      id: 280,
+      id: 324,
       batchLimit: 100, // TODO: mock
       minVerifyChallengeSourceTxSecond: 900, // TODO: mock
       maxVerifyChallengeSourceTxSecond: 1800, // TODO: mock
@@ -78,7 +75,6 @@ export default {
 
       tokens: [
         {
-          chainId: 280,
           token: constants.AddressZero,
           mainnetToken: constants.AddressZero,
           decimals: 18,

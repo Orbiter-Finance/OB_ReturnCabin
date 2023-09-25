@@ -578,15 +578,15 @@ describe('ORMakerDeposit', () => {
     const freezeToken = constants.AddressZero;
     const freezeAmount = utils.parseEther('0.001');
 
-    const tx = await orMakerDeposit.challenge(
-      sourceChainId,
-      sourceTxHash,
-      sourceTxTime,
-      freezeToken,
-      freezeAmount,
-      { value: freezeAmount },
-    );
+    // const tx = await orMakerDeposit.challenge(
+    //   sourceChainId,
+    //   sourceTxHash,
+    //   sourceTxTime,
+    //   freezeToken,
+    //   freezeAmount,
+    //   { value: freezeAmount },
+    // );
 
-    console.warn('tx.hash:', tx.hash);
+    // console.warn('tx.hash:', tx.hash);
   });
 });
