@@ -1,15 +1,18 @@
 /* eslint-disable prettier/prettier */
-import { ethers } from 'hardhat';
-import orManagerConfig from './orManager.config';
-import { ORManager__factory } from '../typechain-types';
 import assert from 'assert';
+import { BigNumberish, Wallet, getDefaultProvider } from 'ethers';
 import { getMinEnableTime } from '../test/utils.test';
+import { ORManager__factory } from '../typechain-types';
 import { BridgeLib } from '../typechain-types/contracts/ORManager';
-import { BigNumberish } from 'ethers';
+import orManagerConfig from './orManager.config';
+import { ethers } from 'hardhat';
 
 export async function managerSetup() {
   const signers = await ethers.getSigners();
-  const deployer = signers[0];
+  const deployer = new Wallet(
+    process.env.DEPLOYER_PRIVATE_KEY || '',
+    signers[0].provider,
+  );
   console.log('deployer:', deployer.address);
 
   const envORManagerAddress = process.env['OR_MANAGER_ADDRESS'];

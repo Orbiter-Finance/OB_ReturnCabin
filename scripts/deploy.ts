@@ -7,10 +7,14 @@ import {
   ORMakerDeposit__factory,
   ORManager__factory,
 } from '../typechain-types';
+import { Wallet } from 'ethers';
 
 export async function deploy() {
   const signers = await ethers.getSigners();
-  const deployer = signers[0];
+  const deployer = new Wallet(
+    process.env.DEPLOYER_PRIVATE_KEY || '',
+    signers[0].provider,
+  );
   console.log('deployer:', deployer.address);
 
   const orManager = await new ORManager__factory(deployer).deploy(
