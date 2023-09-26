@@ -15,7 +15,6 @@ export default {
 
       tokens: [
         {
-          chainId: 5,
           token: constants.AddressZero,
           mainnetToken: constants.AddressZero,
           decimals: 18,
@@ -36,7 +35,6 @@ export default {
 
       tokens: [
         {
-          chainId: 421613,
           token: constants.AddressZero,
           mainnetToken: constants.AddressZero,
           decimals: 18,
@@ -57,7 +55,6 @@ export default {
 
       tokens: [
         {
-          chainId: 420,
           token: constants.AddressZero,
           mainnetToken: constants.AddressZero,
           decimals: 18,
@@ -78,7 +75,6 @@ export default {
 
       tokens: [
         {
-          chainId: 280,
           token: constants.AddressZero,
           mainnetToken: constants.AddressZero,
           decimals: 18,
