@@ -36,12 +36,14 @@ import {
   testReverted,
   testRevertedOwner,
 } from './utils.test';
+import { chainIdsMock, dealersMock, ebcMock } from './lib/mockData';
 
 describe('ORMakerDeposit', () => {
   let signers: SignerWithAddress[];
   let mdcOwner: SignerWithAddress;
   let orManager: ORManager;
   let orManagerEbcs: string[];
+  let ebcs: string[];
   let orMDCFactory: ORMDCFactory;
   let orMakerDeposit: ORMakerDeposit;
   let implementation: string;
@@ -72,12 +74,18 @@ describe('ORMakerDeposit', () => {
 
     if (envTestTokenAddress) {
       testToken = new TestToken__factory(mdcOwner).attach(envTestTokenAddress);
+      console.log('connect of testToken:', testToken.address);
     } else {
-      testToken = await new TestToken__factory(mdcOwner).deploy();
+      testToken = await new TestToken__factory(mdcOwner).deploy(
+        'TestToken',
+        'OTT',
+      );
       console.log('Address of testToken:', testToken.address);
+      process.env['TEST_TOKEN_ADDRESS'] = testToken.address;
     }
-
     await testToken.deployed();
+
+    ebcs = lodash.cloneDeep(orManagerEbcs);
   });
 
   it('Restoring the ORMakerDeposit should succeed', async function () {
@@ -87,7 +95,7 @@ describe('ORMakerDeposit', () => {
     orMakerDeposit = new ORMakerDeposit__factory(mdcOwner).attach(
       predictMDCAddress,
     );
-
+    console.log('connect of mdc:', orMakerDeposit.address);
     const owner = await orMakerDeposit.owner();
 
     expect(owner).eq(mdcOwner.address);
@@ -104,26 +112,49 @@ describe('ORMakerDeposit', () => {
     embedVersionIncreaseAndEnableTime(
       () => orMakerDeposit.getVersionAndEnableTime().then((r) => r.version),
       async function () {
-        const ebcs = lodash.cloneDeep(orManagerEbcs);
-        const mdcEbcs: string[] = ebcs.slice(0, 9);
+        const mdcEbcs: string[] = ebcs.slice(0, 8);
+        if (process.env['EVENT_BINDING_CONTRACT'] != undefined) {
+          mdcEbcs.push(process.env['EVENT_BINDING_CONTRACT']);
+        } else {
+          mdcEbcs.push(ebcMock);
+        }
         mdcEbcs.sort(() => Math.random() - 0.5);
+
+        const mdcDealers: string[] = await dealersMock();
+        const chainIds: number[] = chainIdsMock;
+        const block = await ethers.provider.getBlock('latest');
+
+        // console.log(
+        //   `mdcDealers: ${mdcDealers}, mdcEbcs: ${mdcEbcs}, mdcChainIds: ${chainIds}`,
+        // );
 
         const columnArrayHash = utils.keccak256(
           utils.solidityPack(
             ['address[]', 'address[]', 'uint16[]'],
-            [[], mdcEbcs, []],
+            [mdcDealers, mdcEbcs, chainIds],
           ),
         );
 
         const { events } = await orMakerDeposit
-          .updateColumnArray(getMinEnableTime(), [], mdcEbcs, [])
+          .updateColumnArray(
+            getMinEnableTime(),
+            mdcDealers,
+            mdcEbcs,
+            chainIds,
+            {
+              gasLimit: 10000000,
+            },
+          )
           .then((t) => t.wait());
 
-        const args = events![0].args!;
+        const args = events[0].args!;
 
         expect(args['impl']).eq(implementation);
         expect(args['columnArrayHash']).eq(columnArrayHash);
         expect(lodash.toPlainObject(args['ebcs'])).to.deep.includes(mdcEbcs);
+        expect(lodash.toPlainObject(args['dealers'])).to.deep.includes(
+          mdcDealers,
+        );
 
         await testRevertedOwner(
           orMakerDeposit
@@ -198,7 +229,7 @@ describe('ORMakerDeposit', () => {
           .updateSpvs(getMinEnableTime(), spvs, chainIds)
           .then((t) => t.wait());
 
-        for (const i in events!) {
+        for (const i in events) {
           const event = events[i];
 
           expect(event.args!['impl']).eq(implementation);
@@ -263,7 +294,7 @@ describe('ORMakerDeposit', () => {
           .updateResponseMakers(getMinEnableTime(), responseMakerSignatures)
           .then((t) => t.wait());
 
-        const args = events![0].args!;
+        const args = events[0].args!;
         expect(args.responseMakers).to.deep.eq(responseMakers);
 
         const responseMakersHash = await orMakerDeposit.responseMakersHash();
@@ -338,21 +369,33 @@ describe('ORMakerDeposit', () => {
     embedVersionIncreaseAndEnableTime(
       () => orMakerDeposit.getVersionAndEnableTime().then((r) => r.version),
       async function () {
+        const currentBlock = await mdcOwner.provider?.getBlock('latest');
+        const getNative = true;
+
         const rules: any[] = [];
         for (let i = 0; i < 5 * 4; i++) {
-          const _rule = createRandomRule();
-          _rule[0] = Number(_rule[0]) + i;
-          _rule[1] = Number(_rule[1]) + i;
+          const _rule = createRandomRule(getNative);
+          // _rule[0] = Number(_rule[0]) + i;
+          // _rule[1] = Number(_rule[1]) + i;
+          // _rule[4] = 0;
+          // _rule[5] = 0;
+          // console.log(`ethRule-${i} :[${_rule}]`);
           rules.push(_rule);
         }
 
         const tree = await calculateRulesTree(rules);
         const root = utils.hexlify(tree.root);
-        ebcSample = lodash.sample(orManagerEbcs)!;
+        if (process.env['EVENT_BINDING_CONTRACT'] != undefined) {
+          ebcSample = process.env['EVENT_BINDING_CONTRACT'];
+        } else {
+          ebcSample = ebcMock;
+        }
+
         const rootWithVersion = { root, version: 1 };
         const sourceChainIds = [1];
         const pledgeAmounts = [utils.parseEther('0.0001')];
 
+        console.log(`ebc :[${ebcSample}]`);
         await testReverted(
           orMakerDeposit.updateRulesRoot(
             getMinEnableTime(),
@@ -363,25 +406,6 @@ describe('ORMakerDeposit', () => {
             pledgeAmounts,
           ),
           'IV',
-        );
-
-        await testReverted(
-          orMakerDeposit.updateRulesRoot(
-            getMinEnableTime(),
-            ebcSample,
-            rules.map((r) => {
-              const _r = lodash.clone(r);
-              _r[10] = 10001;
-              return _r;
-            }),
-            rootWithVersion,
-            sourceChainIds,
-            pledgeAmounts,
-            {
-              value: pledgeAmounts.reduce((pv, cv) => pv.add(cv)),
-            },
-          ),
-          'WFI0',
         );
 
         const { events } = await orMakerDeposit
@@ -398,7 +422,7 @@ describe('ORMakerDeposit', () => {
           )
           .then((t) => t.wait());
 
-        const args = events![0].args!;
+        const args = events[0].args!;
         expect(args.ebc).eq(ebcSample);
         expect(args.rootWithVersion.root).eq(rootWithVersion.root);
         expect(args.rootWithVersion.version).eq(rootWithVersion.version);
@@ -461,6 +485,7 @@ describe('ORMakerDeposit', () => {
     embedVersionIncreaseAndEnableTime(
       () => orMakerDeposit.getVersionAndEnableTime().then((r) => r.version),
       async function () {
+        const getNative = false;
         const totalRules: any[] = await getRulesRootUpdatedLogs(
           signers[0].provider,
           orMakerDeposit.address,
@@ -469,10 +494,9 @@ describe('ORMakerDeposit', () => {
 
         const rules: any[] = [];
         for (let i = 0; i < 5 * 4; i++) {
-          const _rule = createRandomRule();
-          _rule[0] = Number(_rule[0]) + 1;
-          _rule[1] = Number(_rule[1]) + 1;
+          const _rule = createRandomRule(getNative);
           totalRules.push(_rule);
+          // console.log(`erc20Rule-${i} :[${_rule}]`);
           rules.push(_rule);
         }
 

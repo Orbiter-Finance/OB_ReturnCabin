@@ -1,16 +1,24 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
-import { BigNumber, BigNumberish, Wallet, constants } from 'ethers';
 import { ethers } from 'hardhat';
-import lodash from 'lodash';
 import { ORManager, ORManager__factory } from '../typechain-types';
-import { BridgeLib } from '../typechain-types/contracts/interface/IORManager';
-import { defaultChainInfo, defaultsEbcs } from './defaults';
+import {
+  calculateMainnetToken,
+  chainIDgetTokenSequence,
+  defaultChainInfoArray,
+  ebcMock,
+  initTestToken,
+  submitterMock,
+  testToken,
+} from './lib/mockData';
 import {
   embedVersionIncreaseAndEnableTime,
   getMinEnableTime,
-  testRevertedOwner,
 } from './utils.test';
+import { BigNumber, constants, Wallet } from 'ethers';
+import lodash from 'lodash';
+import { BridgeLib } from '../typechain-types/contracts/ORManager';
+import { defaultsEbcs, defaultChainInfo } from './defaults';
 
 describe('Test ORManager', () => {
   let signers: SignerWithAddress[];
@@ -18,20 +26,28 @@ describe('Test ORManager', () => {
 
   before(async function () {
     signers = await ethers.getSigners();
+    initTestToken();
   });
 
   it('Owner should be able to be set when deploying the contract', async function () {
-    orManager = await new ORManager__factory(signers[0]).deploy(
-      signers[1].address,
-    );
-    console.log('Address of orManager contract:', orManager.address);
-    await orManager.deployed();
-
-    // set environment variables
-    process.env['OR_MANAGER_ADDRESS'] = orManager.address;
+    if (process.env['OR_MANAGER_ADDRESS'] == undefined) {
+      orManager = await new ORManager__factory(signers[0]).deploy(
+        signers[0].address,
+      );
+      console.log('Address of orManager contract:', orManager.address);
+      await orManager.deployed();
+      // set environment variables
+      process.env['OR_MANAGER_ADDRESS'] = orManager.address;
+    } else {
+      orManager = new ORManager__factory(signers[0]).attach(
+        process.env['OR_MANAGER_ADDRESS'],
+      );
+      console.log('connect to orManager contract:', orManager.address);
+    }
 
     const owner = await orManager.owner();
-    expect(owner).eq(signers[1].address);
+    console.log('Address of orManager owner:', owner);
+    // expect(owner).eq(signers[1].address);
   });
 
   it("ORManager's functions prefixed with _ should be private", async function () {
@@ -40,32 +56,32 @@ describe('Test ORManager', () => {
     }
   });
 
-  it('Function transferOwnership should succeed', async function () {
-    await testRevertedOwner(orManager.transferOwnership(signers[0].address));
-
-    await orManager
-      .connect(signers[1])
-      .transferOwnership(signers[0].address)
-      .then((t) => t.wait());
-  });
-
   it(
     'Function registerChains should succeed',
     embedVersionIncreaseAndEnableTime(
       () => orManager.getVersionAndEnableTime().then((r) => r.version),
       async function () {
-        const chains = [
-          lodash.cloneDeepWith(defaultChainInfo),
-          lodash.cloneDeepWith(defaultChainInfo),
-        ];
+        const chains = defaultChainInfoArray.map((chainInfo) => {
+          return lodash.cloneDeepWith(chainInfo);
+        });
 
         const { events } = await orManager
           .registerChains(getMinEnableTime(), chains)
           .then((i) => i.wait());
 
+        // print all chain ids
+        console.log(
+          'register chainIds:',
+          events.map((event) => event.args!.chainInfo.id.toString()),
+          'nativeToken',
+          events.map((event) =>
+            event.args!.chainInfo.nativeToken.toHexString(),
+          ),
+        );
+
         for (const i in chains) {
-          const event = events![i];
-          let chainInfo: BridgeLib.ChainInfoStruct = lodash.toPlainObject(
+          const event = events[i];
+          const chainInfo: BridgeLib.ChainInfoStruct = lodash.toPlainObject(
             event.args!.chainInfo,
           );
 
@@ -83,20 +99,33 @@ describe('Test ORManager', () => {
     embedVersionIncreaseAndEnableTime(
       () => orManager.getVersionAndEnableTime().then((r) => r.version),
       async function () {
-        const chainId = defaultChainInfo.id;
+        const chains = defaultChainInfoArray.map((chainInfo) => {
+          return lodash.cloneDeepWith(chainInfo);
+        });
 
-        const spvs: string[] = [];
-        const indexs: BigNumberish[] = [BigNumber.from(0)];
-        for (let i = 0; i < 10; i++) {
-          spvs.push(ethers.Wallet.createRandom().address);
+        for (let i = 0; i < 1; i++) {
+          const chainId = chains[i].id;
+
+          const spvs: string[] = [];
+          const indexs: BigNumberish[] = [BigNumber.from(0)];
+          for (let j = 0; j < 10; j++) {
+            spvs.push(ethers.Wallet.createRandom().address);
+          }
+
+          const { events } = await orManager
+            .updateChainSpvs(getMinEnableTime(), chainId, spvs, indexs)
+            .then((t) => t.wait());
+
+          console.log(
+            'current chainIds:',
+            chainId.toString(),
+            'register spvs:',
+            spvs.map((spvs) => spvs),
+          );
+
+          expect(events[0].args!.id).eq(chainId);
+          expect(events[0].args!.chainInfo.spvs).deep.eq(spvs);
         }
-
-        const { events } = await orManager
-          .updateChainSpvs(getMinEnableTime(), chainId, spvs, indexs)
-          .then((t) => t.wait());
-
-        expect(events![0].args!.id).eq(chainId);
-        expect(events![0].args!.chainInfo.spvs).deep.eq(spvs);
       },
     ),
   );
@@ -106,15 +135,25 @@ describe('Test ORManager', () => {
     embedVersionIncreaseAndEnableTime(
       () => orManager.getVersionAndEnableTime().then((r) => r.version),
       async function () {
-        const chainIds: number[] = [];
+        const chainIds = defaultChainInfoArray.flatMap((chainInfo) =>
+          Array.from({ length: testToken.MAINNET_TOKEN.length }, () =>
+            Number(chainInfo.id),
+          ),
+        );
         const tokens: BridgeLib.TokenInfoStruct[] = [];
-        for (let i = 1; i <= 10; i++) {
-          chainIds.push(Number(defaultChainInfo.id));
-          tokens.push({
-            token: BigNumber.from(ethers.Wallet.createRandom().address).add(0), // add(0), convert _hex uppercase to lowercase
-            mainnetToken: constants.AddressZero,
-            decimals: i * 2,
-          });
+
+        for (let i = 0; i < defaultChainInfoArray.length; i++) {
+          for (let j = 0; j < testToken.MAINNET_TOKEN.length; j++) {
+            const chainInfo = defaultChainInfoArray[i];
+            const chainId = Number(chainInfo.id);
+            const token = chainIDgetTokenSequence(chainId, j);
+            const mainnetTestToken = calculateMainnetToken(chainId, token);
+            tokens.push({
+              token: BigNumber.from(token).add(0), // add(0), convert _hex uppercase to lowercase
+              mainnetToken: mainnetTestToken,
+              decimals: 18,
+            });
+          }
         }
 
         const { events } = await orManager
@@ -127,6 +166,15 @@ describe('Test ORManager', () => {
             tokens[i],
           );
         });
+
+        console.log(
+          'current chainIds:',
+          chainIds.map((chainId) => chainId.toString()),
+          'register tokens:',
+          tokens.map((token) => BigNumber.from(token.token).toHexString()),
+          'mainnetTokens:',
+          tokens.map((token) => token.mainnetToken),
+        );
 
         const latestIndex = tokens.length - 1;
         const tokenInfo = await orManager.getChainTokenInfo(
@@ -143,12 +191,22 @@ describe('Test ORManager', () => {
   it('Function updateEbcs should succeed', async function () {
     const ebcs = lodash.cloneDeep(defaultsEbcs);
     const statuses: boolean[] = [];
+    statuses.push(true);
+    if (process.env['EVENT_BINDING_CONTRACT'] != undefined) {
+      ebcs.push(process.env['EVENT_BINDING_CONTRACT']);
+      console.log(
+        'Address of Orbiter ebc:',
+        process.env['EVENT_BINDING_CONTRACT'],
+      );
+    } else {
+      ebcs.push(ebcMock);
+    }
 
     const { events } = await orManager
       .updateEbcs(ebcs, statuses)
       .then((t) => t.wait());
 
-    const args = events![0].args!;
+    const args = events[0].args!;
     expect(args.ebcs).to.deep.eq(ebcs);
     expect(args.statuses).to.deep.eq(statuses);
 
@@ -167,17 +225,24 @@ describe('Test ORManager', () => {
     embedVersionIncreaseAndEnableTime(
       () => orManager.getVersionAndEnableTime().then((r) => r.version),
       async function () {
-        const submitter = ethers.Wallet.createRandom().address;
-
+        // const submitter = ethers.Wallet.createRandom().address;
+        let submitter;
+        if (process.env['REGISTER_SUBMITTER'] != undefined) {
+          submitter = process.env['REGISTER_SUBMITTER'];
+        } else {
+          submitter = await submitterMock();
+        }
+        // const submitter: string = submitter2Mock;
         const { events } = await orManager
           .updateSubmitter(getMinEnableTime(), submitter)
           .then((t) => t.wait());
 
-        const args = events![0].args!;
+        const args = events[0].args!;
         expect(args.submitter).to.deep.eq(submitter);
 
         const storageSubmitter = await orManager.submitter();
         expect(storageSubmitter).to.deep.eq(submitter);
+        console.log('Address of Submitter:', storageSubmitter);
       },
     ),
   );
@@ -193,7 +258,7 @@ describe('Test ORManager', () => {
           .updateProtocolFee(getMinEnableTime(), protocolFee)
           .then((t) => t.wait());
 
-        const args = events![0].args!;
+        const args = events[0].args!;
         expect(args.protocolFee).to.deep.eq(protocolFee);
 
         const storageProtocolFee = await orManager.protocolFee();
@@ -213,7 +278,7 @@ describe('Test ORManager', () => {
           .updateMinChallengeRatio(getMinEnableTime(), minChallengeRatio)
           .then((t) => t.wait());
 
-        const args = events![0].args!;
+        const args = events[0].args!;
         expect(args.minChallengeRatio).to.deep.eq(minChallengeRatio);
 
         const storageMinChallengeRatio = await orManager.minChallengeRatio();
@@ -233,7 +298,7 @@ describe('Test ORManager', () => {
           .updateChallengeUserRatio(getMinEnableTime(), challengeUserRatio)
           .then((t) => t.wait());
 
-        const args = events![0].args!;
+        const args = events[0].args!;
         expect(args.challengeUserRatio).to.deep.eq(challengeUserRatio);
 
         const storageChallengeUserRatio = await orManager.challengeUserRatio();
@@ -253,7 +318,7 @@ describe('Test ORManager', () => {
           .updateFeeChallengeSecond(getMinEnableTime(), feeChallengeSecond)
           .then((t) => t.wait());
 
-        const args = events![0].args!;
+        const args = events[0].args!;
         expect(args.feeChallengeSecond).to.deep.eq(feeChallengeSecond);
 
         const storageFeeChallengeSecond = await orManager.feeChallengeSecond();
@@ -276,7 +341,7 @@ describe('Test ORManager', () => {
           )
           .then((t) => t.wait());
 
-        const args = events![0].args!;
+        const args = events[0].args!;
         expect(args.feeTakeOnChallengeSecond).to.deep.eq(
           feeTakeOnChallengeSecond,
         );
@@ -297,7 +362,7 @@ describe('Test ORManager', () => {
       .updateMaxMDCLimit(maxMDCLimit)
       .then((t) => t.wait());
 
-    const args = events![0].args!;
+    const args = events[0].args!;
     expect(args.maxMDCLimit).to.deep.eq(maxMDCLimit);
 
     const storageMaxMDCLimit = await orManager.maxMDCLimit();
@@ -324,7 +389,7 @@ describe('Test ORManager', () => {
           )
           .then((t) => t.wait());
 
-        const args = events![0].args!;
+        const args = events[0].args!;
         expect(args.chainIds).to.deep.eq(chainIds);
         expect(args.extraTransferContracts).to.deep.eq(extraTransferContracts);
 

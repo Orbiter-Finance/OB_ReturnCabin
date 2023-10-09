@@ -1,9 +1,10 @@
 import { Provider } from '@ethersproject/providers';
-import { BigNumber, BigNumberish, BytesLike, Wallet, utils } from 'ethers';
-import { Hexable, parseEther } from 'ethers/lib/utils';
+import { BigNumber, BigNumberish, BytesLike, utils } from 'ethers';
+import { Hexable } from 'ethers/lib/utils';
 import { BaseTrie } from 'merkle-patricia-tree';
 import Pako from 'pako';
 import { hexToBuffer } from '../utils.test';
+import { getRulesSetting } from './mockData';
 
 export const ruleTypes = [
   'uint64', // chain0's id
@@ -26,20 +27,35 @@ export const ruleTypes = [
   'uint32', // chain1's compensation ratio
 ];
 
-export function createRandomRule() {
+export function createRandomRule(getNative: boolean) {
+  const {
+    chain0Id,
+    chain1Id,
+    chain0token,
+    chain1token,
+    randomStatus1,
+    randomStatus2,
+    chain0MinPrice,
+    chain0MaxPrice,
+    chain1MinPrice,
+    chain1MaxPrice,
+    chain0withholdingFee,
+    chain1withholdingFee,
+  } = getRulesSetting(getNative);
+
   return [
-    BigNumber.from(1),
-    BigNumber.from(2),
-    0,
-    1,
-    Wallet.createRandom().address,
-    Wallet.createRandom().address,
-    BigNumber.from(5).pow(parseInt(Math.random() * 40 + '') + 1),
-    BigNumber.from(5).pow(parseInt(Math.random() * 40 + '') + 1),
-    BigNumber.from(5).pow(parseInt(Math.random() * 40 + '') + 1),
-    BigNumber.from(5).pow(parseInt(Math.random() * 40 + '') + 1),
-    parseEther(Math.random().toFixed(2)),
-    parseEther(Math.random().toFixed(2)),
+    BigNumber.from(chain0Id).add(0),
+    BigNumber.from(chain1Id).add(0),
+    randomStatus1,
+    randomStatus2,
+    chain0token,
+    chain1token,
+    chain0MinPrice,
+    chain0MaxPrice,
+    chain1MinPrice,
+    chain1MaxPrice,
+    chain0withholdingFee,
+    chain1withholdingFee,
     1,
     2,
     (2 ^ 32) - 1,
@@ -131,6 +147,9 @@ export async function calculateRulesTree(rules: BigNumberish[][]) {
     );
 
     await trie.put(hexToBuffer(key), hexToBuffer(value));
+    const Trieproof = BaseTrie;
+    const proof = await Trieproof.createProof(trie, hexToBuffer(key));
+    await Trieproof.verifyProof(trie.root, hexToBuffer(key), proof);
   }
 
   return trie;
