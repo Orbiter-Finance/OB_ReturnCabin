@@ -7,6 +7,7 @@ import {
   chainIDgetTokenSequence,
   defaultChainInfoArray,
   ebcMock,
+  getCurrentTime,
   initTestToken,
   submitterMock,
   testToken,
@@ -15,7 +16,7 @@ import {
   embedVersionIncreaseAndEnableTime,
   getMinEnableTime,
 } from './utils.test';
-import { BigNumber, constants, Wallet } from 'ethers';
+import { BigNumber, BigNumberish, constants, Wallet } from 'ethers';
 import lodash from 'lodash';
 import { BridgeLib } from '../typechain-types/contracts/ORManager';
 import { defaultsEbcs, defaultChainInfo } from './defaults';
@@ -64,9 +65,14 @@ describe('Test ORManager', () => {
         const chains = defaultChainInfoArray.map((chainInfo) => {
           return lodash.cloneDeepWith(chainInfo);
         });
-
         const { events } = await orManager
-          .registerChains(getMinEnableTime(), chains)
+          .registerChains(
+            getMinEnableTime(BigNumber.from(await getCurrentTime())),
+            chains,
+            {
+              gasLimit: 1e6,
+            },
+          )
           .then((i) => i.wait());
 
         // print all chain ids
@@ -113,7 +119,19 @@ describe('Test ORManager', () => {
           }
 
           const { events } = await orManager
-            .updateChainSpvs(getMinEnableTime(), chainId, spvs, indexs)
+            .updateChainSpvs(
+              getMinEnableTime(
+                (
+                  await orManager.getVersionAndEnableTime()
+                ).enableTime,
+              ),
+              chainId,
+              spvs,
+              indexs,
+              {
+                gasLimit: 10e6,
+              },
+            )
             .then((t) => t.wait());
 
           console.log(
@@ -157,7 +175,15 @@ describe('Test ORManager', () => {
         }
 
         const { events } = await orManager
-          .updateChainTokens(getMinEnableTime(), chainIds, tokens)
+          .updateChainTokens(
+            getMinEnableTime(
+              (
+                await orManager.getVersionAndEnableTime()
+              ).enableTime,
+            ),
+            chainIds,
+            tokens,
+          )
           .then((t) => t.wait());
 
         (events || []).forEach((event, i) => {
@@ -234,7 +260,14 @@ describe('Test ORManager', () => {
         }
         // const submitter: string = submitter2Mock;
         const { events } = await orManager
-          .updateSubmitter(getMinEnableTime(), submitter)
+          .updateSubmitter(
+            getMinEnableTime(
+              (
+                await orManager.getVersionAndEnableTime()
+              ).enableTime,
+            ),
+            submitter,
+          )
           .then((t) => t.wait());
 
         const args = events[0].args!;
@@ -255,7 +288,14 @@ describe('Test ORManager', () => {
         const protocolFee = 10;
 
         const { events } = await orManager
-          .updateProtocolFee(getMinEnableTime(), protocolFee)
+          .updateProtocolFee(
+            getMinEnableTime(
+              (
+                await orManager.getVersionAndEnableTime()
+              ).enableTime,
+            ),
+            protocolFee,
+          )
           .then((t) => t.wait());
 
         const args = events[0].args!;
@@ -275,7 +315,14 @@ describe('Test ORManager', () => {
         const minChallengeRatio = 20;
 
         const { events } = await orManager
-          .updateMinChallengeRatio(getMinEnableTime(), minChallengeRatio)
+          .updateMinChallengeRatio(
+            getMinEnableTime(
+              (
+                await orManager.getVersionAndEnableTime()
+              ).enableTime,
+            ),
+            minChallengeRatio,
+          )
           .then((t) => t.wait());
 
         const args = events[0].args!;
@@ -295,7 +342,14 @@ describe('Test ORManager', () => {
         const challengeUserRatio = 15;
 
         const { events } = await orManager
-          .updateChallengeUserRatio(getMinEnableTime(), challengeUserRatio)
+          .updateChallengeUserRatio(
+            getMinEnableTime(
+              (
+                await orManager.getVersionAndEnableTime()
+              ).enableTime,
+            ),
+            challengeUserRatio,
+          )
           .then((t) => t.wait());
 
         const args = events[0].args!;
@@ -315,7 +369,14 @@ describe('Test ORManager', () => {
         const feeChallengeSecond = 25;
 
         const { events } = await orManager
-          .updateFeeChallengeSecond(getMinEnableTime(), feeChallengeSecond)
+          .updateFeeChallengeSecond(
+            getMinEnableTime(
+              (
+                await orManager.getVersionAndEnableTime()
+              ).enableTime,
+            ),
+            feeChallengeSecond,
+          )
           .then((t) => t.wait());
 
         const args = events[0].args!;
@@ -336,7 +397,11 @@ describe('Test ORManager', () => {
 
         const { events } = await orManager
           .updateFeeTakeOnChallengeSecond(
-            getMinEnableTime(),
+            getMinEnableTime(
+              (
+                await orManager.getVersionAndEnableTime()
+              ).enableTime,
+            ),
             feeTakeOnChallengeSecond,
           )
           .then((t) => t.wait());
@@ -383,7 +448,11 @@ describe('Test ORManager', () => {
 
         const { events } = await orManager
           .updateExtraTransferContracts(
-            getMinEnableTime(),
+            getMinEnableTime(
+              (
+                await orManager.getVersionAndEnableTime()
+              ).enableTime,
+            ),
             chainIds,
             extraTransferContracts,
           )

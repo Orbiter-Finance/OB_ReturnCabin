@@ -135,7 +135,7 @@ library MerkleTreeLib {
                     abi.encode(
                         MERGE_ZEROS, //MERGE_ZEROS == 2
                         keccak256(abi.encode(0, key.parentPath(0), v)),
-                        key.getBit(0) ? key.clearBit(0) : key,
+                        key,
                         0
                     )
                 ) == root;
