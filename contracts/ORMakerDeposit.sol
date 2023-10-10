@@ -29,6 +29,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
     IORMDCFactory private _mdcFactory;
     bytes32 private _columnArrayHash;
     mapping(uint64 => address) private _spvs; // chainId => spvAddress
+    mapping(address => RuleLib.challengeGasUsed) private usedGas; // gas => userAddress
     bytes32 private _responseMakersHash; // hash(response maker list), not just owner, to improve tps
     mapping(address => RuleLib.RootWithVersion) private _rulesRoots; // ebc => merkleRoot(rules), version
     mapping(bytes32 => uint) private _pledgeBalances; // hash(ebc, sourceChainId, sourceToken) => pledgeBalance
@@ -262,6 +263,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         address freezeToken,
         uint freezeAmount1
     ) external payable {
+        uint256 startGasNum = gasleft();
         bytes32 challengeId = abi.encodePacked(sourceChainId, sourceTxHash).hash();
         require(_challenges[challengeId].challengeTime == 0, "CE");
 
@@ -294,7 +296,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             0,
             0
         );
-
+        usedGas[msg.sender].challengeGasFee = (startGasNum - gasleft()) * block.basefee;
         emit ChallengeInfoUpdated(challengeId, _challenges[challengeId]);
     }
 
@@ -347,6 +349,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         IORChallengeSpv.VerifyInfo calldata verifyInfo,
         bytes calldata rawDatas
     ) external {
+        uint256 startGasNum = gasleft();
         require(IORChallengeSpv(spvAddress).verifyChallenge(proof, spvBlockHashs, abi.encode(verifyInfo).hash()), "VF");
 
         // Check chainId, hash, timestamp
@@ -478,7 +481,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
                 ]
             )
             .hash();
-
+        usedGas[msg.sender].challengeGasFee = (startGasNum - gasleft()) * block.basefee;
         emit ChallengeInfoUpdated(challengeId, _challenges[challengeId]);
     }
 
@@ -557,6 +560,8 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
         uint challengerAmount = challengeInfo.freezeAmount0 + challengeInfo.freezeAmount1 - challengeUserAmount;
 
+        uint challengerGasUsed = usedGas[msg.sender].challengeGasFee + usedGas[msg.sender].verifyChallengeSourceGasFee;
+
         // TODO: Not compatible with starknet network
         address user = address(uint160(challengeInfo.sourceTxFrom));
 
@@ -571,6 +576,11 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
             IERC20(challengeInfo.freezeToken).safeTransfer(challengeInfo.challenger, challengerAmount);
         }
+
+        (bool sent3, ) = payable(challengeInfo.challenger).call{value: challengerGasUsed}("");
+
+        require(sent3, "ETH: SE3");
+
 
         // Unfreeze
         _freezeAssets[challengeInfo.freezeToken] -= (challengeInfo.freezeAmount0 + challengeInfo.freezeAmount1);
