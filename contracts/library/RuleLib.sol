@@ -31,11 +31,6 @@ library RuleLib {
         uint32 version;
     }
 
-    struct challengeGasUsed {
-        uint256 challengeGasFee;
-        uint256 verifyChallengeSourceGasFee;
-    }
-
     struct RuleOneway {
         uint64 sourceChainId;
         uint64 destChainId;

@@ -29,7 +29,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
     IORMDCFactory private _mdcFactory;
     bytes32 private _columnArrayHash;
     mapping(uint64 => address) private _spvs; // chainId => spvAddress
-    mapping(address => RuleLib.challengeGasUsed) private usedGas; // gas => userAddress
+    mapping(bytes32 => uint) private usedGas; // gas => challengeId
     bytes32 private _responseMakersHash; // hash(response maker list), not just owner, to improve tps
     mapping(address => RuleLib.RootWithVersion) private _rulesRoots; // ebc => merkleRoot(rules), version
     mapping(bytes32 => uint) private _pledgeBalances; // hash(ebc, sourceChainId, sourceToken) => pledgeBalance
@@ -296,39 +296,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             0,
             0
         );
-        usedGas[msg.sender].challengeGasFee = (startGasNum - gasleft()) * block.basefee;
-        emit ChallengeInfoUpdated(challengeId, _challenges[challengeId]);
-    }
-
-    function checkChallenge(uint64 sourceChainId, bytes32 sourceTxHash, uint[] calldata verifiedData0) external {
-        bytes32 challengeId = abi.encodePacked(uint64(sourceChainId), sourceTxHash).hash();
-        ChallengeInfo memory challengeInfo = _challenges[challengeId];
-
-        // Make sure the challenge exists
-        require(challengeInfo.challengeTime > 0, "CNE");
-
-        // Make sure verifyChallengeDest is not done yet
-        require(challengeInfo.verifiedTime1 == 0, "VT1NZ");
-
-        IORManager manager = IORManager(_mdcFactory.manager());
-
-        if (challengeInfo.verifiedTime0 == 0) {
-            BridgeLib.ChainInfo memory chainInfo = manager.getChainInfo(sourceChainId);
-
-            require(block.timestamp > chainInfo.maxVerifyChallengeSourceTxSecond + challengeInfo.sourceTxTime, "VCST");
-
-            _challengerFailed(challengeInfo);
-        } else {
-            // Ensure the correctness of verifiedData0
-            require(abi.encode(verifiedData0).hash() == challengeInfo.verifiedDataHash0, "VDH");
-
-            BridgeLib.ChainInfo memory chainInfo = manager.getChainInfo(uint64(verifiedData0[0]));
-            require(block.timestamp > chainInfo.maxVerifyChallengeDestTxSecond + challengeInfo.sourceTxTime, "VCDT");
-
-            _makerFailed(challengeInfo);
-        }
-        _challenges[challengeId].abortTime = uint64(block.timestamp);
-
+        usedGas[challengeId] += (startGasNum - gasleft()) * block.basefee;
         emit ChallengeInfoUpdated(challengeId, _challenges[challengeId]);
     }
 
@@ -481,7 +449,46 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
                 ]
             )
             .hash();
-        usedGas[msg.sender].challengeGasFee = (startGasNum - gasleft()) * block.basefee;
+        usedGas[challengeId] += (startGasNum - gasleft()) * block.basefee;
+        emit ChallengeInfoUpdated(challengeId, _challenges[challengeId]);
+    }
+
+    function checkChallenge(uint64 sourceChainId, bytes32 sourceTxHash, uint[] calldata verifiedData0) external {
+        bytes32 challengeId = abi.encodePacked(uint64(sourceChainId), sourceTxHash).hash();
+        ChallengeInfo memory challengeInfo = _challenges[challengeId];
+
+        // Make sure the challenge exists
+        require(challengeInfo.challengeTime > 0, "CNE");
+
+        // Make sure verifyChallengeDest is not done yet
+        require(challengeInfo.verifiedTime1 == 0, "VT1NZ");
+
+
+        IORManager manager = IORManager(_mdcFactory.manager());
+
+        if (challengeInfo.verifiedTime0 == 0) {
+            BridgeLib.ChainInfo memory chainInfo = manager.getChainInfo(sourceChainId);
+
+            require(block.timestamp > chainInfo.maxVerifyChallengeSourceTxSecond + challengeInfo.sourceTxTime, "VCST");
+
+            _challengerFailed(challengeInfo);
+        } else {
+            // Ensure the correctness of verifiedData0
+            require(abi.encode(verifiedData0).hash() == challengeInfo.verifiedDataHash0, "VDH");
+
+            BridgeLib.ChainInfo memory chainInfo = manager.getChainInfo(uint64(verifiedData0[0]));
+            require(block.timestamp > chainInfo.maxVerifyChallengeDestTxSecond + challengeInfo.sourceTxTime, "VCDT");
+
+            _makerFailed(challengeInfo);
+
+            (bool sent3, ) = payable(challengeInfo.challenger).call{value: usedGas[challengeId]}("");
+
+            require(sent3, "ETH: SE3");
+
+            delete usedGas[challengeId];
+        }
+        _challenges[challengeId].abortTime = uint64(block.timestamp);
+
         emit ChallengeInfoUpdated(challengeId, _challenges[challengeId]);
     }
 
@@ -560,7 +567,6 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
         uint challengerAmount = challengeInfo.freezeAmount0 + challengeInfo.freezeAmount1 - challengeUserAmount;
 
-        uint challengerGasUsed = usedGas[msg.sender].challengeGasFee + usedGas[msg.sender].verifyChallengeSourceGasFee;
 
         // TODO: Not compatible with starknet network
         address user = address(uint160(challengeInfo.sourceTxFrom));
@@ -576,11 +582,6 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
             IERC20(challengeInfo.freezeToken).safeTransfer(challengeInfo.challenger, challengerAmount);
         }
-
-        (bool sent3, ) = payable(challengeInfo.challenger).call{value: challengerGasUsed}("");
-
-        require(sent3, "ETH: SE3");
-
 
         // Unfreeze
         _freezeAssets[challengeInfo.freezeToken] -= (challengeInfo.freezeAmount0 + challengeInfo.freezeAmount1);
