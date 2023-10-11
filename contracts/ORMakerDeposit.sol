@@ -281,8 +281,8 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         _freezeAssets[freezeToken] += freezeAmount0 + freezeAmount1;
 
         _challenges[challengeId] = ChallengeInfo(
-            sourceTxTime,
             0,
+            sourceTxTime,
             msg.sender,
             freezeToken,
             0,
@@ -347,6 +347,12 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         IORChallengeSpv.VerifyInfo calldata verifyInfo,
         bytes calldata rawDatas
     ) external {
+        // IORManager manager = IORManager(_mdcFactory.manager());
+        BridgeLib.ChainInfo memory chainInfo = IORManager(_mdcFactory.manager()).getChainInfo(
+            uint64(verifyInfo.data[0])
+        );
+        require(chainInfo.id > 0, "CI"); // Invalid chainId
+        require(chainInfo.spvs.includes(spvAddress), "SI"); // Invalid spv
         require(IORChallengeSpv(spvAddress).verifyChallenge(proof, spvBlockHashs, abi.encode(verifyInfo).hash()), "VF");
 
         // Check chainId, hash, timestamp

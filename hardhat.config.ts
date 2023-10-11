@@ -102,6 +102,7 @@ const config: HardhatUserConfig = {
         accountsBalance: utils.parseEther('100') + '',
       },
       chainId: chainIds.hardhat,
+      allowUnlimitedContractSize: true
     },
     arbitrum: getChainConfig('arbitrum-mainnet'),
     avalanche: getChainConfig('avalanche'),

@@ -26,11 +26,11 @@ contract VersionAndEnableTime {
                 (enableTime > _enableTime),
             "OFET"
         );
-        uint64 curBlockNumber = uint64(block.number);
-        require(curBlockNumber > _blockNumber, "BNE");
+        uint64 blockNumberCurrent = uint64(block.number);
+        require(blockNumberCurrent > _blockNumber, "BNE");
 
         _version += 1;
-        _blockNumber = curBlockNumber;
+        _blockNumber = blockNumberCurrent;
         _enableTime = enableTime;
     }
 

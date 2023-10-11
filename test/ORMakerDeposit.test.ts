@@ -2,6 +2,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { assert, expect } from 'chai';
 import { BigNumber, BigNumberish, constants, utils } from 'ethers';
 import { ethers } from 'hardhat';
+import fs from 'fs';
 import {
   getMappingItem,
   getMappingStruct,
@@ -14,7 +15,7 @@ import {
   defaultAbiCoder,
   keccak256,
 } from 'ethers/lib/utils';
-import lodash from 'lodash';
+import lodash, { random } from 'lodash';
 import { BaseTrie } from 'merkle-patricia-tree';
 import {
   ORMDCFactory,
@@ -23,6 +24,8 @@ import {
   ORMakerDeposit__factory,
   ORManager,
   ORManager__factory,
+  TestSpv,
+  TestSpv__factory,
   TestToken,
   TestToken__factory,
 } from '../typechain-types';
@@ -42,12 +45,15 @@ import {
   testRevertedOwner,
 } from './utils.test';
 import {
+  callDataCost,
   chainIdsMock,
   dealersMock,
   ebcMock,
   getCurrentTime,
   mineXMinutes,
 } from './lib/mockData';
+import { PromiseOrValue } from '../typechain-types/common';
+import { VerifierAbi, compile_yul } from '../scripts/utils';
 
 describe('ORMakerDeposit', () => {
   let signers: SignerWithAddress[];
@@ -134,7 +140,7 @@ describe('ORMakerDeposit', () => {
 
         const mdcDealers: string[] = await dealersMock();
         const chainIds: number[] = chainIdsMock;
-        const block = await ethers.provider.getBlock('latest');
+        // const block = await ethers.provider.getBlock('latest');
 
         // console.log(
         //   `mdcDealers: ${mdcDealers}, mdcEbcs: ${mdcEbcs}, mdcChainIds: ${chainIds}`,
@@ -159,12 +165,11 @@ describe('ORMakerDeposit', () => {
           )
           .then((t) => t.wait());
 
-        const args = events[0].args!;
-
-        expect(args['impl']).eq(implementation);
-        expect(args['columnArrayHash']).eq(columnArrayHash);
-        expect(lodash.toPlainObject(args['ebcs'])).to.deep.includes(mdcEbcs);
-        expect(lodash.toPlainObject(args['dealers'])).to.deep.includes(
+        const args = events?.[0].args;
+        expect(args?.impl).eq(implementation);
+        expect(args?.columnArrayHash).eq(columnArrayHash);
+        expect(lodash.toPlainObject(args?.ebcs)).to.deep.includes(mdcEbcs);
+        expect(lodash.toPlainObject(args?.dealers)).to.deep.includes(
           mdcDealers,
         );
 
@@ -299,7 +304,9 @@ describe('ORMakerDeposit', () => {
 
         const spvs = chainInfo.spvs.slice(0, 1);
         const chainIds = [chainId];
-        console.log('updateSpvs chainId', chainIds);
+        console.log(
+          `maker update [chainId:${chainIds.toString()} - spv:${spvs}]`,
+        );
 
         const { events } = await orMakerDeposit
           .updateSpvs(
@@ -390,10 +397,7 @@ describe('ORMakerDeposit', () => {
           responseMakerSignatures.push(signature);
         }
 
-        const address = utils.verifyMessage(
-          message,
-          responseMakerSignatures[0],
-        );
+        utils.verifyMessage(message, responseMakerSignatures[0]);
 
         const { events } = await orMakerDeposit
           .updateResponseMakers(
@@ -406,8 +410,8 @@ describe('ORMakerDeposit', () => {
           )
           .then((t) => t.wait());
 
-        const args = events[0].args!;
-        expect(args.responseMakers).to.deep.eq(responseMakers);
+        const args = events?.[0].args;
+        expect(args?.responseMakers).to.deep.eq(responseMakers);
 
         const responseMakersHash = await orMakerDeposit.responseMakersHash();
         expect(responseMakersHash).to.eq(
@@ -488,7 +492,7 @@ describe('ORMakerDeposit', () => {
     embedVersionIncreaseAndEnableTime(
       () => orMakerDeposit.getVersionAndEnableTime().then((r) => r.version),
       async function () {
-        const currentBlock = await mdcOwner.provider?.getBlock('latest');
+        // const currentBlock = await mdcOwner.provider?.getBlock('latest');
         const getNative = true;
 
         const rules: any[] = [];
@@ -549,10 +553,17 @@ describe('ORMakerDeposit', () => {
           )
           .then((t) => t.wait());
 
-        const args = events[0].args!;
-        expect(args.ebc).eq(ebcSample);
-        expect(args.rootWithVersion.root).eq(rootWithVersion.root);
-        expect(args.rootWithVersion.version).eq(rootWithVersion.version);
+        if (!!events) {
+          const txrc = await ethers.provider.getTransaction(
+            events[0].transactionHash,
+          );
+          const inpudataGas = callDataCost(txrc.data);
+          console.log('inputData', inpudataGas);
+        }
+        const args = events?.[0].args;
+        expect(args?.ebc).eq(ebcSample);
+        expect(args?.rootWithVersion.root).eq(rootWithVersion.root);
+        expect(args?.rootWithVersion.version).eq(rootWithVersion.version);
 
         await testReverted(
           orMakerDeposit.updateRulesRoot(
@@ -722,26 +733,27 @@ describe('ORMakerDeposit', () => {
     ),
   );
 
-  it('Function challenge should success', async function () {
-    const sourceChainId = 10;
-    const sourceTxHash = utils.keccak256('0x01');
-    const sourceTxTime = 10000;
-    const freezeToken = constants.AddressZero;
-    const freezeAmount = utils.parseEther('0.001');
+  describe('ORMakerDeposit challenge', () => {
+    let spv: TestSpv;
+    let verifyContract: { address: PromiseOrValue<string> };
+    interface challengeInputInfo {
+      sourceChainId: BigNumberish;
+      sourceTxHash: BigNumberish;
+      sourceTxTime: BigNumberish;
+      freezeToken: string;
+      freezeAmount: BigNumberish;
+    }
 
-    const tx = await orMakerDeposit.challenge(
-      sourceChainId,
-      sourceTxHash,
-      sourceTxTime,
-      freezeToken,
-      freezeAmount,
-      { value: freezeAmount },
-    );
+    interface VerifyInfoSlotStruct {
+      account: string;
+      key: BytesLike;
+      value: BigNumberish;
+    }
 
-    console.warn('tx.hash:', tx.hash);
-  });
-
-  describe('ORMakerDeposit', () => {
+    interface VerifyInfo {
+      data: BigNumberish[];
+      slots: VerifyInfoSlotStruct[];
+    }
     const slot: any[] = [];
     async function slotInit() {
       slot.push(await orMakerDeposit.owner());
@@ -755,6 +767,55 @@ describe('ORMakerDeposit', () => {
         slot.map((slot) => slot.toString()),
       );
     }
+
+    async function createChallenge(challenge: challengeInputInfo) {
+      const tx = await orMakerDeposit
+        .challenge(
+          challenge.sourceChainId,
+          challenge.sourceTxHash.toString(),
+          challenge.sourceTxTime,
+          challenge.freezeToken,
+          challenge.freezeAmount,
+          { value: challenge.freezeAmount },
+        )
+        .then((t) => t.wait());
+      const args = tx.events?.[0].args;
+      expect(args).not.empty;
+      if (!!args) {
+        // console.warn('args.ChallengeInfo:', args.ChallengeInfo);
+        expect(args.challengeId).not.empty;
+        expect(args.challengeInfo.sourceTxFrom).eql(BigNumber.from(0));
+        expect(args.challengeInfo.sourceTxTime).eql(
+          BigNumber.from(challenge.sourceTxTime),
+        );
+        expect(args.challengeInfo.challenger).eql(mdcOwner.address);
+        expect(args.challengeInfo.freezeToken).eql(challenge.freezeToken);
+        expect(args.challengeInfo.freezeAmount0).eql(challenge.freezeAmount);
+        expect(args.challengeInfo.freezeAmount1).eql(challenge.freezeAmount);
+      }
+      return args?.challengeId;
+    }
+
+    before(async function () {
+      const verifyBytesCode = await compile_yul(
+        'contracts/zkp/goerli_1_evm.yul',
+      );
+      // const verifyBytesCode = fs.readFileSync(
+      //   'contracts/zkp/goerli_1_evm.bytecode',
+      //   'utf-8',
+      // );
+
+      // console.log('verifyBytesCode:', verifyBytesCode);
+
+      const verifyFactory = new ethers.ContractFactory(
+        VerifierAbi,
+        verifyBytesCode,
+        mdcOwner,
+      );
+      verifyContract = await verifyFactory.deploy();
+      spv = await new TestSpv__factory(mdcOwner).deploy(verifyContract.address);
+      console.log(`verifier: ${verifyContract.address}, spv: ${spv.address}`);
+    });
 
     it('slot check should succeed', async function () {
       const MdcAddress = orMakerDeposit.address;
@@ -785,6 +846,105 @@ describe('ORMakerDeposit', () => {
         )?.toString(),
       );
       // expect(await getUint256('0x0', MdcAddress)).to.equal(slot[0].toString);
+    });
+
+    it('Function challenge should success', async function () {
+      const challenge: challengeInputInfo = {
+        sourceChainId: random(200),
+        sourceTxHash: utils.keccak256(mdcOwner.address),
+        sourceTxTime: 10000,
+        freezeToken: constants.AddressZero,
+        freezeAmount: utils.parseEther('0.001'),
+      };
+      const challengeId = await createChallenge(challenge);
+      console.log(`create challengeId: ${challengeId}`);
+    });
+
+    it('test function verifyChallengeSource Revert case', async function () {
+      const challenge: challengeInputInfo = {
+        sourceChainId: random(200),
+        sourceTxHash: utils.keccak256(mdcOwner.address),
+        sourceTxTime: random(5000000),
+        freezeToken: constants.AddressZero,
+        freezeAmount: utils.parseEther('0.001'),
+      };
+      const challengeId = await createChallenge(challenge);
+      const invalidVerifyInfo0: VerifyInfo = {
+        data: [1],
+        slots: [
+          {
+            account: constants.AddressZero,
+            key: utils.keccak256(mdcOwner.address),
+            value: 1,
+          },
+        ],
+      };
+      const invalidSPV0 = constants.AddressZero;
+      await expect(
+        orMakerDeposit.verifyChallengeSource(
+          invalidSPV0,
+          [],
+          [
+            utils.keccak256(mdcOwner.address),
+            utils.keccak256(mdcOwner.address),
+          ],
+          invalidVerifyInfo0,
+          [],
+        ),
+      ).to.revertedWith('CI');
+      const chainId = defaultChainInfo.id;
+      const invalidVerifyInfo1: VerifyInfo = {
+        data: [chainId.toString()],
+        slots: [
+          {
+            account: constants.AddressZero,
+            key: utils.keccak256(mdcOwner.address),
+            value: 1,
+          },
+        ],
+      };
+      await expect(
+        orMakerDeposit.verifyChallengeSource(
+          invalidSPV0,
+          [],
+          [
+            utils.keccak256(mdcOwner.address),
+            utils.keccak256(mdcOwner.address),
+          ],
+          invalidVerifyInfo1,
+          [],
+        ),
+      ).to.revertedWith('SI');
+
+      const chainInfo = await orManager.getChainInfo(chainId);
+      const spvs = chainInfo.spvs.slice(0, 1);
+      console.log(`test spv: ${spvs.toString()}`);
+    });
+
+    it('test prase spv proof data', async function () {
+      const fake_spvProof: BytesLike = utils.keccak256(mdcOwner.address);
+      const spvProof: BytesLike = utils.arrayify(
+        '0x' + fs.readFileSync('test/example/spv.calldata', 'utf-8'),
+      );
+
+      const { blockHash, toAddress, transferAmount, timestamp } =
+        await spv.parseProofData(spvProof);
+      console.log(
+        `blcokHash: ${blockHash}, toAddress: ${toAddress}, transferAmount: ${transferAmount}, timestamp: ${timestamp}`,
+      );
+
+      await expect(spv.verifyProof(fake_spvProof)).to.revertedWith(
+        'verify fail',
+      );
+
+      const tx = await spv.verifyProof(spvProof).then((t) => t.wait());
+      expect(tx.status).to.be.eq(1);
+      const txrc = await ethers.provider.getTransaction(tx.transactionHash);
+      const inpudataGas = callDataCost(txrc.data);
+      console.log(
+        // eslint-disable-next-line prettier/prettier
+        `verify total gas used: ${tx.gasUsed}, input data gas: ${inpudataGas}, excuteGas:${tx.gasUsed.toNumber() - inpudataGas}`,
+      );
     });
   });
 });

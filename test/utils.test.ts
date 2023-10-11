@@ -96,6 +96,6 @@ export function getMinEnableTime(currentEnableTime: BigNumber) {
     currentEnableTime.toNumber() != 0
       ? currentEnableTime.add(MIN_ENABLE_DELAY)
       : BigNumber.from(Date.now()).add(MIN_ENABLE_DELAY);
-  console.log(`current:${currentEnableTime}, nextEnableTime:${minEnableTime}`);
+  // console.log(`current:${currentEnableTime}, nextEnableTime:${minEnableTime}`);
   return minEnableTime.add(1);
 }
