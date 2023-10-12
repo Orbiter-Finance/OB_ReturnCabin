@@ -93,10 +93,10 @@ contract ORFeeManager is IORFeeManager, Ownable, ReentrancyGuard {
             );
 
             if (token != address(0)) {
-                // IERC20(token).safeTransfer(msg.sender, withdrawAmount[i]);
+                IERC20(token).safeTransfer(msg.sender, withdrawAmount[i]);
             } else {
-                // (bool success, ) = payable(msg.sender).call{value: withdrawAmount[i]}("");
-                // require(success, "ETH: IF");
+                (bool success, ) = payable(msg.sender).call{value: withdrawAmount[i]}("");
+                require(success, "ETH: IF");
             }
             emit Withdraw(msg.sender, chainId, token, debt, withdrawAmount[i]);
             unchecked {

@@ -6,6 +6,7 @@ import fs from 'fs';
 import {
   getMappingItem,
   getMappingStruct,
+  getMappingStructXSlot,
   getUint256,
 } from './lib/readStorage';
 
@@ -14,6 +15,7 @@ import {
   arrayify,
   defaultAbiCoder,
   keccak256,
+  solidityPack,
 } from 'ethers/lib/utils';
 import lodash, { random } from 'lodash';
 import { BaseTrie } from 'merkle-patricia-tree';
@@ -754,21 +756,182 @@ describe('ORMakerDeposit', () => {
       data: BigNumberish[];
       slots: VerifyInfoSlotStruct[];
     }
-    const slot: any[] = [];
-    async function slotInit() {
-      slot.push(await orMakerDeposit.owner());
-      slot.push(await orMakerDeposit.mdcFactory());
-      slot.push(await orMakerDeposit.columnArrayHash());
-      slot.push(await orMakerDeposit.spv(5));
-      slot.push(await orMakerDeposit.responseMakersHash());
-      slot.push((await orMakerDeposit.rulesRoot(ebcSample)).root);
+
+    const getVerifyinfoSlots = async (
+      maker: ORMakerDeposit,
+      manager: ORManager,
+      challenge: challengeInputInfo,
+    ): Promise<VerifyInfoSlotStruct[]> => {
+      const managerAddress = manager.address;
+      const makerAddress = maker.address;
+      const chainId = challenge.sourceChainId;
+      const freezeToken = challenge.freezeToken;
+      const freezeAmount = challenge.freezeAmount;
+
+      // set Verifyinfo 0
+      // manager - ChainInfo - maxVerifyChallengeSourceTxSecond | minVerifyChallengeSourceTxSecond
+      // slot 2
+      let slot0;
+      const slot0_I = keccak256(
+        solidityPack(['uint256', 'uint256'], [chainId, 2]),
+      );
+      const value0 =
+        utils.hexZeroPad(
+          (
+            await orManager.getChainInfo(5)
+          ).maxVerifyChallengeSourceTxSecond.toHexString(),
+          8,
+        ) +
+        utils
+          .hexZeroPad(
+            (
+              await orManager.getChainInfo(5)
+            ).minVerifyChallengeSourceTxSecond.toHexString(),
+            8,
+          )
+          .slice(2);
+      {
+        const { slot, itemSlot, value } = await getMappingStructXSlot(
+          '0x2',
+          managerAddress,
+          BigNumber.from(chainId).toHexString(),
+          1,
+          'number',
+        );
+
+        const newValue =
+          '0x' +
+          BigNumber.from(await value)
+            .toHexString()
+            .slice(-32);
+        const storageValue =
+          '0x' +
+          (
+            await ethers.provider.getStorageAt(
+              managerAddress,
+              utils.hexZeroPad(itemSlot, 32),
+            )
+          ).slice(-32);
+        slot0 = itemSlot;
+        expect(slot0_I)
+          .to.equal(slot)
+          .to.equal(BigNumber.from(itemSlot).sub(1));
+        expect(value0).to.equal(newValue).to.equal(storageValue);
+      }
+
+      // set Verifyinfo 0
+      // manager - chainTokenInfo - mainnetToken
+      // slot 3
+      let slot1;
+      const slot1_I = keccak256(
+        solidityPack(
+          ['uint', 'uint'],
+          [
+            keccak256(solidityPack(['uint64', 'uint'], [chainId, freezeToken])),
+            3,
+          ],
+        ),
+      );
+      const value1 = (await orManager.getChainTokenInfo(chainId, freezeToken))
+        .mainnetToken;
+      {
+        const hashKey = keccak256(
+          solidityPack(['uint64', 'uint'], [chainId, freezeToken]),
+        );
+        const { slot, itemSlot, value } = await getMappingStructXSlot(
+          '0x3',
+          managerAddress,
+          hashKey,
+          1,
+          'number',
+        );
+
+        const storageValue =
+          '0x' +
+          (
+            await ethers.provider.getStorageAt(
+              managerAddress,
+              utils.hexZeroPad(itemSlot, 32),
+            )
+          ).slice(-40);
+
+        const value1_S =
+          '0x' + utils.hexZeroPad((await value!)?.toHexString(), 32).slice(-40);
+        slot1 = itemSlot;
+        expect(slot)
+          .to.equal(slot1_I)
+          .to.equal(BigNumber.from(itemSlot).sub(1));
+        expect(value1.toLocaleLowerCase())
+          .to.equal(value1_S)
+          .to.equal(storageValue);
+      }
+
+      const slotValue: VerifyInfoSlotStruct[] = [
+        {
+          // manager - ChainInfo - maxVerifyChallengeSourceTxSecond | minVerifyChallengeSourceTxSecond
+          // slot: 2
+          // itemSlot: 1
+          account: managerAddress,
+          key: slot0,
+          value: value0,
+        },
+        {
+          // manager - chainTokenInfo - mainnetToken
+          // slot: 3
+          // itemSlot: 1
+          account: managerAddress,
+          key: slot1,
+          value: value1,
+        },
+        {
+          account: managerAddress,
+          key: Buffer.from('key3', 'utf-8'),
+          value: 3,
+        },
+        {
+          account: makerAddress,
+          key: Buffer.from('3', 'utf-8'),
+          value: await maker.columnArrayHash(),
+        },
+        {
+          account: managerAddress,
+          key: Buffer.from('key5', 'utf-8'),
+          value: 5,
+        },
+        {
+          account: makerAddress,
+          key: Buffer.from('5', 'utf-8'),
+          value: await maker.responseMakersHash(),
+        },
+        {
+          account: makerAddress,
+          key: keccak256(
+            defaultAbiCoder.encode(['address', 'uint256'], [ebcSample, 6]),
+          ),
+          value: (await maker.rulesRoot(ebcSample)).root,
+        },
+      ];
+      console.log('slotValue: ', slotValue);
+      return slotValue;
+    };
+
+    const makerSlotValue: any[] = [];
+    async function orMakerDepositSlotInit() {
+      makerSlotValue.push(await orMakerDeposit.owner());
+      makerSlotValue.push(await orMakerDeposit.mdcFactory());
+      makerSlotValue.push(await orMakerDeposit.columnArrayHash());
+      makerSlotValue.push(await orMakerDeposit.spv(5));
+      makerSlotValue.push(await orMakerDeposit.responseMakersHash());
+      makerSlotValue.push((await orMakerDeposit.rulesRoot(ebcSample)).root);
       console.log(
-        'slots',
-        slot.map((slot) => slot.toString()),
+        'maker Slot values:',
+        makerSlotValue.map((slot) => slot.toString()),
       );
     }
 
-    async function createChallenge(challenge: challengeInputInfo) {
+    const createChallenge = async (
+      challenge: challengeInputInfo,
+    ): Promise<string> => {
       const tx = await orMakerDeposit
         .challenge(
           challenge.sourceChainId,
@@ -794,18 +957,12 @@ describe('ORMakerDeposit', () => {
         expect(args.challengeInfo.freezeAmount1).eql(challenge.freezeAmount);
       }
       return args?.challengeId;
-    }
+    };
 
     before(async function () {
       const verifyBytesCode = await compile_yul(
         'contracts/zkp/goerli_1_evm.yul',
       );
-      // const verifyBytesCode = fs.readFileSync(
-      //   'contracts/zkp/goerli_1_evm.bytecode',
-      //   'utf-8',
-      // );
-
-      // console.log('verifyBytesCode:', verifyBytesCode);
 
       const verifyFactory = new ethers.ContractFactory(
         VerifierAbi,
@@ -817,15 +974,26 @@ describe('ORMakerDeposit', () => {
       console.log(`verifier: ${verifyContract.address}, spv: ${spv.address}`);
     });
 
-    it('slot check should succeed', async function () {
+    it('check maker contract slot value', async function () {
       const MdcAddress = orMakerDeposit.address;
       console.log('MDC address', MdcAddress);
-      await slotInit();
-
-      console.log(
-        'getVersionAndEnableTime',
-        await orMakerDeposit.getVersionAndEnableTime(),
-      );
+      await orMakerDepositSlotInit();
+      for (let i = 0; i < 10; i++) {
+        const iBytes = BigNumber.from(i).toHexString();
+        console.log(
+          'maker slot:',
+          i,
+          'value: ',
+          await ethers.provider.getStorageAt(
+            MdcAddress,
+            utils.hexZeroPad(iBytes, 32),
+          ),
+        );
+      }
+      // console.log(
+      //   'getVersionAndEnableTime',
+      //   await orMakerDeposit.getVersionAndEnableTime(),
+      // );
       console.log('slot0', (await getUint256('0x0', MdcAddress)).toHexString());
       console.log('slot1', (await getUint256('0x1', MdcAddress)).toHexString());
       console.log('slot2', (await getUint256('0x2', MdcAddress)).toHexString());
@@ -845,7 +1013,95 @@ describe('ORMakerDeposit', () => {
           await getMappingStruct('0x6', MdcAddress, ebcSample, 1, 'number')
         )?.toString(),
       );
-      // expect(await getUint256('0x0', MdcAddress)).to.equal(slot[0].toString);
+    });
+
+    it('check manager contract slot value', async function () {
+      const managerAddress = orManager.address;
+      for (let i = 0; i < 10; i++) {
+        const iBytes = BigNumber.from(i).toHexString();
+        console.log(
+          'manager slot:',
+          i,
+          'value: ',
+          await ethers.provider.getStorageAt(
+            managerAddress,
+            utils.hexZeroPad(iBytes, 32),
+          ),
+        );
+      }
+      console.log(
+        'slot0-[owner]: ',
+        (await getUint256('0x0', managerAddress)).toHexString(),
+      );
+
+      console.log(
+        'slot1-[VersionAndEnableTime]',
+        (await getUint256('0x1', managerAddress)).toHexString(),
+      );
+      console.log(
+        'slot2-ChainInfo-[min/maxVerifyChallengeSourceTxSecond]',
+        BigNumber.from(
+          await getMappingStruct('0x2', managerAddress, '0x5', 1, 'number'),
+        ).toHexString(),
+      );
+      console.log(
+        'slot2 slot',
+        BigNumber.from(
+          (
+            await getMappingStructXSlot(
+              '0x2',
+              managerAddress,
+              '0x5',
+              1,
+              'number',
+            )
+          ).slot,
+        ).toHexString(),
+      );
+      const slot3Address = '0xa0321efeb50c46c17a7d72a52024eea7221b215a';
+      const slot3Chain = 5;
+      const encodePackedChain_Token = solidityPack(
+        ['uint64', 'uint'],
+        [slot3Chain, slot3Address],
+      );
+      const slot3PackedKey = keccak256(encodePackedChain_Token) as BytesLike;
+
+      const slot3Key = keccak256(
+        solidityPack(
+          ['uint', 'uint'],
+          [
+            keccak256(
+              solidityPack(['uint64', 'uint'], [slot3Chain, slot3Address]),
+            ),
+            3,
+          ],
+        ),
+      );
+      console.log('slot3', slot3Key);
+
+      console.log(
+        'slot3-TokenInfo-[decimals-mainnetToken]',
+        BigNumber.from(
+          await getMappingStruct(
+            '0x3',
+            managerAddress,
+            slot3PackedKey,
+            1,
+            'number',
+          ),
+        ).toHexString(),
+      );
+    });
+
+    it('challenge should success', async function () {
+      const challenge: challengeInputInfo = {
+        sourceChainId: 5,
+        sourceTxHash: utils.keccak256(mdcOwner.address),
+        sourceTxTime: 10000,
+        freezeToken: '0xa0321efeb50c46c17a7d72a52024eea7221b215a',
+        freezeAmount: utils.parseEther('0.001'),
+      };
+      await getVerifyinfoSlots(orMakerDeposit, orManager, challenge);
     });
 
     it('Function challenge should success', async function () {
@@ -943,7 +1199,7 @@ describe('ORMakerDeposit', () => {
       const inpudataGas = callDataCost(txrc.data);
       console.log(
         // eslint-disable-next-line prettier/prettier
-        `verify total gas used: ${tx.gasUsed}, input data gas: ${inpudataGas}, excuteGas:${tx.gasUsed.toNumber() - inpudataGas}`,
+        `verify totalGas: ${tx.gasUsed}, callDataGas: ${inpudataGas}, excuteGas:${tx.gasUsed.toNumber() - inpudataGas}`,
       );
     });
   });

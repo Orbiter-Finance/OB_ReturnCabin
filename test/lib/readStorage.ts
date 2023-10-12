@@ -159,7 +159,6 @@ export async function getMappingStruct(
   const paddedKey = utils.hexZeroPad(key, 32);
   const itemSlot1 = utils.keccak256(paddedKey + paddedSlot.slice(2));
   const itemSlot = BigNumber.from(itemSlot1).add(item).toHexString();
-
   switch (type) {
     case 'string':
       return await getShortStr(itemSlot, contractAddress);
@@ -168,6 +167,35 @@ export async function getMappingStruct(
     case 'number':
       return getUint256(itemSlot, contractAddress);
   }
+}
+
+export async function getMappingStructXSlot(
+  _slot: BytesLike,
+  contractAddress: any,
+  key: BytesLike,
+  item: BigNumberish,
+  type: any,
+) {
+  const paddedSlot = utils.hexZeroPad(_slot, 32);
+  const paddedKey = utils.hexZeroPad(key, 32);
+  const itemSlot1 = utils.keccak256(paddedKey + paddedSlot.slice(2));
+  const itemSlot = BigNumber.from(itemSlot1).add(item).toHexString();
+  const slot = BigNumber.from(itemSlot1).toHexString();
+  let value;
+  switch (type) {
+    case 'string':
+      value = await getShortStr(itemSlot, contractAddress);
+    case 'bytes':
+      value = getBytePackedVar(itemSlot, contractAddress, 0, 32);
+    case 'number':
+      value = getUint256(itemSlot, contractAddress);
+  }
+
+  return {
+    slot,
+    itemSlot,
+    value,
+  };
 }
 
 async function getNestedMappingStruct(

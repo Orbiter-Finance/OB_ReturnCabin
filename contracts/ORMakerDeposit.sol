@@ -347,7 +347,6 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         IORChallengeSpv.VerifyInfo calldata verifyInfo,
         bytes calldata rawDatas
     ) external {
-        // IORManager manager = IORManager(_mdcFactory.manager());
         BridgeLib.ChainInfo memory chainInfo = IORManager(_mdcFactory.manager()).getChainInfo(
             uint64(verifyInfo.data[0])
         );
