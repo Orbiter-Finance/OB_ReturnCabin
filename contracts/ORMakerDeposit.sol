@@ -35,9 +35,15 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
     mapping(bytes32 => uint) private _pledgeBalances; // hash(ebc, sourceChainId, sourceToken) => pledgeBalance
     mapping(address => uint) private _freezeAssets; // token(ETH: 0) => freezeAmount
     mapping(bytes32 => ChallengeInfo) private _challenges; // hash(sourceChainId, transactionHash) => ChallengeInfo
+    uint8[] private challengeCount;
 
     modifier onlyOwner() {
         require(msg.sender == _owner, "Ownable: caller is not the owner");
+        _;
+    }
+
+    modifier onlyNoChallenge() {
+        require(challengeCount.length == 0, "Being Challenged");
         _;
     }
 
@@ -148,7 +154,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         }
     }
 
-    function withdraw(address token, uint amount) external onlyOwner {
+    function withdraw(address token, uint amount) external onlyOwner onlyNoChallenge() {
         if (token == address(0)) {
             require(address(this).balance - _freezeAssets[token] >= amount, "ETH: IF");
 
@@ -160,6 +166,10 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
             IERC20(token).safeTransfer(msg.sender, amount);
         }
+    }
+
+    function withdrawChallengeCheck() external view returns (bool) {
+      return challengeCount.length > 0 ? false : true;
     }
 
     function rulesRoot(address ebc) external view returns (RuleLib.RootWithVersion memory) {
@@ -297,6 +307,48 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             0
         );
         usedGas[challengeId] += (startGasNum - gasleft()) * block.basefee;
+        challengeCount.push(0);
+        emit ChallengeInfoUpdated(challengeId, _challenges[challengeId]);
+    }
+
+    function checkChallenge(uint64 sourceChainId, bytes32 sourceTxHash, uint[] calldata verifiedData0) external {
+        bytes32 challengeId = abi.encodePacked(uint64(sourceChainId), sourceTxHash).hash();
+        ChallengeInfo memory challengeInfo = _challenges[challengeId];
+
+        // Make sure the challenge exists
+        require(challengeInfo.challengeTime > 0, "CNE");
+
+        // Make sure verifyChallengeDest is not done yet
+        require(challengeInfo.verifiedTime1 == 0, "VT1NZ");
+
+
+        IORManager manager = IORManager(_mdcFactory.manager());
+
+        if (challengeInfo.verifiedTime0 == 0) {
+            BridgeLib.ChainInfo memory chainInfo = manager.getChainInfo(sourceChainId);
+
+            require(block.timestamp > chainInfo.maxVerifyChallengeSourceTxSecond + challengeInfo.sourceTxTime, "VCST");
+
+            _challengerFailed(challengeInfo);
+        } else {
+            // Ensure the correctness of verifiedData0
+            require(abi.encode(verifiedData0).hash() == challengeInfo.verifiedDataHash0, "VDH");
+
+            BridgeLib.ChainInfo memory chainInfo = manager.getChainInfo(uint64(verifiedData0[0]));
+            require(block.timestamp > chainInfo.maxVerifyChallengeDestTxSecond + challengeInfo.sourceTxTime, "VCDT");
+
+            _makerFailed(challengeInfo);
+
+            (bool sent3, ) = payable(challengeInfo.challenger).call{value: usedGas[challengeId]}("");
+
+            require(sent3, "ETH: SE3");
+
+            delete usedGas[challengeId];
+
+            challengeCount.pop();
+        }
+        _challenges[challengeId].abortTime = uint64(block.timestamp);
+
         emit ChallengeInfoUpdated(challengeId, _challenges[challengeId]);
     }
 
@@ -450,45 +502,6 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             )
             .hash();
         usedGas[challengeId] += (startGasNum - gasleft()) * block.basefee;
-        emit ChallengeInfoUpdated(challengeId, _challenges[challengeId]);
-    }
-
-    function checkChallenge(uint64 sourceChainId, bytes32 sourceTxHash, uint[] calldata verifiedData0) external {
-        bytes32 challengeId = abi.encodePacked(uint64(sourceChainId), sourceTxHash).hash();
-        ChallengeInfo memory challengeInfo = _challenges[challengeId];
-
-        // Make sure the challenge exists
-        require(challengeInfo.challengeTime > 0, "CNE");
-
-        // Make sure verifyChallengeDest is not done yet
-        require(challengeInfo.verifiedTime1 == 0, "VT1NZ");
-
-
-        IORManager manager = IORManager(_mdcFactory.manager());
-
-        if (challengeInfo.verifiedTime0 == 0) {
-            BridgeLib.ChainInfo memory chainInfo = manager.getChainInfo(sourceChainId);
-
-            require(block.timestamp > chainInfo.maxVerifyChallengeSourceTxSecond + challengeInfo.sourceTxTime, "VCST");
-
-            _challengerFailed(challengeInfo);
-        } else {
-            // Ensure the correctness of verifiedData0
-            require(abi.encode(verifiedData0).hash() == challengeInfo.verifiedDataHash0, "VDH");
-
-            BridgeLib.ChainInfo memory chainInfo = manager.getChainInfo(uint64(verifiedData0[0]));
-            require(block.timestamp > chainInfo.maxVerifyChallengeDestTxSecond + challengeInfo.sourceTxTime, "VCDT");
-
-            _makerFailed(challengeInfo);
-
-            (bool sent3, ) = payable(challengeInfo.challenger).call{value: usedGas[challengeId]}("");
-
-            require(sent3, "ETH: SE3");
-
-            delete usedGas[challengeId];
-        }
-        _challenges[challengeId].abortTime = uint64(block.timestamp);
-
         emit ChallengeInfoUpdated(challengeId, _challenges[challengeId]);
     }
 
