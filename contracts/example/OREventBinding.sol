@@ -13,6 +13,7 @@ contract OREventBinding is IOREventBinding {
     function splitSecurityCode(uint securityCode) public pure returns (uint[] memory) {
         uint[] memory splits = new uint[](3);
 
+        // TODO: dealers occupy 2 places
         unchecked {
             splits[0] = (securityCode / 1000) % 10;
             splits[1] = (securityCode / 100) % 10;
