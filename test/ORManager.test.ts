@@ -65,14 +65,17 @@ describe('Test ORManager', () => {
         const chains = defaultChainInfoArray.map((chainInfo) => {
           return lodash.cloneDeepWith(chainInfo);
         });
+
+        const enableTime =
+          process.env['OR_MANAGER_ADDRESS'] != undefined
+            ? getMinEnableTime(BigNumber.from(await getCurrentTime()))
+            : getMinEnableTime(
+              (await orManager.getVersionAndEnableTime()).enableTime,
+            );
         const { events } = await orManager
-          .registerChains(
-            getMinEnableTime(BigNumber.from(await getCurrentTime())),
-            chains,
-            {
-              gasLimit: 1e6,
-            },
-          )
+          .registerChains(enableTime, chains, {
+            gasLimit: 1e6,
+          })
           .then((i) => i.wait());
 
         // print all chain ids
@@ -101,67 +104,18 @@ describe('Test ORManager', () => {
   );
 
   it(
-    'Function updateChainSpvs should succeed',
-    embedVersionIncreaseAndEnableTime(
-      () => orManager.getVersionAndEnableTime().then((r) => r.version),
-      async function () {
-        const chains = defaultChainInfoArray.map((chainInfo) => {
-          return lodash.cloneDeepWith(chainInfo);
-        });
-
-        for (let i = 0; i < 1; i++) {
-          const chainId = chains[i].id;
-
-          const spvs: string[] = [];
-          const indexs: BigNumberish[] = [BigNumber.from(0)];
-          for (let j = 0; j < 10; j++) {
-            spvs.push(ethers.Wallet.createRandom().address);
-          }
-
-          const { events } = await orManager
-            .updateChainSpvs(
-              getMinEnableTime(
-                (
-                  await orManager.getVersionAndEnableTime()
-                ).enableTime,
-              ),
-              chainId,
-              spvs,
-              indexs,
-              {
-                gasLimit: 10e6,
-              },
-            )
-            .then((t) => t.wait());
-
-          console.log(
-            'current chainIds:',
-            chainId.toString(),
-            'register spvs:',
-            spvs.map((spvs) => spvs),
-          );
-
-          expect(events[0].args!.id).eq(chainId);
-          expect(events[0].args!.chainInfo.spvs).deep.eq(spvs);
-        }
-      },
-    ),
-  );
-
-  it(
     'Function updateChainTokens should succeed',
     embedVersionIncreaseAndEnableTime(
       () => orManager.getVersionAndEnableTime().then((r) => r.version),
       async function () {
+        const tokenLength = testToken.MAINNET_TOKEN.length;
         const chainIds = defaultChainInfoArray.flatMap((chainInfo) =>
-          Array.from({ length: testToken.MAINNET_TOKEN.length }, () =>
-            Number(chainInfo.id),
-          ),
+          Array.from({ length: tokenLength }, () => Number(chainInfo.id)),
         );
         const tokens: BridgeLib.TokenInfoStruct[] = [];
 
         for (let i = 0; i < defaultChainInfoArray.length; i++) {
-          for (let j = 0; j < testToken.MAINNET_TOKEN.length; j++) {
+          for (let j = 0; j < tokenLength; j++) {
             const chainInfo = defaultChainInfoArray[i];
             const chainId = Number(chainInfo.id);
             const token = chainIDgetTokenSequence(chainId, j);
@@ -210,6 +164,54 @@ describe('Test ORManager', () => {
         expect(lodash.toPlainObject(tokenInfo)).to.deep.includes(
           tokens[latestIndex],
         );
+      },
+    ),
+  );
+
+  it(
+    'Function updateChainSpvs should succeed',
+    embedVersionIncreaseAndEnableTime(
+      () => orManager.getVersionAndEnableTime().then((r) => r.version),
+      async function () {
+        const chains = defaultChainInfoArray.map((chainInfo) => {
+          return lodash.cloneDeepWith(chainInfo);
+        });
+
+        for (let i = 0; i < 1; i++) {
+          const chainId = chains[i].id;
+
+          const spvs: string[] = [];
+          const indexs: BigNumberish[] = [BigNumber.from(0)];
+          for (let j = 0; j < 10; j++) {
+            spvs.push(ethers.Wallet.createRandom().address);
+          }
+
+          const { events } = await orManager
+            .updateChainSpvs(
+              getMinEnableTime(
+                (
+                  await orManager.getVersionAndEnableTime()
+                ).enableTime,
+              ),
+              chainId,
+              spvs,
+              indexs,
+              {
+                gasLimit: 10e6,
+              },
+            )
+            .then((t) => t.wait());
+
+          console.log(
+            'current chainIds:',
+            chainId.toString(),
+            'register spvs:',
+            spvs.map((spvs) => spvs),
+          );
+
+          expect(events[0].args!.id).eq(chainId);
+          expect(events[0].args!.chainInfo.spvs).deep.eq(spvs);
+        }
       },
     ),
   );

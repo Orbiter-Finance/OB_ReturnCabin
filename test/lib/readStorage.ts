@@ -186,9 +186,9 @@ export async function getMappingStructXSlot(
     case 'string':
       value = await getShortStr(itemSlot, contractAddress);
     case 'bytes':
-      value = getBytePackedVar(itemSlot, contractAddress, 0, 32);
+      value = await getBytePackedVar(itemSlot, contractAddress, 0, 32);
     case 'number':
-      value = getUint256(itemSlot, contractAddress);
+      value = await getUint256(itemSlot, contractAddress);
   }
 
   return {

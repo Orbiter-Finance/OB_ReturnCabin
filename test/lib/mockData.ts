@@ -10,9 +10,14 @@ export const chainNames = {
   420: 'optimisim goerli',
   421613: 'arbitrum goerli',
   280: 'zk-sync Era Testnet',
+  534351: 'Scroll Sepolia',
 };
 
-// mark the chain id that if we don't want to test
+/**
+ * mark the netkwork ID if you don't want to test it
+ * @param none
+ * @return none
+ */
 export const chainIdsMock = [
   // 1,
   // 42161,
@@ -22,6 +27,7 @@ export const chainIdsMock = [
   420, // optimisim goerli testnet
   421613, // arbitrum goerli testnet
   280, // zk-sync Era testnet
+  534351, // Scroll Sepolia Testnet
 ];
 
 export const chainIdsMockMainnetToken = [
@@ -29,10 +35,11 @@ export const chainIdsMockMainnetToken = [
   // 42161,
   // 10,
   // 324,
-  '0x0000000000000000000000000000000000000000', // goerli
-  '0x0000000000000000000000000000000000000000', // optimisim goerli testnet
-  '0x0000000000000000000000000000000000000000', // arbitrum goerli testnet
+  '0x0000000000000000000000000000000000000000', // 5        //goerli
+  '0x0000000000000000000000000000000000000000', // 420      //optimisim goerli testnet
+  '0x0000000000000000000000000000000000000000', // 421613  //arbitrum goerli testnet
   '0x0000000000000000000000000000000000000000', // 280,    // zk-sync Era testnet
+  '0x0000000000000000000000000000000000000000', // 534351, // Scroll Sepolia Testnet
 ];
 
 // struct SubmitInfo
@@ -169,6 +176,7 @@ export let testToken = {
   ARBITRUM_TOKEN: [] as string[],
   OPTIMISM_TOKEN: [] as string[],
   ERA_TOKRN: [] as string[],
+  SCROLL_TOKEN: [] as string[],
 };
 
 export function initTestToken() {
@@ -179,6 +187,7 @@ export function initTestToken() {
   const arbitrumTokens = new Set<string>();
   const optimismTokens = new Set<string>();
   const eraTokens = new Set<string>();
+  const scrollTokens = new Set<string>();
 
   if (process.env['MAINNET_NATIVE_TOKEN'] != undefined) {
     process.env['MAINNET_NATIVE_TOKEN'].split(',').forEach((token) => {
@@ -201,6 +210,12 @@ export function initTestToken() {
   if (process.env['ERA_NATIVE_TOKEN'] != undefined) {
     process.env['ERA_NATIVE_TOKEN'].split(',').forEach((token) => {
       eraTokens.add(token);
+    });
+  }
+
+  if (process.env['SCROLL_NATIVE_TOKEN'] != undefined) {
+    process.env['SCROLL_NATIVE_TOKEN'].split(',').forEach((token) => {
+      scrollTokens.add(token);
     });
   }
 
@@ -238,6 +253,15 @@ export function initTestToken() {
     });
   }
 
+  if (process.env['SCROLL_TEST_USDT'] != undefined) {
+    process.env['SCROLL_TEST_USDT'].split(',').forEach((token) => {
+      usdtTokens.add(token);
+    });
+    process.env['SCROLL_TEST_USDT'].split(',').forEach((token) => {
+      scrollTokens.add(token);
+    });
+  }
+
   if (process.env['MAINNET_TEST_USDC'] != undefined) {
     process.env['MAINNET_TEST_USDC'].split(',').forEach((token) => {
       usdcTokens.add(token);
@@ -269,6 +293,15 @@ export function initTestToken() {
     });
     process.env['ERA_TEST_USDC'].split(',').forEach((token) => {
       eraTokens.add(token);
+    });
+  }
+
+  if (process.env['SCROLL_TEST_USDC'] != undefined) {
+    process.env['SCROLL_TEST_USDC'].split(',').forEach((token) => {
+      usdcTokens.add(token);
+    });
+    process.env['SCROLL_TEST_USDC'].split(',').forEach((token) => {
+      scrollTokens.add(token);
     });
   }
 
@@ -307,6 +340,14 @@ export function initTestToken() {
       eraTokens.add(token);
     });
   }
+  if (process.env['SCROLL_TEST_DAI'] != undefined) {
+    process.env['SCROLL_TEST_DAI'].split(',').forEach((token) => {
+      daiTokens.add(token);
+    });
+    process.env['SCROLL_TEST_DAI'].split(',').forEach((token) => {
+      scrollTokens.add(token);
+    });
+  }
 
   testToken = {
     USDT_TOKEN: Array.from(usdtTokens),
@@ -316,6 +357,7 @@ export function initTestToken() {
     ARBITRUM_TOKEN: Array.from(new Set([...arbitrumTokens])),
     OPTIMISM_TOKEN: Array.from(new Set([...optimismTokens])),
     ERA_TOKRN: Array.from(new Set([...eraTokens])),
+    SCROLL_TOKEN: Array.from(new Set([...scrollTokens])),
   };
 
   // console.log(testToken);
@@ -348,8 +390,13 @@ export function calculateMainnetToken(
     case 5: {
       return L2token;
     }
+    case 534351: {
+      if (testToken.SCROLL_TOKEN.indexOf(L2token) != -1) {
+        return testToken.MAINNET_TOKEN[testToken.SCROLL_TOKEN.indexOf(L2token)];
+      }
+    }
     default:
-      return constants.AddressZero;
+      return '0xA00000000000000000000000000000000000000B';
   }
 }
 
@@ -383,6 +430,13 @@ export function chainIDgetTokenSequence(chainId: number, idx: number) {
         return ethers.constants.AddressZero;
       }
     }
+    case 534351: {
+      if (idx < testToken.SCROLL_TOKEN.length) {
+        return testToken.SCROLL_TOKEN[idx];
+      } else {
+        return ethers.constants.AddressZero;
+      }
+    }
     default:
       return ethers.constants.AddressZero;
   }
@@ -397,6 +451,7 @@ export function chainIDgetToken(
   let arbitrumToken = ethers.constants.AddressZero;
   let optimismToken = ethers.constants.AddressZero;
   let eraToken = ethers.constants.AddressZero;
+  let scrollToken = ethers.constants.AddressZero;
   if (!isNative) {
     mainnetToken =
       testToken.MAINNET_TOKEN.length > 0
@@ -413,6 +468,10 @@ export function chainIDgetToken(
     eraToken =
       testToken.ERA_TOKRN.length > 0
         ? lodash.sample(testToken.ERA_TOKRN.slice(1))!
+        : ethers.Wallet.createRandom().address;
+    scrollToken =
+      testToken.SCROLL_TOKEN.length > 0
+        ? lodash.sample(testToken.SCROLL_TOKEN.slice(1))!
         : ethers.Wallet.createRandom().address;
   }
 
@@ -490,6 +549,29 @@ export function chainIDgetToken(
         return arbitrumDAI;
       } else {
         return arbitrumToken;
+      }
+    }
+    case 534351: {
+      if (type == 'USDT') {
+        const scrollUSDT =
+          process.env['ARBITRUM_TEST_USDT'] != undefined
+            ? process.env['ARBITRUM_TEST_USDT']
+            : ethers.constants.AddressZero;
+        return scrollUSDT;
+      } else if (type == 'USDC') {
+        const scrollUSDC =
+          process.env['ARBITRUM_TEST_USDC'] != undefined
+            ? process.env['ARBITRUM_TEST_USDC']
+            : ethers.constants.AddressZero;
+        return scrollUSDC;
+      } else if (type == 'DAI') {
+        const scrollDAI =
+          process.env['ARBITRUM_TEST_DAI'] != undefined
+            ? process.env['ARBITRUM_TEST_DAI']
+            : ethers.constants.AddressZero;
+        return scrollDAI;
+      } else {
+        return scrollToken;
       }
     }
     case 280:
