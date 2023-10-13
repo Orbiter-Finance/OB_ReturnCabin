@@ -15,6 +15,7 @@ interface IORManager {
     event FeeTakeOnChallengeSecondUpdated(uint64 feeTakeOnChallengeSecond);
     event MaxMDCLimitUpdated(uint64 maxMDCLimit);
     event ExtraTransferContractsUpdated(uint64[] chainIds, uint[] extraTransferContracts);
+    event SpvBlockIntervalUpdated(uint64[] chainIds, uint[] extraTransferContracts);
 
     function registerChains(uint64 enableTime, BridgeLib.ChainInfo[] calldata chains_) external;
 
@@ -69,4 +70,8 @@ interface IORManager {
         uint64[] calldata chainIds,
         uint[] calldata extraTransferContracts
     ) external;
+
+    function getSpvBlockInterval() external view returns (uint);
+
+    function updateSpvBlockInterval(uint spvBlockInterval) external;
 }
