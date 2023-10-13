@@ -23,6 +23,7 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
     uint64 private _feeChallengeSecond;
     uint64 private _feeTakeOnChallengeSecond;
     uint64 private _maxMDCLimit = 2 ** 64 - 1;
+    uint8 private _initPriorityFee = 1;
     mapping(uint64 => uint) private _extraTransferContracts; // Cross-address transfer contracts. chainId => contractAddress
 
     constructor(address owner_) {
@@ -45,6 +46,14 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
                 emit ChainInfoUpdated(chains_[i].id, chains_[i]);
             }
         }
+    }
+
+    function getPriorityFee() external view returns (uint8) {
+      return _initPriorityFee;
+    }
+
+    function updatePriorityFee(uint8 _priorityFee) external onlyOwner() {
+      _initPriorityFee = _priorityFee;
     }
 
     function updateChainSpvs(

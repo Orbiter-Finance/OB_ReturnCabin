@@ -306,8 +306,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             0,
             0
         );
-        usedGas[challengeId] += (startGasNum - gasleft()) * block.basefee;
-        challengeCount.push(0);
+        usedGas[challengeId] += (startGasNum - gasleft()) * (block.basefee + IORManager(_mdcFactory.manager()).getPriorityFee());
         emit ChallengeInfoUpdated(challengeId, _challenges[challengeId]);
     }
 
@@ -501,7 +500,8 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
                 ]
             )
             .hash();
-        usedGas[challengeId] += (startGasNum - gasleft()) * block.basefee;
+        usedGas[challengeId] += (startGasNum - gasleft()) * (block.basefee + IORManager(_mdcFactory.manager()).getPriorityFee());
+        challengeCount.push(0);
         emit ChallengeInfoUpdated(challengeId, _challenges[challengeId]);
     }
 

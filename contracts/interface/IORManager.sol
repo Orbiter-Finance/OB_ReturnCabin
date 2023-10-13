@@ -18,6 +18,10 @@ interface IORManager {
 
     function registerChains(uint64 enableTime, BridgeLib.ChainInfo[] calldata chains_) external;
 
+    function getPriorityFee() external view returns (uint8);
+
+    function updatePriorityFee(uint8 _priorityFee) external;
+
     function updateChainSpvs(uint64 enableTime, uint64 id, address[] calldata spvs, uint[] calldata indexs) external;
 
     function getChainInfo(uint64 id) external view returns (BridgeLib.ChainInfo memory);
