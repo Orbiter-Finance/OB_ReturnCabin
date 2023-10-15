@@ -18,10 +18,23 @@ contract ORSpvData is IORSpvData {
     }
 
     function saveHistoryBlock() external {
-        uint256 previousBlockNumber = block.number - 1;
-        bytes32 previousBlockHash = blockhash(previousBlockNumber);
-        blocks[previousBlockHash] = previousBlockNumber;
-        emit SaveHistoryBlock(previousBlockHash, previousBlockNumber);
+        uint64 spvBlockInterval = _manager.getSpvBlockInterval();
+
+        for (uint i = 256; i > 0; ) {
+            uint256 blockNumber = block.number - i;
+
+            if (blockNumber % spvBlockInterval == 0) {
+                if (blocks[blockNumber] == bytes32(0)) {
+                    bytes32 blockHash = blockhash(blockNumber);
+                    blocks[blockNumber] = blockHash;
+                    emit SaveHistoryBlock(blockHash, blockNumber);
+                }
+            }
+
+            unchecked {
+                i--;
+            }
+        }
     }
 
     function injectByManager(

@@ -23,6 +23,7 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
     uint64 private _feeChallengeSecond;
     uint64 private _feeTakeOnChallengeSecond;
     uint64 private _maxMDCLimit = 2 ** 64 - 1;
+    uint64 private _spvBlockInterval = 20;
     mapping(uint64 => uint) private _extraTransferContracts; // Cross-address transfer contracts. chainId => contractAddress
 
     constructor(address owner_) {
@@ -187,6 +188,17 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
 
     function getExtraTransferContract(uint64 chainId) external view returns (uint) {
         return _extraTransferContracts[chainId];
+    }
+
+    function getSpvBlockInterval() external view returns (uint64) {
+        return _spvBlockInterval;
+    }
+
+    function updateSpvBlockInterval(uint64 spvBlockInterval) external onlyOwner {
+        require(spvBlockInterval > 0, "IV");
+        _spvBlockInterval = spvBlockInterval;
+
+        emit SpvBlockIntervalUpdated(spvBlockInterval);
     }
 
     function updateExtraTransferContracts(
