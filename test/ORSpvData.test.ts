@@ -1,23 +1,33 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { ethers, network } from 'hardhat';
+import { ethers } from 'hardhat';
 
-import { assert, expect } from 'chai';
-import { ORSpvData, ORSpvData__factory } from '../typechain-types';
 import { mine } from '@nomicfoundation/hardhat-network-helpers';
+import { assert, expect } from 'chai';
+import {
+  ORManager,
+  ORManager__factory,
+  ORSpvData,
+  ORSpvData__factory,
+} from '../typechain-types';
+import { BigNumber } from 'ethers';
 
 describe('ORSpvData', () => {
   let signers: SignerWithAddress[];
+  let orManager: ORManager;
   let orSpvData: ORSpvData;
 
   before(async function () {
     signers = await ethers.getSigners();
 
     const envORManagerAddress = process.env['OR_MANAGER_ADDRESS'];
-    console.log('envORManagerAddress:', envORManagerAddress);
     assert(
       !!envORManagerAddress,
       'Env miss [OR_MANAGER_ADDRESS]. You may need to test ORManager.test.ts first. Example: npx hardhat test test/ORManager.test.ts test/ORSpvData.test.ts',
     );
+
+    orManager = await new ORManager__factory(signers[0])
+      .attach(envORManagerAddress)
+      .deployed();
 
     orSpvData = await new ORSpvData__factory(signers[0]).deploy(
       envORManagerAddress,
@@ -40,8 +50,17 @@ describe('ORSpvData', () => {
     const receipt = await orSpvData.saveHistoryBlock().then((t) => t.wait());
     const events = receipt.events!;
 
-    receipt.blockNumber;
+    const spvBlockInterval = (await orManager.getSpvBlockInterval()).toNumber();
 
-    console.warn('events2:', events);
+    for (let i = 256, ei = 0; i > 0; i--) {
+      const blockNumber = receipt.blockNumber - i;
+      if (blockNumber % spvBlockInterval === 0) {
+        expect(BigNumber.from(blockNumber)).to.deep.eq(
+          events[ei].args?.['blockNumber'],
+        );
+
+        ei++;
+      }
+    }
   });
 });
