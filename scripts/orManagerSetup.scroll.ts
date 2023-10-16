@@ -7,7 +7,8 @@ import { BridgeLib } from '../typechain-types/contracts/ORManager';
 import orManagerConfig from './orManager.config';
 import { ethers } from 'hardhat';
 
-export async function managerSetup() {
+// TODO: It will be merged into `orManagerSetup.ts` later, and initial configuration or new network will be distinguished based on parameters.
+export async function managerSetupScroll() {
   const signers = await ethers.getSigners();
   const deployer = new Wallet(
     process.env.DEPLOYER_PRIVATE_KEY || '',
@@ -17,6 +18,9 @@ export async function managerSetup() {
 
   const envORManagerAddress = process.env['OR_MANAGER_ADDRESS'];
   assert(!!envORManagerAddress, 'Env miss [OR_MANAGER_ADDRESS].');
+
+  // Only scroll network
+  orManagerConfig.chains = orManagerConfig.chains.filter((c) => c.id == 534352);
 
   const orManager = new ORManager__factory()
     .connect(deployer)
@@ -51,32 +55,10 @@ export async function managerSetup() {
   );
   console.log('Hash of updateChainTokens:', tx2.hash);
   await tx2.wait();
-
-  // updateEbcs
-  if (orManagerConfig.ebcs.length === 0) {
-    console.error('Miss orManagerConfig.ebcs');
-    return;
-  }
-  const statuses = orManagerConfig.ebcs.map(() => true);
-  const tx3 = await orManager.updateEbcs(orManagerConfig.ebcs, statuses);
-  console.log('Hash of updateEbcs:', tx3.hash);
-  await tx3.wait();
-
-  // updateSubmitter
-  if (!orManagerConfig.submitter) {
-    console.error('Miss orManagerConfig.submitter');
-    return;
-  }
-  const tx4 = await orManager.updateSubmitter(
-    getMinEnableTime(),
-    orManagerConfig.submitter,
-  );
-  console.log('Hash of updateSubmitter:', tx4.hash);
-  await tx4.wait();
 }
 
 async function main() {
-  await managerSetup();
+  await managerSetupScroll();
 }
 
 main().catch((error) => {

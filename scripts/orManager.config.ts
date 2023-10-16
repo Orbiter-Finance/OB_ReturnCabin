@@ -81,6 +81,26 @@ export default {
         },
       ],
     },
+
+    // Scroll
+    {
+      id: 534352,
+      batchLimit: 100, // TODO: mock
+      minVerifyChallengeSourceTxSecond: 900, // TODO: mock
+      maxVerifyChallengeSourceTxSecond: 1800, // TODO: mock
+      minVerifyChallengeDestTxSecond: 1800, // TODO: mock
+      maxVerifyChallengeDestTxSecond: 2700, // TODO: mock
+      nativeToken: constants.AddressZero,
+      spvs: [],
+
+      tokens: [
+        {
+          token: constants.AddressZero,
+          mainnetToken: constants.AddressZero,
+          decimals: 18,
+        },
+      ],
+    },
   ],
 
   ebcs: [], // Run scripts/orManagerSetup.ts need to fill
