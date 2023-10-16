@@ -35,20 +35,24 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
     mapping(bytes32 => uint) private _pledgeBalances; // hash(ebc, sourceChainId, sourceToken) => pledgeBalance
     mapping(address => uint) private _freezeAssets; // token(ETH: 0) => freezeAmount
     mapping(bytes32 => ChallengeInfo) private _challenges; // hash(sourceChainId, transactionHash) => ChallengeInfo
-    uint8[] private challengeCount;
+    mapping(address => uint) private withdrawVerifyTime;
 
     modifier onlyOwner() {
         require(msg.sender == _owner, "Ownable: caller is not the owner");
         _;
     }
 
-    modifier onlyNoChallenge() {
-        require(challengeCount.length == 0, "Being Challenged");
-        _;
-    }
-
     // solhint-disable-next-line no-empty-blocks
     receive() external payable {}
+
+    function withdrawCheck() private returns (bool) {
+      if (withdrawVerifyTime[msg.sender] > 0) {
+        return block.timestamp - withdrawVerifyTime[msg.sender] > 7 days;
+      } else {
+        withdrawVerifyTime[msg.sender] = block.timestamp + 7 days;
+        return false;
+      }
+    }
 
     function initialize(address owner_) external {
         require(_owner == address(0), "_ONZ");
@@ -154,7 +158,8 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         }
     }
 
-    function withdraw(address token, uint amount) external onlyOwner onlyNoChallenge() {
+    function withdraw(address token, uint amount) external onlyOwner {
+        require(withdrawCheck() == true, "Being Challenged");
         if (token == address(0)) {
             require(address(this).balance - _freezeAssets[token] >= amount, "ETH: IF");
 
@@ -166,10 +171,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
             IERC20(token).safeTransfer(msg.sender, amount);
         }
-    }
-
-    function withdrawChallengeCheck() external view returns (bool) {
-      return challengeCount.length > 0 ? false : true;
+        delete withdrawVerifyTime[msg.sender];
     }
 
     function rulesRoot(address ebc) external view returns (RuleLib.RootWithVersion memory) {
@@ -306,7 +308,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             0,
             0
         );
-        usedGas[challengeId] += (startGasNum - gasleft()) * (block.basefee + IORManager(_mdcFactory.manager()).getPriorityFee());
+        usedGas[challengeId] += (startGasNum - gasleft()) * (block.basefee + uint256(IORManager(_mdcFactory.manager()).getPriorityFee()));
         emit ChallengeInfoUpdated(challengeId, _challenges[challengeId]);
     }
 
@@ -338,13 +340,12 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
             _makerFailed(challengeInfo);
 
-            (bool sent3, ) = payable(challengeInfo.challenger).call{value: usedGas[challengeId]}("");
+            (bool sent3, ) = payable(challengeInfo.challenger).call{value: usedGas[challengeId] / 1 ether}("");
 
             require(sent3, "ETH: SE3");
 
             delete usedGas[challengeId];
 
-            challengeCount.pop();
         }
         _challenges[challengeId].abortTime = uint64(block.timestamp);
 
@@ -500,8 +501,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
                 ]
             )
             .hash();
-        usedGas[challengeId] += (startGasNum - gasleft()) * (block.basefee + IORManager(_mdcFactory.manager()).getPriorityFee());
-        challengeCount.push(0);
+        usedGas[challengeId] += (startGasNum - gasleft()) * (block.basefee + uint256(IORManager(_mdcFactory.manager()).getPriorityFee()));
         emit ChallengeInfoUpdated(challengeId, _challenges[challengeId]);
     }
 
