@@ -6,7 +6,7 @@ import {IORManager} from "./interface/IORManager.sol";
 
 contract ORSpvData is IORSpvData {
     IORManager private _manager;
-    mapping(uint => bytes32) public blocks;
+    mapping(uint => bytes32) private _blocks;
 
     constructor(address manager_) {
         require(manager_ != address(0), "MZ");
@@ -14,7 +14,7 @@ contract ORSpvData is IORSpvData {
     }
 
     function getBlockHash(uint blockNumber) external view returns (bytes32) {
-        return blocks[blockNumber];
+        return _blocks[blockNumber];
     }
 
     function saveHistoryBlock() external {
@@ -24,9 +24,9 @@ contract ORSpvData is IORSpvData {
             uint256 blockNumber = block.number - i;
 
             if (blockNumber % spvBlockInterval == 0) {
-                if (blocks[blockNumber] == bytes32(0)) {
+                if (_blocks[blockNumber] == bytes32(0)) {
                     bytes32 blockHash = blockhash(blockNumber);
-                    blocks[blockNumber] = blockHash;
+                    _blocks[blockNumber] = blockHash;
                     emit SaveHistoryBlock(blockHash, blockNumber);
                 }
             }
@@ -43,5 +43,24 @@ contract ORSpvData is IORSpvData {
         InjectionBlock[] calldata injectionBlocks
     ) external {
         require(msg.sender == address(_manager), "PD");
+        require(startBlockNumber < endBlockNumber, "SNLE");
+
+        // Make sure the startBlockNumber and endBlockNumber at storage
+        require(_blocks[startBlockNumber] != bytes32(0), "SZ");
+        require(_blocks[endBlockNumber] != bytes32(0), "EZ");
+
+        uint64 spvBlockInterval = _manager.getSpvBlockInterval();
+
+        for (uint i = 0; i < injectionBlocks.length; ) {
+            require(startBlockNumber < injectionBlocks[i].blockNumber, "SGEIB");
+            require(endBlockNumber > injectionBlocks[i].blockNumber, "ELEIB");
+            require(startBlockNumber + spvBlockInterval * (i + 1) == injectionBlocks[i].blockNumber, "IIB");
+
+            _blocks[injectionBlocks[i].blockNumber] = injectionBlocks[i].blockHash;
+
+            unchecked {
+                i++;
+            }
+        }
     }
 }
