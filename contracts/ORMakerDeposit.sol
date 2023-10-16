@@ -176,7 +176,11 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
     function withdraw(address token, uint amount) external onlyOwner {
         if (withdrawCheck(token, amount)) {
             if (token == address(0)) {
-                require(address(this).balance - _freezeAssets[withdrawRequestInfo.request_token] >= amount, "ETH: IF");
+                require(
+                    address(this).balance - _freezeAssets[withdrawRequestInfo.request_token] >=
+                        withdrawRequestInfo.request_amount,
+                    "ETH: IF"
+                );
 
                 (bool sent, ) = payable(msg.sender).call{value: withdrawRequestInfo.request_amount}("");
                 require(sent, "ETH: SE");
