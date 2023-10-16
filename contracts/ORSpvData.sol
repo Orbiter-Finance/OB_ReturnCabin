@@ -57,6 +57,7 @@ contract ORSpvData is IORSpvData {
             require(startBlockNumber + spvBlockInterval * (i + 1) == injectionBlocks[i].blockNumber, "IIB");
 
             _blocks[injectionBlocks[i].blockNumber] = injectionBlocks[i].blockHash;
+            emit SaveHistoryBlock(injectionBlocks[i].blockHash, injectionBlocks[i].blockNumber);
 
             unchecked {
                 i++;
