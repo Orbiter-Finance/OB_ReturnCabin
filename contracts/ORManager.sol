@@ -49,11 +49,11 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
     }
 
     function getPriorityFee() external view returns (uint8) {
-      return _initPriorityFee;
+        return _initPriorityFee;
     }
 
-    function updatePriorityFee(uint8 _priorityFee) external onlyOwner() {
-      _initPriorityFee = _priorityFee;
+    function updatePriorityFee(uint8 _priorityFee) external onlyOwner {
+        _initPriorityFee = _priorityFee;
     }
 
     function updateChainSpvs(

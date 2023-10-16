@@ -46,21 +46,27 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
     receive() external payable {}
 
     function getWithdrawVerifyStatus() external view returns (bool) {
-      return block.timestamp - withdrawRequestInfo.request_timestamp > ConstantsLib.CHALLENGE_WITHDRAW_DELAY;
+        return
+            withdrawRequestInfo.request_timestamp > 0 &&
+            block.timestamp - withdrawRequestInfo.request_timestamp > ConstantsLib.CHALLENGE_WITHDRAW_DELAY;
     }
 
     function withdrawCheck(address request_token, uint request_amount) private returns (bool) {
-      if (withdrawRequestInfo.request_timestamp > 0) {
-        return block.timestamp - withdrawRequestInfo.request_timestamp > ConstantsLib.CHALLENGE_WITHDRAW_DELAY;
-      } else {
-        withdrawRequestInfo = WithdrawRequestInfo(
-          uint64(block.timestamp + ConstantsLib.CHALLENGE_WITHDRAW_DELAY),
-          request_token,
-          request_amount
-        );
-        emit WithdrawRequested(uint64(block.timestamp + ConstantsLib.CHALLENGE_WITHDRAW_DELAY), request_token, request_amount);
-        return false;
-      }
+        if (withdrawRequestInfo.request_timestamp > 0) {
+            return block.timestamp - withdrawRequestInfo.request_timestamp > ConstantsLib.CHALLENGE_WITHDRAW_DELAY;
+        } else {
+            withdrawRequestInfo = WithdrawRequestInfo(
+                uint64(block.timestamp + ConstantsLib.CHALLENGE_WITHDRAW_DELAY),
+                request_token,
+                request_amount
+            );
+            emit WithdrawRequested(
+                uint64(block.timestamp + ConstantsLib.CHALLENGE_WITHDRAW_DELAY),
+                request_token,
+                request_amount
+            );
+            return false;
+        }
     }
 
     function initialize(address owner_) external {
@@ -169,23 +175,22 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
     function withdraw(address token, uint amount) external onlyOwner {
         if (withdrawCheck(token, amount)) {
-          if (token == address(0)) {
-              require(address(this).balance - _freezeAssets[withdrawRequestInfo.request_token] >= amount, "ETH: IF");
+            if (token == address(0)) {
+                require(address(this).balance - _freezeAssets[withdrawRequestInfo.request_token] >= amount, "ETH: IF");
 
-              (bool sent, ) = payable(msg.sender).call{value: withdrawRequestInfo.request_amount}("");
-              require(sent, "ETH: SE");
-          } else {
-              uint balance = IERC20(withdrawRequestInfo.request_token).balanceOf(address(this));
-              require(balance - _freezeAssets[withdrawRequestInfo.request_token] >= withdrawRequestInfo.request_amount, "ERC20: IF");
+                (bool sent, ) = payable(msg.sender).call{value: withdrawRequestInfo.request_amount}("");
+                require(sent, "ETH: SE");
+            } else {
+                uint balance = IERC20(withdrawRequestInfo.request_token).balanceOf(address(this));
+                require(
+                    balance - _freezeAssets[withdrawRequestInfo.request_token] >= withdrawRequestInfo.request_amount,
+                    "ERC20: IF"
+                );
 
-              IERC20(withdrawRequestInfo.request_token).safeTransfer(msg.sender, withdrawRequestInfo.request_amount);
-          }
+                IERC20(withdrawRequestInfo.request_token).safeTransfer(msg.sender, withdrawRequestInfo.request_amount);
+            }
 
-          withdrawRequestInfo = WithdrawRequestInfo(
-            0,
-            address(0),
-            0
-          );
+            withdrawRequestInfo = WithdrawRequestInfo(0, address(0), 0);
         }
     }
 
@@ -323,7 +328,9 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             0,
             0
         );
-        usedGas[challengeId] += (startGasNum - gasleft()) * (block.basefee + uint256(IORManager(_mdcFactory.manager()).getPriorityFee()));
+        usedGas[challengeId] +=
+            (startGasNum - gasleft()) *
+            (block.basefee + uint256(IORManager(_mdcFactory.manager()).getPriorityFee()));
         emit ChallengeInfoUpdated(challengeId, _challenges[challengeId]);
     }
 
@@ -336,7 +343,6 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
         // Make sure verifyChallengeDest is not done yet
         require(challengeInfo.verifiedTime1 == 0, "VT1NZ");
-
 
         IORManager manager = IORManager(_mdcFactory.manager());
 
@@ -360,7 +366,6 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             require(sent3, "ETH: SE3");
 
             delete usedGas[challengeId];
-
         }
         _challenges[challengeId].abortTime = uint64(block.timestamp);
 
@@ -516,7 +521,9 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
                 ]
             )
             .hash();
-        usedGas[challengeId] += (startGasNum - gasleft()) * (block.basefee + uint256(IORManager(_mdcFactory.manager()).getPriorityFee()));
+        usedGas[challengeId] +=
+            (startGasNum - gasleft()) *
+            (block.basefee + uint256(IORManager(_mdcFactory.manager()).getPriorityFee()));
         emit ChallengeInfoUpdated(challengeId, _challenges[challengeId]);
     }
 
@@ -594,7 +601,6 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         require(challengeUserAmount <= challengeInfo.freezeAmount0, "UAOF");
 
         uint challengerAmount = challengeInfo.freezeAmount0 + challengeInfo.freezeAmount1 - challengeUserAmount;
-
 
         // TODO: Not compatible with starknet network
         address user = address(uint160(challengeInfo.sourceTxFrom));

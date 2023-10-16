@@ -22,16 +22,12 @@ interface IORMakerDeposit {
     }
 
     struct WithdrawRequestInfo {
-      uint64 request_timestamp;
-      address request_token;
-      uint request_amount;
+        uint64 request_timestamp;
+        address request_token;
+        uint request_amount;
     }
 
-    event WithdrawRequested(
-      uint64 request_timestamp,
-      address request_token,
-      uint request_amount
-    );
+    event WithdrawRequested(uint64 request_timestamp, address request_token, uint request_amount);
 
     event ColumnArrayUpdated(
         address indexed impl,
