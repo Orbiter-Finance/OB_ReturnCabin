@@ -35,7 +35,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
     mapping(bytes32 => uint) private _pledgeBalances; // hash(ebc, sourceChainId, sourceToken) => pledgeBalance
     mapping(address => uint) private _freezeAssets; // token(ETH: 0) => freezeAmount
     mapping(bytes32 => ChallengeInfo) private _challenges; // hash(sourceChainId, transactionHash) => ChallengeInfo
-    WithdrawRequestInfo private withdrawRequestInfo;
+    mapping(address => WithdrawRequestInfo) private _withdrawRequestInfo;
 
     modifier onlyOwner() {
         require(msg.sender == _owner, "Ownable: caller is not the owner");
@@ -45,17 +45,23 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
     // solhint-disable-next-line no-empty-blocks
     receive() external payable {}
 
-    function getWithdrawVerifyStatus() external view returns (WithdrawRequestInfo memory) {
-        return withdrawRequestInfo;
+    function getWithdrawVerifyStatus(address target_token) external view returns (WithdrawRequestInfo memory) {
+        return _withdrawRequestInfo[target_token];
     }
 
     function withdrawCheck(address request_token, uint request_amount) private returns (bool) {
-        if (withdrawRequestInfo.request_timestamp > 0) {
-            return block.timestamp - withdrawRequestInfo.request_timestamp > ConstantsLib.CHALLENGE_WITHDRAW_DELAY;
+        if (_withdrawRequestInfo[request_token].request_timestamp > 0) {
+            return
+                block.timestamp - _withdrawRequestInfo[request_token].request_timestamp >
+                ConstantsLib.CHALLENGE_WITHDRAW_DELAY;
         } else {
             uint64 _request_timestamp = uint64(block.timestamp + ConstantsLib.CHALLENGE_WITHDRAW_DELAY);
-            withdrawRequestInfo = WithdrawRequestInfo(_request_timestamp, request_token, request_amount);
-            emit WithdrawRequested(_request_timestamp, request_token, request_amount);
+            _withdrawRequestInfo[request_token] = WithdrawRequestInfo(
+                request_amount,
+                _request_timestamp,
+                request_token
+            );
+            emit WithdrawRequested(request_amount, _request_timestamp, request_token);
             return false;
         }
     }
@@ -166,24 +172,28 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
     function withdraw(address token, uint amount) external onlyOwner {
         if (withdrawCheck(token, amount)) {
-            withdrawRequestInfo.request_timestamp = 0;
+            _withdrawRequestInfo[token].request_timestamp = 0;
             if (token == address(0)) {
                 require(
-                    address(this).balance - _freezeAssets[withdrawRequestInfo.request_token] >=
-                        withdrawRequestInfo.request_amount,
+                    address(this).balance - _freezeAssets[_withdrawRequestInfo[token].request_token] >=
+                        _withdrawRequestInfo[token].request_amount,
                     "ETH: IF"
                 );
 
-                (bool sent, ) = payable(msg.sender).call{value: withdrawRequestInfo.request_amount}("");
+                (bool sent, ) = payable(msg.sender).call{value: _withdrawRequestInfo[token].request_amount}("");
                 require(sent, "ETH: SE");
             } else {
-                uint balance = IERC20(withdrawRequestInfo.request_token).balanceOf(address(this));
+                uint balance = IERC20(_withdrawRequestInfo[token].request_token).balanceOf(address(this));
                 require(
-                    balance - _freezeAssets[withdrawRequestInfo.request_token] >= withdrawRequestInfo.request_amount,
+                    balance - _freezeAssets[_withdrawRequestInfo[token].request_token] >=
+                        _withdrawRequestInfo[token].request_amount,
                     "ERC20: IF"
                 );
 
-                IERC20(withdrawRequestInfo.request_token).safeTransfer(msg.sender, withdrawRequestInfo.request_amount);
+                IERC20(_withdrawRequestInfo[token].request_token).safeTransfer(
+                    msg.sender,
+                    _withdrawRequestInfo[token].request_amount
+                );
             }
         }
     }
