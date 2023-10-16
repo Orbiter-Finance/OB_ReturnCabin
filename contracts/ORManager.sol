@@ -81,7 +81,7 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
         unchecked {
             for (uint i = 0; i < ids.length; i++) {
                 // TODO: If the token of layer2 changes, how should it be handled here?
-                bytes32 key = abi.encodePacked(ids[i], tokenInfos[i].token).hash();
+                bytes32 key = abi.encode(ids[i], tokenInfos[i].token).hash();
                 _chainTokens[key] = tokenInfos[i];
                 emit ChainTokenUpdated(ids[i], tokenInfos[i]);
             }
@@ -89,7 +89,7 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
     }
 
     function getChainTokenInfo(uint64 id, uint token) external view returns (BridgeLib.TokenInfo memory) {
-        bytes32 key = abi.encodePacked(id, token).hash();
+        bytes32 key = abi.encode(id, token).hash();
         return _chainTokens[key];
     }
 

@@ -91,7 +91,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             }
         }
 
-        _columnArrayHash = abi.encodePacked(dealers, ebcs, chainIds).hash();
+        _columnArrayHash = abi.encode(dealers, ebcs, chainIds).hash();
         emit ColumnArrayUpdated(_mdcFactory.implementation(), _columnArrayHash, dealers, ebcs, chainIds);
     }
 
@@ -262,7 +262,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         address freezeToken,
         uint freezeAmount1
     ) external payable {
-        bytes32 challengeId = abi.encodePacked(sourceChainId, sourceTxHash).hash();
+        bytes32 challengeId = abi.encode(sourceChainId, sourceTxHash).hash();
         require(_challenges[challengeId].challengeTime == 0, "CE");
 
         // Make sure the source timestamp is before the challenge
@@ -299,7 +299,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
     }
 
     function checkChallenge(uint64 sourceChainId, bytes32 sourceTxHash, uint[] calldata verifiedData0) external {
-        bytes32 challengeId = abi.encodePacked(uint64(sourceChainId), sourceTxHash).hash();
+        bytes32 challengeId = abi.encode(uint64(sourceChainId), sourceTxHash).hash();
         ChallengeInfo memory challengeInfo = _challenges[challengeId];
 
         // Make sure the challenge exists
@@ -355,7 +355,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         require(IORChallengeSpv(spvAddress).verifyChallenge(proof, spvBlockHashs, abi.encode(verifyInfo).hash()), "VF");
 
         // Check chainId, hash, timestamp
-        bytes32 challengeId = abi.encodePacked(uint64(verifyInfo.data[0]), verifyInfo.data[1]).hash();
+        bytes32 challengeId = abi.encode(uint64(verifyInfo.data[0]), verifyInfo.data[1]).hash();
         require(_challenges[challengeId].challengeTime > 0, "CTZ");
         require(_challenges[challengeId].verifiedTime0 == 0, "VT0NZ");
         require(uint64(verifyInfo.data[7]) == _challenges[challengeId].sourceTxTime, "ST");
@@ -389,9 +389,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         {
             // FreezeToken
             require(verifyInfo.slots[1].account == _mdcFactory.manager(), "FTA");
-            uint slotK = uint(
-                abi.encode(abi.encodePacked(uint64(verifyInfo.data[0]), verifyInfo.data[4]).hash(), 3).hash()
-            );
+            uint slotK = uint(abi.encode(abi.encode(uint64(verifyInfo.data[0]), verifyInfo.data[4]).hash(), 3).hash());
             require(uint(verifyInfo.slots[1].key) == slotK + 1, "FTK");
             require(_challenges[challengeId].freezeToken == address(uint160(verifyInfo.slots[1].value)), "FTV");
 
@@ -408,7 +406,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
         // Check _columnArrayHash
         {
-            bytes32 cah = abi.encodePacked(dealers, ebcs, chainIds).hash();
+            bytes32 cah = abi.encode(dealers, ebcs, chainIds).hash();
             require(verifyInfo.slots[3].account == address(this), "CAHA");
             require(uint(verifyInfo.slots[3].key) == 2, "CAHK");
             require(bytes32(verifyInfo.slots[3].value) == cah, "CAHV");
@@ -427,7 +425,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         // Check dest token
         {
             require(verifyInfo.slots[4].account == _mdcFactory.manager(), "DTA");
-            uint slotK = uint(abi.encode(abi.encodePacked(uint64(destChainId), verifyInfo.data[10]).hash(), 3).hash());
+            uint slotK = uint(abi.encode(abi.encode(uint64(destChainId), verifyInfo.data[10]).hash(), 3).hash());
             require(uint(verifyInfo.slots[4].key) == slotK + 1, "DTK");
 
             // TODO: At present, freezeToken and mainnetToken remain the same, and may change later
@@ -508,7 +506,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
     ) external {
         require(IORChallengeSpv(spvAddress).verifyChallenge(proof, spvBlockHashs, abi.encode(verifyInfo).hash()), "VF");
 
-        bytes32 challengeId = abi.encodePacked(uint64(verifyInfo.data[0]), verifyInfo.data[1]).hash();
+        bytes32 challengeId = abi.encode(uint64(verifyInfo.data[0]), verifyInfo.data[1]).hash();
         require(_challenges[challengeId].verifiedTime0 > 0, "VT0Z");
         require(_challenges[challengeId].verifiedTime1 == 0, "VT1NZ");
 
