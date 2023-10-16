@@ -739,6 +739,12 @@ describe('ORMakerDeposit', () => {
       freezeAmount: BigNumberish;
     }
 
+    interface verifyinfoBase {
+      freeTokenDest: string;
+      chainIdDest: BigNumberish;
+      ebc: string;
+    }
+
     interface VerifyInfoSlotStruct {
       account: string;
       key: BytesLike;
@@ -763,14 +769,15 @@ describe('ORMakerDeposit', () => {
       maker: ORMakerDeposit,
       manager: ORManager,
       challenge: challengeInputInfo,
+      verifyinfoBase: verifyinfoBase,
     ): Promise<VerifyInfoSlotStruct[]> => {
       const managerAddress = manager.address;
       const makerAddress = maker.address;
       const chainId = challenge.sourceChainId;
-      const chainId_Dest = 420;
-      const freezeToken_Dest = '0x4C6c591254769CD6D1850aa626bc45B12d8d9ce0';
+      const chainId_Dest = verifyinfoBase.chainIdDest;
+      const freezeToken_Dest = verifyinfoBase.freeTokenDest;
       const freezeToken = challenge.freezeToken;
-      const ebc = ebcSample;
+      const ebc = verifyinfoBase.ebc;
 
       // set Verifyinfo 0
       // ORManager.sol - ChainInfo - maxVerifyChallengeSourceTxSecond | minVerifyChallengeSourceTxSecond
@@ -1009,7 +1016,7 @@ describe('ORMakerDeposit', () => {
         },
         {
           // verifyInfo 2
-          // ORManager.sol - _minChallengeRatio
+          // ORManager.sol - _rulesRoots
           // slot: 5
           account: managerAddress,
           key: slot2,
@@ -1041,6 +1048,9 @@ describe('ORMakerDeposit', () => {
           value: value5,
         },
         {
+          // Verifyinfo 6
+          // ORMakerDeposit.sol - responseMakersHash
+          // slot 6
           account: makerAddress,
           key: slot6,
           value: value6,
@@ -1093,29 +1103,6 @@ describe('ORMakerDeposit', () => {
       verifyContract = await verifyFactory.deploy();
       spv = await new TestSpv__factory(mdcOwner).deploy(verifyContract.address);
       console.log(`verifier: ${verifyContract.address}, spv: ${spv.address}`);
-    });
-
-    it('challenge should success', async function () {
-      const challenge: challengeInputInfo = {
-        sourceChainId: 5,
-        sourceTxHash: utils.keccak256(mdcOwner.address),
-        sourceTxTime: 10000,
-        freezeToken: '0xa0321efeb50c46c17a7d72a52024eea7221b215a',
-        freezeAmount: utils.parseEther('0.001'),
-      };
-      await getVerifyinfoSlots(orMakerDeposit, orManager, challenge);
-    });
-
-    it('Function challenge should success', async function () {
-      const challenge: challengeInputInfo = {
-        sourceChainId: random(200),
-        sourceTxHash: utils.keccak256(mdcOwner.address),
-        sourceTxTime: 10000,
-        freezeToken: constants.AddressZero,
-        freezeAmount: utils.parseEther('0.001'),
-      };
-      const challengeId = await createChallenge(challenge);
-      console.log(`create challengeId: ${challengeId}`);
     });
 
     it('test function verifyChallengeSource Revert case', async function () {
@@ -1203,6 +1190,57 @@ describe('ORMakerDeposit', () => {
         // eslint-disable-next-line prettier/prettier
         `verify totalGas: ${tx.gasUsed}, callDataGas: ${inpudataGas}, excuteGas:${tx.gasUsed.toNumber() - inpudataGas}`,
       );
+    });
+
+    const updateSpv = async (
+      challengeInputInfo: challengeInputInfo,
+      spvAddress: string,
+    ) => {
+      const enableTimeTime =
+        // eslint-disable-next-line prettier/prettier
+        (await getCurrentTime()) > (await orManager.getVersionAndEnableTime()).enableTime.toNumber()
+          ? await getCurrentTime()
+          : (await orManager.getVersionAndEnableTime()).enableTime;
+
+      await orManager
+        .updateChainSpvs(
+          getMinEnableTime(BigNumber.from(enableTimeTime)),
+          challengeInputInfo.sourceChainId,
+          [spvAddress],
+          [0],
+          {
+            gasLimit: 10e6,
+          },
+        )
+        .then((t) => t.wait());
+    };
+
+    it('challenge should success', async function () {
+      const challenge: challengeInputInfo = {
+        sourceChainId: 5,
+        sourceTxHash: utils.keccak256(mdcOwner.address),
+        sourceTxTime: 10000,
+        // freezeToken: '0xa0321efeb50c46c17a7d72a52024eea7221b215a',
+        freezeToken: constants.AddressZero,
+        freezeAmount: utils.parseEther('0.001'),
+      };
+
+      const verifyinfoBase: verifyinfoBase = {
+        chainIdDest: 420,
+        // freeTokenDest: '0x4C6c591254769CD6D1850aa626bc45B12d8d9ce0',
+        freeTokenDest: constants.AddressZero,
+        ebc: ebcSample,
+      };
+      await updateSpv(challenge, spv.address);
+
+      await getVerifyinfoSlots(
+        orMakerDeposit,
+        orManager,
+        challenge,
+        verifyinfoBase,
+      );
+
+      const challengeId = await createChallenge(challenge);
     });
   });
 });
