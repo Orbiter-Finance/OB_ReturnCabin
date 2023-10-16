@@ -54,8 +54,9 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         return block.timestamp - withdrawRequestInfo.request_timestamp > ConstantsLib.CHALLENGE_WITHDRAW_DELAY;
       } else {
         withdrawRequestInfo.request_timestamp = uint64(block.timestamp + ConstantsLib.CHALLENGE_WITHDRAW_DELAY);
-        withdrawRequestInfo.request_amount = request_amount;
         withdrawRequestInfo.request_token = request_token;
+        withdrawRequestInfo.request_amount = request_amount;
+        emit WithdrawRequested(uint64(block.timestamp + ConstantsLib.CHALLENGE_WITHDRAW_DELAY), request_token, request_amount);
         return false;
       }
     }
@@ -177,8 +178,6 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
               IERC20(withdrawRequestInfo.request_token).safeTransfer(msg.sender, withdrawRequestInfo.request_amount);
           }
-
-          emit WithdrawRequested(withdrawRequestInfo.request_timestamp, withdrawRequestInfo.request_token, withdrawRequestInfo.request_amount);
 
           WithdrawRequestInfo memory withdrawRequestInfoInit;
 
