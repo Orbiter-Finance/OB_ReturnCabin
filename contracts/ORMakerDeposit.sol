@@ -47,9 +47,9 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
     function withdrawCheck() private returns (bool) {
       if (withdrawVerifyTime[msg.sender] > 0) {
-        return block.timestamp - withdrawVerifyTime[msg.sender] > 7 days;
+        return block.timestamp - withdrawVerifyTime[msg.sender] > ConstantsLib.CHALLENGE_WITHDRAW_DELAY;
       } else {
-        withdrawVerifyTime[msg.sender] = block.timestamp + 7 days;
+        withdrawVerifyTime[msg.sender] = block.timestamp + ConstantsLib.CHALLENGE_WITHDRAW_DELAY;
         return false;
       }
     }
