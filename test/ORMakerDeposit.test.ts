@@ -462,6 +462,7 @@ describe('ORMakerDeposit', () => {
       .withdraw(constants.AddressZero, amountETH)
       .then((t) => t.wait());
     const bETHAfter = await mdcOwner.provider?.getBalance(mdcOwner.address);
+    console.log(bETHAfter)
     expect(
       bETHAfter
         ?.add(receipt.gasUsed.mul(receipt.effectiveGasPrice))

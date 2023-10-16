@@ -21,6 +21,18 @@ interface IORMakerDeposit {
         bytes32 verifiedDataHash0; // Data's hash of verifyChallengeSource
     }
 
+    struct WithdrawRequestInfo {
+      uint64 request_timestamp;
+      address request_token;
+      uint request_amount;
+    }
+
+    event WithdrawRequested(
+      uint64 request_timestamp,
+      address request_token,
+      uint request_amount
+    );
+
     event ColumnArrayUpdated(
         address indexed impl,
         bytes32 columnArrayHash,

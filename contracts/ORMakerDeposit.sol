@@ -35,7 +35,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
     mapping(bytes32 => uint) private _pledgeBalances; // hash(ebc, sourceChainId, sourceToken) => pledgeBalance
     mapping(address => uint) private _freezeAssets; // token(ETH: 0) => freezeAmount
     mapping(bytes32 => ChallengeInfo) private _challenges; // hash(sourceChainId, transactionHash) => ChallengeInfo
-    mapping(address => uint) private withdrawVerifyTime;
+    WithdrawRequestInfo withdrawRequestInfo;
 
     modifier onlyOwner() {
         require(msg.sender == _owner, "Ownable: caller is not the owner");
@@ -45,11 +45,17 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
     // solhint-disable-next-line no-empty-blocks
     receive() external payable {}
 
-    function withdrawCheck() private returns (bool) {
-      if (withdrawVerifyTime[msg.sender] > 0) {
-        return block.timestamp - withdrawVerifyTime[msg.sender] > ConstantsLib.CHALLENGE_WITHDRAW_DELAY;
+    function getWithdrawVerifyStatus() external view returns (bool) {
+      return block.timestamp - withdrawRequestInfo.request_timestamp > ConstantsLib.CHALLENGE_WITHDRAW_DELAY;
+    }
+
+    function withdrawCheck(address request_token, uint request_amount) private returns (bool) {
+      if (withdrawRequestInfo.request_timestamp > 0) {
+        return block.timestamp - withdrawRequestInfo.request_timestamp > ConstantsLib.CHALLENGE_WITHDRAW_DELAY;
       } else {
-        withdrawVerifyTime[msg.sender] = block.timestamp + ConstantsLib.CHALLENGE_WITHDRAW_DELAY;
+        withdrawRequestInfo.request_timestamp = uint64(block.timestamp + ConstantsLib.CHALLENGE_WITHDRAW_DELAY);
+        withdrawRequestInfo.request_amount = request_amount;
+        withdrawRequestInfo.request_token = request_token;
         return false;
       }
     }
@@ -159,19 +165,25 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
     }
 
     function withdraw(address token, uint amount) external onlyOwner {
-        require(withdrawCheck() == true, "Being Challenged");
-        if (token == address(0)) {
-            require(address(this).balance - _freezeAssets[token] >= amount, "ETH: IF");
+        if (withdrawCheck(token, amount)) {
+          if (token == address(0)) {
+              require(address(this).balance - _freezeAssets[withdrawRequestInfo.request_token] >= amount, "ETH: IF");
 
-            (bool sent, ) = payable(msg.sender).call{value: amount}("");
-            require(sent, "ETH: SE");
-        } else {
-            uint balance = IERC20(token).balanceOf(address(this));
-            require(balance - _freezeAssets[token] >= amount, "ERC20: IF");
+              (bool sent, ) = payable(msg.sender).call{value: withdrawRequestInfo.request_amount}("");
+              require(sent, "ETH: SE");
+          } else {
+              uint balance = IERC20(withdrawRequestInfo.request_token).balanceOf(address(this));
+              require(balance - _freezeAssets[withdrawRequestInfo.request_token] >= withdrawRequestInfo.request_amount, "ERC20: IF");
 
-            IERC20(token).safeTransfer(msg.sender, amount);
+              IERC20(withdrawRequestInfo.request_token).safeTransfer(msg.sender, withdrawRequestInfo.request_amount);
+          }
+
+          emit WithdrawRequested(withdrawRequestInfo.request_timestamp, withdrawRequestInfo.request_token, withdrawRequestInfo.request_amount);
+
+          WithdrawRequestInfo memory withdrawRequestInfoInit;
+
+          withdrawRequestInfo = withdrawRequestInfoInit;
         }
-        delete withdrawVerifyTime[msg.sender];
     }
 
     function rulesRoot(address ebc) external view returns (RuleLib.RootWithVersion memory) {
