@@ -35,7 +35,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
     mapping(bytes32 => uint) private _pledgeBalances; // hash(ebc, sourceChainId, sourceToken) => pledgeBalance
     mapping(address => uint) private _freezeAssets; // token(ETH: 0) => freezeAmount
     mapping(bytes32 => ChallengeInfo) private _challenges; // hash(sourceChainId, transactionHash) => ChallengeInfo
-    WithdrawRequestInfo withdrawRequestInfo;
+    WithdrawRequestInfo private withdrawRequestInfo;
 
     modifier onlyOwner() {
         require(msg.sender == _owner, "Ownable: caller is not the owner");
@@ -45,26 +45,17 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
     // solhint-disable-next-line no-empty-blocks
     receive() external payable {}
 
-    function getWithdrawVerifyStatus() external view returns (bool) {
-        return
-            withdrawRequestInfo.request_timestamp > 0 &&
-            block.timestamp - withdrawRequestInfo.request_timestamp > ConstantsLib.CHALLENGE_WITHDRAW_DELAY;
+    function getWithdrawVerifyStatus() external view returns (WithdrawRequestInfo memory) {
+        return withdrawRequestInfo;
     }
 
     function withdrawCheck(address request_token, uint request_amount) private returns (bool) {
         if (withdrawRequestInfo.request_timestamp > 0) {
             return block.timestamp - withdrawRequestInfo.request_timestamp > ConstantsLib.CHALLENGE_WITHDRAW_DELAY;
         } else {
-            withdrawRequestInfo = WithdrawRequestInfo(
-                uint64(block.timestamp + ConstantsLib.CHALLENGE_WITHDRAW_DELAY),
-                request_token,
-                request_amount
-            );
-            emit WithdrawRequested(
-                uint64(block.timestamp + ConstantsLib.CHALLENGE_WITHDRAW_DELAY),
-                request_token,
-                request_amount
-            );
+            uint64 _request_timestamp = uint64(block.timestamp + ConstantsLib.CHALLENGE_WITHDRAW_DELAY);
+            withdrawRequestInfo = WithdrawRequestInfo(_request_timestamp, request_token, request_amount);
+            emit WithdrawRequested(_request_timestamp, request_token, request_amount);
             return false;
         }
     }
@@ -175,6 +166,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
     function withdraw(address token, uint amount) external onlyOwner {
         if (withdrawCheck(token, amount)) {
+            withdrawRequestInfo.request_timestamp = 0;
             if (token == address(0)) {
                 require(
                     address(this).balance - _freezeAssets[withdrawRequestInfo.request_token] >=
@@ -193,8 +185,6 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
                 IERC20(withdrawRequestInfo.request_token).safeTransfer(msg.sender, withdrawRequestInfo.request_amount);
             }
-
-            withdrawRequestInfo = WithdrawRequestInfo(0, address(0), 0);
         }
     }
 
