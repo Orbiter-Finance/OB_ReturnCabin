@@ -42,29 +42,22 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         _;
     }
 
+    modifier onlyNoRequestTimestamp(address request_token) {
+        require(_withdrawRequestInfo[request_token].request_timestamp == 0, "RHB");
+        _;
+    }
+
+    modifier onlyRequestTimestampCheckPass(address request_token) {
+        require(
+            _withdrawRequestInfo[request_token].request_timestamp > 0 &&
+                block.timestamp >= _withdrawRequestInfo[request_token].request_timestamp,
+            "WTN"
+        );
+        _;
+    }
+
     // solhint-disable-next-line no-empty-blocks
     receive() external payable {}
-
-    function getWithdrawVerifyStatus(address target_token) external view returns (WithdrawRequestInfo memory) {
-        return _withdrawRequestInfo[target_token];
-    }
-
-    function withdrawCheck(address request_token, uint request_amount) private returns (bool) {
-        if (_withdrawRequestInfo[request_token].request_timestamp > 0) {
-            return
-                block.timestamp - _withdrawRequestInfo[request_token].request_timestamp >
-                ConstantsLib.CHALLENGE_WITHDRAW_DELAY;
-        } else {
-            uint64 _request_timestamp = uint64(block.timestamp + ConstantsLib.CHALLENGE_WITHDRAW_DELAY);
-            _withdrawRequestInfo[request_token] = WithdrawRequestInfo(
-                request_amount,
-                _request_timestamp,
-                request_token
-            );
-            emit WithdrawRequested(request_amount, _request_timestamp, request_token);
-            return false;
-        }
-    }
 
     function initialize(address owner_) external {
         require(_owner == address(0), "_ONZ");
@@ -170,31 +163,42 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         }
     }
 
-    function withdraw(address token, uint amount) external onlyOwner {
-        if (withdrawCheck(token, amount)) {
-            _withdrawRequestInfo[token].request_timestamp = 0;
-            if (token == address(0)) {
-                require(
-                    address(this).balance - _freezeAssets[_withdrawRequestInfo[token].request_token] >=
-                        _withdrawRequestInfo[token].request_amount,
-                    "ETH: IF"
-                );
+    function getWithdrawVerifyStatus(address target_token) external view returns (WithdrawRequestInfo memory) {
+        return _withdrawRequestInfo[target_token];
+    }
 
-                (bool sent, ) = payable(msg.sender).call{value: _withdrawRequestInfo[token].request_amount}("");
-                require(sent, "ETH: SE");
-            } else {
-                uint balance = IERC20(_withdrawRequestInfo[token].request_token).balanceOf(address(this));
-                require(
-                    balance - _freezeAssets[_withdrawRequestInfo[token].request_token] >=
-                        _withdrawRequestInfo[token].request_amount,
-                    "ERC20: IF"
-                );
+    function withdrawRequest(
+        address request_token,
+        uint request_amount
+    ) external onlyOwner onlyNoRequestTimestamp(request_token) {
+        uint64 _request_timestamp = uint64(block.timestamp + ConstantsLib.CHALLENGE_WITHDRAW_DELAY);
+        _withdrawRequestInfo[request_token] = WithdrawRequestInfo(request_amount, _request_timestamp, request_token);
+        emit WithdrawRequested(request_amount, _request_timestamp, request_token);
+    }
 
-                IERC20(_withdrawRequestInfo[token].request_token).safeTransfer(
-                    msg.sender,
-                    _withdrawRequestInfo[token].request_amount
-                );
-            }
+    function withdraw(address token) external onlyOwner onlyRequestTimestampCheckPass(token) {
+        _withdrawRequestInfo[token].request_timestamp = 0;
+        if (token == address(0)) {
+            require(
+                address(this).balance - _freezeAssets[_withdrawRequestInfo[token].request_token] >=
+                    _withdrawRequestInfo[token].request_amount,
+                "ETH: IF"
+            );
+
+            (bool sent, ) = payable(msg.sender).call{value: _withdrawRequestInfo[token].request_amount}("");
+            require(sent, "ETH: SE");
+        } else {
+            uint balance = IERC20(_withdrawRequestInfo[token].request_token).balanceOf(address(this));
+            require(
+                balance - _freezeAssets[_withdrawRequestInfo[token].request_token] >=
+                    _withdrawRequestInfo[token].request_amount,
+                "ERC20: IF"
+            );
+
+            IERC20(_withdrawRequestInfo[token].request_token).safeTransfer(
+                msg.sender,
+                _withdrawRequestInfo[token].request_amount
+            );
         }
     }
 

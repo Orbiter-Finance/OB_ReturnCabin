@@ -607,8 +607,8 @@ export async function getCurrentTime() {
   return block.timestamp;
 }
 
-export async function mineXMinutes(minutes: number) {
-  const seconds = minutes * 60;
+export async function mineXTimes(time: number, useSecond = false) {
+  const seconds = useSecond ? time : time * 60;
   const currentTime = await getCurrentTime();
   await ethers.provider.send('evm_increaseTime', [currentTime]);
   await ethers.provider.send('evm_mine', [currentTime + seconds]);

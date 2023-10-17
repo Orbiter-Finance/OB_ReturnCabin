@@ -68,7 +68,11 @@ interface IORMakerDeposit {
 
     function deposit(address token, uint amount) external payable;
 
-    function withdraw(address token, uint amount) external;
+    function getWithdrawVerifyStatus(address target_token) external view returns (WithdrawRequestInfo memory);
+
+    function withdrawRequest(address request_token, uint request_amount) external;
+
+    function withdraw(address token) external;
 
     function rulesRoot(address ebc) external view returns (RuleLib.RootWithVersion memory);
 
