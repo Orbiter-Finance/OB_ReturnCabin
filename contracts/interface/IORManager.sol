@@ -2,6 +2,7 @@
 pragma solidity ^0.8.17;
 
 import {BridgeLib} from "../library/BridgeLib.sol";
+import {IORSpvData} from "../interface/IORSpvData.sol";
 
 interface IORManager {
     event ChainInfoUpdated(uint64 indexed id, BridgeLib.ChainInfo chainInfo);
@@ -14,7 +15,6 @@ interface IORManager {
     event FeeChallengeSecondUpdated(uint64 feeChallengeSecond);
     event FeeTakeOnChallengeSecondUpdated(uint64 feeTakeOnChallengeSecond);
     event MaxMDCLimitUpdated(uint64 maxMDCLimit);
-    event SpvBlockIntervalUpdated(uint64 spvBlockInterval);
     event ExtraTransferContractsUpdated(uint64[] chainIds, uint[] extraTransferContracts);
 
     function registerChains(uint64 enableTime, BridgeLib.ChainInfo[] calldata chains_) external;
@@ -65,9 +65,13 @@ interface IORManager {
 
     function getExtraTransferContract(uint64 chainId) external view returns (uint);
 
-    function getSpvBlockInterval() external view returns (uint64);
-
     function updateSpvBlockInterval(uint64 spvBlockInterval) external;
+
+    function injectSpvBlocks(
+        uint startBlockNumber,
+        uint endBlockNumber,
+        IORSpvData.InjectionBlock[] calldata injectionBlocks
+    ) external;
 
     function updateExtraTransferContracts(
         uint64 enableTime,

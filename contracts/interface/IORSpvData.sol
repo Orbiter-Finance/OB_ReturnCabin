@@ -7,11 +7,16 @@ interface IORSpvData {
         bytes32 blockHash;
     }
 
+    event BlockIntervalUpdated(uint64 blockInterval);
     event SaveHistoryBlock(bytes32 indexed blockHash, uint256 indexed blockNumber);
 
     function getBlockHash(uint blockNumber) external view returns (bytes32);
 
     function saveHistoryBlock() external;
+
+    function getBlockInterval() external view returns (uint64);
+
+    function updateBlockInterval(uint64 blockInterval) external;
 
     function injectByManager(
         uint startBlockNumber,

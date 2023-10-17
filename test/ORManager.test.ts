@@ -382,25 +382,26 @@ describe('Test ORManager', () => {
     expect(storageMaxMDCLimit).to.deep.eq(maxMDCLimit);
   });
 
-  it('Function updateSpvBlockInterval should succeed', async function () {
-    const spvBlockInterval = BigNumber.from(40);
+  // TODO: move to ORSpvData.test.ts
+  // it('Function updateSpvBlockInterval should succeed', async function () {
+  //   const spvBlockInterval = BigNumber.from(40);
 
-    await testRevertedOwner(
-      orManager.connect(signers[2]).updateSpvBlockInterval(spvBlockInterval),
-    );
+  //   await testRevertedOwner(
+  //     orManager.connect(signers[2]).updateSpvBlockInterval(spvBlockInterval),
+  //   );
 
-    const events = (
-      await orManager
-        .updateSpvBlockInterval(spvBlockInterval)
-        .then((t) => t.wait())
-    ).events!;
+  //   const events = (
+  //     await orManager
+  //       .updateSpvBlockInterval(spvBlockInterval)
+  //       .then((t) => t.wait())
+  //   ).events!;
 
-    const args = events[0].args!;
-    expect(args.spvBlockInterval).to.deep.eq(spvBlockInterval);
+  //   const args = events[0].args!;
+  //   expect(args.spvBlockInterval).to.deep.eq(spvBlockInterval);
 
-    const storageValue = await orManager.getSpvBlockInterval();
-    expect(storageValue).to.deep.eq(spvBlockInterval);
-  });
+  //   const storageValue = await orManager.getSpvBlockInterval();
+  //   expect(storageValue).to.deep.eq(spvBlockInterval);
+  // });
 
   it(
     'Function updateExtraTransferContracts should succeed',

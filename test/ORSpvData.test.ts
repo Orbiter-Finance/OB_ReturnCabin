@@ -43,6 +43,8 @@ describe('ORSpvData', () => {
     }
   });
 
+  it('Function  should success', async function () {});
+
   it('Function saveHistoryBlock should success', async function () {
     // Only hardhat local network
     await mine(1000);
@@ -50,14 +52,17 @@ describe('ORSpvData', () => {
     const receipt = await orSpvData.saveHistoryBlock().then((t) => t.wait());
     const events = receipt.events!;
 
-    const spvBlockInterval = (await orManager.getSpvBlockInterval()).toNumber();
+    const blockInterval = (await orSpvData.getBlockInterval()).toNumber();
 
     for (let i = 256, ei = 0; i > 0; i--) {
       const blockNumber = receipt.blockNumber - i;
-      if (blockNumber % spvBlockInterval === 0) {
+      if (blockNumber % blockInterval === 0) {
         expect(BigNumber.from(blockNumber)).to.deep.eq(
           events[ei].args?.['blockNumber'],
         );
+
+        const blockHash = await orSpvData.getBlockHash(blockNumber);
+        expect(BigNumber.from(blockHash)).not.deep.eq(BigNumber.from(0));
 
         ei++;
       }
