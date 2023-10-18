@@ -477,7 +477,8 @@ describe('ORMakerDeposit', () => {
     await testReverted(orMakerDeposit.withdraw(constants.AddressZero), 'WTN');
     const currentBlockInfo = await ethers.provider.getBlock('latest');
     await mineXTimes(
-      secondVerifyStatus.request_timestamp - currentBlockInfo.timestamp,
+      BigNumber.from(secondVerifyStatus.request_timestamp).toNumber() -
+        currentBlockInfo.timestamp,
       true,
     );
     const withdrawReceipt = await orMakerDeposit
@@ -496,7 +497,7 @@ describe('ORMakerDeposit', () => {
     );
     expect(
       bETHAfter
-        .add(requestGasUsed)
+        ?.add(requestGasUsed)
         .add(withdrawGasUsed)
         .sub(bETHBefore || 0),
     ).eq(amountETH);
