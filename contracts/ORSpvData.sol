@@ -4,6 +4,9 @@ pragma solidity ^0.8.17;
 import {IORSpvData} from "./interface/IORSpvData.sol";
 import {IORManager} from "./interface/IORManager.sol";
 
+// TODO: test
+import "hardhat/console.sol";
+
 contract ORSpvData is IORSpvData {
     IORManager private _manager;
     uint64 private _blockInterval = 20;
@@ -24,7 +27,7 @@ contract ORSpvData is IORSpvData {
         return _blocks[blockNumber];
     }
 
-    function saveHistoryBlock() external {
+    function saveHistoryBlocks() external {
         for (uint i = 256; i > 0; ) {
             uint256 blockNumber = block.number - i;
 
@@ -32,7 +35,7 @@ contract ORSpvData is IORSpvData {
                 if (_blocks[blockNumber] == bytes32(0)) {
                     bytes32 blockHash = blockhash(blockNumber);
                     _blocks[blockNumber] = blockHash;
-                    emit SaveHistoryBlock(blockHash, blockNumber);
+                    emit HistoryBlockSaved(blockNumber, blockHash);
                 }
             }
 
@@ -53,7 +56,7 @@ contract ORSpvData is IORSpvData {
         emit BlockIntervalUpdated(blockInterval);
     }
 
-    function injectByManager(
+    function injectBlocksByManager(
         uint startBlockNumber,
         uint endBlockNumber,
         InjectionBlock[] calldata injectionBlocks
@@ -70,7 +73,7 @@ contract ORSpvData is IORSpvData {
             require(startBlockNumber + _blockInterval * (i + 1) == injectionBlocks[i].blockNumber, "IIB");
 
             _blocks[injectionBlocks[i].blockNumber] = injectionBlocks[i].blockHash;
-            emit SaveHistoryBlock(injectionBlocks[i].blockHash, injectionBlocks[i].blockNumber);
+            emit HistoryBlockSaved(injectionBlocks[i].blockNumber, injectionBlocks[i].blockHash);
 
             unchecked {
                 i++;

@@ -17,20 +17,7 @@ export async function testReverted(
   transaction: Promise<ContractTransaction>,
   reason: string,
 ) {
-  let succeed = false;
-
-  try {
-    await transaction.then((t) => t.wait());
-    succeed = true;
-  } catch (err: any) {
-    const reg = new RegExp(`reason=.*?${reason}`, 'i');
-    const match = reg.exec(err.message);
-
-    expect(!!match?.[0]).to.be.eq(true);
-  }
-
-  if (succeed)
-    throw new Error(`should reverted with reason string '${reason}'`);
+  await expect(transaction).to.be.revertedWith(reason);
 }
 
 export async function testRevertedOwner(

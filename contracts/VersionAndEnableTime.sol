@@ -4,8 +4,8 @@ pragma solidity ^0.8.17;
 import {ConstantsLib} from "./library/ConstantsLib.sol";
 
 contract VersionAndEnableTime {
-    uint192 private _version;
-    uint64 private _enableTime;
+    uint192 private _version = 1;
+    uint64 private _enableTime = 100;
 
     // TODO: modify requires more gas
     // modifier versionIncreaseAndEnableTime(uint64 enableTime) {
