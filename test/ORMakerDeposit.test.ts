@@ -735,6 +735,7 @@ describe('ORMakerDeposit', () => {
   describe('ORMakerDeposit challenge', () => {
     let spv: TestSpv;
     let verifyContract: { address: PromiseOrValue<string> };
+    const chainId = 5;
     interface challengeInputInfo {
       sourceChainId: BigNumberish;
       sourceTxHash: BigNumberish;
@@ -1069,32 +1070,47 @@ describe('ORMakerDeposit', () => {
 
     const createChallenge = async (
       challenge: challengeInputInfo,
+      revertReason?: string,
     ): Promise<string> => {
-      const tx = await orMakerDeposit
-        .challenge(
-          challenge.sourceChainId,
-          challenge.sourceTxHash.toString(),
-          challenge.sourceTxTime,
-          challenge.freezeToken,
-          challenge.freezeAmount,
-          { value: challenge.freezeAmount },
-        )
-        .then((t) => t.wait());
-      const args = tx.events?.[0].args;
-      expect(args).not.empty;
-      if (!!args) {
-        // console.warn('args.ChallengeInfo:', args.ChallengeInfo);
-        expect(args.challengeId).not.empty;
-        expect(args.challengeInfo.sourceTxFrom).eql(BigNumber.from(0));
-        expect(args.challengeInfo.sourceTxTime).eql(
-          BigNumber.from(challenge.sourceTxTime),
-        );
-        expect(args.challengeInfo.challenger).eql(mdcOwner.address);
-        expect(args.challengeInfo.freezeToken).eql(challenge.freezeToken);
-        expect(args.challengeInfo.freezeAmount0).eql(challenge.freezeAmount);
-        expect(args.challengeInfo.freezeAmount1).eql(challenge.freezeAmount);
+      if (revertReason != undefined) {
+        await expect(
+          orMakerDeposit.challenge(
+            challenge.sourceChainId,
+            challenge.sourceTxHash.toString(),
+            challenge.sourceTxTime,
+            challenge.freezeToken,
+            challenge.freezeAmount,
+            { value: challenge.freezeAmount },
+          ),
+        ).to.revertedWith(revertReason);
+        return revertReason;
+      } else {
+        const tx = await orMakerDeposit
+          .challenge(
+            challenge.sourceChainId,
+            challenge.sourceTxHash.toString(),
+            challenge.sourceTxTime,
+            challenge.freezeToken,
+            challenge.freezeAmount,
+            { value: challenge.freezeAmount },
+          )
+          .then((t) => t.wait());
+        const args = tx.events?.[0].args;
+        expect(args).not.empty;
+        if (!!args) {
+          // console.warn('args.ChallengeInfo:', args.ChallengeInfo);
+          expect(args.challengeId).not.empty;
+          expect(args.challengeInfo.sourceTxFrom).eql(BigNumber.from(0));
+          expect(args.challengeInfo.sourceTxTime).eql(
+            BigNumber.from(challenge.sourceTxTime),
+          );
+          expect(args.challengeInfo.challenger).eql(mdcOwner.address);
+          expect(args.challengeInfo.freezeToken).eql(challenge.freezeToken);
+          expect(args.challengeInfo.freezeAmount0).eql(challenge.freezeAmount);
+          expect(args.challengeInfo.freezeAmount1).eql(challenge.freezeAmount);
+        }
+        return args?.challengeId;
       }
-      return args?.challengeId;
     };
 
     before(async function () {
@@ -1120,7 +1136,7 @@ describe('ORMakerDeposit', () => {
         freezeToken: constants.AddressZero,
         freezeAmount: utils.parseEther('0.001'),
       };
-      const challengeId = await createChallenge(challenge);
+      await createChallenge(challenge);
       const invalidVerifyInfo0: VerifyInfo = {
         data: [1],
         slots: [
@@ -1223,11 +1239,11 @@ describe('ORMakerDeposit', () => {
         .then((t) => t.wait());
     };
 
-    it('challenge should success', async function () {
+    it('challenge Verify Source TX should success', async function () {
       const challenge: challengeInputInfo = {
         sourceChainId: 5,
         sourceTxHash: utils.keccak256(randomBytes(7800)),
-        sourceTxTime: 10000,
+        sourceTxTime: (await getCurrentTime()) - random(await getCurrentTime()),
         // freezeToken: '0xa0321efeb50c46c17a7d72a52024eea7221b215a',
         freezeToken: constants.AddressZero,
         freezeAmount: utils.parseEther('0.001'),
@@ -1249,7 +1265,114 @@ describe('ORMakerDeposit', () => {
         verifyinfoBase,
       );
 
-      const challengeId = await createChallenge(challenge);
+      await createChallenge(challenge);
+    });
+
+    it('challenge case test', async function () {
+      const case1SourceChainId = chainId;
+      const case1SourceTxHash = utils.keccak256(randomBytes(100));
+      const case1freezeAmount = '0.1';
+      const challenge: challengeInputInfo = {
+        sourceChainId: case1SourceChainId,
+        sourceTxHash: case1SourceTxHash,
+        sourceTxTime: (await getCurrentTime()) - 1,
+        freezeToken: constants.AddressZero,
+        freezeAmount: utils.parseEther(case1freezeAmount),
+      };
+      const case1balanceOfMakerbefore = utils.formatEther(
+        await ethers.provider.getBalance(orMakerDeposit.address),
+      );
+      await expect(
+        orMakerDeposit.checkChallenge(
+          case1SourceChainId,
+          case1SourceTxHash,
+          [],
+        ),
+      ).to.revertedWith('CNE');
+      const challengeFake: challengeInputInfo = {
+        sourceChainId: challenge.sourceChainId,
+        sourceTxHash: challenge.sourceTxHash,
+        sourceTxTime: (await getCurrentTime()) + 7800,
+        freezeToken: challenge.freezeToken,
+        freezeAmount: challenge.freezeAmount,
+      };
+      await createChallenge(challengeFake, 'STOF');
+      await createChallenge(challenge);
+      await createChallenge(challenge, 'CE');
+
+      await mineXMinutes(100);
+      expect(
+        await orMakerDeposit.checkChallenge(
+          case1SourceChainId,
+          case1SourceTxHash,
+          [],
+        ),
+      ).to.be.satisfy;
+      const case1balanceOfMakerAfter = utils.formatEther(
+        await ethers.provider.getBalance(orMakerDeposit.address),
+      );
+      console.log(
+        `challenge 1 balanceOfMakerbefore :${case1balanceOfMakerbefore}, balanceOfMakerAfter :${case1balanceOfMakerAfter}, freezeAmount: ${case1freezeAmount}`,
+      );
+      expect(parseFloat(case1balanceOfMakerAfter).toFixed(2)).equal(
+        (parseFloat(case1balanceOfMakerbefore) + parseFloat(case1freezeAmount))
+          .toFixed(2)
+          .toString(),
+      );
+
+      await expect(
+        orMakerDeposit.checkChallenge(
+          case1SourceChainId,
+          case1SourceTxHash,
+          [],
+        ),
+      ).to.revertedWith('CNE');
+      const challenge2: challengeInputInfo = {
+        sourceChainId: challenge.sourceChainId,
+        sourceTxHash: challenge.sourceTxHash,
+        sourceTxTime: (await getCurrentTime()) - 1,
+        freezeToken: challenge.freezeToken,
+        freezeAmount: challenge.freezeAmount,
+      };
+      await createChallenge(challenge2);
+
+      const case2balanceOfMakerAfter = utils.formatEther(
+        await ethers.provider.getBalance(orMakerDeposit.address),
+      );
+      expect(parseFloat(case2balanceOfMakerAfter).toFixed(2)).equal(
+        (parseFloat(case1balanceOfMakerAfter) + parseFloat(case1freezeAmount))
+          .toFixed(2)
+          .toString(),
+      );
+      console.log(
+        `challenge 2 balanceOfMakerbefore :${case1balanceOfMakerAfter}, balanceOfMakerAfter :${case2balanceOfMakerAfter}, freezeAmount: ${case1freezeAmount}`,
+      );
+
+      await expect(
+        orMakerDeposit.checkChallenge(
+          case1SourceChainId,
+          case1SourceTxHash,
+          [],
+        ),
+      ).to.revertedWith('VCST');
+
+      await mineXMinutes(100);
+
+      expect(
+        await orMakerDeposit.checkChallenge(
+          case1SourceChainId,
+          case1SourceTxHash,
+          [],
+        ),
+      ).to.be.satisfy;
+
+      await expect(
+        orMakerDeposit.checkChallenge(
+          case1SourceChainId,
+          case1SourceTxHash,
+          [],
+        ),
+      ).to.revertedWith('CNE');
     });
   });
 });

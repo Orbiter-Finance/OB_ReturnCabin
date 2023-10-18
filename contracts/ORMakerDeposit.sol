@@ -316,6 +316,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             require(block.timestamp > chainInfo.maxVerifyChallengeSourceTxSecond + challengeInfo.sourceTxTime, "VCST");
 
             _challengerFailed(challengeInfo);
+            delete _challenges[challengeId];
         } else {
             // Ensure the correctness of verifiedData0
             require(abi.encode(verifiedData0).hash() == challengeInfo.verifiedDataHash0, "VDH");
