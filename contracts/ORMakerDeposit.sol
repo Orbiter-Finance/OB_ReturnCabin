@@ -29,7 +29,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
     IORMDCFactory private _mdcFactory;
     bytes32 private _columnArrayHash;
     mapping(uint64 => address) private _spvs; // chainId => spvAddress
-    mapping(bytes32 => uint) private usedGas; // gas => challengeId
+    mapping(bytes32 => uint) private userVerifyUsedGas; // gas => challengeId
     bytes32 private _responseMakersHash; // hash(response maker list), not just owner, to improve tps
     mapping(address => RuleLib.RootWithVersion) private _rulesRoots; // ebc => merkleRoot(rules), version
     mapping(bytes32 => uint) private _pledgeBalances; // hash(ebc, sourceChainId, sourceToken) => pledgeBalance
@@ -336,7 +336,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             0,
             0
         );
-        usedGas[challengeId] +=
+        userVerifyUsedGas[challengeId] +=
             (startGasNum - gasleft()) *
             (block.basefee + uint256(IORManager(_mdcFactory.manager()).getPriorityFee()));
         emit ChallengeInfoUpdated(challengeId, _challenges[challengeId]);
@@ -369,11 +369,13 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
             _makerFailed(challengeInfo);
 
-            (bool sent3, ) = payable(challengeInfo.challenger).call{value: usedGas[challengeId] / 1 ether}("");
+            (bool sent3, ) = payable(challengeInfo.challenger).call{value: userVerifyUsedGas[challengeId] / 1 ether}(
+                ""
+            );
 
-            require(sent3, "ETH: SE3");
+            require(sent3, "ETH: NTG");
 
-            delete usedGas[challengeId];
+            delete userVerifyUsedGas[challengeId];
         }
         _challenges[challengeId].abortTime = uint64(block.timestamp);
 
@@ -529,7 +531,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
                 ]
             )
             .hash();
-        usedGas[challengeId] +=
+        userVerifyUsedGas[challengeId] +=
             (startGasNum - gasleft() + uint256(IORManager(_mdcFactory.manager()).getUserVerifyGasUsed())) *
             (block.basefee + uint256(IORManager(_mdcFactory.manager()).getPriorityFee()));
         emit ChallengeInfoUpdated(challengeId, _challenges[challengeId]);
