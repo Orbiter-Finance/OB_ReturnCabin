@@ -57,7 +57,7 @@ describe('ORSpvData', () => {
     expect(args.spvDataContract).to.deep.eq(orSpvData.address);
   });
 
-  it('Function orManager.updateSpvBlockInterval should success', async function () {
+  it('Test ORManager.updateSpvBlockInterval should success', async function () {
     const spvBlockInterval = BigNumber.from(40);
 
     await testRevertedOwner(
@@ -81,7 +81,7 @@ describe('ORSpvData', () => {
     expect(storageValue).to.deep.eq(spvBlockInterval);
   });
 
-  it('Function saveHistoryBlocks should success', async function () {
+  it('Function ORManager.injectSpvBlocks should success', async function () {
     // Only hardhat local network
     await mine(1000);
 
@@ -105,21 +105,23 @@ describe('ORSpvData', () => {
     }
   });
 
-  it('A', async function () {
+  it('Test saveHistoryBlocks should success', async function () {
     const eventHistoryBlockSavedKey = id('HistoryBlockSaved(uint256,bytes32)');
 
     const blockInterval = await orSpvData.getBlockInterval();
 
-    const startBlockNumber = BigNumber.from(
-      (
-        await orSpvData.provider.getLogs({
-          address: orSpvData.address,
-          fromBlock: 0,
-          toBlock: 'latest',
-          topics: [eventHistoryBlockSavedKey],
-        })
-      ).pop()?.topics[1],
-    );
+    const startBlock = (
+      await orSpvData.provider.getLogs({
+        address: orSpvData.address,
+        fromBlock: 0,
+        toBlock: 'latest',
+        topics: [eventHistoryBlockSavedKey],
+      })
+    ).pop();
+    const startBlockNumber = BigNumber.from(startBlock?.topics[1]);
+    const startBlockHash = startBlock?.data || '';
+    // ?.topics[1],
+    // ;
 
     await testRevertedOwner(
       orManager
@@ -177,7 +179,7 @@ describe('ORSpvData', () => {
       })
     ).shift();
     const endBlockNumber = BigNumber.from(endBlock?.topics[1]);
-    const endBlockHash = endBlock?.data!;
+    const endBlockHash = endBlock?.data || '';
 
     const injectionBlocks: IORSpvData.InjectionBlockStruct[] = [];
     for (let i = 0; i < 2; i++) {
@@ -200,17 +202,48 @@ describe('ORSpvData', () => {
       'SGEIB',
     );
     await testReverted(
+      orManager.injectSpvBlocks(startBlockNumber, endBlockNumber, [
+        {
+          blockNumber: endBlockNumber,
+          blockHash: endBlockHash,
+        },
+      ]),
+      'ELEIB',
+    );
+    await testReverted(
       orManager.injectSpvBlocks(
         startBlockNumber,
         endBlockNumber,
-        injectionBlocks.concat([
-          {
-            blockNumber: endBlockNumber.toNumber(),
-            blockHash: endBlockHash,
-          },
-        ]),
+        injectionBlocks.slice(1, 2),
       ),
-      'ELEIB',
+      'IIB',
     );
+    await testReverted(
+      orManager.injectSpvBlocks(
+        startBlockNumber.sub(blockInterval),
+        endBlockNumber,
+        [
+          {
+            blockNumber: startBlockNumber,
+            blockHash: startBlockHash,
+          },
+        ],
+      ),
+      'BE',
+    );
+
+    const events = (
+      await orManager
+        .injectSpvBlocks(startBlockNumber, endBlockNumber, injectionBlocks)
+        .then((t) => t.wait())
+    ).events!;
+    for (let i = 0; i < injectionBlocks.length; i++) {
+      expect(BigNumber.from(events[i].topics[1])).to.deep.eq(
+        injectionBlocks[i].blockNumber,
+      );
+      expect(BigNumber.from(events[i].data)).to.deep.eq(
+        BigNumber.from(injectionBlocks[i].blockHash),
+      );
+    }
   });
 });

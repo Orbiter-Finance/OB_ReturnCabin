@@ -67,17 +67,24 @@ contract ORSpvData is IORSpvData {
         require(_blocks[startBlockNumber] != bytes32(0), "SZ");
         require(_blocks[endBlockNumber] != bytes32(0), "EZ");
 
-        for (uint i = 0; i < injectionBlocks.length; ) {
-            require(startBlockNumber < injectionBlocks[i].blockNumber, "SGEIB");
-            require(endBlockNumber > injectionBlocks[i].blockNumber, "ELEIB");
-            require(startBlockNumber + _blockInterval * (i + 1) == injectionBlocks[i].blockNumber, "IIB");
-
-            _blocks[injectionBlocks[i].blockNumber] = injectionBlocks[i].blockHash;
-            emit HistoryBlockSaved(injectionBlocks[i].blockNumber, injectionBlocks[i].blockHash);
-
+        uint i = 0;
+        uint ni = 0;
+        for (; i < injectionBlocks.length; ) {
             unchecked {
-                i++;
+                ni = i + 1;
             }
+
+            InjectionBlock memory injectionBlock = injectionBlocks[i];
+
+            require(startBlockNumber < injectionBlock.blockNumber, "SGEIB");
+            require(endBlockNumber > injectionBlock.blockNumber, "ELEIB");
+            require(startBlockNumber + _blockInterval * ni == injectionBlock.blockNumber, "IIB");
+            require(_blocks[injectionBlock.blockNumber] == bytes32(0), "BE");
+
+            _blocks[injectionBlock.blockNumber] = injectionBlock.blockHash;
+            emit HistoryBlockSaved(injectionBlock.blockNumber, injectionBlock.blockHash);
+
+            i = ni;
         }
     }
 }
