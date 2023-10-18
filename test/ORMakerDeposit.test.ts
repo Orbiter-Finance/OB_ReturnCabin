@@ -163,7 +163,7 @@ describe('ORMakerDeposit', () => {
 
         const args = events?.[0].args;
         expect(args?.impl).eq(implementation);
-        // expect(args?.columnArrayHash).eq(columnArrayHash);
+        expect(await orMakerDeposit.columnArrayHash()).eq(columnArrayHash);
         expect(lodash.toPlainObject(args?.ebcs)).to.deep.includes(mdcEbcs);
         expect(lodash.toPlainObject(args?.dealers)).to.deep.includes(
           mdcDealers,

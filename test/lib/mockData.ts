@@ -633,11 +633,11 @@ export function getRulesSetting(getNative: boolean) {
   let chain1MaxPrice = BigNumber.from(5)
     .pow(parseInt(Math.random() * 9 + ''))
     .add(BigNumber.from('80000' + paddingString));
-  const chain0withholdingFee = BigNumber.from(560000).add(
-    BigNumber.from('10000' + paddingString),
+  const chain0withholdingFee = BigNumber.from(56 * 100000).add(
+    BigNumber.from('100000' + paddingString),
   );
-  const chain1withholdingFee = BigNumber.from(780000).add(
-    BigNumber.from('10000' + paddingString),
+  const chain1withholdingFee = BigNumber.from(78 * 100000).add(
+    BigNumber.from('100000' + paddingString),
   );
 
   if (chain0MinPrice > chain0MaxPrice) {

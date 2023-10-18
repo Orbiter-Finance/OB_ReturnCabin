@@ -16,13 +16,18 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
     mapping(uint64 => BridgeLib.ChainInfo) private _chains;
     mapping(bytes32 => BridgeLib.TokenInfo) private _chainTokens; // hash(chainId, token) => TokenInfo
     mapping(address => bool) private _ebcs;
+
     address private _submitter;
     uint64 private _protocolFee;
+
     uint64 private _minChallengeRatio = 20000; // 10,000 percent
     uint64 private _challengeUserRatio; // 10,000 percent
     uint64 private _feeChallengeSecond;
     uint64 private _feeTakeOnChallengeSecond;
+
     uint64 private _maxMDCLimit = 2 ** 64 - 1;
+    address private _spvDataContract;
+
     mapping(uint64 => uint) private _extraTransferContracts; // Cross-address transfer contracts. chainId => contractAddress
 
     constructor(address owner_) {
@@ -187,6 +192,18 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
 
     function getExtraTransferContract(uint64 chainId) external view returns (uint) {
         return _extraTransferContracts[chainId];
+    }
+
+    function updateSpvBlockInterval(uint64 spvBlockInterval) external onlyOwner {
+        IORSpvData(_spvDataContract).updateBlockInterval(spvBlockInterval);
+    }
+
+    function injectSpvBlocks(
+        uint startBlockNumber,
+        uint endBlockNumber,
+        IORSpvData.InjectionBlock[] calldata injectionBlocks
+    ) external onlyOwner {
+        IORSpvData(_spvDataContract).injectByManager(startBlockNumber, endBlockNumber, injectionBlocks);
     }
 
     function updateExtraTransferContracts(

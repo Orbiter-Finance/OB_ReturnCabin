@@ -14,7 +14,7 @@ contract OREventBinding is IOREventBinding {
         uint[] memory splits = new uint[](3);
 
         unchecked {
-            splits[0] = (securityCode / 1000) % 10;
+            splits[0] = securityCode / 1000;
             splits[1] = (securityCode / 100) % 10;
             splits[2] = securityCode % 100;
         }

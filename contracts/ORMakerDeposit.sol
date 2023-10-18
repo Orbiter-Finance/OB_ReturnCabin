@@ -91,7 +91,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             }
         }
 
-        _columnArrayHash = abi.encode(dealers, ebcs, chainIds).hash();
+        _columnArrayHash = abi.encodePacked(dealers, ebcs, chainIds).hash();
         emit ColumnArrayUpdated(_mdcFactory.implementation(), _columnArrayHash, dealers, ebcs, chainIds);
     }
 

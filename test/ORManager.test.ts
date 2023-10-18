@@ -31,7 +31,11 @@ describe('Test ORManager', () => {
   });
 
   it('Owner should be able to be set when deploying the contract', async function () {
-    if (process.env['OR_MANAGER_ADDRESS'] == undefined) {
+    const envORManagerAddress = (
+      process.env['OR_MANAGER_ADDRESS'] || ''
+    ).trim();
+
+    if (!envORManagerAddress) {
       orManager = await new ORManager__factory(signers[0]).deploy(
         signers[0].address,
       );
@@ -41,7 +45,7 @@ describe('Test ORManager', () => {
       process.env['OR_MANAGER_ADDRESS'] = orManager.address;
     } else {
       orManager = new ORManager__factory(signers[0]).attach(
-        process.env['OR_MANAGER_ADDRESS'],
+        envORManagerAddress,
       );
       console.log('connect to orManager contract:', orManager.address);
     }
@@ -140,7 +144,7 @@ describe('Test ORManager', () => {
           )
           .then((t) => t.wait());
 
-        (events || []).forEach((event, i) => {
+        events.forEach((event, i) => {
           expect(event.args?.id).to.eq(chainIds[i]);
           expect(lodash.toPlainObject(event.args?.tokenInfo)).to.deep.includes(
             tokens[i],
@@ -156,14 +160,16 @@ describe('Test ORManager', () => {
           tokens.map((token) => token.mainnetToken),
         );
 
-        const latestIndex = tokens.length - 1;
-        const tokenInfo = await orManager.getChainTokenInfo(
-          chainIds[latestIndex],
-          tokens[latestIndex].token,
-        );
-        expect(lodash.toPlainObject(tokenInfo)).to.deep.includes(
-          tokens[latestIndex],
-        );
+        if (tokens.length > 0) {
+          const latestIndex = tokens.length - 1;
+          const tokenInfo = await orManager.getChainTokenInfo(
+            chainIds[latestIndex],
+            tokens[latestIndex].token,
+          );
+          expect(lodash.toPlainObject(tokenInfo)).to.deep.includes(
+            tokens[latestIndex],
+          );
+        }
       },
     ),
   );
@@ -234,7 +240,7 @@ describe('Test ORManager', () => {
       .updateEbcs(ebcs, statuses)
       .then((t) => t.wait());
 
-    const args = events[0].args!;
+    const args = events![0].args!;
     expect(args.ebcs).to.deep.eq(ebcs);
     expect(args.statuses).to.deep.eq(statuses);
 
@@ -272,7 +278,7 @@ describe('Test ORManager', () => {
           )
           .then((t) => t.wait());
 
-        const args = events[0].args!;
+        const args = events![0].args!;
         expect(args.submitter).to.deep.eq(submitter);
 
         const storageSubmitter = await orManager.submitter();
@@ -300,7 +306,7 @@ describe('Test ORManager', () => {
           )
           .then((t) => t.wait());
 
-        const args = events[0].args!;
+        const args = events![0].args!;
         expect(args.protocolFee).to.deep.eq(protocolFee);
 
         const storageProtocolFee = await orManager.protocolFee();
@@ -327,7 +333,7 @@ describe('Test ORManager', () => {
           )
           .then((t) => t.wait());
 
-        const args = events[0].args!;
+        const args = events![0].args!;
         expect(args.minChallengeRatio).to.deep.eq(minChallengeRatio);
 
         const storageMinChallengeRatio = await orManager.minChallengeRatio();
@@ -354,7 +360,7 @@ describe('Test ORManager', () => {
           )
           .then((t) => t.wait());
 
-        const args = events[0].args!;
+        const args = events![0].args!;
         expect(args.challengeUserRatio).to.deep.eq(challengeUserRatio);
 
         const storageChallengeUserRatio = await orManager.challengeUserRatio();
@@ -381,7 +387,7 @@ describe('Test ORManager', () => {
           )
           .then((t) => t.wait());
 
-        const args = events[0].args!;
+        const args = events![0].args!;
         expect(args.feeChallengeSecond).to.deep.eq(feeChallengeSecond);
 
         const storageFeeChallengeSecond = await orManager.feeChallengeSecond();
@@ -408,7 +414,7 @@ describe('Test ORManager', () => {
           )
           .then((t) => t.wait());
 
-        const args = events[0].args!;
+        const args = events![0].args!;
         expect(args.feeTakeOnChallengeSecond).to.deep.eq(
           feeTakeOnChallengeSecond,
         );
@@ -429,12 +435,33 @@ describe('Test ORManager', () => {
       .updateMaxMDCLimit(maxMDCLimit)
       .then((t) => t.wait());
 
-    const args = events[0].args!;
+    const args = events![0].args!;
     expect(args.maxMDCLimit).to.deep.eq(maxMDCLimit);
 
     const storageMaxMDCLimit = await orManager.maxMDCLimit();
     expect(storageMaxMDCLimit).to.deep.eq(maxMDCLimit);
   });
+
+  // TODO: move to ORSpvData.test.ts
+  // it('Function updateSpvBlockInterval should succeed', async function () {
+  //   const spvBlockInterval = BigNumber.from(40);
+
+  //   await testRevertedOwner(
+  //     orManager.connect(signers[2]).updateSpvBlockInterval(spvBlockInterval),
+  //   );
+
+  //   const events = (
+  //     await orManager
+  //       .updateSpvBlockInterval(spvBlockInterval)
+  //       .then((t) => t.wait())
+  //   ).events!;
+
+  //   const args = events[0].args!;
+  //   expect(args.spvBlockInterval).to.deep.eq(spvBlockInterval);
+
+  //   const storageValue = await orManager.getSpvBlockInterval();
+  //   expect(storageValue).to.deep.eq(spvBlockInterval);
+  // });
 
   it(
     'Function updateExtraTransferContracts should succeed',
@@ -460,7 +487,7 @@ describe('Test ORManager', () => {
           )
           .then((t) => t.wait());
 
-        const args = events[0].args!;
+        const args = events![0].args!;
         expect(args.chainIds).to.deep.eq(chainIds);
         expect(args.extraTransferContracts).to.deep.eq(extraTransferContracts);
 
