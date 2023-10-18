@@ -20,7 +20,11 @@ interface IORManager {
 
     function getPriorityFee() external view returns (uint8);
 
-    function updatePriorityFee(uint8 _priorityFee) external;
+    function getUserVerifyGasUsed() external view returns (uint24);
+
+    function updatePriorityFee(uint8 priorityFee) external;
+
+    function updateUserVerifyGasUsed(uint24 userVerifyGasUsed) external;
 
     function updateChainSpvs(uint64 enableTime, uint64 id, address[] calldata spvs, uint[] calldata indexs) external;
 

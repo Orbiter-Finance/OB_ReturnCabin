@@ -530,7 +530,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             )
             .hash();
         usedGas[challengeId] +=
-            (startGasNum - gasleft()) *
+            (startGasNum - gasleft() + uint256(IORManager(_mdcFactory.manager()).getUserVerifyGasUsed())) *
             (block.basefee + uint256(IORManager(_mdcFactory.manager()).getPriorityFee()));
         emit ChallengeInfoUpdated(challengeId, _challenges[challengeId]);
     }

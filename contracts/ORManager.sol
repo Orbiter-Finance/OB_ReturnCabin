@@ -24,6 +24,7 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
     uint64 private _feeTakeOnChallengeSecond;
     uint64 private _maxMDCLimit = 2 ** 64 - 1;
     uint8 private _initPriorityFee = 1; // 1wei
+    uint24 private _userVerifyGasUsed = 176000; // proof calldata 114000 + rule data 20000 + submit tx 21000 + verify source 21000
     mapping(uint64 => uint) private _extraTransferContracts; // Cross-address transfer contracts. chainId => contractAddress
 
     constructor(address owner_) {
@@ -52,8 +53,16 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
         return _initPriorityFee;
     }
 
-    function updatePriorityFee(uint8 _priorityFee) external onlyOwner {
-        _initPriorityFee = _priorityFee;
+    function getUserVerifyGasUsed() external view returns (uint24) {
+        return _userVerifyGasUsed;
+    }
+
+    function updatePriorityFee(uint8 priorityFee) external onlyOwner {
+        _initPriorityFee = priorityFee;
+    }
+
+    function updateUserVerifyGasUsed(uint24 userVerifyGasUsed) external onlyOwner {
+        _userVerifyGasUsed = userVerifyGasUsed;
     }
 
     function updateChainSpvs(
