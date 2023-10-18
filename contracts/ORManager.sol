@@ -16,15 +16,20 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
     mapping(uint64 => BridgeLib.ChainInfo) private _chains;
     mapping(bytes32 => BridgeLib.TokenInfo) private _chainTokens; // hash(chainId, token) => TokenInfo
     mapping(address => bool) private _ebcs;
+
     address private _submitter;
     uint64 private _protocolFee;
+
     uint64 private _minChallengeRatio = 20000; // 10,000 percent
     uint64 private _challengeUserRatio; // 10,000 percent
     uint64 private _feeChallengeSecond;
     uint64 private _feeTakeOnChallengeSecond;
+
     uint64 private _maxMDCLimit = 2 ** 64 - 1;
     uint8 private _initPriorityFee = 1; // 1wei
     uint24 private _userVerifyGasUsed = 176000; // proof calldata 114000 + rule data 20000 + submit tx 21000 + verify source 21000
+    address private _spvDataContract;
+
     mapping(uint64 => uint) private _extraTransferContracts; // Cross-address transfer contracts. chainId => contractAddress
 
     constructor(address owner_) {
@@ -99,7 +104,7 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
         unchecked {
             for (uint i = 0; i < ids.length; i++) {
                 // TODO: If the token of layer2 changes, how should it be handled here?
-                bytes32 key = abi.encodePacked(ids[i], tokenInfos[i].token).hash();
+                bytes32 key = abi.encode(ids[i], tokenInfos[i].token).hash();
                 _chainTokens[key] = tokenInfos[i];
                 emit ChainTokenUpdated(ids[i], tokenInfos[i]);
             }
@@ -107,7 +112,7 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
     }
 
     function getChainTokenInfo(uint64 id, uint token) external view returns (BridgeLib.TokenInfo memory) {
-        bytes32 key = abi.encodePacked(id, token).hash();
+        bytes32 key = abi.encode(id, token).hash();
         return _chainTokens[key];
     }
 
@@ -205,6 +210,18 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
 
     function getExtraTransferContract(uint64 chainId) external view returns (uint) {
         return _extraTransferContracts[chainId];
+    }
+
+    function updateSpvBlockInterval(uint64 spvBlockInterval) external onlyOwner {
+        IORSpvData(_spvDataContract).updateBlockInterval(spvBlockInterval);
+    }
+
+    function injectSpvBlocks(
+        uint startBlockNumber,
+        uint endBlockNumber,
+        IORSpvData.InjectionBlock[] calldata injectionBlocks
+    ) external onlyOwner {
+        IORSpvData(_spvDataContract).injectByManager(startBlockNumber, endBlockNumber, injectionBlocks);
     }
 
     function updateExtraTransferContracts(

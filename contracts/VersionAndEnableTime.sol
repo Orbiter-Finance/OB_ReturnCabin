@@ -21,16 +21,16 @@ contract VersionAndEnableTime {
 
     function versionIncreaseAndEnableTime(uint64 enableTime) public {
         require(
-            (enableTime - block.timestamp >= ConstantsLib.MIN_ENABLE_DELAY) &&
-                (enableTime - block.timestamp <= ConstantsLib.MAX_ENABLE_DELAY) &&
+            (enableTime >= ConstantsLib.MIN_ENABLE_DELAY + block.timestamp) &&
+                (enableTime <= ConstantsLib.MAX_ENABLE_DELAY + block.timestamp) &&
                 (enableTime > _enableTime),
             "OFET"
         );
-        uint64 curBlockNumber = uint64(block.number);
-        require(curBlockNumber > _blockNumber, "BNE");
+        uint64 blockNumberCurrent = uint64(block.number);
+        require(blockNumberCurrent > _blockNumber, "BNE");
 
         _version += 1;
-        _blockNumber = curBlockNumber;
+        _blockNumber = blockNumberCurrent;
         _enableTime = enableTime;
     }
 

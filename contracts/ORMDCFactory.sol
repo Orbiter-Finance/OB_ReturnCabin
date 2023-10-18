@@ -36,10 +36,7 @@ contract ORMDCFactory is IORMDCFactory {
 
     function createMDC() external {
         require(_mdcCreatedTotal < _manager.maxMDCLimit(), "MML");
-        address mdcAddress = Clones.cloneDeterministic(
-            _implementation,
-            abi.encodePacked(address(this), msg.sender).hash()
-        );
+        address mdcAddress = Clones.cloneDeterministic(_implementation, abi.encode(address(this), msg.sender).hash());
 
         unchecked {
             ++_mdcCreatedTotal;
@@ -53,7 +50,7 @@ contract ORMDCFactory is IORMDCFactory {
     function predictMDCAddress() external view returns (address) {
         address mdcAddress = Clones.predictDeterministicAddress(
             _implementation,
-            abi.encodePacked(address(this), msg.sender).hash()
+            abi.encode(address(this), msg.sender).hash()
         );
         return mdcAddress;
     }

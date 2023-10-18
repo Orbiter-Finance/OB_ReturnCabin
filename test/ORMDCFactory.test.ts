@@ -91,7 +91,7 @@ describe('ORMDCFactory', () => {
 
     const salt = utils.keccak256(
       utils.solidityPack(
-        ['address', 'address'],
+        ['uint256', 'uint256'],
         [orMDCFactory.address, signerMaker.address],
       ),
     );

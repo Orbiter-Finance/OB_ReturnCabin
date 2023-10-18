@@ -68,7 +68,7 @@ export function createRandomRule(getNative: boolean) {
 export function calculateRuleKey(rule: BigNumberish[]) {
   return utils.keccak256(
     utils.solidityPack(
-      ['uint64', 'uint64', 'uint', 'uint'],
+      ['uint256', 'uint256', 'uint256', 'uint256'],
       rule.slice(0, 2).concat(rule.slice(4, 6)),
     ),
   );

@@ -83,18 +83,17 @@ export function embedVersionIncreaseAndEnableTime(
 }
 
 export const MIN_ENABLE_DELAY = 120; // Unit: second
-// export function getMinEnableTime() {
-//   const minEnableTime = BigNumber.from(
-//     Date.now() + MIN_ENABLE_DELAY * 1000,
-//   ).div(1000);
-//   return minEnableTime.add(200); // Keep time
-// }
-
-export function getMinEnableTime(currentEnableTime: BigNumber) {
-  const minEnableTime =
-    currentEnableTime.toNumber() != 0
-      ? currentEnableTime.add(MIN_ENABLE_DELAY)
-      : BigNumber.from(Date.now()).add(MIN_ENABLE_DELAY);
-  console.log(`current:${currentEnableTime}, nextEnableTime:${minEnableTime}`);
-  return minEnableTime.add(1);
+export function getMinEnableTime(currentEnableTime?: BigNumber) {
+  if (currentEnableTime != undefined) {
+    const minEnableTime =
+      currentEnableTime.toNumber() != 0
+        ? currentEnableTime.add(MIN_ENABLE_DELAY)
+        : BigNumber.from(Date.now()).add(MIN_ENABLE_DELAY);
+    return minEnableTime.add(1);
+  } else {
+    const minEnableTime = BigNumber.from(
+      Date.now() + MIN_ENABLE_DELAY * 1000,
+    ).div(1000);
+    return minEnableTime.add(200); // Keep time
+  }
 }

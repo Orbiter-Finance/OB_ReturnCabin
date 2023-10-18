@@ -2,9 +2,25 @@
 pragma solidity ^0.8.17;
 
 interface IORSpvData {
-    event SavePreviousBlock(bytes32 indexed previousBlockHash, uint256 indexed previousBlockNumber);
+    struct InjectionBlock {
+        uint blockNumber;
+        bytes32 blockHash;
+    }
 
-    function getBlockNumber(bytes32 blockHash) external view returns (uint);
+    event BlockIntervalUpdated(uint64 blockInterval);
+    event SaveHistoryBlock(bytes32 indexed blockHash, uint256 indexed blockNumber);
 
-    function savePreviousBlock() external;
+    function getBlockHash(uint blockNumber) external view returns (bytes32);
+
+    function saveHistoryBlock() external;
+
+    function getBlockInterval() external view returns (uint64);
+
+    function updateBlockInterval(uint64 blockInterval) external;
+
+    function injectByManager(
+        uint startBlockNumber,
+        uint endBlockNumber,
+        InjectionBlock[] calldata injectionBlocks
+    ) external;
 }

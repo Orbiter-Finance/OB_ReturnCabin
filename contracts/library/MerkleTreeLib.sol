@@ -129,6 +129,7 @@ library MerkleTreeLib {
         bytes32 currentBaseNode;
         bytes32 currentZeroBits;
 
+        // TODO: Need optimization
         if (leaves_bitmap.isZero()) {
             return
                 keccak256(
