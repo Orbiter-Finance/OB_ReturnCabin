@@ -31,7 +31,7 @@ const executeCommand = async (command: string): Promise<string> => {
 
 export const compile_yul = async (codePath: string): Promise<string> => {
   const cmd = `solc --bin --yul --optimize-runs 200 ${codePath}`;
-  console.log(`cmdString ${cmd}`);
+  // console.log(`cmdString ${cmd}`);
 
   const output = await executeCommand(cmd);
   const string_slice = output.split(/[\s\n]/);

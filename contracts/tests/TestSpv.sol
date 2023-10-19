@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
+import {RuleLib} from "../library/RuleLib.sol";
 
 contract testSpv {
     address public v_address;
@@ -31,5 +32,48 @@ contract testSpv {
         (bool success, ) = v_address.call(input);
         require(success, "verify fail");
         return success;
+    }
+
+    function encodeRawDatas(
+        address[] calldata dealers,
+        address[] calldata ebcs,
+        uint64[] calldata chainIds,
+        address ebc,
+        RuleLib.Rule calldata rule
+    ) external pure returns (bytes memory rawDatas) {
+        return abi.encode(dealers, ebcs, chainIds, ebc, rule);
+    }
+
+    function encoderawDatas(
+        address[] calldata dealers,
+        address[] calldata ebcs,
+        uint64[] calldata chainIds
+    ) external pure returns (bytes memory rawDatas) {
+        return abi.encode(dealers, ebcs, chainIds);
+    }
+
+    function decoderawDatas(
+        bytes calldata rawDatas
+    ) external pure returns (address[] memory dealers, address[] memory ebcs, uint64[] memory chainIds) {
+        (dealers, ebcs, chainIds) = abi.decode(rawDatas, (address[], address[], uint64[]));
+    }
+
+    function decodeRawDatas(
+        bytes calldata rawDatas
+    )
+        external
+        pure
+        returns (
+            address[] memory dealers,
+            address[] memory ebcs,
+            uint64[] memory chainIds,
+            address ebc,
+            RuleLib.Rule memory rule
+        )
+    {
+        (dealers, ebcs, chainIds, ebc, rule) = abi.decode(
+            rawDatas,
+            (address[], address[], uint64[], address, RuleLib.Rule)
+        );
     }
 }

@@ -91,6 +91,12 @@ export interface withdrawVerification {
   // withdrawAmount: BigNumber[];
   root: string[];
 }
+
+export interface columnArray {
+  dealers: string[];
+  ebcs: string[];
+  chainIds: number[];
+}
 /************************ Mock Data ***************************/
 
 export const dealersMock = async () => {
