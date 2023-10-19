@@ -244,6 +244,11 @@ describe('ORSpvData', () => {
       expect(BigNumber.from(events[i].data)).to.deep.eq(
         BigNumber.from(injectionBlocks[i].blockHash),
       );
+
+      const _blockHash = await orSpvData.getBlockHash(
+        injectionBlocks[i].blockNumber,
+      );
+      expect(BigNumber.from(_blockHash)).not.deep.eq(BigNumber.from(0));
     }
   });
 });
