@@ -14,13 +14,14 @@ library ConstantsLib {
     uint constant WITHDRAW_DURATION = 3360; // Unit: second
 
     uint constant LOCK_DURATION = 240; // Unit: second
+
     // uint constant DEALER_WITHDRAW_DELAY = 30; // Unit: second for test off-chain
 
     // uint constant WITHDRAW_DURATION = 300; // Unit: second for test off-chain
 
     // uint constant LOCK_DURATION = 180; // Unit: second for test off-chain
 
-    uint constant CHALLENGE_WITHDRAW_DELAY = 604800; // Unit: 7 days
+    uint constant CHALLENGE_WITHDRAW_DELAY = 604800; // Unit: seconds of 7 days
 
     uint constant EBC_AMOUNT_PARAMS_MODULUS = 100000;
 }
