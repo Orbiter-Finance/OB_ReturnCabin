@@ -1,6 +1,6 @@
 import { Provider } from '@ethersproject/providers';
 import { BigNumber, BigNumberish, BytesLike, utils } from 'ethers';
-import { Hexable } from 'ethers/lib/utils';
+import { Hexable, keccak256 } from 'ethers/lib/utils';
 import { BaseTrie } from 'merkle-patricia-tree';
 import Pako from 'pako';
 import { hexToBuffer } from '../utils.test';
@@ -26,6 +26,27 @@ export const ruleTypes = [
   'uint32', // chain0's compensation ratio
   'uint32', // chain1's compensation ratio
 ];
+
+export interface RuleStruct {
+  chainId0: BigNumber;
+  chainId1: BigNumber;
+  status0: number;
+  status1: number;
+  token0: BigNumber;
+  token1: BigNumber;
+  minPrice0: BigNumber;
+  minPrice1: BigNumber;
+  maxPrice0: BigNumber;
+  maxPrice1: BigNumber;
+  withholdingFee0: BigNumber;
+  withholdingFee1: BigNumber;
+  tradingFee0: number;
+  tradingFee1: number;
+  responseTime0: number;
+  responseTime1: number;
+  compensationRatio0: number;
+  compensationRatio1: number;
+}
 
 export function createRandomRule(getNative: boolean) {
   const {
@@ -64,6 +85,151 @@ export function createRandomRule(getNative: boolean) {
     (2 ^ 29) - 1,
   ];
 }
+
+export const createMakerRule = (getNative: boolean): RuleStruct => {
+  const {
+    chain0Id,
+    chain1Id,
+    chain0token,
+    chain1token,
+    randomStatus1,
+    randomStatus2,
+    chain0MinPrice,
+    chain0MaxPrice,
+    chain1MinPrice,
+    chain1MaxPrice,
+    chain0withholdingFee,
+    chain1withholdingFee,
+  } = getRulesSetting(getNative);
+
+  const rule: RuleStruct = {
+    chainId0: BigNumber.from(chain0Id).add(0),
+    chainId1: BigNumber.from(chain1Id).add(0),
+    status0: randomStatus1,
+    status1: randomStatus2,
+    token0: BigNumber.from(chain0token),
+    token1: BigNumber.from(chain1token),
+    minPrice0: chain0MinPrice,
+    minPrice1: chain1MinPrice,
+    maxPrice0: chain0MaxPrice,
+    maxPrice1: chain1MaxPrice,
+    withholdingFee0: chain0withholdingFee,
+    withholdingFee1: chain1withholdingFee,
+    tradingFee0: 1,
+    tradingFee1: 1,
+    responseTime0: 2 ^ (32 - 1),
+    responseTime1: 2 ^ (31 - 1),
+    compensationRatio0: 2 ^ (30 - 1),
+    compensationRatio1: 2 ^ (29 - 1),
+  };
+  return rule;
+};
+
+export const encodeChallengeRawData = (
+  dealers: string[],
+  ebcs: string[],
+  chainIds: number[],
+  ebc: string,
+  rule: RuleStruct,
+): string => {
+  return utils.defaultAbiCoder.encode(
+    [
+      'address[]',
+      'address[]',
+      'uint64[]',
+      'address',
+      'uint64',
+      'uint64',
+      'uint8',
+      'uint8',
+      'uint',
+      'uint',
+      'uint128',
+      'uint128',
+      'uint128',
+      'uint128',
+      'uint128',
+      'uint128',
+      'uint32',
+      'uint32',
+      'uint32',
+      'uint32',
+      'uint32',
+      'uint32',
+    ],
+    [
+      dealers,
+      ebcs,
+      chainIds,
+      ebc,
+      rule.chainId0,
+      rule.chainId1,
+      rule.status0,
+      rule.status1,
+      rule.token0,
+      rule.token1,
+      rule.minPrice0,
+      rule.minPrice1,
+      rule.maxPrice0,
+      rule.maxPrice1,
+      rule.withholdingFee0,
+      rule.withholdingFee1,
+      rule.tradingFee0,
+      rule.tradingFee1,
+      rule.responseTime0,
+      rule.responseTime1,
+      rule.compensationRatio0,
+      rule.compensationRatio1,
+    ],
+  );
+};
+
+export const encodeRuleStruct = (rule: RuleStruct): string => {
+  return keccak256(
+    utils.defaultAbiCoder.encode(
+      [
+        'uint64',
+        'uint64',
+        'uint8',
+        'uint8',
+        'uint',
+        'uint',
+        'uint128',
+        'uint128',
+        'uint128',
+        'uint128',
+        'uint128',
+        'uint128',
+        'uint32',
+        'uint32',
+        'uint32',
+        'uint32',
+        'uint32',
+        'uint32',
+      ],
+      [
+        rule.chainId0,
+        rule.chainId1,
+        rule.status0,
+        rule.status1,
+        rule.token0,
+        rule.token1,
+        rule.minPrice0,
+        rule.minPrice1,
+        rule.maxPrice0,
+        rule.maxPrice1,
+        rule.withholdingFee0,
+        rule.withholdingFee1,
+        rule.tradingFee0,
+        rule.tradingFee1,
+        rule.responseTime0,
+        rule.responseTime1,
+        rule.compensationRatio0,
+        rule.compensationRatio1,
+      ],
+    ),
+  );
+};
 
 export function calculateRuleKey(rule: BigNumberish[]) {
   return utils.keccak256(

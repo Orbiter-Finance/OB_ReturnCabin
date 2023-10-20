@@ -3,18 +3,18 @@ import { assert, expect } from 'chai';
 import { BigNumber, BigNumberish, constants, utils } from 'ethers';
 import { ethers } from 'hardhat';
 import fs from 'fs';
-import { getMappingStructXSlot } from './lib/readStorage';
 
 import {
   BytesLike,
   arrayify,
   defaultAbiCoder,
   keccak256,
-  solidityPack,
 } from 'ethers/lib/utils';
 import lodash, { random } from 'lodash';
 import { BaseTrie } from 'merkle-patricia-tree';
 import {
+  OREventBinding,
+  OREventBinding__factory,
   ORMDCFactory,
   ORMDCFactory__factory,
   ORMakerDeposit,
@@ -28,24 +28,34 @@ import {
 } from '../typechain-types';
 import { defaultChainInfo } from './defaults';
 import {
+  RuleStruct,
   calculateRuleKey,
   calculateRulesTree,
+  createMakerRule,
   createRandomRule,
+  encodeChallengeRawData,
   getRulesRootUpdatedLogs,
 } from './lib/rule';
 import {
+  verifyinfoBase,
+  VerifyInfo,
+  challengeInputInfo,
+  columnArray,
   embedVersionIncreaseAndEnableTime,
   getEffectiveEbcsFromLogs,
   getMinEnableTime,
   hexToBuffer,
   testReverted,
   testRevertedOwner,
+  updateSpv,
+  getSecurityCode,
+  getVerifyinfo,
+  createChallenge,
 } from './utils.test';
 import {
   callDataCost,
   chainIdsMock,
   dealersMock,
-  ebcMock,
   getCurrentTime,
   mineXTimes,
 } from './lib/mockData';
@@ -62,8 +72,9 @@ describe('ORMakerDeposit', () => {
   let orMDCFactory: ORMDCFactory;
   let orMakerDeposit: ORMakerDeposit;
   let implementation: string;
-  let ebcSample: string;
   let testToken: TestToken;
+  let columnArray: columnArray;
+  let ebc: OREventBinding;
 
   before(async function () {
     signers = await ethers.getSigners();
@@ -83,7 +94,22 @@ describe('ORMakerDeposit', () => {
     orManager = new ORManager__factory(signers[0]).attach(
       await orMDCFactory.manager(),
     );
-    orManagerEbcs = await getEffectiveEbcsFromLogs(orManager);
+
+    if (process.env['EVENT_BINDING_CONTRACT'] != undefined) {
+      ebc = OREventBinding__factory.connect(
+        process.env['EVENT_BINDING_CONTRACT'],
+        signers[0],
+      );
+      console.log('connect to ebc contract', ebc.address);
+    } else {
+      ebc = await new OREventBinding__factory(signers[0]).deploy();
+      process.env['EVENT_BINDING_CONTRACT'] = ebc.address;
+      console.log('Address of ebc:', ebc.address);
+    }
+
+    orManagerEbcs = [ebc.address].concat(
+      await getEffectiveEbcsFromLogs(orManager),
+    );
 
     const envTestTokenAddress = process.env['TEST_TOKEN_ADDRESS'];
 
@@ -132,21 +158,25 @@ describe('ORMakerDeposit', () => {
         if (process.env['EVENT_BINDING_CONTRACT'] != undefined) {
           mdcEbcs.push(process.env['EVENT_BINDING_CONTRACT']);
         } else {
-          mdcEbcs.push(ebcMock);
+          mdcEbcs.push(ebc.address);
         }
         mdcEbcs.sort(() => Math.random() - 0.5);
 
         const mdcDealers: string[] = await dealersMock();
         const chainIds: number[] = chainIdsMock;
         const columnArrayHash = utils.keccak256(
-          utils.solidityPack(
+          utils.defaultAbiCoder.encode(
             ['uint256[]', 'uint256[]', 'uint256[]'],
             [mdcDealers, mdcEbcs, chainIds],
           ),
         );
-
+        columnArray = {
+          dealers: mdcDealers,
+          ebcs: mdcEbcs,
+          chainIds: chainIds,
+        };
         console.log(
-          `mdcDealers: ${mdcDealers}, mdcEbcs: ${mdcEbcs}, mdcChainIds: ${chainIds}, columnArrayHash: ${columnArrayHash}`,
+          `columnArray:${columnArray}, columnHash: ${columnArrayHash}`,
         );
 
         const { events } = await orMakerDeposit
@@ -301,7 +331,7 @@ describe('ORMakerDeposit', () => {
         const spvs = chainInfo.spvs.slice(0, 1);
         const chainIds = [chainId];
         console.log(
-          `maker update [chainId:${chainIds.toString()} - spv:${spvs}]`,
+          `maker update[chainId: ${chainIds.toString()} - spv: ${spvs}]`,
         );
 
         const { events } = await orMakerDeposit
@@ -468,38 +498,34 @@ describe('ORMakerDeposit', () => {
           // _rule[1] = Number(_rule[1]) + i;
           // _rule[4] = 0;
           // _rule[5] = 0;
-          // console.log(`ethRule-${i} :[${_rule}]`);
+          // console.log(`ethRule - ${ i } : [${ _rule }]`);
           rules.push(_rule);
         }
 
         const tree = await calculateRulesTree(rules);
         const root = utils.hexlify(tree.root);
-        if (process.env['EVENT_BINDING_CONTRACT'] != undefined) {
-          ebcSample = process.env['EVENT_BINDING_CONTRACT'];
-        } else {
-          ebcSample = ebcMock;
-        }
 
         const rootWithVersion = { root, version: 1 };
         const sourceChainIds = [1];
         const pledgeAmounts = [utils.parseEther('0.0001')];
 
-        console.log(`ebc :[${ebcSample}]`);
-        // await testReverted(
-        //   orMakerDeposit.updateRulesRoot(
-        //     getMinEnableTime(
-        //       (
-        //         await orMakerDeposit.getVersionAndEnableTime()
-        //       ).enableTime,
-        //     ),
-        //     ebcSample,
-        //     rules,
-        //     rootWithVersion,
-        //     sourceChainIds,
-        //     pledgeAmounts,
-        //   ),
-        //   'IV',
-        // );
+        console.log(`ebc : [${ebc.address}]`);
+        await testReverted(
+          orMakerDeposit.updateRulesRoot(
+            getMinEnableTime(
+              (
+                await orMakerDeposit.getVersionAndEnableTime()
+              ).enableTime,
+            ),
+            ebc.address,
+            rules,
+            rootWithVersion,
+            sourceChainIds,
+            pledgeAmounts,
+          ),
+          'IV',
+        );
+
         const { events } = await orMakerDeposit
           .updateRulesRoot(
             getMinEnableTime(
@@ -507,7 +533,7 @@ describe('ORMakerDeposit', () => {
                 await orMakerDeposit.getVersionAndEnableTime()
               ).enableTime,
             ),
-            ebcSample,
+            ebc.address,
             rules,
             rootWithVersion,
             sourceChainIds,
@@ -527,11 +553,11 @@ describe('ORMakerDeposit', () => {
           );
           const inpudataGas = callDataCost(txrc.data);
           console.log(
-            `updateRule, totoalGas: ${recpt.gasUsed}, callDataGasCost:${inpudataGas}`,
+            `updateRule, totoalGas: ${recpt.gasUsed}, callDataGasCost: ${inpudataGas}`,
           );
         }
         const args = events?.[0].args;
-        expect(args?.ebc).eq(ebcSample);
+        expect(args?.ebc).eq(ebc.address);
         expect(args?.rootWithVersion.root).eq(rootWithVersion.root);
         expect(args?.rootWithVersion.version).eq(rootWithVersion.version);
 
@@ -542,7 +568,7 @@ describe('ORMakerDeposit', () => {
                 await orMakerDeposit.getVersionAndEnableTime()
               ).enableTime,
             ),
-            ebcSample,
+            ebc.address,
             rules,
             rootWithVersion,
             [],
@@ -559,7 +585,7 @@ describe('ORMakerDeposit', () => {
                   await orMakerDeposit.getVersionAndEnableTime()
                 ).enableTime,
               ),
-              ebcSample,
+              ebc.address,
               rules,
               { ...rootWithVersion, version: 2 },
               [],
@@ -567,7 +593,7 @@ describe('ORMakerDeposit', () => {
             ),
         );
 
-        const storageRWV = await orMakerDeposit.rulesRoot(ebcSample);
+        const storageRWV = await orMakerDeposit.rulesRoot(ebc.address);
         expect(storageRWV.root).eq(rootWithVersion.root);
         expect(storageRWV.version).eq(rootWithVersion.version);
 
@@ -592,7 +618,7 @@ describe('ORMakerDeposit', () => {
     const tree = await calculateRulesTree(rules);
     const root = utils.hexlify(tree.root);
 
-    const storageRWV = await orMakerDeposit.rulesRoot(ebcSample);
+    const storageRWV = await orMakerDeposit.rulesRoot(ebc.address);
     expect(storageRWV.root).eq(root);
   });
 
@@ -616,7 +642,7 @@ describe('ORMakerDeposit', () => {
           rules.push(_rule);
         }
 
-        const rootWithVersion = await orMakerDeposit.rulesRoot(ebcSample);
+        const rootWithVersion = await orMakerDeposit.rulesRoot(ebc.address);
 
         const tree = await calculateRulesTree(totalRules);
         const root = utils.hexlify(tree.root);
@@ -638,7 +664,7 @@ describe('ORMakerDeposit', () => {
                 await orMakerDeposit.getVersionAndEnableTime()
               ).enableTime,
             ),
-            ebcSample,
+            ebc.address,
             rules,
             { root, version: rootWithVersion.version + 1 },
             sourceChainIds,
@@ -657,7 +683,7 @@ describe('ORMakerDeposit', () => {
                 await orMakerDeposit.getVersionAndEnableTime()
               ).enableTime,
             ),
-            ebcSample,
+            ebc.address,
             rules,
             { root, version: rootWithVersion.version + 1 },
             sourceChainIds,
@@ -673,7 +699,7 @@ describe('ORMakerDeposit', () => {
                 await orMakerDeposit.getVersionAndEnableTime()
               ).enableTime,
             ),
-            ebcSample,
+            ebc.address,
             rules,
             { root, version: rootWithVersion.version + 2 },
             [],
@@ -691,7 +717,7 @@ describe('ORMakerDeposit', () => {
                   await orMakerDeposit.getVersionAndEnableTime()
                 ).enableTime,
               ),
-              ebcSample,
+              ebc.address,
               rules,
               { root, version: rootWithVersion.version + 2 },
               sourceChainIds,
@@ -771,385 +797,59 @@ describe('ORMakerDeposit', () => {
     );
   });
 
-  describe('ORMakerDeposit challenge', () => {
+  describe('start challenge test module', () => {
     let spv: TestSpv;
     let verifyContract: { address: PromiseOrValue<string> };
-    const chainId = 5;
-    interface challengeInputInfo {
-      sourceChainId: BigNumberish;
-      sourceTxHash: BigNumberish;
-      sourceTxTime: BigNumberish;
-      freezeToken: string;
-      freezeAmount: BigNumberish;
-    }
+    const makerRule: RuleStruct = createMakerRule(true);
+    const chainId = makerRule.chainId0;
+    const chainIdDest = makerRule.chainId1;
+    const freezeToken: string = constants.AddressZero;
+    const freeTokenDest: string = constants.AddressZero;
 
-    interface verifyinfoBase {
-      freeTokenDest: string;
-      chainIdDest: BigNumberish;
-      ebc: string;
-    }
-
-    interface VerifyInfoSlotStruct {
-      account: string;
-      key: BytesLike;
-      value: BigNumberish;
-    }
-
-    interface VerifyInfo {
-      data: BigNumberish[];
-      slots: VerifyInfoSlotStruct[];
-    }
-
-    /**
-     * notice: this function *only* used to check the current slot of contract,
-     * it cannot be used to check the historical slots.
-     * In production environments, historical slot values will be used.
-     * @param {ORMakerDeposit} maker - ORMakerDeposit contract
-     * @param {ORManager} manager - ORManager contract
-     * @param {challengeInputInfo} challenge - carry basic challenge info
-     * @return {VerifyInfoSlotStruct[]} The parameters of verifyChallengeSource()
-     */
-    const getVerifyinfoSlots = async (
-      maker: ORMakerDeposit,
-      manager: ORManager,
-      challenge: challengeInputInfo,
-      verifyinfoBase: verifyinfoBase,
-    ): Promise<VerifyInfoSlotStruct[]> => {
-      const managerAddress = manager.address;
-      const makerAddress = maker.address;
-      const chainId = challenge.sourceChainId;
-      const chainId_Dest = verifyinfoBase.chainIdDest;
-      const freezeToken_Dest = verifyinfoBase.freeTokenDest;
-      const freezeToken = challenge.freezeToken;
-      const ebc = verifyinfoBase.ebc;
-
-      // set Verifyinfo 0
-      // ORManager.sol - ChainInfo - maxVerifyChallengeSourceTxSecond | minVerifyChallengeSourceTxSecond
-      // slot 2
-      let slot0;
-      const slot0_I = keccak256(
-        solidityPack(['uint256', 'uint256'], [chainId, 2]),
+    const getRawData = async (
+      columnArray: columnArray,
+      ebc: string,
+      makerRule: RuleStruct,
+    ): Promise<utils.BytesLike> => {
+      const jsEncode = encodeChallengeRawData(
+        columnArray.dealers,
+        columnArray.ebcs,
+        columnArray.chainIds,
+        ebc,
+        makerRule,
       );
-      const value0 =
-        utils.hexZeroPad(
-          (
-            await orManager.getChainInfo(5)
-          ).maxVerifyChallengeSourceTxSecond.toHexString(),
-          8,
-        ) +
-        utils
-          .hexZeroPad(
-            (
-              await orManager.getChainInfo(5)
-            ).minVerifyChallengeSourceTxSecond.toHexString(),
-            8,
-          )
-          .slice(2);
-      {
-        const { slot, itemSlot, value } = await getMappingStructXSlot(
-          '0x2',
-          managerAddress,
-          BigNumber.from(chainId).toHexString(),
-          1,
-          'number',
-        );
 
-        const newValue =
-          '0x' +
-          BigNumber.from(await value)
-            .toHexString()
-            .slice(-32);
-        const storageValue =
-          '0x' +
-          (
-            await ethers.provider.getStorageAt(
-              managerAddress,
-              utils.hexZeroPad(itemSlot, 32),
-            )
-          ).slice(-32);
-        slot0 = itemSlot;
-        expect(slot0_I)
-          .to.equal(slot)
-          .to.equal(BigNumber.from(itemSlot).sub(1));
-        expect(value0).to.equal(newValue).to.equal(storageValue);
+      const contractEncode = await spv.encodeRawDatas(
+        columnArray.dealers,
+        columnArray.ebcs,
+        columnArray.chainIds,
+        ebc,
+        makerRule,
+      );
+
+      expect(jsEncode).eql(contractEncode);
+
+      {
+        const { dealers, ebcs, chainIds, ebc, rule } = await spv.decodeRawDatas(
+          utils.arrayify(jsEncode),
+        );
+        expect(dealers).eql(columnArray.dealers);
+        expect(ebcs).eql(columnArray.ebcs);
+        expect(chainIds.toString()).eql(columnArray.chainIds.toString());
+        expect(rule.chainId0).eql(makerRule.chainId0);
+        expect(rule.chainId1).eql(makerRule.chainId1);
+        expect(rule.status0).eql(makerRule.status0);
+        expect(rule.status1).eql(makerRule.status1);
       }
-      // --------------------------------------------------------------
-      // set Verifyinfo 1
-      // ORManager.sol - chainTokenInfo - mainnetToken
-      // slot 3
-      let slot1;
-      const slot1_I = keccak256(
-        solidityPack(
-          ['uint256', 'uint256'],
-          [
-            keccak256(
-              solidityPack(['uint256', 'uint256'], [chainId, freezeToken]),
-            ),
-            3,
-          ],
+      const columnArrayHash = utils.keccak256(
+        utils.defaultAbiCoder.encode(
+          ['uint256[]', 'uint256[]', 'uint256[]'],
+          [columnArray.dealers, columnArray.ebcs, columnArray.chainIds],
         ),
       );
-      const value1 = (await orManager.getChainTokenInfo(chainId, freezeToken))
-        .mainnetToken;
-      {
-        const hashKey = keccak256(
-          solidityPack(['uint256', 'uint256'], [chainId, freezeToken]),
-        );
-        const { slot, itemSlot, value } = await getMappingStructXSlot(
-          '0x3',
-          managerAddress,
-          hashKey,
-          1,
-          'number',
-        );
+      expect(columnArrayHash).eql(await orMakerDeposit.columnArrayHash());
 
-        const storageValue =
-          '0x' +
-          (
-            await ethers.provider.getStorageAt(
-              managerAddress,
-              utils.hexZeroPad(itemSlot, 32),
-            )
-          ).slice(-40);
-
-        const value1_S =
-          '0x' +
-          utils.hexZeroPad(BigNumber.from(value).toHexString(), 32).slice(-40);
-        slot1 = itemSlot;
-        expect(slot)
-          .to.equal(slot1_I)
-          .to.equal(BigNumber.from(itemSlot).sub(1));
-        expect(value1.toLocaleLowerCase())
-          .to.equal(value1_S)
-          .to.equal(storageValue);
-      }
-
-      // --------------------------------------------------------------
-      // set Verifyinfo 2
-      // ORManager.sol - _minChallengeRatio
-      // slot: 6
-      const slot2 = '0x6';
-      const value2 = (await manager.minChallengeRatio()).toBigInt();
-      {
-        const storageValue = await ethers.provider.getStorageAt(
-          managerAddress,
-          utils.hexZeroPad(slot2, 32),
-        );
-        const minChallengeRatio = BigNumber.from(
-          '0x' + storageValue.slice(-16),
-        ).toBigInt();
-        expect(value2).to.equal(minChallengeRatio);
-      }
-
-      // --------------------------------------------------------------
-      // set Verifyinfo 3
-      // ORMakerDeposit.sol - _columnArrayHash
-      // slot: 3
-      const slot3 = '0x3';
-      const value3: BytesLike = await orMakerDeposit.columnArrayHash();
-      {
-        const storageValue = await ethers.provider.getStorageAt(
-          makerAddress,
-          utils.hexZeroPad(slot3, 32),
-        );
-        expect(value3).to.equal(storageValue);
-      }
-
-      // --------------------------------------------------------------
-      // set Verifyinfo 4
-      // ORManager.sol - chainTokenInfo - mainnetToken
-      // slot 3
-      let slot4;
-      const slot4_I = keccak256(
-        solidityPack(
-          ['uint256', 'uint256'],
-          [
-            keccak256(
-              solidityPack(
-                ['uint256', 'uint256'],
-                [chainId_Dest, freezeToken_Dest],
-              ),
-            ),
-            3,
-          ],
-        ),
-      );
-      const value4 = (
-        await orManager.getChainTokenInfo(chainId_Dest, freezeToken_Dest)
-      ).mainnetToken;
-      {
-        const hashKey = keccak256(
-          solidityPack(
-            ['uint256', 'uint256'],
-            [chainId_Dest, freezeToken_Dest],
-          ),
-        );
-        const { slot, itemSlot, value } = await getMappingStructXSlot(
-          '0x3',
-          managerAddress,
-          hashKey,
-          1,
-          'number',
-        );
-
-        const storageValue =
-          '0x' +
-          (
-            await ethers.provider.getStorageAt(
-              managerAddress,
-              utils.hexZeroPad(itemSlot, 32),
-            )
-          ).slice(-40);
-
-        const value4_S =
-          '0x' +
-          utils.hexZeroPad(BigNumber.from(value).toHexString(), 32).slice(-40);
-        slot4 = itemSlot;
-        expect(slot)
-          .to.equal(slot4_I)
-          .to.equal(BigNumber.from(itemSlot).sub(1));
-        expect(value4.toLocaleLowerCase())
-          .to.equal(value4_S)
-          .to.equal(storageValue);
-      }
-      // --------------------------------------------------------------
-      // set Verifyinfo 5
-      // ORMakerDeposit.sol - responseMakersHash
-      // slot 5
-      const slot5 = '0x5';
-      const value5: BytesLike = await orMakerDeposit.responseMakersHash();
-      {
-        const storageValue = await ethers.provider.getStorageAt(
-          makerAddress,
-          utils.hexZeroPad(slot5, 32),
-        );
-        expect(value5).to.equal(storageValue);
-      }
-
-      // --------------------------------------------------------------
-      // set Verifyinfo 6
-      // ORMakerDeposit.sol - ruleRoot
-      // slot 6
-      let slot6;
-      const slot6_I = keccak256(solidityPack(['uint256', 'uint256'], [ebc, 6]));
-      const value6 = (await maker.rulesRoot(ebcSample)).root;
-      {
-        const storageValue = await ethers.provider.getStorageAt(
-          makerAddress,
-          utils.hexZeroPad(slot6_I, 32),
-        );
-        slot6 = slot6_I;
-        expect(storageValue).to.equal(value6);
-      }
-
-      const slotValue: VerifyInfoSlotStruct[] = [
-        {
-          // verifyInfo 0
-          // ORManager.sol - ChainInfo - maxVerifyChallengeSourceTxSecond | minVerifyChallengeSourceTxSecond
-          // slot: 2
-          // itemSlot: 1
-          account: managerAddress,
-          key: slot0,
-          value: value0,
-        },
-        {
-          // verifyInfo 1
-          // ORManager.sol - chainTokenInfo - mainnetToken (sourceChain)
-          // slot: 3
-          // itemSlot: 1
-          account: managerAddress,
-          key: slot1,
-          value: value1,
-        },
-        {
-          // verifyInfo 2
-          // ORManager.sol - _rulesRoots
-          // slot: 5
-          account: managerAddress,
-          key: slot2,
-          value: value2,
-        },
-        {
-          // verifyInfo 3
-          // ORMakerDeposit.sol - _columnArrayHash
-          // slot: 3
-          account: makerAddress,
-          key: slot3,
-          value: value3,
-        },
-        {
-          // verifyInfo 4
-          // ORManager.sol - chainTokenInfo - mainnetToken (destChain)
-          // slot: 3
-          // itemSlot: 1
-          account: managerAddress,
-          key: slot4,
-          value: value4,
-        },
-        {
-          // Verifyinfo 5
-          // ORMakerDeposit.sol - responseMakersHash
-          // slot 5
-          account: makerAddress,
-          key: slot5,
-          value: value5,
-        },
-        {
-          // Verifyinfo 6
-          // ORMakerDeposit.sol - responseMakersHash
-          // slot 6
-          account: makerAddress,
-          key: slot6,
-          value: value6,
-        },
-      ];
-      console.log('slotValue: ', slotValue);
-      return slotValue;
-    };
-
-    const createChallenge = async (
-      challenge: challengeInputInfo,
-      revertReason?: string,
-    ): Promise<string> => {
-      if (revertReason != undefined) {
-        await expect(
-          orMakerDeposit.challenge(
-            challenge.sourceChainId,
-            challenge.sourceTxHash.toString(),
-            challenge.sourceTxTime,
-            challenge.freezeToken,
-            challenge.freezeAmount,
-            { value: challenge.freezeAmount },
-          ),
-        ).to.revertedWith(revertReason);
-        return revertReason;
-      } else {
-        const tx = await orMakerDeposit
-          .challenge(
-            challenge.sourceChainId,
-            challenge.sourceTxHash.toString(),
-            challenge.sourceTxTime,
-            challenge.freezeToken,
-            challenge.freezeAmount,
-            { value: challenge.freezeAmount },
-          )
-          .then((t) => t.wait());
-        const args = tx.events?.[0].args;
-        expect(args).not.empty;
-        if (!!args) {
-          // console.warn('args.ChallengeInfo:', args.ChallengeInfo);
-          expect(args.challengeId).not.empty;
-          expect(args.challengeInfo.sourceTxFrom).eql(BigNumber.from(0));
-          expect(args.challengeInfo.sourceTxTime).eql(
-            BigNumber.from(challenge.sourceTxTime),
-          );
-          expect(args.challengeInfo.challenger).eql(mdcOwner.address);
-          expect(args.challengeInfo.freezeToken).eql(challenge.freezeToken);
-          expect(args.challengeInfo.freezeAmount0).eql(challenge.freezeAmount);
-          expect(args.challengeInfo.freezeAmount1).eql(challenge.freezeAmount);
-        }
-        return args?.challengeId;
-      }
+      return utils.arrayify(contractEncode);
     };
 
     before(async function () {
@@ -1164,18 +864,22 @@ describe('ORMakerDeposit', () => {
       );
       verifyContract = await verifyFactory.deploy();
       spv = await new TestSpv__factory(mdcOwner).deploy(verifyContract.address);
-      console.log(`verifier: ${verifyContract.address}, spv: ${spv.address}`);
+
+      console.log(
+        `Address of verifier: ${verifyContract.address}, Address of spv: ${spv.address}, Address of ebc ${ebc.address} `,
+      );
     });
 
     it('test function verifyChallengeSource Revert case', async function () {
       const challenge: challengeInputInfo = {
         sourceChainId: random(200),
         sourceTxHash: utils.keccak256(mdcOwner.address),
+        from: await orMakerDeposit.owner(),
         sourceTxTime: random(5000000),
         freezeToken: constants.AddressZero,
         freezeAmount: utils.parseEther('0.001'),
       };
-      await createChallenge(challenge);
+      await createChallenge(orMakerDeposit, challenge);
       const invalidVerifyInfo0: VerifyInfo = {
         data: [1],
         slots: [
@@ -1198,7 +902,7 @@ describe('ORMakerDeposit', () => {
           invalidVerifyInfo0,
           [],
         ),
-      ).to.revertedWith('CI');
+      ).to.revertedWith('SI');
       const chainId = defaultChainInfo.id;
       const invalidVerifyInfo1: VerifyInfo = {
         data: [chainId.toString()],
@@ -1222,14 +926,9 @@ describe('ORMakerDeposit', () => {
           [],
         ),
       ).to.revertedWith('SI');
-
-      const chainInfo = await orManager.getChainInfo(chainId);
-      const spvs = chainInfo.spvs.slice(0, 1);
-      console.log(`test spv: ${spvs.toString()}`);
     });
 
     it('test prase spv proof data', async function () {
-      return;
       const fake_spvProof: BytesLike = utils.keccak256(mdcOwner.address);
       const spvProof: BytesLike = utils.arrayify(
         '0x' + fs.readFileSync('test/example/spv.calldata', 'utf-8'),
@@ -1238,7 +937,7 @@ describe('ORMakerDeposit', () => {
       const { blockHash, toAddress, transferAmount, timestamp } =
         await spv.parseProofData(spvProof);
       console.log(
-        `blcokHash: ${blockHash}, toAddress: ${toAddress}, transferAmount: ${transferAmount}, timestamp: ${timestamp}`,
+        `blcokHash: ${blockHash}, toAddress: ${toAddress}, transferAmount: ${transferAmount}, timestamp: ${timestamp} `,
       );
 
       await expect(spv.verifyProof(fake_spvProof)).to.revertedWith(
@@ -1255,70 +954,21 @@ describe('ORMakerDeposit', () => {
           tx.gasUsed
         }, callDataGas: ${inpudataGas}, excuteGas: ${
           tx.gasUsed.toNumber() - inpudataGas
-        }`,
+        } `,
       );
     });
 
-    const updateSpv = async (
-      challengeInputInfo: challengeInputInfo,
-      spvAddress: string,
-    ) => {
-      const enableTimeTime =
-        // eslint-disable-next-line prettier/prettier
-        (await getCurrentTime()) >
-        (await orManager.getVersionAndEnableTime()).enableTime.toNumber()
-          ? await getCurrentTime()
-          : (await orManager.getVersionAndEnableTime()).enableTime;
-
-      await orManager
-        .updateChainSpvs(
-          getMinEnableTime(BigNumber.from(enableTimeTime)),
-          challengeInputInfo.sourceChainId,
-          [spvAddress],
-          [0],
-          {
-            gasLimit: 10e6,
-          },
-        )
-        .then((t) => t.wait());
-    };
-
-    it('challenge Verify Source TX should success', async function () {
-      const challenge: challengeInputInfo = {
-        sourceChainId: 5,
-        sourceTxHash: utils.keccak256(randomBytes(7800)),
-        sourceTxTime: (await getCurrentTime()) - random(await getCurrentTime()),
-        // freezeToken: '0xa0321efeb50c46c17a7d72a52024eea7221b215a',
-        freezeToken: constants.AddressZero,
-        freezeAmount: utils.parseEther('0.001'),
-      };
-
-      const verifyinfoBase: verifyinfoBase = {
-        chainIdDest: 420,
-        // freeTokenDest: '0x4C6c591254769CD6D1850aa626bc45B12d8d9ce0',
-        freeTokenDest: constants.AddressZero,
-        ebc: ebcSample,
-      };
-
-      await updateSpv(challenge, spv.address);
-
-      await getVerifyinfoSlots(
-        orMakerDeposit,
-        orManager,
-        challenge,
-        verifyinfoBase,
-      );
-
-      await createChallenge(challenge);
-    });
-
-    it('challenge case test', async function () {
+    it('create challenge test', async function () {
       const case1SourceChainId = chainId;
       const case1SourceTxHash = utils.keccak256(randomBytes(100));
-      const case1freezeAmount = '0.1';
+      const case1freezeAmount = utils.formatEther(100000000000001111n);
+      console.log(
+        `New rule - chain: ${makerRule.chainId0} --> chain: ${makerRule.chainId1}`,
+      );
       const challenge: challengeInputInfo = {
         sourceChainId: case1SourceChainId,
         sourceTxHash: case1SourceTxHash,
+        from: await orMakerDeposit.owner(),
         sourceTxTime: (await getCurrentTime()) - 1,
         freezeToken: constants.AddressZero,
         freezeAmount: utils.parseEther(case1freezeAmount),
@@ -1336,15 +986,16 @@ describe('ORMakerDeposit', () => {
       const challengeFake: challengeInputInfo = {
         sourceChainId: challenge.sourceChainId,
         sourceTxHash: challenge.sourceTxHash,
+        from: await orMakerDeposit.owner(),
         sourceTxTime: (await getCurrentTime()) + 7800,
         freezeToken: challenge.freezeToken,
         freezeAmount: challenge.freezeAmount,
       };
-      await createChallenge(challengeFake, 'STOF');
-      await createChallenge(challenge);
-      await createChallenge(challenge, 'CE');
+      await createChallenge(orMakerDeposit, challengeFake, 'STOF');
+      await createChallenge(orMakerDeposit, challenge);
+      await createChallenge(orMakerDeposit, challenge, 'CE');
 
-      await mineXMinutes(100);
+      await mineXTimes(100);
       expect(
         await orMakerDeposit.checkChallenge(
           case1SourceChainId,
@@ -1355,9 +1006,9 @@ describe('ORMakerDeposit', () => {
       const case1balanceOfMakerAfter = utils.formatEther(
         await ethers.provider.getBalance(orMakerDeposit.address),
       );
-      console.log(
-        `challenge 1 balanceOfMakerbefore :${case1balanceOfMakerbefore}, balanceOfMakerAfter :${case1balanceOfMakerAfter}, freezeAmount: ${case1freezeAmount}`,
-      );
+      // console.log(
+      //   `challenge 1 balanceOfMakerbefore: ${ case1balanceOfMakerbefore }, balanceOfMakerAfter: ${ case1balanceOfMakerAfter }, freezeAmount: ${ case1freezeAmount } `,
+      // );
       expect(parseFloat(case1balanceOfMakerAfter).toFixed(2)).equal(
         (parseFloat(case1balanceOfMakerbefore) + parseFloat(case1freezeAmount))
           .toFixed(2)
@@ -1374,11 +1025,12 @@ describe('ORMakerDeposit', () => {
       const challenge2: challengeInputInfo = {
         sourceChainId: challenge.sourceChainId,
         sourceTxHash: challenge.sourceTxHash,
+        from: await orMakerDeposit.owner(),
         sourceTxTime: (await getCurrentTime()) - 1,
         freezeToken: challenge.freezeToken,
         freezeAmount: challenge.freezeAmount,
       };
-      await createChallenge(challenge2);
+      await createChallenge(orMakerDeposit, challenge2);
 
       const case2balanceOfMakerAfter = utils.formatEther(
         await ethers.provider.getBalance(orMakerDeposit.address),
@@ -1388,9 +1040,9 @@ describe('ORMakerDeposit', () => {
           .toFixed(2)
           .toString(),
       );
-      console.log(
-        `challenge 2 balanceOfMakerbefore :${case1balanceOfMakerAfter}, balanceOfMakerAfter :${case2balanceOfMakerAfter}, freezeAmount: ${case1freezeAmount}`,
-      );
+      // console.log(
+      //   `challenge 2 balanceOfMakerbefore: ${ case1balanceOfMakerAfter }, balanceOfMakerAfter: ${ case2balanceOfMakerAfter }, freezeAmount: ${ case1freezeAmount } `,
+      // );
 
       await expect(
         orMakerDeposit.checkChallenge(
@@ -1400,7 +1052,7 @@ describe('ORMakerDeposit', () => {
         ),
       ).to.revertedWith('VCST');
 
-      await mineXMinutes(100);
+      await mineXTimes(100);
 
       expect(
         await orMakerDeposit.checkChallenge(
@@ -1417,6 +1069,72 @@ describe('ORMakerDeposit', () => {
           [],
         ),
       ).to.revertedWith('CNE');
+    });
+
+    it('challenge Verify Source TX should success', async function () {
+      const testFreezeAmount =
+        '10000000000000' +
+        getSecurityCode(
+          columnArray,
+          ebc.address,
+          mdcOwner.address,
+          parseInt(chainIdDest.toString()),
+        );
+      const case1SourceChainId = chainId;
+      const destChainId = chainIdDest;
+      const case1SourceTxHash = utils.keccak256(randomBytes(100));
+      const case1freezeAmount = utils.formatEther(
+        BigNumber.from(testFreezeAmount),
+      );
+      const challenge: challengeInputInfo = {
+        sourceChainId: case1SourceChainId,
+        sourceTxHash: case1SourceTxHash,
+        from: await orMakerDeposit.owner(),
+        sourceTxTime: (await getCurrentTime()) - 1,
+        freezeToken: freezeToken,
+        freezeAmount: utils.parseEther(case1freezeAmount),
+      };
+
+      const verifyinfoBase: verifyinfoBase = {
+        chainIdDest: destChainId,
+        freeTokenDest: freeTokenDest,
+        ebc: ebc.address,
+      };
+
+      // spv should be setting by manager
+      await updateSpv(challenge, spv.address, orManager);
+
+      // get related slots & values of maker/manager contract
+      const verifyInfo = await getVerifyinfo(
+        orMakerDeposit,
+        orManager,
+        spv,
+        challenge,
+        verifyinfoBase,
+        makerRule,
+      );
+
+      const rawData = await getRawData(columnArray, ebc.address, makerRule);
+
+      await createChallenge(orMakerDeposit, challenge);
+
+      await mineXTimes(2);
+
+      expect(
+        await orMakerDeposit.verifyChallengeSource(
+          spv.address,
+          [],
+          [
+            utils.keccak256(mdcOwner.address),
+            utils.keccak256(mdcOwner.address),
+          ],
+          verifyInfo,
+          rawData,
+          {
+            gasLimit: 10000000,
+          },
+        ),
+      ).is.satisfy;
     });
   });
 });

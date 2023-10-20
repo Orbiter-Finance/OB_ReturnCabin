@@ -1,12 +1,16 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
-import { ORManager, ORManager__factory } from '../typechain-types';
+import {
+  OREventBinding,
+  OREventBinding__factory,
+  ORManager,
+  ORManager__factory,
+} from '../typechain-types';
 import {
   calculateMainnetToken,
   chainIDgetTokenSequence,
   defaultChainInfoArray,
-  ebcMock,
   getCurrentTime,
   initTestToken,
   submitterMock,
@@ -19,11 +23,12 @@ import {
 import { BigNumber, BigNumberish, constants, Wallet } from 'ethers';
 import lodash from 'lodash';
 import { BridgeLib } from '../typechain-types/contracts/ORManager';
-import { defaultsEbcs, defaultChainInfo } from './defaults';
+import { defaultChainInfo } from './defaults';
 
 describe('Test ORManager', () => {
   let signers: SignerWithAddress[];
   let orManager: ORManager;
+  let ebc: OREventBinding;
 
   before(async function () {
     signers = await ethers.getSigners();
@@ -48,6 +53,16 @@ describe('Test ORManager', () => {
         envORManagerAddress,
       );
       console.log('connect to orManager contract:', orManager.address);
+    }
+    if (process.env['EVENT_BINDING_CONTRACT'] != undefined) {
+      ebc = new OREventBinding__factory(signers[0]).attach(
+        process.env['EVENT_BINDING_CONTRACT'],
+      );
+      console.log('connect to ebc contract', ebc.address);
+    } else {
+      ebc = await new OREventBinding__factory(signers[0]).deploy();
+      process.env['EVENT_BINDING_CONTRACT'] = ebc.address;
+      console.log('Address of ebc:', ebc.address);
     }
 
     const owner = await orManager.owner();
@@ -223,18 +238,10 @@ describe('Test ORManager', () => {
   );
 
   it('Function updateEbcs should succeed', async function () {
-    const ebcs = lodash.cloneDeep(defaultsEbcs);
+    const ebcs: string[] = [];
     const statuses: boolean[] = [];
     statuses.push(true);
-    if (process.env['EVENT_BINDING_CONTRACT'] != undefined) {
-      ebcs.push(process.env['EVENT_BINDING_CONTRACT']);
-      console.log(
-        'Address of Orbiter ebc:',
-        process.env['EVENT_BINDING_CONTRACT'],
-      );
-    } else {
-      ebcs.push(ebcMock);
-    }
+    ebcs.push(ebc.address);
 
     const { events } = await orManager
       .updateEbcs(ebcs, statuses)
