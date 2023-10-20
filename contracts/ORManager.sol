@@ -26,8 +26,9 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
     uint64 private _feeTakeOnChallengeSecond;
 
     uint64 private _maxMDCLimit = 2 ** 64 - 1;
-    uint8 private _initPriorityFee = 1; // 1wei
-    uint24 private _userVerifyGasUsed = 176000; // proof calldata 114000 + rule data 20000 + submit tx 21000 + verify source 21000
+    uint8 private _priorityFee = 1; // 1wei
+    uint24 private _challengeBasefee = 176000; // proof calldata 114000 + rule data 20000 + submit tx 21000 + verify source 21000
+    uint32 private _challengeWithdrawDelay = 604800; // Unit: seconds of 7 days: Op Arb
     address private _spvDataContract;
 
     mapping(uint64 => uint) private _extraTransferContracts; // Cross-address transfer contracts. chainId => contractAddress
@@ -55,19 +56,27 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
     }
 
     function getPriorityFee() external view returns (uint8) {
-        return _initPriorityFee;
+        return _priorityFee;
     }
 
-    function getUserVerifyGasUsed() external view returns (uint24) {
-        return _userVerifyGasUsed;
+    function getChallengeBasefee() external view returns (uint24) {
+        return _challengeBasefee;
+    }
+
+    function getChallengeWithdrawDelay() external view returns (uint32) {
+        return _challengeWithdrawDelay;
     }
 
     function updatePriorityFee(uint8 priorityFee) external onlyOwner {
-        _initPriorityFee = priorityFee;
+        _priorityFee = priorityFee;
     }
 
-    function updateUserVerifyGasUsed(uint24 userVerifyGasUsed) external onlyOwner {
-        _userVerifyGasUsed = userVerifyGasUsed;
+    function updateChallengeBasefee(uint24 challengeBasefee) external onlyOwner {
+        _challengeBasefee = challengeBasefee;
+    }
+
+    function updateChallengeWithdrawDelay(uint32 challengeWithdrawDelay) external onlyOwner {
+        _challengeWithdrawDelay = challengeWithdrawDelay;
     }
 
     function updateChainSpvs(

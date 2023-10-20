@@ -21,11 +21,15 @@ interface IORManager {
 
     function getPriorityFee() external view returns (uint8);
 
-    function getUserVerifyGasUsed() external view returns (uint24);
+    function getChallengeBasefee() external view returns (uint24);
+
+    function getChallengeWithdrawDelay() external view returns (uint32);
 
     function updatePriorityFee(uint8 priorityFee) external;
 
-    function updateUserVerifyGasUsed(uint24 userVerifyGasUsed) external;
+    function updateChallengeBasefee(uint24 challengeBasefee) external;
+
+    function updateChallengeWithdrawDelay(uint32 challengeWithdrawDelay) external;
 
     function updateChainSpvs(uint64 enableTime, uint64 id, address[] calldata spvs, uint[] calldata indexs) external;
 

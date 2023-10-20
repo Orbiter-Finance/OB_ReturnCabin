@@ -29,7 +29,6 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
     IORMDCFactory private _mdcFactory;
     bytes32 private _columnArrayHash;
     mapping(uint64 => address) private _spvs; // chainId => spvAddress
-    mapping(bytes32 => uint) private userVerifyUsedGas; // gas => challengeId
     bytes32 private _responseMakersHash; // hash(response maker list), not just owner, to improve tps
     mapping(address => RuleLib.RootWithVersion) private _rulesRoots; // ebc => merkleRoot(rules), version
     mapping(bytes32 => uint) private _pledgeBalances; // hash(ebc, sourceChainId, sourceToken) => pledgeBalance
@@ -42,15 +41,15 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         _;
     }
 
-    modifier onlyNoRequestTimestamp(address request_token) {
-        require(_withdrawRequestInfo[request_token].request_timestamp == 0, "RHB");
+    modifier onlyNoRequestTimestamp(address requestToken) {
+        require(_withdrawRequestInfo[requestToken].requestTimestamp == 0, "RHB");
         _;
     }
 
-    modifier onlyRequestTimestampCheckPass(address request_token) {
+    modifier onlyRequestTimestampCheckPass(address requestToken) {
         require(
-            _withdrawRequestInfo[request_token].request_timestamp > 0 &&
-                block.timestamp >= _withdrawRequestInfo[request_token].request_timestamp,
+            _withdrawRequestInfo[requestToken].requestTimestamp > 0 &&
+                block.timestamp >= _withdrawRequestInfo[requestToken].requestTimestamp,
             "WTN"
         );
         _;
@@ -163,41 +162,42 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         }
     }
 
-    function getWithdrawVerifyStatus(address target_token) external view returns (WithdrawRequestInfo memory) {
-        return _withdrawRequestInfo[target_token];
+    function getWithdrawRequestInfo(address targetToken) external view returns (WithdrawRequestInfo memory) {
+        return _withdrawRequestInfo[targetToken];
     }
 
     function withdrawRequest(
-        address request_token,
-        uint request_amount
-    ) external onlyOwner onlyNoRequestTimestamp(request_token) {
-        uint64 _request_timestamp = uint64(block.timestamp + ConstantsLib.CHALLENGE_WITHDRAW_DELAY);
-        _withdrawRequestInfo[request_token] = WithdrawRequestInfo(request_amount, _request_timestamp, request_token);
-        emit WithdrawRequested(request_amount, _request_timestamp, request_token);
+        address requestToken,
+        uint requestAmount
+    ) external onlyOwner onlyNoRequestTimestamp(requestToken) {
+        uint64 requestTimestamp = uint64(
+            block.timestamp + IORManager(_mdcFactory.manager()).getChallengeWithdrawDelay()
+        );
+        _withdrawRequestInfo[requestToken] = WithdrawRequestInfo(requestAmount, requestTimestamp, requestToken);
+        emit WithdrawRequested(requestAmount, requestTimestamp, requestToken);
     }
 
     function withdraw(address token) external onlyOwner onlyRequestTimestampCheckPass(token) {
-        _withdrawRequestInfo[token].request_timestamp = 0;
+        _withdrawRequestInfo[token].requestTimestamp = 0;
         if (token == address(0)) {
             require(
-                address(this).balance - _freezeAssets[_withdrawRequestInfo[token].request_token] >=
-                    _withdrawRequestInfo[token].request_amount,
+                address(this).balance - _freezeAssets[_withdrawRequestInfo[token].requestToken] >=
+                    _withdrawRequestInfo[token].requestAmount,
                 "ETH: IF"
             );
-
-            (bool sent, ) = payable(msg.sender).call{value: _withdrawRequestInfo[token].request_amount}("");
+            (bool sent, ) = payable(msg.sender).call{value: _withdrawRequestInfo[token].requestAmount}("");
             require(sent, "ETH: SE");
         } else {
-            uint balance = IERC20(_withdrawRequestInfo[token].request_token).balanceOf(address(this));
+            uint balance = IERC20(_withdrawRequestInfo[token].requestToken).balanceOf(address(this));
             require(
-                balance - _freezeAssets[_withdrawRequestInfo[token].request_token] >=
-                    _withdrawRequestInfo[token].request_amount,
+                balance - _freezeAssets[_withdrawRequestInfo[token].requestToken] >=
+                    _withdrawRequestInfo[token].requestAmount,
                 "ERC20: IF"
             );
 
-            IERC20(_withdrawRequestInfo[token].request_token).safeTransfer(
+            IERC20(_withdrawRequestInfo[token].requestToken).safeTransfer(
                 msg.sender,
-                _withdrawRequestInfo[token].request_amount
+                _withdrawRequestInfo[token].requestAmount
             );
         }
     }
@@ -334,11 +334,9 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             0,
             0,
             0,
-            0
+            0,
+            (startGasNum - gasleft()) * (block.basefee + uint256(IORManager(_mdcFactory.manager()).getPriorityFee()))
         );
-        userVerifyUsedGas[challengeId] +=
-            (startGasNum - gasleft()) *
-            (block.basefee + uint256(IORManager(_mdcFactory.manager()).getPriorityFee()));
         emit ChallengeInfoUpdated(challengeId, _challenges[challengeId]);
     }
 
@@ -370,13 +368,11 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
             _makerFailed(challengeInfo);
 
-            (bool sent3, ) = payable(challengeInfo.challenger).call{value: userVerifyUsedGas[challengeId] / 1 ether}(
-                ""
-            );
+            (bool sent3, ) = payable(challengeInfo.challenger).call{value: challengeInfo.challengerVerifyGasUsed}("");
 
             require(sent3, "ETH: NTG");
 
-            delete userVerifyUsedGas[challengeId];
+            delete challengeInfo.challengerVerifyGasUsed;
         }
         _challenges[challengeId].abortTime = uint64(block.timestamp);
 
@@ -535,9 +531,11 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
                 ]
             )
             .hash();
-        userVerifyUsedGas[challengeId] +=
-            (startGasNum - gasleft() + uint256(IORManager(_mdcFactory.manager()).getUserVerifyGasUsed())) *
+
+        _challenges[challengeId].challengerVerifyGasUsed +=
+            (startGasNum - gasleft() + uint256(IORManager(_mdcFactory.manager()).getChallengeBasefee())) *
             (block.basefee + uint256(IORManager(_mdcFactory.manager()).getPriorityFee()));
+
         emit ChallengeInfoUpdated(challengeId, _challenges[challengeId]);
     }
 
@@ -600,6 +598,8 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         _challengerFailed(_challenges[challengeId]);
 
         _challenges[challengeId].verifiedTime1 = uint64(block.timestamp);
+
+        _challenges[challengeId].challengerVerifyGasUsed = 0;
 
         emit ChallengeInfoUpdated(challengeId, _challenges[challengeId]);
     }

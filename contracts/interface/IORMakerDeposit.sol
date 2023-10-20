@@ -19,15 +19,16 @@ interface IORMakerDeposit {
         uint64 verifiedTime0; // Time of verifyChallengeSource. Greater than 0 means verification passed
         uint64 verifiedTime1; // Time of verifyChallengeDest. Greater than 0 means verification passed
         bytes32 verifiedDataHash0; // Data's hash of verifyChallengeSource
+        uint challengerVerifyGasUsed; // Gas used of challenger verify
     }
 
     struct WithdrawRequestInfo {
-        uint request_amount;
-        uint64 request_timestamp;
-        address request_token;
+        uint requestAmount;
+        uint64 requestTimestamp;
+        address requestToken;
     }
 
-    event WithdrawRequested(uint request_amount, uint64 request_timestamp, address request_token);
+    event WithdrawRequested(uint requestAmount, uint64 requestTimestamp, address requestToken);
 
     event ColumnArrayUpdated(
         address indexed impl,
@@ -68,9 +69,9 @@ interface IORMakerDeposit {
 
     function deposit(address token, uint amount) external payable;
 
-    function getWithdrawVerifyStatus(address target_token) external view returns (WithdrawRequestInfo memory);
+    function getWithdrawRequestInfo(address targetToken) external view returns (WithdrawRequestInfo memory);
 
-    function withdrawRequest(address request_token, uint request_amount) external;
+    function withdrawRequest(address requestToken, uint requestAmount) external;
 
     function withdraw(address token) external;
 

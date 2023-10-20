@@ -705,19 +705,22 @@ describe('ORMakerDeposit', () => {
 
   it('Function withdraw should success', async function () {
     const bETHBefore = await mdcOwner.provider?.getBalance(mdcOwner.address);
-    const firstVerifyStatus = await orMakerDeposit?.getWithdrawVerifyStatus(
+    const M_ETH_Before = await ethers.provider.getBalance(
+      orMakerDeposit.address,
+    );
+    const firstRequestInfo = await orMakerDeposit?.getWithdrawRequestInfo(
       constants.AddressZero,
     );
-    expect(BigNumber.from(firstVerifyStatus.request_timestamp)).eq(0);
+    expect(BigNumber.from(firstRequestInfo.requestTimestamp)).eq(0);
     await testReverted(orMakerDeposit.withdraw(constants.AddressZero), 'WTN');
     const amountETH = utils.parseEther('0.001');
     const requestReceipt = await orMakerDeposit
       .withdrawRequest(constants.AddressZero, amountETH)
       .then((t) => t.wait());
-    const secondVerifyStatus = await orMakerDeposit?.getWithdrawVerifyStatus(
+    const secondRequestInfo = await orMakerDeposit?.getWithdrawRequestInfo(
       constants.AddressZero,
     );
-    expect(BigNumber.from(secondVerifyStatus.request_timestamp)).gt(0);
+    expect(BigNumber.from(secondRequestInfo.requestTimestamp)).gt(0);
     await testReverted(
       orMakerDeposit.withdrawRequest(constants.AddressZero, amountETH),
       'RHB',
@@ -725,7 +728,7 @@ describe('ORMakerDeposit', () => {
     await testReverted(orMakerDeposit.withdraw(constants.AddressZero), 'WTN');
     const currentBlockInfo = await ethers.provider.getBlock('latest');
     await mineXTimes(
-      BigNumber.from(secondVerifyStatus.request_timestamp)
+      BigNumber.from(secondRequestInfo.requestTimestamp)
         .sub(currentBlockInfo.timestamp)
         .toNumber(),
       true,
@@ -733,10 +736,10 @@ describe('ORMakerDeposit', () => {
     const withdrawReceipt = await orMakerDeposit
       .withdraw(constants.AddressZero)
       .then((t) => t.wait());
-    const thirdVerifyStatus = await orMakerDeposit?.getWithdrawVerifyStatus(
+    const thirdRequestInfo = await orMakerDeposit?.getWithdrawRequestInfo(
       constants.AddressZero,
     );
-    expect(BigNumber.from(thirdVerifyStatus.request_timestamp)).eq(0);
+    expect(BigNumber.from(thirdRequestInfo.requestTimestamp)).eq(0);
     const bETHAfter = await mdcOwner.provider?.getBalance(mdcOwner.address);
     const requestGasUsed = requestReceipt.gasUsed.mul(
       requestReceipt.effectiveGasPrice,
@@ -750,6 +753,12 @@ describe('ORMakerDeposit', () => {
         .add(withdrawGasUsed)
         .sub(bETHBefore || 0),
     ).eq(amountETH);
+
+    const M_ETH_After = await ethers.provider.getBalance(
+      orMakerDeposit.address,
+    );
+
+    expect(amountETH?.add(M_ETH_After)).eq(M_ETH_Before);
 
     await testRevertedOwner(
       orMakerDeposit
