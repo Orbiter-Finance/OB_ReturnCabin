@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 import {RuleLib} from "../library/RuleLib.sol";
+import {HelperLib} from "../library/HelperLib.sol";
 
 contract testSpv {
+    using HelperLib for bytes;
     address public v_address;
 
     constructor(address verifier) {
@@ -44,20 +46,6 @@ contract testSpv {
         return abi.encode(dealers, ebcs, chainIds, ebc, rule);
     }
 
-    function encoderawDatas(
-        address[] calldata dealers,
-        address[] calldata ebcs,
-        uint64[] calldata chainIds
-    ) external pure returns (bytes memory rawDatas) {
-        return abi.encode(dealers, ebcs, chainIds);
-    }
-
-    function decoderawDatas(
-        bytes calldata rawDatas
-    ) external pure returns (address[] memory dealers, address[] memory ebcs, uint64[] memory chainIds) {
-        (dealers, ebcs, chainIds) = abi.decode(rawDatas, (address[], address[], uint64[]));
-    }
-
     function decodeRawDatas(
         bytes calldata rawDatas
     )
@@ -75,5 +63,17 @@ contract testSpv {
             rawDatas,
             (address[], address[], uint64[], address, RuleLib.Rule)
         );
+    }
+
+    function createFreezeTokenSlotKey(uint chainId, uint token) external pure returns (uint slotK) {
+        slotK = uint(abi.encode(abi.encode(uint64(chainId), token).hash(), 3).hash());
+    }
+
+    function createChainInfoSlotKey(uint chainId) external pure returns (uint slotK) {
+        slotK = uint(abi.encode(chainId, 2).hash());
+    }
+
+    function createEncodeRule(RuleLib.Rule calldata rule) external pure returns (uint encodeRule) {
+        encodeRule = uint(abi.encode(rule).hash());
     }
 }

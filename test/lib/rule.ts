@@ -1,6 +1,6 @@
 import { Provider } from '@ethersproject/providers';
 import { BigNumber, BigNumberish, BytesLike, utils } from 'ethers';
-import { Hexable } from 'ethers/lib/utils';
+import { Hexable, keccak256 } from 'ethers/lib/utils';
 import { BaseTrie } from 'merkle-patricia-tree';
 import Pako from 'pako';
 import { hexToBuffer } from '../utils.test';
@@ -181,6 +181,53 @@ export const encodeChallengeRawData = (
       rule.compensationRatio0,
       rule.compensationRatio1,
     ],
+  );
+};
+
+export const encodeRuleStruct = (rule: RuleStruct): string => {
+  return keccak256(
+    utils.defaultAbiCoder.encode(
+      [
+        'uint64',
+        'uint64',
+        'uint8',
+        'uint8',
+        'uint',
+        'uint',
+        'uint128',
+        'uint128',
+        'uint128',
+        'uint128',
+        'uint128',
+        'uint128',
+        'uint32',
+        'uint32',
+        'uint32',
+        'uint32',
+        'uint32',
+        'uint32',
+      ],
+      [
+        rule.chainId0,
+        rule.chainId1,
+        rule.status0,
+        rule.status1,
+        rule.token0,
+        rule.token1,
+        rule.minPrice0,
+        rule.minPrice1,
+        rule.maxPrice0,
+        rule.maxPrice1,
+        rule.withholdingFee0,
+        rule.withholdingFee1,
+        rule.tradingFee0,
+        rule.tradingFee1,
+        rule.responseTime0,
+        rule.responseTime1,
+        rule.compensationRatio0,
+        rule.compensationRatio1,
+      ],
+    ),
   );
 };
 

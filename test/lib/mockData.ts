@@ -92,11 +92,6 @@ export interface withdrawVerification {
   root: string[];
 }
 
-export interface columnArray {
-  dealers: string[];
-  ebcs: string[];
-  chainIds: number[];
-}
 /************************ Mock Data ***************************/
 
 export const dealersMock = async () => {
@@ -118,8 +113,6 @@ export const spvMock = async () => {
   const signers = await ethers.getSigners();
   return signers.slice(5, 7).map((signer) => signer.address);
 };
-
-export const ebcMock = '0x9E6D2B0b3AdB391AB62146c1B14a94e8D840Ff82';
 
 export const stateTransTreeRootMock = ethers.utils.keccak256(
   ethers.utils.toUtf8Bytes('stateTransTreeRoot'),
@@ -632,13 +625,13 @@ export function getRulesSetting(getNative: boolean) {
     .add(BigNumber.from('50000' + paddingString));
   let chain0MaxPrice = BigNumber.from(5)
     .pow(parseInt(Math.random() * 9 + ''))
-    .add(BigNumber.from('70000' + paddingString));
+    .add(BigNumber.from('70000000' + paddingString));
   let chain1MinPrice = BigNumber.from(5)
     .pow(parseInt(Math.random() * 6 + ''))
     .add(BigNumber.from('50000' + paddingString));
   let chain1MaxPrice = BigNumber.from(5)
     .pow(parseInt(Math.random() * 9 + ''))
-    .add(BigNumber.from('80000' + paddingString));
+    .add(BigNumber.from('80000000' + paddingString));
   const chain0withholdingFee = BigNumber.from(56 * 100000).add(
     BigNumber.from('100000' + paddingString),
   );

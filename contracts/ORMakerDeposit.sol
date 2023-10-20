@@ -91,7 +91,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             }
         }
 
-        _columnArrayHash = abi.encodePacked(dealers, ebcs, chainIds).hash();
+        _columnArrayHash = abi.encode(dealers, ebcs, chainIds).hash();
         emit ColumnArrayUpdated(_mdcFactory.implementation(), _columnArrayHash, dealers, ebcs, chainIds);
     }
 
@@ -409,7 +409,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         {
             bytes32 cah = abi.encode(dealers, ebcs, chainIds).hash();
             require(verifyInfo.slots[3].account == address(this), "CAHA");
-            require(uint(verifyInfo.slots[3].key) == 2, "CAHK");
+            require(uint(verifyInfo.slots[3].key) == 3, "CAHK");
             require(bytes32(verifyInfo.slots[3].value) == cah, "CAHV");
         }
 
