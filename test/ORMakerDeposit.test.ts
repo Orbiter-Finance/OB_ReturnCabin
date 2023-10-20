@@ -166,7 +166,7 @@ describe('ORMakerDeposit', () => {
         await testReverted(
           orMakerDeposit.updateColumnArray(
             getMinEnableTime(),
-            new Array(11).fill(constants.AddressZero),
+            new Array(101).fill(constants.AddressZero),
             [],
             [],
           ),

@@ -1,6 +1,6 @@
 import hre, { ethers } from 'hardhat';
 import { BridgeLib } from '../../typechain-types/contracts/ORManager';
-import { BigNumber, Bytes, constants, utils } from 'ethers';
+import { BigNumber, Bytes, Wallet, constants, utils } from 'ethers';
 import lodash from 'lodash';
 import axios from 'axios';
 import fs from 'fs';
@@ -87,8 +87,10 @@ export interface withdrawVerification {
 /************************ Mock Data ***************************/
 
 export const dealersMock = async () => {
-  const signers = await ethers.getSigners();
-  return signers.slice(0, 2).map((signer) => signer.address);
+  const dealers = new Array(99)
+    .fill(undefined)
+    .map(() => Wallet.createRandom().address);
+  return dealers;
 };
 
 export const submitterMock = async () => {
@@ -551,10 +553,10 @@ export function getRulesSetting(getNative: boolean) {
   let chain1MaxPrice = BigNumber.from(5)
     .pow(parseInt(Math.random() * 9 + ''))
     .add(BigNumber.from('80000' + paddingString));
-  const chain0withholdingFee = BigNumber.from(560000).add(
+  const chain0withholdingFee = BigNumber.from(5600000).add(
     BigNumber.from('10000' + paddingString),
   );
-  const chain1withholdingFee = BigNumber.from(780000).add(
+  const chain1withholdingFee = BigNumber.from(7800000).add(
     BigNumber.from('10000' + paddingString),
   );
 
