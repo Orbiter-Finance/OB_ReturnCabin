@@ -5,9 +5,9 @@ import {ConstantsLib} from "./library/ConstantsLib.sol";
 
 contract VersionAndEnableTime {
     // uint192 private _version;
-    uint128 private _version;
-    uint64 private _blockNumber;
-    uint64 private _enableTime;
+    uint128 private _version = 1;
+    uint64 private _blockNumber = 1;
+    uint64 private _enableTime = 100;
 
     // TODO: modify requires more gas
     // modifier versionIncreaseAndEnableTime(uint64 enableTime) {

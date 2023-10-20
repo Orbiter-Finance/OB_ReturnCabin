@@ -351,7 +351,6 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         BridgeLib.ChainInfo memory chainInfo = IORManager(_mdcFactory.manager()).getChainInfo(
             uint64(verifyInfo.data[0])
         );
-        require(chainInfo.id > 0, "CI"); // Invalid chainId
         require(chainInfo.spvs.includes(spvAddress), "SI"); // Invalid spv
         require(IORChallengeSpv(spvAddress).verifyChallenge(proof, spvBlockHashs, abi.encode(verifyInfo).hash()), "VF");
 

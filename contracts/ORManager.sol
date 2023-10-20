@@ -190,8 +190,13 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
         emit MaxMDCLimitUpdated(_maxMDCLimit);
     }
 
-    function getExtraTransferContract(uint64 chainId) external view returns (uint) {
-        return _extraTransferContracts[chainId];
+    function spvDataContract() external view returns (address) {
+        return _spvDataContract;
+    }
+
+    function updateSpvDataContract(address spvDataContract_) external onlyOwner {
+        _spvDataContract = spvDataContract_;
+        emit SpvDataContractUpdated(spvDataContract_);
     }
 
     function updateSpvBlockInterval(uint64 spvBlockInterval) external onlyOwner {
@@ -203,7 +208,11 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
         uint endBlockNumber,
         IORSpvData.InjectionBlock[] calldata injectionBlocks
     ) external onlyOwner {
-        IORSpvData(_spvDataContract).injectByManager(startBlockNumber, endBlockNumber, injectionBlocks);
+        IORSpvData(_spvDataContract).injectBlocksByManager(startBlockNumber, endBlockNumber, injectionBlocks);
+    }
+
+    function getExtraTransferContract(uint64 chainId) external view returns (uint) {
+        return _extraTransferContracts[chainId];
     }
 
     function updateExtraTransferContracts(

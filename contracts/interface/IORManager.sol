@@ -15,6 +15,7 @@ interface IORManager {
     event FeeChallengeSecondUpdated(uint64 feeChallengeSecond);
     event FeeTakeOnChallengeSecondUpdated(uint64 feeTakeOnChallengeSecond);
     event MaxMDCLimitUpdated(uint64 maxMDCLimit);
+    event SpvDataContractUpdated(address spvDataContract);
     event ExtraTransferContractsUpdated(uint64[] chainIds, uint[] extraTransferContracts);
 
     function registerChains(uint64 enableTime, BridgeLib.ChainInfo[] calldata chains_) external;
@@ -25,7 +26,7 @@ interface IORManager {
 
     function updateChainTokens(
         uint64 enableTime,
-        uint64[] memory ids,
+        uint64[] calldata ids,
         BridgeLib.TokenInfo[] calldata tokenInfos
     ) external;
 
@@ -63,7 +64,9 @@ interface IORManager {
 
     function updateMaxMDCLimit(uint64 maxMDCLimit_) external;
 
-    function getExtraTransferContract(uint64 chainId) external view returns (uint);
+    function spvDataContract() external view returns (address);
+
+    function updateSpvDataContract(address spvDataContract_) external;
 
     function updateSpvBlockInterval(uint64 spvBlockInterval) external;
 
@@ -72,6 +75,8 @@ interface IORManager {
         uint endBlockNumber,
         IORSpvData.InjectionBlock[] calldata injectionBlocks
     ) external;
+
+    function getExtraTransferContract(uint64 chainId) external view returns (uint);
 
     function updateExtraTransferContracts(
         uint64 enableTime,
