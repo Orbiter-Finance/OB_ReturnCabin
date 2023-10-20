@@ -71,7 +71,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
     ) external onlyOwner {
         versionIncreaseAndEnableTime(enableTime);
 
-        require(dealers.length < 10 && ebcs.length < 10 && chainIds.length < 100, "DECOF");
+        require(dealers.length < 100 && ebcs.length < 10 && chainIds.length < 100, "DECOF");
 
         IORManager manager = IORManager(_mdcFactory.manager());
         for (uint i = 0; i < ebcs.length; ) {

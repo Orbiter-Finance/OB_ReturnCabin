@@ -120,8 +120,8 @@ describe('ORMakerDeposit', () => {
         }
         mdcEbcs.sort(() => Math.random() - 0.5);
 
-        const mdcDealers: string[] = await dealersMock();
-        const chainIds: number[] = chainIdsMock;
+        const mdcDealers = await dealersMock();
+        const chainIds = chainIdsMock;
         const block = await ethers.provider.getBlock('latest');
 
         // console.log(
@@ -147,7 +147,7 @@ describe('ORMakerDeposit', () => {
           )
           .then((t) => t.wait());
 
-        const args = events[0].args!;
+        const args = events![0].args!;
 
         expect(args['impl']).eq(implementation);
         expect(args['columnArrayHash']).eq(columnArrayHash);
@@ -166,7 +166,7 @@ describe('ORMakerDeposit', () => {
         await testReverted(
           orMakerDeposit.updateColumnArray(
             getMinEnableTime(),
-            new Array(11).fill(constants.AddressZero),
+            new Array(101).fill(constants.AddressZero),
             [],
             [],
           ),
@@ -225,11 +225,13 @@ describe('ORMakerDeposit', () => {
         const spvs = chainInfo.spvs.slice(0, 1);
         const chainIds = [chainId];
 
-        const { events } = await orMakerDeposit
-          .updateSpvs(getMinEnableTime(), spvs, chainIds)
-          .then((t) => t.wait());
+        const events = (
+          await orMakerDeposit
+            .updateSpvs(getMinEnableTime(), spvs, chainIds)
+            .then((t) => t.wait())
+        ).events!;
 
-        for (const i in events) {
+        for (let i = 0; i < events.length; i++) {
           const event = events[i];
 
           expect(event.args!['impl']).eq(implementation);
@@ -294,7 +296,7 @@ describe('ORMakerDeposit', () => {
           .updateResponseMakers(getMinEnableTime(), responseMakerSignatures)
           .then((t) => t.wait());
 
-        const args = events[0].args!;
+        const args = events![0].args!;
         expect(args.responseMakers).to.deep.eq(responseMakers);
 
         const responseMakersHash = await orMakerDeposit.responseMakersHash();
@@ -422,7 +424,7 @@ describe('ORMakerDeposit', () => {
           )
           .then((t) => t.wait());
 
-        const args = events[0].args!;
+        const args = events![0].args!;
         expect(args.ebc).eq(ebcSample);
         expect(args.rootWithVersion.root).eq(rootWithVersion.root);
         expect(args.rootWithVersion.version).eq(rootWithVersion.version);
