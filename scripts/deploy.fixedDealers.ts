@@ -18,8 +18,6 @@ export async function deploy() {
   const envORManagerAddress = process.env['OR_MANAGER_ADDRESS'];
   assert(!!envORManagerAddress, 'Env miss [OR_MANAGER_ADDRESS].');
 
-  console.warn('envORManagerAddress:', envORManagerAddress, 'ddd');
-
   const orMakerDeposit_impl = await new ORMakerDeposit__factory(
     deployer,
   ).deploy();
