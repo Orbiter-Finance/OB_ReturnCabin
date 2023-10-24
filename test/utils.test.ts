@@ -115,6 +115,7 @@ export interface challengeInputInfo {
   sourceTxTime: BigNumberish;
   freezeToken: string;
   freezeAmount: BigNumberish;
+  transactionIndex: BigNumberish;
 }
 
 export interface verifyinfoBase {
@@ -147,7 +148,8 @@ export const updateSpv = async (
 ) => {
   const enableTimeTime =
     // eslint-disable-next-line prettier/prettier
-    (await getCurrentTime()) > (await _orManager.getVersionAndEnableTime()).enableTime.toNumber()
+    (await getCurrentTime()) >
+    (await _orManager.getVersionAndEnableTime()).enableTime.toNumber()
       ? await getCurrentTime()
       : (await _orManager.getVersionAndEnableTime()).enableTime;
 
@@ -532,6 +534,7 @@ export const createChallenge = async (
         challenge.sourceTxTime,
         challenge.freezeToken,
         challenge.freezeAmount,
+        challenge.transactionIndex,
         { value: challenge.freezeAmount },
       ),
     ).to.revertedWith(revertReason);
@@ -544,6 +547,7 @@ export const createChallenge = async (
         challenge.sourceTxTime,
         challenge.freezeToken,
         challenge.freezeAmount,
+        challenge.transactionIndex,
         { value: challenge.freezeAmount },
       )
       .then((t) => t.wait());

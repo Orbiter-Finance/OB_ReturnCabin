@@ -35,6 +35,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
     mapping(address => uint) private _freezeAssets; // token(ETH: 0) => freezeAmount
     mapping(bytes32 => ChallengeInfo) private _challenges; // hash(sourceChainId, transactionHash) => ChallengeInfo
     mapping(address => WithdrawRequestInfo) private _withdrawRequestInfo;
+    ChallengeSortInfo[] private _challengeSortList;
 
     modifier onlyOwner() {
         require(msg.sender == _owner, "Ownable: caller is not the owner");
@@ -296,12 +297,64 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         emit RulesRootUpdated(_mdcFactory.implementation(), ebc, rootWithVersion);
     }
 
+    function sortChallengesByLastElement(ChallengeSortInfo[] memory challenges) private {
+        uint length = challenges.length;
+        ChallengeSortInfo memory lastElement = challenges[length - 1];
+        for (uint i = length - 2; i >= 0; ) {
+            if (challenges[i].sortNumber > lastElement.sortNumber) {
+                challenges[i + 1] = challenges[i];
+                challenges[i] = lastElement;
+            }
+            unchecked {
+                if (i > 0) {
+                    i--;
+                } else {
+                    break;
+                }
+            }
+        }
+        _challengeSortList = challenges;
+    }
+
+    function getCurrChallengeVerifyStatus(uint64 targetSortNumber) external view returns (bool) {
+        return _getCurrChallengeVerifyStatus(targetSortNumber);
+    }
+
+    function _getCurrChallengeVerifyStatus(uint64 targetSortNumber) private view returns (bool) {
+        uint length = _challengeSortList.length;
+        bool canVerify;
+        for (uint i = 0; i < length; i++) {
+            if (!_challengeSortList[i].isFinish) {
+                if (_challengeSortList[i].sortNumber == targetSortNumber) {
+                    canVerify = true;
+                }
+                break;
+            }
+        }
+        return canVerify;
+    }
+
+    function updateCurrChallengeVerifyStatus(uint64 targetSortNumber) private {
+        uint length = _challengeSortList.length;
+        for (uint i = 0; i < length; i++) {
+            if (_challengeSortList[i].sortNumber == targetSortNumber) {
+                _challengeSortList[i].isFinish = true;
+                break;
+            }
+        }
+    }
+
+    function getChallengeSortList() external view returns (ChallengeSortInfo[] memory) {
+        return _challengeSortList;
+    }
+
     function challenge(
         uint64 sourceChainId,
         bytes32 sourceTxHash,
         uint64 sourceTxTime,
         address freezeToken,
-        uint freezeAmount1
+        uint freezeAmount1,
+        uint64 transactionIndex
     ) external payable {
         uint256 startGasNum = gasleft();
         bytes32 challengeId = abi.encode(sourceChainId, sourceTxHash).hash();
@@ -314,6 +367,17 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             require(freezeAmount1 == msg.value, "IF");
         } else {
             IERC20(freezeToken).safeTransferFrom(msg.sender, address(this), freezeAmount1);
+        }
+
+        uint64 sortNumber = uint64(sourceChainId) +
+            uint64(sourceTxTime) +
+            uint64(transactionIndex) +
+            uint64(block.number);
+
+        _challengeSortList.push(ChallengeSortInfo(sortNumber, false));
+
+        if (_challengeSortList.length > 1) {
+            sortChallengesByLastElement(_challengeSortList);
         }
 
         // TODO: Currently it is assumed that the pledged assets of the challenger and the owner are the same
@@ -335,7 +399,8 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             0,
             0,
             0,
-            (startGasNum - gasleft()) * (block.basefee + uint256(IORManager(_mdcFactory.manager()).getPriorityFee()))
+            (startGasNum - gasleft()) * (block.basefee + uint256(IORManager(_mdcFactory.manager()).getPriorityFee())),
+            sortNumber
         );
         emit ChallengeInfoUpdated(challengeId, _challenges[challengeId]);
     }
@@ -358,10 +423,15 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             require(block.timestamp > chainInfo.maxVerifyChallengeSourceTxSecond + challengeInfo.sourceTxTime, "VCST");
 
             _challengerFailed(challengeInfo);
+
+            updateCurrChallengeVerifyStatus(challengeInfo.sortNumber);
+
             delete _challenges[challengeId];
         } else {
             // Ensure the correctness of verifiedData0
             require(abi.encode(verifiedData0).hash() == challengeInfo.verifiedDataHash0, "VDH");
+
+            require(_getCurrChallengeVerifyStatus(challengeInfo.sortNumber), "PNY");
 
             BridgeLib.ChainInfo memory chainInfo = manager.getChainInfo(uint64(verifiedData0[0]));
             require(block.timestamp > chainInfo.maxVerifyChallengeDestTxSecond + challengeInfo.sourceTxTime, "VCDT");
@@ -373,6 +443,8 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             require(sent3, "ETH: NTG");
 
             delete challengeInfo.challengerVerifyGasUsed;
+
+            updateCurrChallengeVerifyStatus(challengeInfo.sortNumber);
         }
         _challenges[challengeId].abortTime = uint64(block.timestamp);
 
@@ -600,6 +672,8 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         _challenges[challengeId].verifiedTime1 = uint64(block.timestamp);
 
         _challenges[challengeId].challengerVerifyGasUsed = 0;
+
+        updateCurrChallengeVerifyStatus(_challenges[challengeId].sortNumber);
 
         emit ChallengeInfoUpdated(challengeId, _challenges[challengeId]);
     }
