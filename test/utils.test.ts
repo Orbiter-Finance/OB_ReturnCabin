@@ -525,7 +525,12 @@ export const createChallenge = async (
   orMakerDeposit: ORMakerDeposit,
   challenge: challengeInputInfo,
   revertReason?: string,
-): Promise<string> => {
+): Promise<
+  {
+    challengeId: BigNumberish;
+    challengeInfo: any;
+  } & string
+> => {
   if (revertReason != undefined) {
     await expect(
       orMakerDeposit.challenge(
@@ -565,6 +570,9 @@ export const createChallenge = async (
       expect(args.challengeInfo.freezeAmount0).eql(challenge.freezeAmount);
       expect(args.challengeInfo.freezeAmount1).eql(challenge.freezeAmount);
     }
-    return args?.challengeId;
+    return {
+      challengeId: args?.challengeId,
+      challengeInfo: args?.challengeInfo,
+    };
   }
 };

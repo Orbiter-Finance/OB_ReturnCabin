@@ -929,7 +929,7 @@ describe('ORMakerDeposit', () => {
     //   ).to.revertedWith('SI');
     // });
 
-    it('test function challenge sortChallengesByLastElement', async function () {
+    it('test function challenge addChallengeNode', async function () {
       const challenge: challengeInputInfo[] = [
         {
           sourceChainId: random(500),
@@ -938,7 +938,7 @@ describe('ORMakerDeposit', () => {
           sourceTxTime: random(9000000),
           freezeToken: constants.AddressZero,
           freezeAmount: utils.parseEther('0.001'),
-          transactionIndex: 0,
+          transactionIndex: 1,
         },
         {
           sourceChainId: random(200),
@@ -947,7 +947,7 @@ describe('ORMakerDeposit', () => {
           sourceTxTime: random(1000000),
           freezeToken: constants.AddressZero,
           freezeAmount: utils.parseEther('0.001'),
-          transactionIndex: 0,
+          transactionIndex: 2,
         },
         {
           sourceChainId: random(300),
@@ -956,7 +956,7 @@ describe('ORMakerDeposit', () => {
           sourceTxTime: random(2000000),
           freezeToken: constants.AddressZero,
           freezeAmount: utils.parseEther('0.001'),
-          transactionIndex: 0,
+          transactionIndex: 3,
         },
         {
           sourceChainId: random(400),
@@ -965,7 +965,7 @@ describe('ORMakerDeposit', () => {
           sourceTxTime: random(4000000),
           freezeToken: constants.AddressZero,
           freezeAmount: utils.parseEther('0.001'),
-          transactionIndex: 0,
+          transactionIndex: 4,
         },
         {
           sourceChainId: random(900),
@@ -974,7 +974,7 @@ describe('ORMakerDeposit', () => {
           sourceTxTime: random(51000000),
           freezeToken: constants.AddressZero,
           freezeAmount: utils.parseEther('0.001'),
-          transactionIndex: 0,
+          transactionIndex: 5,
         },
         {
           sourceChainId: random(800),
@@ -983,34 +983,34 @@ describe('ORMakerDeposit', () => {
           sourceTxTime: random(52000000),
           freezeToken: constants.AddressZero,
           freezeAmount: utils.parseEther('0.001'),
-          transactionIndex: 0,
+          transactionIndex: 6,
         },
       ];
+      let challengeIdentNumList = [];
       for (let i = 0; i < challenge.length; i++) {
-        await createChallenge(orMakerDeposit, challenge[i]);
+        const res = await createChallenge(orMakerDeposit, challenge[i]);
+        challengeIdentNumList.push(res.challengeInfo.challengeIdentNum);
       }
-      const challengeSortList = await orMakerDeposit.getChallengeSortList();
-      challengeSortList.forEach((v) => {
-        expect(v.isFinish).eq(false);
-      });
+      challengeIdentNumList = challengeIdentNumList.sort((a, b) => a - b);
+
       const lastEleSortNumber = BigNumber.from(
-        challengeSortList[challengeSortList?.length - 1]?.sortNumber,
+        challengeIdentNumList[challengeIdentNumList?.length - 1],
       ).toNumber();
       const frontOfLastEleSortNumber = BigNumber.from(
-        challengeSortList[challengeSortList?.length - 2]?.sortNumber,
+        challengeIdentNumList[challengeIdentNumList?.length - 2],
       ).toNumber();
       expect(lastEleSortNumber).gt(frontOfLastEleSortNumber);
       const firstEleSortNumber = BigNumber.from(
-        challengeSortList[0]?.sortNumber,
+        challengeIdentNumList[0],
       ).toNumber();
-      const canVerify = await orMakerDeposit.getCurrChallengeVerifyStatus(
+      const canVerify = await orMakerDeposit.getCanChallengeFinish(
         firstEleSortNumber,
       );
-      const cantVerify = await orMakerDeposit.getCurrChallengeVerifyStatus(
+      const cantVerify = await orMakerDeposit.getCanChallengeFinish(
         lastEleSortNumber,
       );
-      expect(cantVerify).to.be.false;
       expect(canVerify).to.be.true;
+      expect(cantVerify).to.be.false;
     });
 
     // it('test prase spv proof data', async function () {

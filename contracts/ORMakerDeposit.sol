@@ -35,7 +35,13 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
     mapping(address => uint) private _freezeAssets; // token(ETH: 0) => freezeAmount
     mapping(bytes32 => ChallengeInfo) private _challenges; // hash(sourceChainId, transactionHash) => ChallengeInfo
     mapping(address => WithdrawRequestInfo) private _withdrawRequestInfo;
-    ChallengeSortInfo[] private _challengeSortList;
+    mapping(uint64 => ChallengeNode) private challengeNodeList;
+    uint64 private challengeNodeHead;
+
+    constructor() {
+        challengeNodeList[0] = ChallengeNode(0, 0);
+        challengeNodeHead = 0;
+    }
 
     modifier onlyOwner() {
         require(msg.sender == _owner, "Ownable: caller is not the owner");
@@ -297,55 +303,47 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         emit RulesRootUpdated(_mdcFactory.implementation(), ebc, rootWithVersion);
     }
 
-    function sortChallengesByLastElement(ChallengeSortInfo[] memory challenges) private {
-        uint length = challenges.length;
-        ChallengeSortInfo memory lastElement = challenges[length - 1];
-        for (uint i = length - 2; i >= 0; ) {
-            if (challenges[i].sortNumber > lastElement.sortNumber) {
-                challenges[i + 1] = challenges[i];
-                challenges[i] = lastElement;
-            }
-            unchecked {
-                if (i > 0) {
-                    i--;
-                } else {
-                    break;
-                }
-            }
-        }
-        _challengeSortList = challenges;
-    }
+    function addChallengeNode(uint64 challengeIdentNum) private {
+        uint64 currentNode = challengeNodeHead;
+        uint64 nextNode = 0;
+        bool nodeExists = false;
 
-    function getCurrChallengeVerifyStatus(uint64 targetSortNumber) external view returns (bool) {
-        return _getCurrChallengeVerifyStatus(targetSortNumber);
-    }
-
-    function _getCurrChallengeVerifyStatus(uint64 targetSortNumber) private view returns (bool) {
-        uint length = _challengeSortList.length;
-        bool canVerify;
-        for (uint i = 0; i < length; i++) {
-            if (!_challengeSortList[i].isFinish) {
-                if (_challengeSortList[i].sortNumber == targetSortNumber) {
-                    canVerify = true;
-                }
+        while (currentNode != 0 && currentNode <= challengeIdentNum) {
+            if (currentNode == challengeIdentNum) {
+                nodeExists = true;
                 break;
             }
+            nextNode = currentNode;
+            currentNode = challengeNodeList[currentNode].next;
         }
-        return canVerify;
+
+        if (nodeExists) {
+            challengeNodeList[challengeIdentNum].verifyCount++;
+        } else {
+            challengeNodeList[challengeIdentNum] = ChallengeNode(currentNode, 1);
+        }
+
+        if (nextNode == 0) {
+            challengeNodeHead = challengeIdentNum;
+        } else {
+            challengeNodeList[nextNode].next = challengeIdentNum;
+        }
     }
 
-    function updateCurrChallengeVerifyStatus(uint64 targetSortNumber) private {
-        uint length = _challengeSortList.length;
-        for (uint i = 0; i < length; i++) {
-            if (_challengeSortList[i].sortNumber == targetSortNumber) {
-                _challengeSortList[i].isFinish = true;
-                break;
-            }
-        }
+    function getCanChallengeFinish(uint64 challengeIdentNum) external view returns (bool) {
+        return _getCanChallengeFinish(challengeIdentNum);
     }
 
-    function getChallengeSortList() external view returns (ChallengeSortInfo[] memory) {
-        return _challengeSortList;
+    function _getCanChallengeFinish(uint64 challengeIdentNum) private view returns (bool) {
+        require(challengeNodeList[challengeIdentNum].verifyCount > 0, "ARON");
+
+        uint64 nextChallengeNode = challengeNodeHead;
+
+        while (nextChallengeNode != 0 && nextChallengeNode < challengeIdentNum) {
+            if (challengeNodeList[nextChallengeNode].verifyCount != 0) return false;
+            nextChallengeNode = challengeNodeList[nextChallengeNode].next;
+        }
+        return true;
     }
 
     function challenge(
@@ -369,16 +367,12 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             IERC20(freezeToken).safeTransferFrom(msg.sender, address(this), freezeAmount1);
         }
 
-        uint64 sortNumber = uint64(sourceChainId) +
+        uint64 challengeIdentNum = uint64(sourceChainId) +
             uint64(sourceTxTime) +
             uint64(transactionIndex) +
             uint64(block.number);
 
-        _challengeSortList.push(ChallengeSortInfo(sortNumber, false));
-
-        if (_challengeSortList.length > 1) {
-            sortChallengesByLastElement(_challengeSortList);
-        }
+        addChallengeNode(challengeIdentNum);
 
         // TODO: Currently it is assumed that the pledged assets of the challenger and the owner are the same
         uint freezeAmount0 = freezeAmount1;
@@ -400,7 +394,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             0,
             0,
             (startGasNum - gasleft()) * (block.basefee + uint256(IORManager(_mdcFactory.manager()).getPriorityFee())),
-            sortNumber
+            challengeIdentNum
         );
         emit ChallengeInfoUpdated(challengeId, _challenges[challengeId]);
     }
@@ -415,6 +409,8 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         // Make sure verifyChallengeDest is not done yet
         require(challengeInfo.verifiedTime1 == 0, "VT1NZ");
 
+        require(_getCanChallengeFinish(challengeInfo.challengeIdentNum), "NCCF");
+
         IORManager manager = IORManager(_mdcFactory.manager());
 
         if (challengeInfo.verifiedTime0 == 0) {
@@ -424,14 +420,12 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
             _challengerFailed(challengeInfo);
 
-            updateCurrChallengeVerifyStatus(challengeInfo.sortNumber);
+            challengeNodeList[challengeInfo.challengeIdentNum].verifyCount--;
 
             delete _challenges[challengeId];
         } else {
             // Ensure the correctness of verifiedData0
             require(abi.encode(verifiedData0).hash() == challengeInfo.verifiedDataHash0, "VDH");
-
-            require(_getCurrChallengeVerifyStatus(challengeInfo.sortNumber), "PNY");
 
             BridgeLib.ChainInfo memory chainInfo = manager.getChainInfo(uint64(verifiedData0[0]));
             require(block.timestamp > chainInfo.maxVerifyChallengeDestTxSecond + challengeInfo.sourceTxTime, "VCDT");
@@ -444,7 +438,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
             delete challengeInfo.challengerVerifyGasUsed;
 
-            updateCurrChallengeVerifyStatus(challengeInfo.sortNumber);
+            challengeNodeList[challengeInfo.challengeIdentNum].verifyCount--;
         }
         _challenges[challengeId].abortTime = uint64(block.timestamp);
 
@@ -673,7 +667,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
         _challenges[challengeId].challengerVerifyGasUsed = 0;
 
-        updateCurrChallengeVerifyStatus(_challenges[challengeId].sortNumber);
+        challengeNodeList[_challenges[challengeId].challengeIdentNum].verifyCount--;
 
         emit ChallengeInfoUpdated(challengeId, _challenges[challengeId]);
     }
