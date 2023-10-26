@@ -104,7 +104,7 @@ interface IORMakerDeposit {
         address token
     ) external;
 
-    function getCanChallengeFinish(uint256 challengeIdentNum) external view returns (bool);
+    function getCanChallengeContinue(uint256 challengeIdentNum) external view returns (bool);
 
     function challenge(
         uint64 sourceTxTime,

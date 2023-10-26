@@ -958,10 +958,10 @@ describe('ORMakerDeposit', () => {
       );
       expect(lastEleSortNumber).gt(frontOfLastEleSortNumber);
       const firstEleSortNumber = BigNumber.from(challengeIdentNumList[0]);
-      const canVerify = await orMakerDeposit.getCanChallengeFinish(
+      const canVerify = await orMakerDeposit.getCanChallengeContinue(
         firstEleSortNumber,
       );
-      const cantVerify = await orMakerDeposit.getCanChallengeFinish(
+      const cantVerify = await orMakerDeposit.getCanChallengeContinue(
         lastEleSortNumber,
       );
       expect(canVerify).to.be.true;

@@ -320,7 +320,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         }
     }
 
-    function getCanChallengeFinish(uint256 challengeIdentNum) external view returns (bool) {
+    function getCanChallengeContinue(uint256 challengeIdentNum) external view returns (bool) {
         return _getCanChallengeContinue(challengeIdentNum);
     }
 
