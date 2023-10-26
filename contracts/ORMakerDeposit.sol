@@ -366,8 +366,8 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
         assembly {
             challengeIdentNum := add(
-                add(add(shl(192, sourceTxTime), shl(128, sourceChainId)), shl(64, sourceTxBlockNum)),
-                sourceTxIndex
+                shl(192, sourceTxTime),
+                add(shl(128, sourceChainId), add(shl(64, sourceTxBlockNum), sourceTxIndex))
             )
         }
 
