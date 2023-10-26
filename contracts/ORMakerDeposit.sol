@@ -321,10 +321,10 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
     }
 
     function getCanChallengeFinish(uint256 challengeIdentNum) external view returns (bool) {
-        return _getCanChallengeFinish(challengeIdentNum);
+        return _getCanChallengeContinue(challengeIdentNum);
     }
 
-    function _getCanChallengeFinish(uint256 challengeIdentNum) private view returns (bool) {
+    function _getCanChallengeContinue(uint256 challengeIdentNum) private view returns (bool) {
         ChallengeNode memory currChallengeNode = _challengeNodeList[challengeIdentNum];
 
         require(currChallengeNode.challengeCreateTime > 0, "UCY");
@@ -410,7 +410,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         // Make sure verifyChallengeDest is not done yet
         require(challengeInfo.verifiedTime1 == 0, "VT1NZ");
 
-        require(_getCanChallengeFinish(challengeInfo.challengeIdentNum), "NCCF");
+        require(_getCanChallengeContinue(challengeInfo.challengeIdentNum), "NCCF");
 
         IORManager manager = IORManager(_mdcFactory.manager());
 
@@ -621,7 +621,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         require(_challenges[challengeId].verifiedTime0 > 0, "VT0Z");
         require(_challenges[challengeId].verifiedTime1 == 0, "VT1NZ");
 
-        require(_getCanChallengeFinish(_challenges[challengeId].challengeIdentNum), "NCCF");
+        require(_getCanChallengeContinue(_challenges[challengeId].challengeIdentNum), "NCCF");
 
         // Parse rawDatas
         uint[] memory responseMakers = abi.decode(rawDatas, (uint[]));
