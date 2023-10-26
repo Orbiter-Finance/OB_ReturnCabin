@@ -929,80 +929,35 @@ describe('ORMakerDeposit', () => {
     //   ).to.revertedWith('SI');
     // });
 
-    it('test function challenge addChallengeNode', async function () {
-      const challenge: challengeInputInfo[] = [
-        {
-          sourceChainId: random(500),
-          sourceTxHash: utils.keccak256(mdcOwner.address),
-          from: await orMakerDeposit.owner(),
-          sourceTxTime: random(9000000),
-          freezeToken: constants.AddressZero,
-          freezeAmount: utils.parseEther('0.001'),
-          transactionIndex: 1,
-        },
-        {
-          sourceChainId: random(200),
-          sourceTxHash: utils.keccak256(mdcOwner.address),
-          from: await orMakerDeposit.owner(),
-          sourceTxTime: random(1000000),
-          freezeToken: constants.AddressZero,
-          freezeAmount: utils.parseEther('0.001'),
-          transactionIndex: 2,
-        },
-        {
-          sourceChainId: random(300),
-          sourceTxHash: utils.keccak256(mdcOwner.address),
-          from: await orMakerDeposit.owner(),
-          sourceTxTime: random(2000000),
-          freezeToken: constants.AddressZero,
-          freezeAmount: utils.parseEther('0.001'),
-          transactionIndex: 3,
-        },
-        {
-          sourceChainId: random(400),
-          sourceTxHash: utils.keccak256(mdcOwner.address),
-          from: await orMakerDeposit.owner(),
-          sourceTxTime: random(4000000),
-          freezeToken: constants.AddressZero,
-          freezeAmount: utils.parseEther('0.001'),
-          transactionIndex: 4,
-        },
-        {
-          sourceChainId: random(900),
-          sourceTxHash: utils.keccak256(mdcOwner.address),
-          from: await orMakerDeposit.owner(),
-          sourceTxTime: random(51000000),
-          freezeToken: constants.AddressZero,
-          freezeAmount: utils.parseEther('0.001'),
-          transactionIndex: 5,
-        },
-        {
-          sourceChainId: random(800),
-          sourceTxHash: utils.keccak256(mdcOwner.address),
-          from: await orMakerDeposit.owner(),
-          sourceTxTime: random(52000000),
-          freezeToken: constants.AddressZero,
-          freezeAmount: utils.parseEther('0.001'),
-          transactionIndex: 6,
-        },
-      ];
+    it('test function challenge _addChallengeNode', async function () {
       let challengeIdentNumList = [];
-      for (let i = 0; i < challenge.length; i++) {
-        const res = await createChallenge(orMakerDeposit, challenge[i]);
+      const challengeGasUsedList = [];
+      const latestBlockRes = await orMakerDeposit.provider?.getBlock('latest');
+      for (let i = 0; i < 100; i++) {
+        const challengeInputInfo = {
+          sourceTxTime: random(latestBlockRes.timestamp - 86400),
+          sourceChainId: random(500000),
+          sourceBlockNum: random(latestBlockRes.number),
+          sourceTxIndex: i,
+          sourceTxHash: utils.keccak256(mdcOwner.address),
+          from: await orMakerDeposit.owner(),
+          freezeToken: constants.AddressZero,
+          freezeAmount: utils.parseEther('0.001'),
+        };
+        const res = await createChallenge(orMakerDeposit, challengeInputInfo);
         challengeIdentNumList.push(res.challengeInfo.challengeIdentNum);
+        challengeGasUsedList.push(res.gasUsed);
       }
       challengeIdentNumList = challengeIdentNumList.sort((a, b) => a - b);
-
+      console.log(challengeGasUsedList);
       const lastEleSortNumber = BigNumber.from(
         challengeIdentNumList[challengeIdentNumList?.length - 1],
-      ).toNumber();
+      );
       const frontOfLastEleSortNumber = BigNumber.from(
         challengeIdentNumList[challengeIdentNumList?.length - 2],
-      ).toNumber();
+      );
       expect(lastEleSortNumber).gt(frontOfLastEleSortNumber);
-      const firstEleSortNumber = BigNumber.from(
-        challengeIdentNumList[0],
-      ).toNumber();
+      const firstEleSortNumber = BigNumber.from(challengeIdentNumList[0]);
       const canVerify = await orMakerDeposit.getCanChallengeFinish(
         firstEleSortNumber,
       );

@@ -109,13 +109,14 @@ export function getMinEnableTime(currentEnableTime?: BigNumber) {
 }
 
 export interface challengeInputInfo {
+  sourceTxTime: BigNumberish;
   sourceChainId: BigNumberish;
+  sourceBlockNum: BigNumberish;
+  sourceTxIndex: BigNumberish;
   sourceTxHash: BigNumberish;
   from: string;
-  sourceTxTime: BigNumberish;
   freezeToken: string;
   freezeAmount: BigNumberish;
-  transactionIndex: BigNumberish;
 }
 
 export interface verifyinfoBase {
@@ -526,33 +527,37 @@ export const createChallenge = async (
   challenge: challengeInputInfo,
   revertReason?: string,
 ): Promise<
-  {
+  Partial<{
     challengeId: BigNumberish;
     challengeInfo: any;
-  } & string
+    gasUsed: BigNumberish;
+    revertReason: string;
+  }>
 > => {
   if (revertReason != undefined) {
     await expect(
       orMakerDeposit.challenge(
-        challenge.sourceChainId,
-        challenge.sourceTxHash.toString(),
         challenge.sourceTxTime,
+        challenge.sourceChainId,
+        challenge.sourceBlockNum,
+        challenge.sourceTxIndex,
+        challenge.sourceTxHash.toString(),
         challenge.freezeToken,
         challenge.freezeAmount,
-        challenge.transactionIndex,
         { value: challenge.freezeAmount },
       ),
     ).to.revertedWith(revertReason);
-    return revertReason;
+    return { revertReason };
   } else {
     const tx = await orMakerDeposit
       .challenge(
-        challenge.sourceChainId,
-        challenge.sourceTxHash.toString(),
         challenge.sourceTxTime,
+        challenge.sourceChainId,
+        challenge.sourceBlockNum,
+        challenge.sourceTxIndex,
+        challenge.sourceTxHash.toString(),
         challenge.freezeToken,
         challenge.freezeAmount,
-        challenge.transactionIndex,
         { value: challenge.freezeAmount },
       )
       .then((t) => t.wait());
@@ -573,6 +578,7 @@ export const createChallenge = async (
     return {
       challengeId: args?.challengeId,
       challengeInfo: args?.challengeInfo,
+      gasUsed: tx.gasUsed,
     };
   }
 };

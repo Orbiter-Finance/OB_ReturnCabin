@@ -35,12 +35,12 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
     mapping(address => uint) private _freezeAssets; // token(ETH: 0) => freezeAmount
     mapping(bytes32 => ChallengeInfo) private _challenges; // hash(sourceChainId, transactionHash) => ChallengeInfo
     mapping(address => WithdrawRequestInfo) private _withdrawRequestInfo;
-    mapping(uint64 => ChallengeNode) private challengeNodeList;
-    uint64 private challengeNodeHead;
+    mapping(uint256 => ChallengeNode) private _challengeNodeList;
+    uint256 private _challengeNodeHead;
 
     constructor() {
-        challengeNodeList[0] = ChallengeNode(0, 0);
-        challengeNodeHead = 0;
+        _challengeNodeList[0] = ChallengeNode(0, 0, 0, 0);
+        _challengeNodeHead = 0;
     }
 
     modifier onlyOwner() {
@@ -303,56 +303,51 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         emit RulesRootUpdated(_mdcFactory.implementation(), ebc, rootWithVersion);
     }
 
-    function addChallengeNode(uint64 challengeIdentNum) private {
-        uint64 currentNode = challengeNodeHead;
-        uint64 nextNode = 0;
-        bool nodeExists = false;
+    function _addChallengeNode(uint256 challengeIdentNum) private {
+        uint256 currentNode = _challengeNodeHead;
+        uint256 lastNode = 0;
 
-        while (currentNode != 0 && currentNode <= challengeIdentNum) {
-            if (currentNode == challengeIdentNum) {
-                nodeExists = true;
-                break;
-            }
-            nextNode = currentNode;
-            currentNode = challengeNodeList[currentNode].next;
+        while (currentNode != 0 && currentNode >= challengeIdentNum) {
+            lastNode = currentNode;
+            currentNode = _challengeNodeList[currentNode].prev;
         }
 
-        if (nodeExists) {
-            challengeNodeList[challengeIdentNum].verifyCount++;
+        _challengeNodeList[challengeIdentNum] = ChallengeNode(currentNode, uint64(block.timestamp), 0, 0);
+        if (lastNode == 0) {
+            _challengeNodeHead = challengeIdentNum;
         } else {
-            challengeNodeList[challengeIdentNum] = ChallengeNode(currentNode, 1);
-        }
-
-        if (nextNode == 0) {
-            challengeNodeHead = challengeIdentNum;
-        } else {
-            challengeNodeList[nextNode].next = challengeIdentNum;
+            _challengeNodeList[lastNode].prev = challengeIdentNum;
         }
     }
 
-    function getCanChallengeFinish(uint64 challengeIdentNum) external view returns (bool) {
+    function getCanChallengeFinish(uint256 challengeIdentNum) external view returns (bool) {
         return _getCanChallengeFinish(challengeIdentNum);
     }
 
-    function _getCanChallengeFinish(uint64 challengeIdentNum) private view returns (bool) {
-        require(challengeNodeList[challengeIdentNum].verifyCount > 0, "ARON");
+    function _getCanChallengeFinish(uint256 challengeIdentNum) private view returns (bool) {
+        ChallengeNode memory currChallengeNode = _challengeNodeList[challengeIdentNum];
 
-        uint64 nextChallengeNode = challengeNodeHead;
+        require(currChallengeNode.challengeCreateTime > 0, "UCY");
 
-        while (nextChallengeNode != 0 && nextChallengeNode < challengeIdentNum) {
-            if (challengeNodeList[nextChallengeNode].verifyCount != 0) return false;
-            nextChallengeNode = challengeNodeList[nextChallengeNode].next;
+        if (currChallengeNode.prev == 0) {
+            return currChallengeNode.makerFailedTime == 0 && currChallengeNode.makerSuccessTime == 0;
+        } else {
+            return
+                currChallengeNode.makerFailedTime == 0 &&
+                currChallengeNode.makerSuccessTime == 0 &&
+                (_challengeNodeList[currChallengeNode.prev].makerFailedTime > 0 ||
+                    _challengeNodeList[currChallengeNode.prev].makerSuccessTime > 0);
         }
-        return true;
     }
 
     function challenge(
-        uint64 sourceChainId,
-        bytes32 sourceTxHash,
         uint64 sourceTxTime,
+        uint64 sourceChainId,
+        uint64 sourceTxBlockNum,
+        uint64 sourceTxIndex,
+        bytes32 sourceTxHash,
         address freezeToken,
-        uint freezeAmount1,
-        uint64 transactionIndex
+        uint freezeAmount1
     ) external payable {
         uint256 startGasNum = gasleft();
         bytes32 challengeId = abi.encode(sourceChainId, sourceTxHash).hash();
@@ -367,12 +362,18 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             IERC20(freezeToken).safeTransferFrom(msg.sender, address(this), freezeAmount1);
         }
 
-        uint64 challengeIdentNum = uint64(sourceChainId) +
-            uint64(sourceTxTime) +
-            uint64(transactionIndex) +
-            uint64(block.number);
+        uint256 challengeIdentNum;
 
-        addChallengeNode(challengeIdentNum);
+        assembly {
+            challengeIdentNum := add(
+                add(add(shl(192, sourceTxTime), shl(128, sourceChainId)), shl(64, sourceTxBlockNum)),
+                sourceTxIndex
+            )
+        }
+
+        require(_challengeNodeList[challengeIdentNum].challengeCreateTime == 0, "CHY");
+
+        _addChallengeNode(challengeIdentNum);
 
         // TODO: Currently it is assumed that the pledged assets of the challenger and the owner are the same
         uint freezeAmount0 = freezeAmount1;
@@ -420,8 +421,6 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
             _challengerFailed(challengeInfo);
 
-            challengeNodeList[challengeInfo.challengeIdentNum].verifyCount--;
-
             delete _challenges[challengeId];
         } else {
             // Ensure the correctness of verifiedData0
@@ -431,14 +430,6 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             require(block.timestamp > chainInfo.maxVerifyChallengeDestTxSecond + challengeInfo.sourceTxTime, "VCDT");
 
             _makerFailed(challengeInfo);
-
-            (bool sent3, ) = payable(challengeInfo.challenger).call{value: challengeInfo.challengerVerifyGasUsed}("");
-
-            require(sent3, "ETH: NTG");
-
-            delete challengeInfo.challengerVerifyGasUsed;
-
-            challengeNodeList[challengeInfo.challengeIdentNum].verifyCount--;
         }
         _challenges[challengeId].abortTime = uint64(block.timestamp);
 
@@ -665,22 +656,22 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
         _challenges[challengeId].verifiedTime1 = uint64(block.timestamp);
 
-        _challenges[challengeId].challengerVerifyGasUsed = 0;
-
-        challengeNodeList[_challenges[challengeId].challengeIdentNum].verifyCount--;
-
         emit ChallengeInfoUpdated(challengeId, _challenges[challengeId]);
     }
 
     function _challengerFailed(ChallengeInfo memory challengeInfo) internal {
         // Unfreeze
         _freezeAssets[challengeInfo.freezeToken] -= (challengeInfo.freezeAmount0 + challengeInfo.freezeAmount1);
+
+        _challengeNodeList[challengeInfo.challengeIdentNum].makerSuccessTime = uint64(block.timestamp);
     }
 
     function _makerFailed(ChallengeInfo memory challengeInfo) internal {
         uint challengeUserAmount = (challengeInfo.freezeAmount0 * challengeInfo.challengeUserRatio) /
             ConstantsLib.RATIO_MULTIPLE;
         require(challengeUserAmount <= challengeInfo.freezeAmount0, "UAOF");
+
+        _challengeNodeList[challengeInfo.challengeIdentNum].makerFailedTime = uint64(block.timestamp);
 
         uint challengerAmount = challengeInfo.freezeAmount0 + challengeInfo.freezeAmount1 - challengeUserAmount;
 
@@ -698,6 +689,10 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
             IERC20(challengeInfo.freezeToken).safeTransfer(challengeInfo.challenger, challengerAmount);
         }
+
+        (bool sent3, ) = payable(challengeInfo.challenger).call{value: challengeInfo.challengerVerifyGasUsed}("");
+
+        require(sent3, "ETH: NTG");
 
         // Unfreeze
         _freezeAssets[challengeInfo.freezeToken] -= (challengeInfo.freezeAmount0 + challengeInfo.freezeAmount1);

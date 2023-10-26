@@ -20,12 +20,14 @@ interface IORMakerDeposit {
         uint64 verifiedTime1; // Time of verifyChallengeDest. Greater than 0 means verification passed
         bytes32 verifiedDataHash0; // Data's hash of verifyChallengeSource
         uint challengerVerifyGasUsed; // Gas used of challenger verify
-        uint64 challengeIdentNum;
+        uint256 challengeIdentNum;
     }
 
     struct ChallengeNode {
-        uint64 next;
-        uint32 verifyCount;
+        uint256 prev;
+        uint64 challengeCreateTime;
+        uint64 makerFailedTime;
+        uint64 makerSuccessTime;
     }
 
     struct WithdrawRequestInfo {
@@ -102,15 +104,16 @@ interface IORMakerDeposit {
         address token
     ) external;
 
-    function getCanChallengeFinish(uint64 challengeIdentNum) external view returns (bool);
+    function getCanChallengeFinish(uint256 challengeIdentNum) external view returns (bool);
 
     function challenge(
-        uint64 sourceChainId,
-        bytes32 sourceTxHash,
         uint64 sourceTxTime,
+        uint64 sourceChainId,
+        uint64 sourceTxBlockNum,
+        uint64 sourceTxIndex,
+        bytes32 sourceTxHash,
         address freezeToken,
-        uint freezeAmount1,
-        uint64 transactionIndex
+        uint freezeAmount1
     ) external payable;
 
     function checkChallenge(uint64 sourceChainId, bytes32 sourceTxHash, uint[] calldata verifiedData0) external;
