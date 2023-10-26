@@ -621,6 +621,8 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         require(_challenges[challengeId].verifiedTime0 > 0, "VT0Z");
         require(_challenges[challengeId].verifiedTime1 == 0, "VT1NZ");
 
+        require(_getCanChallengeFinish(_challenges[challengeId].challengeIdentNum), "NCCF");
+
         // Parse rawDatas
         uint[] memory responseMakers = abi.decode(rawDatas, (uint[]));
 
