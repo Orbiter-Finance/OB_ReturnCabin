@@ -109,14 +109,15 @@ export function getMinEnableTime(currentEnableTime?: BigNumber) {
 }
 
 export interface challengeInputInfo {
-  sourceTxTime: BigNumberish;
+  sourceTxTime: number;
   sourceChainId: BigNumberish;
-  sourceBlockNum: BigNumberish;
-  sourceTxIndex: BigNumberish;
+  sourceBlockNum: number;
+  sourceTxIndex: number;
   sourceTxHash: BigNumberish;
   from: string;
   freezeToken: string;
   freezeAmount: BigNumberish;
+  lastChallengeIdentNum: BigNumberish;
 }
 
 export interface verifyinfoBase {
@@ -522,6 +523,49 @@ export const getVerifyinfo = async (
   return VerifyInfo;
 };
 
+export const getChallengeIdentNumSortList = (
+  sourceTxTime: any,
+  sourceChainId: any,
+  sourceBlockNum: any,
+  sourceTxIndex: any,
+): bigint => {
+  let challengeIdentNum = BigInt(sourceTxTime);
+
+  challengeIdentNum = (challengeIdentNum << BigInt(64)) | BigInt(sourceChainId);
+  challengeIdentNum =
+    (challengeIdentNum << BigInt(64)) | BigInt(sourceBlockNum);
+  challengeIdentNum = (challengeIdentNum << BigInt(64)) | BigInt(sourceTxIndex);
+
+  return challengeIdentNum;
+};
+
+export const getLastChallengeIdentNum = (
+  challengeIdentNumList: bigint[],
+  challengeIdentNum: bigint,
+) => {
+  let lastChallengeIdentNum = null;
+  if (challengeIdentNumList.length > 0) {
+    const challengeIdentNumSortList = challengeIdentNumList.sort((a, b) => {
+      if (a > b) return -1;
+      if (a < b) return 1;
+      return 0;
+    });
+    let lastNum = 0n;
+    let index = 0;
+    while (
+      index <= challengeIdentNumSortList.length - 1 &&
+      challengeIdentNum < challengeIdentNumSortList[index]
+    ) {
+      lastNum = challengeIdentNumSortList[index];
+      index++;
+    }
+    lastChallengeIdentNum = lastNum;
+  } else {
+    lastChallengeIdentNum = 0;
+  }
+  return lastChallengeIdentNum;
+};
+
 export const createChallenge = async (
   orMakerDeposit: ORMakerDeposit,
   challenge: challengeInputInfo,
@@ -544,6 +588,7 @@ export const createChallenge = async (
         challenge.sourceTxHash.toString(),
         challenge.freezeToken,
         challenge.freezeAmount,
+        challenge.lastChallengeIdentNum,
         { value: challenge.freezeAmount },
       ),
     ).to.revertedWith(revertReason);
@@ -558,6 +603,7 @@ export const createChallenge = async (
         challenge.sourceTxHash.toString(),
         challenge.freezeToken,
         challenge.freezeAmount,
+        challenge.lastChallengeIdentNum,
         { value: challenge.freezeAmount },
       )
       .then((t) => t.wait());

@@ -19,8 +19,9 @@ interface IORMakerDeposit {
         uint64 verifiedTime0; // Time of verifyChallengeSource. Greater than 0 means verification passed
         uint64 verifiedTime1; // Time of verifyChallengeDest. Greater than 0 means verification passed
         bytes32 verifiedDataHash0; // Data's hash of verifyChallengeSource
-        uint challengerVerifyGasUsed; // Gas used of challenger verify
-        uint256 challengeIdentNum;
+        uint128 challengerVerifyTransactionFee; // Transaction fee of challenger verify
+        uint64 sourceTxBlockNum;
+        uint64 sourceTxIndex;
     }
 
     struct ChallengeNode {
@@ -113,7 +114,8 @@ interface IORMakerDeposit {
         uint64 sourceTxIndex,
         bytes32 sourceTxHash,
         address freezeToken,
-        uint freezeAmount1
+        uint freezeAmount1,
+        uint256 lastChallengeIdentNum
     ) external payable;
 
     function checkChallenge(uint64 sourceChainId, bytes32 sourceTxHash, uint[] calldata verifiedData0) external;
@@ -132,6 +134,7 @@ interface IORMakerDeposit {
         bytes32[2] calldata spvBlockHashs,
         IORChallengeSpv.VerifyInfo calldata verifyInfo,
         uint[] calldata verifiedData0,
-        bytes calldata rawDatas
+        bytes calldata rawDatas,
+        uint64 sourceChainId
     ) external;
 }
