@@ -23,8 +23,8 @@ contract ORSpvData is IORSpvData {
         _;
     }
 
-    function getBlockHash(uint blockNumber) external view returns (bytes32) {
-        return _blocks[blockNumber];
+    function getBlockHash(uint blkNumber) external view returns (bytes32) {
+        return _blocks[blkNumber];
     }
 
     function saveHistoryBlocks() external {
@@ -76,13 +76,13 @@ contract ORSpvData is IORSpvData {
 
             InjectionBlock memory injectionBlock = injectionBlocks[i];
 
-            require(startBlockNumber < injectionBlock.blockNumber, "SGEIB");
-            require(endBlockNumber > injectionBlock.blockNumber, "ELEIB");
-            require(startBlockNumber + _blockInterval * ni == injectionBlock.blockNumber, "IIB");
-            require(_blocks[injectionBlock.blockNumber] == bytes32(0), "BE");
+            require(startBlockNumber < injectionBlock.blkNumber, "SGEIB");
+            require(endBlockNumber > injectionBlock.blkNumber, "ELEIB");
+            require(startBlockNumber + _blockInterval * ni == injectionBlock.blkNumber, "IIB");
+            require(_blocks[injectionBlock.blkNumber] == bytes32(0), "BE");
 
-            _blocks[injectionBlock.blockNumber] = injectionBlock.blockHash;
-            emit HistoryBlockSaved(injectionBlock.blockNumber, injectionBlock.blockHash);
+            _blocks[injectionBlock.blkNumber] = injectionBlock.blockHash;
+            emit HistoryBlockSaved(injectionBlock.blkNumber, injectionBlock.blockHash);
 
             i = ni;
         }
