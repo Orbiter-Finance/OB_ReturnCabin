@@ -1,12 +1,17 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
-import { ORManager, ORManager__factory } from '../typechain-types';
+import {
+  OREventBinding,
+  OREventBinding__factory,
+  ORManager,
+  ORManager__factory,
+} from '../typechain-types';
 import {
   calculateMainnetToken,
   chainIDgetTokenSequence,
   defaultChainInfoArray,
-  ebcMock,
+  getCurrentTime,
   initTestToken,
   submitterMock,
   testToken,
@@ -19,11 +24,12 @@ import {
 import { BigNumber, BigNumberish, constants, Wallet } from 'ethers';
 import lodash from 'lodash';
 import { BridgeLib } from '../typechain-types/contracts/ORManager';
-import { defaultsEbcs, defaultChainInfo } from './defaults';
+import { defaultChainInfo } from './defaults';
 
 describe('Test ORManager', () => {
   let signers: SignerWithAddress[];
   let orManager: ORManager;
+  let ebc: OREventBinding;
 
   before(async function () {
     signers = await ethers.getSigners();
@@ -49,6 +55,16 @@ describe('Test ORManager', () => {
       );
       console.log('connect to orManager contract:', orManager.address);
     }
+    if (process.env['EVENT_BINDING_CONTRACT'] != undefined) {
+      ebc = new OREventBinding__factory(signers[0]).attach(
+        process.env['EVENT_BINDING_CONTRACT'],
+      );
+      console.log('connect to ebc contract', ebc.address);
+    } else {
+      ebc = await new OREventBinding__factory(signers[0]).deploy();
+      process.env['EVENT_BINDING_CONTRACT'] = ebc.address;
+      console.log('Address of ebc:', ebc.address);
+    }
 
     const owner = await orManager.owner();
     console.log('Address of orManager owner:', owner);
@@ -70,11 +86,17 @@ describe('Test ORManager', () => {
           return lodash.cloneDeepWith(chainInfo);
         });
 
-        const events = (
-          await orManager
-            .registerChains(getMinEnableTime(), chains)
-            .then((i) => i.wait())
-        ).events!;
+        const enableTime =
+          process.env['OR_MANAGER_ADDRESS'] != undefined
+            ? getMinEnableTime(BigNumber.from(await getCurrentTime()))
+            : getMinEnableTime(
+              (await orManager.getVersionAndEnableTime()).enableTime,
+            );
+        const { events } = await orManager
+          .registerChains(enableTime, chains, {
+            gasLimit: 1e6,
+          })
+          .then((i) => i.wait());
 
         // print all chain ids
         console.log(
@@ -102,57 +124,18 @@ describe('Test ORManager', () => {
   );
 
   it(
-    'Function updateChainSpvs should succeed',
-    embedVersionIncreaseAndEnableTime(
-      () => orManager.getVersionAndEnableTime().then((r) => r.version),
-      async function () {
-        const chains = defaultChainInfoArray.map((chainInfo) => {
-          return lodash.cloneDeepWith(chainInfo);
-        });
-
-        for (let i = 0; i < 1; i++) {
-          const chainId = chains[i].id;
-
-          const spvs: string[] = [];
-          const indexs: BigNumberish[] = [BigNumber.from(0)];
-          for (let j = 0; j < 10; j++) {
-            spvs.push(ethers.Wallet.createRandom().address);
-          }
-
-          const events = (
-            await orManager
-              .updateChainSpvs(getMinEnableTime(), chainId, spvs, indexs)
-              .then((t) => t.wait())
-          ).events!;
-
-          console.log(
-            'current chainIds:',
-            chainId.toString(),
-            'register spvs:',
-            spvs.map((spvs) => spvs),
-          );
-
-          expect(events[0].args!.id).eq(chainId);
-          expect(events[0].args!.chainInfo.spvs).deep.eq(spvs);
-        }
-      },
-    ),
-  );
-
-  it(
     'Function updateChainTokens should succeed',
     embedVersionIncreaseAndEnableTime(
       () => orManager.getVersionAndEnableTime().then((r) => r.version),
       async function () {
+        const tokenLength = testToken.MAINNET_TOKEN.length;
         const chainIds = defaultChainInfoArray.flatMap((chainInfo) =>
-          Array.from({ length: testToken.MAINNET_TOKEN.length }, () =>
-            Number(chainInfo.id),
-          ),
+          Array.from({ length: tokenLength }, () => Number(chainInfo.id)),
         );
         const tokens: BridgeLib.TokenInfoStruct[] = [];
 
         for (let i = 0; i < defaultChainInfoArray.length; i++) {
-          for (let j = 0; j < testToken.MAINNET_TOKEN.length; j++) {
+          for (let j = 0; j < tokenLength; j++) {
             const chainInfo = defaultChainInfoArray[i];
             const chainId = Number(chainInfo.id);
             const token = chainIDgetTokenSequence(chainId, j);
@@ -165,11 +148,17 @@ describe('Test ORManager', () => {
           }
         }
 
-        const events = (
-          await orManager
-            .updateChainTokens(getMinEnableTime(), chainIds, tokens)
-            .then((t) => t.wait())
-        ).events!;
+        const { events } = await orManager
+          .updateChainTokens(
+            getMinEnableTime(
+              (
+                await orManager.getVersionAndEnableTime()
+              ).enableTime,
+            ),
+            chainIds,
+            tokens,
+          )
+          .then((t) => t.wait());
 
         events.forEach((event, i) => {
           expect(event.args?.id).to.eq(chainIds[i]);
@@ -201,19 +190,59 @@ describe('Test ORManager', () => {
     ),
   );
 
+  it(
+    'Function updateChainSpvs should succeed',
+    embedVersionIncreaseAndEnableTime(
+      () => orManager.getVersionAndEnableTime().then((r) => r.version),
+      async function () {
+        const chains = defaultChainInfoArray.map((chainInfo) => {
+          return lodash.cloneDeepWith(chainInfo);
+        });
+
+        for (let i = 0; i < 1; i++) {
+          const chainId = chains[i].id;
+
+          const spvs: string[] = [];
+          const indexs: BigNumberish[] = [BigNumber.from(0)];
+          for (let j = 0; j < 10; j++) {
+            spvs.push(ethers.Wallet.createRandom().address);
+          }
+
+          const { events } = await orManager
+            .updateChainSpvs(
+              getMinEnableTime(
+                (
+                  await orManager.getVersionAndEnableTime()
+                ).enableTime,
+              ),
+              chainId,
+              spvs,
+              indexs,
+              {
+                gasLimit: 10e6,
+              },
+            )
+            .then((t) => t.wait());
+
+          console.log(
+            'current chainIds:',
+            chainId.toString(),
+            'register spvs:',
+            spvs.map((spvs) => spvs),
+          );
+
+          expect(events[0].args!.id).eq(chainId);
+          expect(events[0].args!.chainInfo.spvs).deep.eq(spvs);
+        }
+      },
+    ),
+  );
+
   it('Function updateEbcs should succeed', async function () {
-    const ebcs = lodash.cloneDeep(defaultsEbcs);
+    const ebcs: string[] = [];
     const statuses: boolean[] = [];
     statuses.push(true);
-    if (process.env['EVENT_BINDING_CONTRACT'] != undefined) {
-      ebcs.push(process.env['EVENT_BINDING_CONTRACT']);
-      console.log(
-        'Address of Orbiter ebc:',
-        process.env['EVENT_BINDING_CONTRACT'],
-      );
-    } else {
-      ebcs.push(ebcMock);
-    }
+    ebcs.push(ebc.address);
 
     const { events } = await orManager
       .updateEbcs(ebcs, statuses)
@@ -247,7 +276,14 @@ describe('Test ORManager', () => {
         }
         // const submitter: string = submitter2Mock;
         const { events } = await orManager
-          .updateSubmitter(getMinEnableTime(), submitter)
+          .updateSubmitter(
+            getMinEnableTime(
+              (
+                await orManager.getVersionAndEnableTime()
+              ).enableTime,
+            ),
+            submitter,
+          )
           .then((t) => t.wait());
 
         const args = events![0].args!;
@@ -268,7 +304,14 @@ describe('Test ORManager', () => {
         const protocolFee = 10;
 
         const { events } = await orManager
-          .updateProtocolFee(getMinEnableTime(), protocolFee)
+          .updateProtocolFee(
+            getMinEnableTime(
+              (
+                await orManager.getVersionAndEnableTime()
+              ).enableTime,
+            ),
+            protocolFee,
+          )
           .then((t) => t.wait());
 
         const args = events![0].args!;
@@ -288,7 +331,14 @@ describe('Test ORManager', () => {
         const minChallengeRatio = 20;
 
         const { events } = await orManager
-          .updateMinChallengeRatio(getMinEnableTime(), minChallengeRatio)
+          .updateMinChallengeRatio(
+            getMinEnableTime(
+              (
+                await orManager.getVersionAndEnableTime()
+              ).enableTime,
+            ),
+            minChallengeRatio,
+          )
           .then((t) => t.wait());
 
         const args = events![0].args!;
@@ -308,7 +358,14 @@ describe('Test ORManager', () => {
         const challengeUserRatio = 15;
 
         const { events } = await orManager
-          .updateChallengeUserRatio(getMinEnableTime(), challengeUserRatio)
+          .updateChallengeUserRatio(
+            getMinEnableTime(
+              (
+                await orManager.getVersionAndEnableTime()
+              ).enableTime,
+            ),
+            challengeUserRatio,
+          )
           .then((t) => t.wait());
 
         const args = events![0].args!;
@@ -328,7 +385,14 @@ describe('Test ORManager', () => {
         const feeChallengeSecond = 25;
 
         const { events } = await orManager
-          .updateFeeChallengeSecond(getMinEnableTime(), feeChallengeSecond)
+          .updateFeeChallengeSecond(
+            getMinEnableTime(
+              (
+                await orManager.getVersionAndEnableTime()
+              ).enableTime,
+            ),
+            feeChallengeSecond,
+          )
           .then((t) => t.wait());
 
         const args = events![0].args!;
@@ -349,7 +413,11 @@ describe('Test ORManager', () => {
 
         const { events } = await orManager
           .updateFeeTakeOnChallengeSecond(
-            getMinEnableTime(),
+            getMinEnableTime(
+              (
+                await orManager.getVersionAndEnableTime()
+              ).enableTime,
+            ),
             feeTakeOnChallengeSecond,
           )
           .then((t) => t.wait());
@@ -414,7 +482,11 @@ describe('Test ORManager', () => {
 
         const { events } = await orManager
           .updateExtraTransferContracts(
-            getMinEnableTime(),
+            getMinEnableTime(
+              (
+                await orManager.getVersionAndEnableTime()
+              ).enableTime,
+            ),
             chainIds,
             extraTransferContracts,
           )

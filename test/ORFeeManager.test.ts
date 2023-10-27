@@ -49,21 +49,12 @@ describe('ORFeeManger', () => {
         signers[0].address,
         orManager.address,
       );
-
-      console.log(
-        'constructor data of FeeManager.sol',
-        defaultAbiCoder.encode(
-          ['address', 'address'],
-          [signers[0].address, orManager.address],
-        ),
-      );
       process.env['OR_FEE_MANAGER_ADDRESS'] = orFeeManager.address;
     }
 
     console.log(
       // eslint-disable-next-line prettier/prettier
-      `Address of orFeeManager: ${
-        orFeeManager.address
+      `Address of orFeeManager: ${orFeeManager.address
       }, deployed blockNumber: ${await ethers.provider.getBlockNumber()} `,
     );
     await orFeeManager.deployed();
