@@ -6,22 +6,29 @@ import {BridgeLib} from "../library/BridgeLib.sol";
 import {RuleLib} from "../library/RuleLib.sol";
 
 interface IORMakerDeposit {
-    struct ChallengeInfo {
+    struct ChallengeStatement {
         uint sourceTxFrom; // From of the source tx. Uint to support other networks
         uint64 sourceTxTime; // Timestamp of the source tx
-        address challenger; // Challenger
         address freezeToken; // Freeze token on L1
         uint64 challengeUserRatio; // Manager's _challengeUserRatio
         uint freezeAmount0; // Owner's freeze amount
         uint freezeAmount1; // Challenger's freeze amount
         uint64 challengeTime; // Time of challenge
         uint64 abortTime; // Time of abort caused by checkChallenge
+        uint64 sourceTxBlockNum;
+        uint64 sourceTxIndex;
+        uint128 challengerVerifyTransactionFee; // Transaction fee of challenger verify
+    }
+
+    struct ChallengeResult {
+        address winner; //Challenger Address
         uint64 verifiedTime0; // Time of verifyChallengeSource. Greater than 0 means verification passed
         uint64 verifiedTime1; // Time of verifyChallengeDest. Greater than 0 means verification passed
         bytes32 verifiedDataHash0; // Data's hash of verifyChallengeSource
-        uint128 challengerVerifyTransactionFee; // Transaction fee of challenger verify
-        uint64 sourceTxBlockNum;
-        uint64 sourceTxIndex;
+    }
+    struct ChallengeInfo {
+        mapping(address => ChallengeStatement) statement;
+        ChallengeResult result;
     }
 
     struct ChallengeNode {
@@ -49,7 +56,7 @@ interface IORMakerDeposit {
     event SpvUpdated(address indexed impl, uint64 chainId, address spv);
     event ResponseMakersUpdated(address indexed impl, uint[] responseMakers);
     event RulesRootUpdated(address indexed impl, address ebc, RuleLib.RootWithVersion rootWithVersion);
-    event ChallengeInfoUpdated(bytes32 indexed challengeId, ChallengeInfo challengeInfo);
+    event ChallengeInfoUpdated(bytes32 indexed challengeId, ChallengeStatement statement, ChallengeResult result);
 
     function initialize(address owner_) external;
 
@@ -118,10 +125,16 @@ interface IORMakerDeposit {
         uint256 lastChallengeIdentNum
     ) external payable;
 
-    function checkChallenge(uint64 sourceChainId, bytes32 sourceTxHash, uint[] calldata verifiedData0) external;
+    function checkChallenge(
+        uint64 sourceChainId,
+        bytes32 sourceTxHash,
+        uint[] calldata verifiedData0,
+        address[] calldata challenger
+    ) external;
 
     function verifyChallengeSource(
         address spvAddress,
+        address challenger,
         bytes calldata proof,
         bytes32[2] calldata spvBlockHashs,
         IORChallengeSpv.VerifyInfo calldata verifyInfo,
@@ -130,6 +143,7 @@ interface IORMakerDeposit {
 
     function verifyChallengeDest(
         address spvAddress,
+        address challenger,
         bytes calldata proof,
         bytes32[2] calldata spvBlockHashs,
         IORChallengeSpv.VerifyInfo calldata verifyInfo,

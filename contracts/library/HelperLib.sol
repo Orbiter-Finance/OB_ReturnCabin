@@ -74,4 +74,21 @@ library HelperLib {
         }
         return true;
     }
+
+    function uint64ConcatToDecimal(
+        uint64 sourceTxTime,
+        uint64 sourceChainId,
+        uint64 sourceTxBlockNum,
+        uint64 sourceTxIndex
+    ) internal pure returns (uint256) {
+        uint256 challengeIdentNum;
+
+        assembly {
+            challengeIdentNum := add(
+                shl(192, sourceTxTime),
+                add(shl(128, sourceChainId), add(shl(64, sourceTxBlockNum), sourceTxIndex))
+            )
+        }
+        return challengeIdentNum;
+    }
 }

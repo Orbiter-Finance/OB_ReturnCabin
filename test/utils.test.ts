@@ -27,19 +27,7 @@ export async function testReverted(
   transaction: Promise<ContractTransaction>,
   reason: string,
 ) {
-  let succeed = false;
-
-  try {
-    await transaction.then((t) => t.wait());
-    succeed = true;
-  } catch (err: any) {
-    const reg = new RegExp(`reason=.*?${reason}`, 'i');
-    const match = reg.exec(err.message);
-    expect(!!match?.[0]).to.be.eq(true);
-  }
-
-  if (succeed)
-    throw new Error(`should reverted with reason string '${reason}'`);
+  await expect(transaction).to.be.revertedWith(reason);
 }
 
 export async function testRevertedOwner(
@@ -220,7 +208,7 @@ export const getVerifyinfo = async (
   const freezeToken = challenge.freezeToken;
   const ebc = verifyinfoBase.ebc;
   const chainIdDest = verifyinfoBase.chainIdDest;
-
+  console.log('ebc', ebc);
   // set Verifyinfo 0
   // ORManager.sol - ChainInfo - maxVerifyChallengeSourceTxSecond | minVerifyChallengeSourceTxSecond
   // slot 2
@@ -424,14 +412,35 @@ export const getVerifyinfo = async (
   // slot 6
   let slot6;
   const slot6_I = keccak256(solidityPack(['uint256', 'uint256'], [ebc, 6]));
-  const value6 = (await orMakerDeposit.rulesRoot(ebc)).root;
+  let value6;
   {
-    const storageValue = await ethers.provider.getStorageAt(
-      makerAddress,
-      utils.hexZeroPad(slot6_I, 32),
+    const { root, version } = await orMakerDeposit.rulesRoot(ebc);
+    value6 = root;
+    const hashKey = keccak256(
+      defaultAbiCoder.encode(['uint256', 'uint256'], [ebc, 6]),
     );
+    const valueRoot = (
+      await getMappingStructXSlot('0x6', makerAddress, ebc, 0, 'bytes')
+    ).value;
+    const valueVersion = (
+      await getMappingStructXSlot('0x6', makerAddress, ebc, 1, 'number')
+    ).value;
+
+    const valueRootitemSlot = (
+      await getMappingStructXSlot('0x6', makerAddress, ebc, 0, 'bytes')
+    ).itemSlot;
+    const valueVersionitemSlot = (
+      await getMappingStructXSlot('0x6', makerAddress, ebc, 1, 'number')
+    ).itemSlot;
+
     slot6 = slot6_I;
-    expect(storageValue).to.equal(value6);
+    expect(slot6_I).to.equal(hashKey);
+    expect(value6).to.equal(valueRoot?.toHexString());
+    expect(version).to.equal(BigNumber.from(valueVersion).toNumber());
+
+    // console.log(
+    //   `root slot :${valueRootitemSlot}, version slot: ${valueVersionitemSlot}`,
+    // );
   }
 
   const slotValue: VerifyInfoSlotStruct[] = [
@@ -488,7 +497,7 @@ export const getVerifyinfo = async (
     },
     {
       // Verifyinfo 6
-      // ORMakerDeposit.sol - responseMakersHash
+      // ORMakerDeposit.sol - ruleRoot
       // slot 6
       account: makerAddress,
       key: slot6,
@@ -519,7 +528,7 @@ export const getVerifyinfo = async (
     data: dataVelue,
     slots: slotValue,
   };
-  // console.log(VerifyInfo);
+  console.log(VerifyInfo);
   return VerifyInfo;
 };
 
@@ -578,6 +587,7 @@ export const createChallenge = async (
     revertReason: string;
   }>
 > => {
+  const minDeposit = utils.parseEther('0.005');
   if (revertReason != undefined) {
     await expect(
       orMakerDeposit.challenge(
@@ -589,7 +599,7 @@ export const createChallenge = async (
         challenge.freezeToken,
         challenge.freezeAmount,
         challenge.lastChallengeIdentNum,
-        { value: challenge.freezeAmount },
+        { value: BigNumber.from(challenge.freezeAmount).add(minDeposit) },
       ),
     ).to.revertedWith(revertReason);
     return { revertReason };
@@ -604,7 +614,7 @@ export const createChallenge = async (
         challenge.freezeToken,
         challenge.freezeAmount,
         challenge.lastChallengeIdentNum,
-        { value: challenge.freezeAmount },
+        { value: BigNumber.from(challenge.freezeAmount).add(minDeposit) },
       )
       .then((t) => t.wait());
     const args = tx.events?.[0].args;
@@ -612,14 +622,14 @@ export const createChallenge = async (
     if (!!args) {
       // console.warn('args.ChallengeInfo:', args.ChallengeInfo);
       expect(args.challengeId).not.empty;
-      expect(args.challengeInfo.sourceTxFrom).eql(BigNumber.from(0));
-      expect(args.challengeInfo.sourceTxTime).eql(
+      expect(args.statement.sourceTxFrom).eql(BigNumber.from(0));
+      expect(args.statement.sourceTxTime).eql(
         BigNumber.from(challenge.sourceTxTime),
       );
       // expect(args.challengeInfo.challenger).eql(mdcOwner.address);
-      expect(args.challengeInfo.freezeToken).eql(challenge.freezeToken);
-      expect(args.challengeInfo.freezeAmount0).eql(challenge.freezeAmount);
-      expect(args.challengeInfo.freezeAmount1).eql(challenge.freezeAmount);
+      expect(args.statement.freezeToken).eql(challenge.freezeToken);
+      expect(args.statement.freezeAmount0).eql(challenge.freezeAmount);
+      expect(args.statement.freezeAmount1).eql(challenge.freezeAmount);
     }
     return {
       challengeId: args?.challengeId,

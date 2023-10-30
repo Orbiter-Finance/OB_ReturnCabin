@@ -4,6 +4,9 @@ pragma solidity ^0.8.17;
 import {IORSpvData} from "./interface/IORSpvData.sol";
 import {IORManager} from "./interface/IORManager.sol";
 
+// TODO: test
+import "hardhat/console.sol";
+
 contract ORSpvData is IORSpvData {
     IORManager private _manager;
     uint64 private _blockInterval = 20;
@@ -20,11 +23,11 @@ contract ORSpvData is IORSpvData {
         _;
     }
 
-    function getBlockHash(uint blockNumber) external view returns (bytes32) {
-        return _blocks[blockNumber];
+    function getBlockHash(uint blkNumber) external view returns (bytes32) {
+        return _blocks[blkNumber];
     }
 
-    function saveHistoryBlock() external {
+    function saveHistoryBlocks() external {
         for (uint i = 256; i > 0; ) {
             uint256 blockNumber = block.number - i;
 
@@ -32,7 +35,7 @@ contract ORSpvData is IORSpvData {
                 if (_blocks[blockNumber] == bytes32(0)) {
                     bytes32 blockHash = blockhash(blockNumber);
                     _blocks[blockNumber] = blockHash;
-                    emit SaveHistoryBlock(blockHash, blockNumber);
+                    emit HistoryBlockSaved(blockNumber, blockHash);
                 }
             }
 
@@ -53,7 +56,7 @@ contract ORSpvData is IORSpvData {
         emit BlockIntervalUpdated(blockInterval);
     }
 
-    function injectByManager(
+    function injectBlocksByManager(
         uint startBlockNumber,
         uint endBlockNumber,
         InjectionBlock[] calldata injectionBlocks
@@ -64,17 +67,24 @@ contract ORSpvData is IORSpvData {
         require(_blocks[startBlockNumber] != bytes32(0), "SZ");
         require(_blocks[endBlockNumber] != bytes32(0), "EZ");
 
-        for (uint i = 0; i < injectionBlocks.length; ) {
-            require(startBlockNumber < injectionBlocks[i].blockNumber, "SGEIB");
-            require(endBlockNumber > injectionBlocks[i].blockNumber, "ELEIB");
-            require(startBlockNumber + _blockInterval * (i + 1) == injectionBlocks[i].blockNumber, "IIB");
-
-            _blocks[injectionBlocks[i].blockNumber] = injectionBlocks[i].blockHash;
-            emit SaveHistoryBlock(injectionBlocks[i].blockHash, injectionBlocks[i].blockNumber);
-
+        uint i = 0;
+        uint ni = 0;
+        for (; i < injectionBlocks.length; ) {
             unchecked {
-                i++;
+                ni = i + 1;
             }
+
+            InjectionBlock memory injectionBlock = injectionBlocks[i];
+
+            require(startBlockNumber < injectionBlock.blkNumber, "SGEIB");
+            require(endBlockNumber > injectionBlock.blkNumber, "ELEIB");
+            require(startBlockNumber + _blockInterval * ni == injectionBlock.blkNumber, "IIB");
+            require(_blocks[injectionBlock.blkNumber] == bytes32(0), "BE");
+
+            _blocks[injectionBlock.blkNumber] = injectionBlock.blockHash;
+            emit HistoryBlockSaved(injectionBlock.blkNumber, injectionBlock.blockHash);
+
+            i = ni;
         }
     }
 }

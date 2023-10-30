@@ -19,6 +19,7 @@ import {
 import {
   embedVersionIncreaseAndEnableTime,
   getMinEnableTime,
+  testRevertedOwner,
 } from './utils.test';
 import { BigNumber, BigNumberish, constants, Wallet } from 'ethers';
 import lodash from 'lodash';
@@ -449,26 +450,23 @@ describe('Test ORManager', () => {
     expect(storageMaxMDCLimit).to.deep.eq(maxMDCLimit);
   });
 
-  // TODO: move to ORSpvData.test.ts
-  // it('Function updateSpvBlockInterval should succeed', async function () {
-  //   const spvBlockInterval = BigNumber.from(40);
+  it('Function updateSpvDataContract should succeed', async function () {
+    const mockAddress = Wallet.createRandom().address;
 
-  //   await testRevertedOwner(
-  //     orManager.connect(signers[2]).updateSpvBlockInterval(spvBlockInterval),
-  //   );
+    await testRevertedOwner(
+      orManager.connect(signers[2]).updateSpvDataContract(mockAddress),
+    );
 
-  //   const events = (
-  //     await orManager
-  //       .updateSpvBlockInterval(spvBlockInterval)
-  //       .then((t) => t.wait())
-  //   ).events!;
+    const events = (
+      await orManager.updateSpvDataContract(mockAddress).then((t) => t.wait())
+    ).events!;
 
-  //   const args = events[0].args!;
-  //   expect(args.spvBlockInterval).to.deep.eq(spvBlockInterval);
+    const args = events[0].args!;
+    expect(args.spvDataContract).to.deep.eq(mockAddress);
 
-  //   const storageValue = await orManager.getSpvBlockInterval();
-  //   expect(storageValue).to.deep.eq(spvBlockInterval);
-  // });
+    const storageValue = await orManager.spvDataContract();
+    expect(storageValue).to.deep.eq(mockAddress);
+  });
 
   it(
     'Function updateExtraTransferContracts should succeed',
