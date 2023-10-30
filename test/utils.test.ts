@@ -431,12 +431,12 @@ export const getVerifyinfo = async (
 
     slot6 = slot6_I;
     expect(slot6_I).to.equal(hashKey);
-    // expect(value6).to.equal(valueRoot?.toHexString());
-    // expect(version).to.equal(BigNumber.from(valueVersion).toNumber());
+    expect(value6).to.equal(valueRoot?.toHexString());
+    expect(version).to.equal(BigNumber.from(valueVersion).toNumber());
 
-    console.log(
-      `root slot :${valueRootitemSlot}, version slot: ${valueVersionitemSlot}`,
-    );
+    // console.log(
+    //   `root slot :${valueRootitemSlot}, version slot: ${valueVersionitemSlot}`,
+    // );
   }
 
   const slotValue: VerifyInfoSlotStruct[] = [

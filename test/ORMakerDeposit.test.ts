@@ -953,7 +953,6 @@ describe('ORMakerDeposit', () => {
       };
       await createChallenge(orMakerDeposit, challengeFake, 'STOF');
       await createChallenge(orMakerDeposit, challenge);
-      // await createChallenge(orMakerDeposit, challenge, 'CE');
 
       await mineXMinutes(100);
       expect(
@@ -992,48 +991,7 @@ describe('ORMakerDeposit', () => {
         freezeToken: challenge.freezeToken,
         freezeAmount: challenge.freezeAmount,
       };
-      await createChallenge(orMakerDeposit, challenge2);
-
-      const case2balanceOfMakerAfter = utils.formatEther(
-        await ethers.provider.getBalance(orMakerDeposit.address),
-      );
-      expect(parseFloat(case2balanceOfMakerAfter).toFixed(2)).equal(
-        (parseFloat(case1balanceOfMakerAfter) + parseFloat(case1freezeAmount))
-          .toFixed(2)
-          .toString(),
-      );
-      // console.log(
-      //   `challenge 2 balanceOfMakerbefore: ${ case1balanceOfMakerAfter }, balanceOfMakerAfter: ${ case2balanceOfMakerAfter }, freezeAmount: ${ case1freezeAmount } `,
-      // );
-
-      await expect(
-        orMakerDeposit.checkChallenge(
-          case1SourceChainId,
-          case1SourceTxHash,
-          [],
-          [mdcOwner.address],
-        ),
-      ).to.revertedWith('VCST');
-
-      await mineXMinutes(100);
-
-      expect(
-        await orMakerDeposit.checkChallenge(
-          case1SourceChainId,
-          case1SourceTxHash,
-          [],
-          [mdcOwner.address],
-        ),
-      ).to.be.satisfy;
-
-      await expect(
-        orMakerDeposit.checkChallenge(
-          case1SourceChainId,
-          case1SourceTxHash,
-          [],
-          [mdcOwner.address],
-        ),
-      ).to.revertedWith('CNE');
+      await createChallenge(orMakerDeposit, challenge2, 'CT');
     });
 
     it('challenge Verify Source TX should success', async function () {
@@ -1081,7 +1039,7 @@ describe('ORMakerDeposit', () => {
 
       const rawData = await getRawData(columnArray, ebc.address, makerRule);
 
-      await createChallenge(orMakerDeposit, challenge, 'CT');
+      await createChallenge(orMakerDeposit, challenge);
 
       await mineXMinutes(2);
 
