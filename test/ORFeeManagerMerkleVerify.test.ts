@@ -23,7 +23,7 @@ import {
   callDataCost,
   dealersSignersMock,
   initTestToken,
-  mineXMinutes,
+  mineXTimes,
   stateTransTreeRootMock,
   submitterMock,
   submitter_getProfitProof,
@@ -424,7 +424,7 @@ describe('test ORFeeManager MerkleVerify', () => {
 
   async function gotoDuration(duration: durationStatusEnum) {
     while ((await durationCheck()) != duration) {
-      await mineXMinutes(3);
+      await mineXTimes(3);
     }
   }
   /**
@@ -522,27 +522,27 @@ describe('test ORFeeManager MerkleVerify', () => {
     expect(submissions.stateTransTreeRoot).eq(stateTransTreeRootMock);
 
     expect(await durationCheck()).eq(durationStatusEnum['challenge']);
-    await mineXMinutes(challengeTime + 1);
+    await mineXTimes(challengeTime + 1);
     expect(await durationCheck()).eq(durationStatusEnum['withdraw']);
-    await mineXMinutes(withdrawTime);
+    await mineXTimes(withdrawTime);
     expect(await durationCheck()).eq(durationStatusEnum['lock']);
-    await mineXMinutes(lockTime);
+    await mineXTimes(lockTime);
     expect(await durationCheck()).eq(durationStatusEnum['withdraw']);
-    await mineXMinutes(withdrawTime);
+    await mineXTimes(withdrawTime);
     expect(await durationCheck()).eq(durationStatusEnum['lock']);
-    await mineXMinutes(lockTime);
+    await mineXTimes(lockTime);
     expect(await durationCheck()).eq(durationStatusEnum['withdraw']);
-    await mineXMinutes(withdrawTime);
+    await mineXTimes(withdrawTime);
     expect(await durationCheck()).eq(durationStatusEnum['lock']);
-    await mineXMinutes(lockTime);
+    await mineXTimes(lockTime);
     expect(await durationCheck()).eq(durationStatusEnum['withdraw']);
-    await mineXMinutes(withdrawTime);
+    await mineXTimes(withdrawTime);
     expect(await durationCheck()).eq(durationStatusEnum['lock']);
-    await mineXMinutes(lockTime);
+    await mineXTimes(lockTime);
     expect(await durationCheck()).eq(durationStatusEnum['withdraw']);
-    await mineXMinutes(withdrawTime);
+    await mineXTimes(withdrawTime);
     expect(await durationCheck()).eq(durationStatusEnum['lock']);
-    await mineXMinutes(lockTime);
+    await mineXTimes(lockTime);
     expect(await durationCheck()).eq(durationStatusEnum['withdraw']);
   });
 

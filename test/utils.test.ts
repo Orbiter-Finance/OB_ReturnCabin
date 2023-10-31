@@ -98,12 +98,15 @@ export function getMinEnableTime(currentEnableTime?: BigNumber) {
 }
 
 export interface challengeInputInfo {
+  sourceTxTime: number;
   sourceChainId: BigNumberish;
+  sourceBlockNum: number;
+  sourceTxIndex: number;
   sourceTxHash: BigNumberish;
   from: string;
-  sourceTxTime: BigNumberish;
   freezeToken: string;
   freezeAmount: BigNumberish;
+  lastChallengeIdentNum: BigNumberish;
 }
 
 export interface verifyinfoBase {
@@ -136,7 +139,8 @@ export const updateSpv = async (
 ) => {
   const enableTimeTime =
     // eslint-disable-next-line prettier/prettier
-    (await getCurrentTime()) > (await _orManager.getVersionAndEnableTime()).enableTime.toNumber()
+    (await getCurrentTime()) >
+    (await _orManager.getVersionAndEnableTime()).enableTime.toNumber()
       ? await getCurrentTime()
       : (await _orManager.getVersionAndEnableTime()).enableTime;
 
@@ -529,32 +533,88 @@ export const getVerifyinfo = async (
   return VerifyInfo;
 };
 
+export const getChallengeIdentNumSortList = (
+  sourceTxTime: any,
+  sourceChainId: any,
+  sourceBlockNum: any,
+  sourceTxIndex: any,
+): bigint => {
+  let challengeIdentNum = BigInt(sourceTxTime);
+
+  challengeIdentNum = (challengeIdentNum << BigInt(64)) | BigInt(sourceChainId);
+  challengeIdentNum =
+    (challengeIdentNum << BigInt(64)) | BigInt(sourceBlockNum);
+  challengeIdentNum = (challengeIdentNum << BigInt(64)) | BigInt(sourceTxIndex);
+
+  return challengeIdentNum;
+};
+
+export const getLastChallengeIdentNum = (
+  challengeIdentNumList: bigint[],
+  challengeIdentNum: bigint,
+) => {
+  let lastChallengeIdentNum = null;
+  if (challengeIdentNumList.length > 0) {
+    const challengeIdentNumSortList = challengeIdentNumList.sort((a, b) => {
+      if (a > b) return -1;
+      if (a < b) return 1;
+      return 0;
+    });
+    let lastNum = 0n;
+    let index = 0;
+    while (
+      index <= challengeIdentNumSortList.length - 1 &&
+      challengeIdentNum < challengeIdentNumSortList[index]
+    ) {
+      lastNum = challengeIdentNumSortList[index];
+      index++;
+    }
+    lastChallengeIdentNum = lastNum;
+  } else {
+    lastChallengeIdentNum = 0;
+  }
+  return lastChallengeIdentNum;
+};
+
 export const createChallenge = async (
   orMakerDeposit: ORMakerDeposit,
   challenge: challengeInputInfo,
   revertReason?: string,
-): Promise<string> => {
+): Promise<
+  Partial<{
+    challengeId: BigNumberish;
+    challengeInfo: any;
+    gasUsed: BigNumberish;
+    revertReason: string;
+  }>
+> => {
   const minDeposit = utils.parseEther('0.005');
   if (revertReason != undefined) {
     await expect(
       orMakerDeposit.challenge(
-        challenge.sourceChainId,
-        challenge.sourceTxHash.toString(),
         challenge.sourceTxTime,
+        challenge.sourceChainId,
+        challenge.sourceBlockNum,
+        challenge.sourceTxIndex,
+        challenge.sourceTxHash.toString(),
         challenge.freezeToken,
         challenge.freezeAmount,
+        challenge.lastChallengeIdentNum,
         { value: BigNumber.from(challenge.freezeAmount).add(minDeposit) },
       ),
     ).to.revertedWith(revertReason);
-    return revertReason;
+    return { revertReason };
   } else {
     const tx = await orMakerDeposit
       .challenge(
-        challenge.sourceChainId,
-        challenge.sourceTxHash.toString(),
         challenge.sourceTxTime,
+        challenge.sourceChainId,
+        challenge.sourceBlockNum,
+        challenge.sourceTxIndex,
+        challenge.sourceTxHash.toString(),
         challenge.freezeToken,
         challenge.freezeAmount,
+        challenge.lastChallengeIdentNum,
         { value: BigNumber.from(challenge.freezeAmount).add(minDeposit) },
       )
       .then((t) => t.wait());
@@ -568,18 +628,20 @@ export const createChallenge = async (
 
     expect(args).not.empty;
     if (!!args) {
-      // console.warn('args.ChallengeInfo:', args.ChallengeInfo);
       expect(args.challengeId).not.empty;
       expect(args.statement.sourceTxFrom).eql(BigNumber.from(0));
       expect(args.statement.sourceTxTime).eql(
         BigNumber.from(challenge.sourceTxTime),
       );
-      // expect(args.challengeInfo.challenger).eql(mdcOwner.address);
       expect(args.statement.freezeToken).eql(challenge.freezeToken);
       expect(args.statement.freezeAmount0).eql(challenge.freezeAmount);
       expect(args.statement.freezeAmount1).eql(challenge.freezeAmount);
     }
-    return args?.challengeId;
+    return {
+      challengeId: args?.challengeId,
+      challengeInfo: args?.challengeInfo,
+      gasUsed: tx.gasUsed,
+    };
   }
 };
 

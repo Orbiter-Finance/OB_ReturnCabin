@@ -15,7 +15,9 @@ interface IORMakerDeposit {
         uint freezeAmount1; // Challenger's freeze amount
         uint64 challengeTime; // Time of challenge
         uint64 abortTime; // Time of abort caused by checkChallenge
-        uint256 gasUsed;
+        uint64 sourceTxBlockNum;
+        uint64 sourceTxIndex;
+        uint128 challengerVerifyTransactionFee; // Transaction fee of challenger verify
     }
 
     struct ChallengeResult {
@@ -28,6 +30,21 @@ interface IORMakerDeposit {
         mapping(address => ChallengeStatement) statement;
         ChallengeResult result;
     }
+
+    struct ChallengeNode {
+        uint256 prev;
+        uint64 challengeCreateTime;
+        uint64 makerFailedTime;
+        uint64 makerSuccessTime;
+    }
+
+    struct WithdrawRequestInfo {
+        uint requestAmount;
+        uint64 requestTimestamp;
+        address requestToken;
+    }
+
+    event WithdrawRequested(uint requestAmount, uint64 requestTimestamp, address requestToken);
 
     event ColumnArrayUpdated(
         address indexed impl,
@@ -68,7 +85,11 @@ interface IORMakerDeposit {
 
     function deposit(address token, uint amount) external payable;
 
-    function withdraw(address token, uint amount) external;
+    function getWithdrawRequestInfo(address targetToken) external view returns (WithdrawRequestInfo memory);
+
+    function withdrawRequest(address requestToken, uint requestAmount) external;
+
+    function withdraw(address token) external;
 
     function rulesRoot(address ebc) external view returns (RuleLib.RootWithVersion memory);
 
@@ -91,12 +112,17 @@ interface IORMakerDeposit {
         address token
     ) external;
 
+    function getCanChallengeContinue(uint256 challengeIdentNum) external view returns (bool);
+
     function challenge(
-        uint64 sourceChainId,
-        bytes32 sourceTxHash,
         uint64 sourceTxTime,
+        uint64 sourceChainId,
+        uint64 sourceTxBlockNum,
+        uint64 sourceTxIndex,
+        bytes32 sourceTxHash,
         address freezeToken,
-        uint freezeAmount1
+        uint freezeAmount1,
+        uint256 lastChallengeIdentNum
     ) external payable;
 
     function checkChallenge(
@@ -122,6 +148,7 @@ interface IORMakerDeposit {
         bytes32[2] calldata spvBlockHashs,
         IORChallengeSpv.VerifyInfo calldata verifyInfo,
         uint[] calldata verifiedData0,
-        bytes calldata rawDatas
+        bytes calldata rawDatas,
+        uint64 sourceChainId
     ) external;
 }
