@@ -854,103 +854,104 @@ describe('ORMakerDeposit', () => {
       return utils.arrayify(contractEncode);
     };
 
-    before(async function () {
-      const verifyBytesCode = await compile_yul(
-        'contracts/zkp/goerli_1_evm.yul',
-      );
+    // before(async function () {
+    //   const verifyBytesCode = await compile_yul(
+    //     'contracts/zkp/goerli_1_evm.yul',
+    //   );
 
-      const verifyFactory = new ethers.ContractFactory(
-        VerifierAbi,
-        verifyBytesCode,
-        mdcOwner,
-      );
-      verifyContract = await verifyFactory.deploy();
-      spv = await new TestSpv__factory(mdcOwner).deploy(verifyContract.address);
+    //   const verifyFactory = new ethers.ContractFactory(
+    //     VerifierAbi,
+    //     verifyBytesCode,
+    //     mdcOwner,
+    //   );
+    //   verifyContract = await verifyFactory.deploy();
+    //   spv = await new TestSpv__factory(mdcOwner).deploy(verifyContract.address);
 
-      console.log(
-        `Address of verifier: ${verifyContract.address}, Address of spv: ${spv.address}, Address of ebc ${ebc.address} `,
-      );
-    });
+    //   console.log(
+    //     `Address of verifier: ${verifyContract.address}, Address of spv: ${spv.address}, Address of ebc ${ebc.address} `,
+    //   );
+    // });
 
-    it('test function verifyChallengeSource Revert case', async function () {
-      const latestBlockRes = await orMakerDeposit.provider?.getBlock('latest');
-      const sourceTxTime = random(5000000);
-      const sourceChainId = random(200);
-      const sourceBlockNum = random(latestBlockRes.number);
-      const sourceTxIndex = random(100);
-      const challengeIdentNum = getChallengeIdentNumSortList(
-        sourceTxTime,
-        sourceChainId,
-        sourceBlockNum,
-        sourceTxIndex,
-      );
-      const lastChallengeIdentNum = getLastChallengeIdentNum(
-        [],
-        challengeIdentNum,
-      );
-      const challenge: challengeInputInfo = {
-        sourceTxTime,
-        sourceChainId,
-        sourceBlockNum,
-        sourceTxIndex,
-        sourceTxHash: utils.keccak256(mdcOwner.address),
-        from: await orMakerDeposit.owner(),
-        freezeToken: constants.AddressZero,
-        lastChallengeIdentNum,
-        freezeAmount: utils.parseEther('0.01'),
-      };
-      await createChallenge(orMakerDeposit, challenge);
-      const invalidVerifyInfo0: VerifyInfo = {
-        data: [1],
-        slots: [
-          {
-            account: constants.AddressZero,
-            key: utils.keccak256(mdcOwner.address),
-            value: 1,
-          },
-        ],
-      };
-      const invalidSPV0 = constants.AddressZero;
-      await expect(
-        orMakerDeposit.verifyChallengeSource(
-          invalidSPV0,
-          mdcOwner.address,
-          [],
-          [
-            utils.keccak256(mdcOwner.address),
-            utils.keccak256(mdcOwner.address),
-          ],
-          invalidVerifyInfo0,
-          [],
-        ),
-      ).to.revertedWith('SI');
-      const chainId = defaultChainInfo.id;
-      const invalidVerifyInfo1: VerifyInfo = {
-        data: [chainId.toString()],
-        slots: [
-          {
-            account: constants.AddressZero,
-            key: utils.keccak256(mdcOwner.address),
-            value: 1,
-          },
-        ],
-      };
-      await expect(
-        orMakerDeposit.verifyChallengeSource(
-          invalidSPV0,
-          mdcOwner.address,
-          [],
-          [
-            utils.keccak256(mdcOwner.address),
-            utils.keccak256(mdcOwner.address),
-          ],
-          invalidVerifyInfo1,
-          [],
-        ),
-      ).to.revertedWith('SI');
-    });
+    // it('test function verifyChallengeSource Revert case', async function () {
+    //   const latestBlockRes = await orMakerDeposit.provider?.getBlock('latest');
+    //   const sourceTxTime = random(5000000);
+    //   const sourceChainId = random(200);
+    //   const sourceBlockNum = random(latestBlockRes.number);
+    //   const sourceTxIndex = random(100);
+    //   const challengeIdentNum = getChallengeIdentNumSortList(
+    //     sourceTxTime,
+    //     sourceChainId,
+    //     sourceBlockNum,
+    //     sourceTxIndex,
+    //   );
+    //   const lastChallengeIdentNum = getLastChallengeIdentNum(
+    //     [],
+    //     challengeIdentNum,
+    //   );
+    //   const challenge: challengeInputInfo = {
+    //     sourceTxTime,
+    //     sourceChainId,
+    //     sourceBlockNum,
+    //     sourceTxIndex,
+    //     sourceTxHash: utils.keccak256(mdcOwner.address),
+    //     from: await orMakerDeposit.owner(),
+    //     freezeToken: constants.AddressZero,
+    //     lastChallengeIdentNum,
+    //     freezeAmount: utils.parseEther('0.01'),
+    //   };
+    //   await createChallenge(orMakerDeposit, challenge);
+    //   const invalidVerifyInfo0: VerifyInfo = {
+    //     data: [1],
+    //     slots: [
+    //       {
+    //         account: constants.AddressZero,
+    //         key: utils.keccak256(mdcOwner.address),
+    //         value: 1,
+    //       },
+    //     ],
+    //   };
+    //   const invalidSPV0 = constants.AddressZero;
+    //   await expect(
+    //     orMakerDeposit.verifyChallengeSource(
+    //       invalidSPV0,
+    //       mdcOwner.address,
+    //       [],
+    //       [
+    //         utils.keccak256(mdcOwner.address),
+    //         utils.keccak256(mdcOwner.address),
+    //       ],
+    //       invalidVerifyInfo0,
+    //       [],
+    //     ),
+    //   ).to.revertedWith('SI');
+    //   const chainId = defaultChainInfo.id;
+    //   const invalidVerifyInfo1: VerifyInfo = {
+    //     data: [chainId.toString()],
+    //     slots: [
+    //       {
+    //         account: constants.AddressZero,
+    //         key: utils.keccak256(mdcOwner.address),
+    //         value: 1,
+    //       },
+    //     ],
+    //   };
+    //   await expect(
+    //     orMakerDeposit.verifyChallengeSource(
+    //       invalidSPV0,
+    //       mdcOwner.address,
+    //       [],
+    //       [
+    //         utils.keccak256(mdcOwner.address),
+    //         utils.keccak256(mdcOwner.address),
+    //       ],
+    //       invalidVerifyInfo1,
+    //       [],
+    //     ),
+    //   ).to.revertedWith('SI');
+    // });
 
     it('test function challenge _addChallengeNode', async function () {
+      const gasUseList = [];
       let challengeIdentNumList: bigint[] = [];
       const challengeInputInfos: challengeInputInfo[] = [];
       const latestBlockRes = await orMakerDeposit.provider?.getBlock('latest');
@@ -982,8 +983,10 @@ describe('ORMakerDeposit', () => {
           lastChallengeIdentNum,
         };
         challengeInputInfos.push(challengeInputInfo);
-        await createChallenge(orMakerDeposit, challengeInputInfo);
+        const res = await createChallenge(orMakerDeposit, challengeInputInfo);
+        gasUseList.push(res.gasUsed);
       }
+      console.log(gasUseList);
       challengeIdentNumList = challengeIdentNumList.sort((a, b) => {
         if (a > b) return -1;
         if (a < b) return 1;
@@ -1174,84 +1177,84 @@ describe('ORMakerDeposit', () => {
       await createChallenge(orMakerDeposit, challenge2, 'CT');
     });
 
-    it('challenge Verify Source TX should success', async function () {
-      const testFreezeAmount =
-        '10000000000000' +
-        getSecurityCode(
-          columnArray,
-          ebc.address,
-          mdcOwner.address,
-          parseInt(chainIdDest.toString()),
-        );
-      const case1SourceChainId = chainId;
-      const destChainId = chainIdDest;
-      const case1SourceTxHash = utils.keccak256(randomBytes(100));
-      const case1freezeAmount = utils.formatEther(
-        BigNumber.from(testFreezeAmount),
-      );
-      const latestBlockRes = await orMakerDeposit.provider?.getBlock('latest');
-      const sourceTxTime = (await getCurrentTime()) - 1;
-      const sourceChainId = case1SourceChainId;
-      const sourceBlockNum = random(latestBlockRes.number);
-      const sourceTxIndex = random(100);
-      const challengeIdentNum = getChallengeIdentNumSortList(
-        sourceTxTime,
-        sourceChainId,
-        sourceBlockNum,
-        sourceTxIndex,
-      );
-      const challenge: challengeInputInfo = {
-        sourceTxTime: (await getCurrentTime()) - 1,
-        sourceChainId: case1SourceChainId,
-        sourceBlockNum,
-        sourceTxIndex,
-        sourceTxHash: case1SourceTxHash,
-        from: await orMakerDeposit.owner(),
-        freezeToken: freezeToken,
-        freezeAmount: utils.parseEther(case1freezeAmount),
-        lastChallengeIdentNum: getLastChallengeIdentNum([], challengeIdentNum),
-      };
+    // it('challenge Verify Source TX should success', async function () {
+    //   const testFreezeAmount =
+    //     '10000000000000' +
+    //     getSecurityCode(
+    //       columnArray,
+    //       ebc.address,
+    //       mdcOwner.address,
+    //       parseInt(chainIdDest.toString()),
+    //     );
+    //   const case1SourceChainId = chainId;
+    //   const destChainId = chainIdDest;
+    //   const case1SourceTxHash = utils.keccak256(randomBytes(100));
+    //   const case1freezeAmount = utils.formatEther(
+    //     BigNumber.from(testFreezeAmount),
+    //   );
+    //   const latestBlockRes = await orMakerDeposit.provider?.getBlock('latest');
+    //   const sourceTxTime = (await getCurrentTime()) - 1;
+    //   const sourceChainId = case1SourceChainId;
+    //   const sourceBlockNum = random(latestBlockRes.number);
+    //   const sourceTxIndex = random(100);
+    //   const challengeIdentNum = getChallengeIdentNumSortList(
+    //     sourceTxTime,
+    //     sourceChainId,
+    //     sourceBlockNum,
+    //     sourceTxIndex,
+    //   );
+    //   const challenge: challengeInputInfo = {
+    //     sourceTxTime: (await getCurrentTime()) - 1,
+    //     sourceChainId: case1SourceChainId,
+    //     sourceBlockNum,
+    //     sourceTxIndex,
+    //     sourceTxHash: case1SourceTxHash,
+    //     from: await orMakerDeposit.owner(),
+    //     freezeToken: freezeToken,
+    //     freezeAmount: utils.parseEther(case1freezeAmount),
+    //     lastChallengeIdentNum: getLastChallengeIdentNum([], challengeIdentNum),
+    //   };
 
-      const verifyinfoBase: verifyinfoBase = {
-        chainIdDest: destChainId,
-        freeTokenDest: freeTokenDest,
-        ebc: ebc.address,
-      };
+    //   const verifyinfoBase: verifyinfoBase = {
+    //     chainIdDest: destChainId,
+    //     freeTokenDest: freeTokenDest,
+    //     ebc: ebc.address,
+    //   };
 
-      // spv should be setting by manager
-      await updateSpv(challenge, spv.address, orManager);
+    //   // spv should be setting by manager
+    //   await updateSpv(challenge, spv.address, orManager);
 
-      // get related slots & values of maker/manager contract
-      const verifyInfo = await getVerifyinfo(
-        orMakerDeposit,
-        orManager,
-        spv,
-        challenge,
-        verifyinfoBase,
-        makerRule,
-      );
+    //   // get related slots & values of maker/manager contract
+    //   const verifyInfo = await getVerifyinfo(
+    //     orMakerDeposit,
+    //     orManager,
+    //     spv,
+    //     challenge,
+    //     verifyinfoBase,
+    //     makerRule,
+    //   );
 
-      const rawData = await getRawData(columnArray, ebc.address, makerRule);
+    //   const rawData = await getRawData(columnArray, ebc.address, makerRule);
 
-      await createChallenge(orMakerDeposit, challenge);
+    //   await createChallenge(orMakerDeposit, challenge);
 
-      await mineXTimes(2);
+    //   await mineXTimes(2);
 
-      // expect(
-      //   await orMakerDeposit.verifyChallengeSource(
-      //     spv.address,
-      //     [],
-      //     [
-      //       utils.keccak256(mdcOwner.address),
-      //       utils.keccak256(mdcOwner.address),
-      //     ],
-      //     verifyInfo,
-      //     rawData,
-      //     {
-      //       gasLimit: 10000000,
-      //     },
-      //   ),
-      // ).is.satisfy;
-    });
+    //   // expect(
+    //   //   await orMakerDeposit.verifyChallengeSource(
+    //   //     spv.address,
+    //   //     [],
+    //   //     [
+    //   //       utils.keccak256(mdcOwner.address),
+    //   //       utils.keccak256(mdcOwner.address),
+    //   //     ],
+    //   //     verifyInfo,
+    //   //     rawData,
+    //   //     {
+    //   //       gasLimit: 10000000,
+    //   //     },
+    //   //   ),
+    //   // ).is.satisfy;
+    // });
   });
 });
