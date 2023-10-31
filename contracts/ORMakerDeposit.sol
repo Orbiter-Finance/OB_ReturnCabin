@@ -183,27 +183,26 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
     }
 
     function withdraw(address token) external onlyOwner onlyRequestTimestampCheckPass(token) {
-        _withdrawRequestInfo[token].requestTimestamp = 0;
+        WithdrawRequestInfo storage requestInfo = _withdrawRequestInfo[token];
+        requestInfo.requestTimestamp = 0;
+
+        uint256 balance;
         if (token == address(0)) {
-            require(
-                address(this).balance - _freezeAssets[_withdrawRequestInfo[token].requestToken] - _challengeDeposit >=
-                    _withdrawRequestInfo[token].requestAmount,
-                "ETH: IF"
-            );
-            (bool sent, ) = payable(msg.sender).call{value: _withdrawRequestInfo[token].requestAmount}("");
+            balance = address(this).balance - _freezeAssets[requestInfo.requestToken] - _challengeDeposit;
+
+            require(balance >= requestInfo.requestAmount, "ETH: IF");
+
+            (bool sent, ) = payable(msg.sender).call{value: requestInfo.requestAmount}("");
+
             require(sent, "ETH: SE");
         } else {
-            uint balance = IERC20(_withdrawRequestInfo[token].requestToken).balanceOf(address(this));
-            require(
-                balance - _freezeAssets[_withdrawRequestInfo[token].requestToken] >=
-                    _withdrawRequestInfo[token].requestAmount,
-                "ERC20: IF"
-            );
+            balance =
+                IERC20(requestInfo.requestToken).balanceOf(address(this)) -
+                _freezeAssets[requestInfo.requestToken];
 
-            IERC20(_withdrawRequestInfo[token].requestToken).safeTransfer(
-                msg.sender,
-                _withdrawRequestInfo[token].requestAmount
-            );
+            require(balance >= requestInfo.requestAmount, "ERC20: IF");
+
+            IERC20(requestInfo.requestToken).safeTransfer(msg.sender, requestInfo.requestAmount);
         }
     }
 
@@ -302,25 +301,29 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
     }
 
     function _addChallengeNode(uint256 lastChallengeIdentNum, uint256 challengeIdentNum) private {
+        ChallengeNode storage challengeNode = _challengeNodeList[challengeIdentNum];
+        uint64 currentTime = uint64(block.timestamp);
+
         if (_challengeNodeHead == 0) {
             _challengeNodeHead = challengeIdentNum;
-            _challengeNodeList[challengeIdentNum].challengeCreateTime = uint64(block.timestamp);
+            challengeNode.challengeCreateTime = currentTime;
         } else {
             if (lastChallengeIdentNum == 0) {
-                _challengeNodeList[challengeIdentNum].prev = _challengeNodeHead;
-                _challengeNodeList[challengeIdentNum].challengeCreateTime = uint64(block.timestamp);
+                challengeNode.prev = _challengeNodeHead;
+                challengeNode.challengeCreateTime = currentTime;
                 _challengeNodeHead = challengeIdentNum;
             } else {
+                ChallengeNode storage lastChallengeNode = _challengeNodeList[lastChallengeIdentNum];
                 require(
-                    _challengeNodeList[lastChallengeIdentNum].challengeCreateTime > 0 &&
+                    lastChallengeNode.challengeCreateTime > 0 &&
                         lastChallengeIdentNum > challengeIdentNum &&
-                        challengeIdentNum > _challengeNodeList[lastChallengeIdentNum].prev,
+                        challengeIdentNum > lastChallengeNode.prev,
                     "VLNP"
                 );
 
-                _challengeNodeList[challengeIdentNum].prev = _challengeNodeList[lastChallengeIdentNum].prev;
-                _challengeNodeList[challengeIdentNum].challengeCreateTime = uint64(block.timestamp);
-                _challengeNodeList[lastChallengeIdentNum].prev = challengeIdentNum;
+                challengeNode.prev = lastChallengeNode.prev;
+                challengeNode.challengeCreateTime = currentTime;
+                lastChallengeNode.prev = challengeIdentNum;
             }
         }
     }
@@ -331,17 +334,15 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
     function _getCanChallengeContinue(uint256 challengeIdentNum) private view returns (bool) {
         ChallengeNode memory currChallengeNode = _challengeNodeList[challengeIdentNum];
-
         require(currChallengeNode.challengeCreateTime > 0, "UCY");
 
+        bool makerNotResponded = currChallengeNode.makerFailedTime == 0 && currChallengeNode.makerSuccessTime == 0;
         if (currChallengeNode.prev == 0) {
-            return currChallengeNode.makerFailedTime == 0 && currChallengeNode.makerSuccessTime == 0;
+            return makerNotResponded;
         } else {
-            return
-                currChallengeNode.makerFailedTime == 0 &&
-                currChallengeNode.makerSuccessTime == 0 &&
-                (_challengeNodeList[currChallengeNode.prev].makerFailedTime > 0 ||
-                    _challengeNodeList[currChallengeNode.prev].makerSuccessTime > 0);
+            bool prevMakerResponded = _challengeNodeList[currChallengeNode.prev].makerFailedTime > 0 ||
+                _challengeNodeList[currChallengeNode.prev].makerSuccessTime > 0;
+            return makerNotResponded && prevMakerResponded;
         }
     }
 
@@ -423,27 +424,29 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         address[] calldata challenger
     ) external {
         bytes32 challengeId = abi.encode(uint64(sourceChainId), sourceTxHash).hash();
-        ChallengeStatement memory winnerStatement = _challenges[challengeId].statement[
-            _challenges[challengeId].result.winner
-        ];
-        ChallengeResult memory result = _challenges[challengeId].result;
+        ChallengeInfo storage challengeInfo = _challenges[challengeId];
+        ChallengeStatement memory winnerStatement = challengeInfo.statement[challengeInfo.result.winner];
+        ChallengeResult memory result = challengeInfo.result;
         address freezeToken;
         uint256 unFreezeAmount;
 
         for (uint i = 0; i < challenger.length; i++) {
-            ChallengeStatement memory challengeStatement = _challenges[challengeId].statement[challenger[i]];
+            ChallengeStatement storage challengeStatement = challengeInfo.statement[challenger[i]];
 
             // Make sure the challenge exists
             require(challengeStatement.challengeTime > 0, "CNE");
 
-            uint256 challengeIdentNum = HelperLib.uint64ConcatToDecimal(
-                challengeStatement.sourceTxTime,
-                sourceChainId,
-                challengeStatement.sourceTxBlockNum,
-                challengeStatement.sourceTxIndex
+            require(
+                _getCanChallengeContinue(
+                    HelperLib.uint64ConcatToDecimal(
+                        challengeStatement.sourceTxTime,
+                        sourceChainId,
+                        challengeStatement.sourceTxBlockNum,
+                        challengeStatement.sourceTxIndex
+                    )
+                ),
+                "NCCF"
             );
-
-            require(_getCanChallengeContinue(challengeIdentNum), "NCCF");
 
             require(challengeStatement.abortTime == 0, "CA");
 
@@ -484,12 +487,12 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
                 );
                 freezeToken = challengeStatement.freezeToken;
             }
-            _challenges[challengeId].statement[challenger[i]].abortTime = uint64(block.timestamp);
+            challengeStatement.abortTime = uint64(block.timestamp);
 
             emit ChallengeInfoUpdated({
                 challengeId: challengeId,
-                statement: _challenges[challengeId].statement[challenger[i]],
-                result: _challenges[challengeId].result
+                statement: challengeStatement,
+                result: challengeInfo.result
             });
         }
         _unFreezeToken(freezeToken, unFreezeAmount);
@@ -780,12 +783,13 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         address challenger,
         uint64 sourceChainId
     ) internal returns (uint256 unFreezeAmount) {
+        unFreezeAmount = challengeInfo.freezeAmount0 + challengeInfo.freezeAmount1;
         if (result.winner == challenger) {
             uint challengeUserAmount = (challengeInfo.freezeAmount0 * challengeInfo.challengeUserRatio) /
                 ConstantsLib.RATIO_MULTIPLE;
             require(challengeUserAmount <= challengeInfo.freezeAmount0, "UAOF");
 
-            uint challengerAmount = challengeInfo.freezeAmount0 + challengeInfo.freezeAmount1 - challengeUserAmount;
+            uint challengerAmount = unFreezeAmount - challengeUserAmount;
             _challengeNodeList[
                 HelperLib.uint64ConcatToDecimal(
                     challengeInfo.sourceTxTime,
@@ -797,6 +801,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
             // TODO: Not compatible with starknet network
             address user = address(uint160(challengeInfo.sourceTxFrom));
+            IERC20 token = IERC20(challengeInfo.freezeToken);
 
             if (challengeInfo.freezeToken == address(0)) {
                 (bool sent1, ) = payable(user).call{value: challengeUserAmount}("");
@@ -809,9 +814,8 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
                 }("");
                 require(sent2, "ETH: SE2");
             } else {
-                IERC20(challengeInfo.freezeToken).safeTransfer(user, challengeUserAmount);
-
-                IERC20(challengeInfo.freezeToken).safeTransfer(result.winner, challengerAmount);
+                token.safeTransfer(user, challengeUserAmount);
+                token.safeTransfer(result.winner, challengerAmount);
 
                 (bool sent3, ) = payable(result.winner).call{
                     value: MIN_CHALLENGE_DEPOSIT_AMOUNT + challengeInfo.challengerVerifyTransactionFee
@@ -824,19 +828,16 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             }("");
             require(sent4, "ETH: SE4");
         }
-
-        // Unfreeze
-        unFreezeAmount = (challengeInfo.freezeAmount0 + challengeInfo.freezeAmount1);
     }
 
     function _compareChallengerStatementHash(
-        ChallengeStatement memory challenger,
+        ChallengeStatement memory challengeInfo,
         ChallengeStatement memory winner
     ) internal pure returns (bool) {
-        return (challenger.sourceTxFrom == winner.sourceTxFrom &&
-            challenger.sourceTxTime == winner.sourceTxTime &&
-            challenger.freezeToken == winner.freezeToken &&
-            challenger.challengeUserRatio == winner.challengeUserRatio &&
-            challenger.freezeAmount0 == winner.freezeAmount0);
+        return (challengeInfo.sourceTxFrom == winner.sourceTxFrom &&
+            challengeInfo.sourceTxTime == winner.sourceTxTime &&
+            challengeInfo.freezeToken == winner.freezeToken &&
+            challengeInfo.challengeUserRatio == winner.challengeUserRatio &&
+            challengeInfo.freezeAmount0 == winner.freezeAmount0);
     }
 }
