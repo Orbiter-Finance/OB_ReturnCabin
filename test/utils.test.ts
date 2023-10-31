@@ -12,6 +12,7 @@ import {
   solidityPack,
 } from 'ethers/lib/utils';
 import { getMappingStructXSlot } from './lib/readStorage';
+import { assert } from 'console';
 
 export function hexToBuffer(hex: string) {
   return Buffer.from(utils.arrayify(hex));
@@ -558,6 +559,13 @@ export const createChallenge = async (
       )
       .then((t) => t.wait());
     const args = tx.events?.[0].args;
+    console.log(
+      'challenge input:',
+      (await ethers.provider.getTransaction(tx.transactionHash)).data,
+      'chailneId:',
+      challenge.sourceChainId,
+    );
+
     expect(args).not.empty;
     if (!!args) {
       // console.warn('args.ChallengeInfo:', args.ChallengeInfo);
@@ -573,4 +581,26 @@ export const createChallenge = async (
     }
     return args?.challengeId;
   }
+};
+
+export const getBlockHash = async (BlockNumber: number): Promise<String> => {
+  const blcokHash = (await ethers.provider.getBlock(BlockNumber))?.hash;
+  return blcokHash;
+};
+
+export const predictEnableBlock = async (
+  currentBlockNumber: number,
+  enableTimestamp: number,
+) => {
+  const configTimestamp = (await ethers.provider.getBlock(currentBlockNumber))
+    .timestamp;
+  const timeStampGap = enableTimestamp - configTimestamp;
+  assert(enableTimestamp > configTimestamp, 'timestamp error');
+  const enableBlockNumber = Math.trunc(timeStampGap / 12 + currentBlockNumber);
+  const enableBlockHash = await getBlockHash(enableBlockNumber);
+  assert(enableBlockHash != undefined, 'block are not generated yet');
+  return {
+    enableBlockNumber,
+    enableBlockHash,
+  };
 };
