@@ -3,7 +3,7 @@ import { expect } from 'chai';
 import 'cross-fetch/polyfill';
 import { BigNumber, BigNumberish, ContractTransaction, utils } from 'ethers';
 import { ORMakerDeposit, ORManager, TestSpv } from '../typechain-types';
-import { getCurrentTime } from './lib/mockData';
+import { callDataCost, getCurrentTime } from './lib/mockData';
 import { RuleStruct, encodeRuleStruct } from './lib/rule';
 import {
   BytesLike,
@@ -140,7 +140,7 @@ export const updateSpv = async (
   const enableTimeTime =
     // eslint-disable-next-line prettier/prettier
     (await getCurrentTime()) >
-    (await _orManager.getVersionAndEnableTime()).enableTime.toNumber()
+      (await _orManager.getVersionAndEnableTime()).enableTime.toNumber()
       ? await getCurrentTime()
       : (await _orManager.getVersionAndEnableTime()).enableTime;
 
@@ -619,11 +619,22 @@ export const createChallenge = async (
       )
       .then((t) => t.wait());
     const args = tx.events?.[0].args;
+    // const basefee = (await ethers.provider.getFeeData()).lastBaseFeePerGas;
     console.log(
-      'challenge input:',
-      (await ethers.provider.getTransaction(tx.transactionHash)).data,
-      'chailneId:',
-      challenge.sourceChainId,
+      // 'challenge input:',
+      // (await ethers.provider.getTransaction(tx.transactionHash)).data,
+      // 'chailneId:',
+      // challenge.sourceChainId,
+      'gasUsed:',
+      tx.gasUsed.toNumber(),
+      'inputGasUsed',
+      callDataCost(
+        (await ethers.provider.getTransaction(tx.transactionHash)).data,
+      ),
+      // 'basefee',
+      // basefee,
+      // 'challengerVerifyTransactionFee',
+      // args?.statement.challengerVerifyTransactionFee.div(basefee),
     );
 
     expect(args).not.empty;

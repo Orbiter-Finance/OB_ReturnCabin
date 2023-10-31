@@ -1,5 +1,5 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { assert, expect, util } from 'chai';
+import { assert, expect } from 'chai';
 import { BigNumber, BigNumberish, constants, utils } from 'ethers';
 import { ethers } from 'hardhat';
 import fs from 'fs';
@@ -37,8 +37,6 @@ import {
   getRulesRootUpdatedLogs,
 } from './lib/rule';
 import {
-  verifyinfoBase,
-  VerifyInfo,
   challengeInputInfo,
   columnArray,
   embedVersionIncreaseAndEnableTime,
@@ -47,9 +45,6 @@ import {
   hexToBuffer,
   testReverted,
   testRevertedOwner,
-  updateSpv,
-  getSecurityCode,
-  getVerifyinfo,
   createChallenge,
   getChallengeIdentNumSortList,
   getLastChallengeIdentNum,
@@ -62,8 +57,8 @@ import {
   mineXTimes,
 } from './lib/mockData';
 import { PromiseOrValue } from '../typechain-types/common';
-import { VerifierAbi, compile_yul } from '../scripts/utils';
 import { randomBytes } from 'crypto';
+import { compile_yul, VerifierAbi } from '../scripts/utils';
 
 describe('ORMakerDeposit', () => {
   let signers: SignerWithAddress[];
@@ -800,8 +795,9 @@ describe('ORMakerDeposit', () => {
   });
 
   describe('start challenge test module', () => {
-    let spv: TestSpv;
-    let verifyContract: { address: PromiseOrValue<string> };
+    let spvTest: TestSpv;
+    let spv: { address: PromiseOrValue<string> };
+    // let verifyContract: { address: PromiseOrValue<string> };
     const makerRule: RuleStruct = createMakerRule(true);
     const chainId = makerRule.chainId0;
     const chainIdDest = makerRule.chainId1;
@@ -821,7 +817,7 @@ describe('ORMakerDeposit', () => {
         makerRule,
       );
 
-      const contractEncode = await spv.encodeRawDatas(
+      const contractEncode = await spvTest.encodeRawDatas(
         columnArray.dealers,
         columnArray.ebcs,
         columnArray.chainIds,
@@ -832,9 +828,8 @@ describe('ORMakerDeposit', () => {
       expect(jsEncode).eql(contractEncode);
 
       {
-        const { dealers, ebcs, chainIds, ebc, rule } = await spv.decodeRawDatas(
-          utils.arrayify(jsEncode),
-        );
+        const { dealers, ebcs, chainIds, ebc, rule } =
+          await spvTest.decodeRawDatas(utils.arrayify(jsEncode));
         expect(dealers).eql(columnArray.dealers);
         expect(ebcs).eql(columnArray.ebcs);
         expect(chainIds.toString()).eql(columnArray.chainIds.toString());
@@ -854,23 +849,23 @@ describe('ORMakerDeposit', () => {
       return utils.arrayify(contractEncode);
     };
 
-    // before(async function () {
-    //   const verifyBytesCode = await compile_yul(
-    //     'contracts/zkp/goerli_1_evm.yul',
-    //   );
+    before(async function () {
+      const verifyBytesCode = await compile_yul(
+        'contracts/zkp/goerli_1_evm.yul',
+      );
 
-    //   const verifyFactory = new ethers.ContractFactory(
-    //     VerifierAbi,
-    //     verifyBytesCode,
-    //     mdcOwner,
-    //   );
-    //   verifyContract = await verifyFactory.deploy();
-    //   spv = await new TestSpv__factory(mdcOwner).deploy(verifyContract.address);
+      const verifyFactory = new ethers.ContractFactory(
+        VerifierAbi,
+        verifyBytesCode,
+        mdcOwner,
+      );
+      spv = await verifyFactory.deploy();
+      spvTest = await new TestSpv__factory(mdcOwner).deploy(spv.address);
 
-    //   console.log(
-    //     `Address of verifier: ${verifyContract.address}, Address of spv: ${spv.address}, Address of ebc ${ebc.address} `,
-    //   );
-    // });
+      console.log(
+        `Address of spv: ${spv.address}, Address of spvTest: ${spvTest.address}, Address of ebc ${ebc.address} `,
+      );
+    });
 
     // it('test function verifyChallengeSource Revert case', async function () {
     //   const latestBlockRes = await orMakerDeposit.provider?.getBlock('latest');
@@ -986,7 +981,7 @@ describe('ORMakerDeposit', () => {
         const res = await createChallenge(orMakerDeposit, challengeInputInfo);
         gasUseList.push(res.gasUsed);
       }
-      console.log(gasUseList);
+      // console.log(gasUseList);
       challengeIdentNumList = challengeIdentNumList.sort((a, b) => {
         if (a > b) return -1;
         if (a < b) return 1;
@@ -1005,6 +1000,7 @@ describe('ORMakerDeposit', () => {
       );
       expect(canVerify).to.be.true;
       expect(cantVerify).to.be.false;
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const maxNumInputInfo: challengeInputInfo = challengeInputInfos.find(
         (v) =>
           getChallengeIdentNumSortList(
@@ -1013,7 +1009,7 @@ describe('ORMakerDeposit', () => {
             v.sourceBlockNum,
             v.sourceTxIndex,
           ) === challengeIdentNumList[0],
-      );
+      )!;
       const addRequireInputInfo = {
         sourceTxTime: maxNumInputInfo.sourceTxTime - 100000,
         sourceChainId:
@@ -1032,34 +1028,56 @@ describe('ORMakerDeposit', () => {
     });
 
     it('test prase spv proof data', async function () {
-      return;
       const fake_spvProof: BytesLike = utils.keccak256(mdcOwner.address);
       const spvProof: BytesLike = utils.arrayify(
         '0x' + fs.readFileSync('test/example/spv.calldata', 'utf-8'),
       );
 
-      const { blockHash, toAddress, transferAmount, timestamp } =
-        await spv.parseProofData(spvProof);
+      const {
+        sourceChainId,
+        sourceTxHash,
+        txIndex,
+        from,
+        to,
+        token,
+        amount,
+        nonce,
+        timestamp,
+      } = await orMakerDeposit.parsePublicInput(spvProof);
       console.log(
-        `blcokHash: ${blockHash}, toAddress: ${toAddress}, transferAmount: ${transferAmount}, timestamp: ${timestamp} `,
+        `spv proof - chainId: ${sourceChainId}, txHash: ${sourceTxHash}, txIndex: ${txIndex}, from: ${from}, to: ${to}, token: ${token}, amount: ${amount}, nonce: ${nonce}, timestamp: ${timestamp}`,
       );
 
-      await expect(spv.verifyProof(fake_spvProof)).to.revertedWith(
+      await expect(spvTest.verifyProof(fake_spvProof)).to.revertedWith(
         'verify fail',
       );
 
-      const tx = await spv.verifyProof(spvProof).then((t) => t.wait());
+      const tx = await spvTest.verifyProof(spvProof).then((t) => t.wait());
       expect(tx.status).to.be.eq(1);
       const txrc = await ethers.provider.getTransaction(tx.transactionHash);
       const inpudataGas = callDataCost(txrc.data);
       console.log(
         // eslint-disable-next-line prettier/prettier
-        `verify totalGas: ${
-          tx.gasUsed
-        }, callDataGas: ${inpudataGas}, excuteGas: ${
-          tx.gasUsed.toNumber() - inpudataGas
-        } `,
+        `verify totalGas: ${tx.gasUsed}, callDataGas: ${inpudataGas}, excuteGas: ${tx.gasUsed.toNumber() - inpudataGas} `,
       );
+
+      // const verifyTx = await orMakerDeposit
+      //   .verifyChallengeSourceLaboratory(
+      //     spv.address,
+      //     mdcOwner.address,
+      //     [],
+      //     spvProof,
+      //   )
+      //   .then((t) => t.wait());
+      // expect(verifyTx.status).to.be.eq(1);
+      // const verifyTxrc = await ethers.provider.getTransaction(
+      //   verifyTx.transactionHash,
+      // );
+      // const verifyTxinpudataGas = callDataCost(verifyTxrc.data);
+      // console.log(
+      //   // eslint-disable-next-line prettier/prettier
+      //   `spv verify totalGas: ${verifyTx.gasUsed}, callDataGas: ${verifyTxinpudataGas}, excuteGas: ${verifyTx.gasUsed.toNumber() - verifyTxinpudataGas} `,
+      // );
     });
 
     it('create challenge test', async function () {

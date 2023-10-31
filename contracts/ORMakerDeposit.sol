@@ -662,6 +662,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             )
             .hash();
 
+        // TODO: add verify source gas cost (solt & emit)
         _challenges[challengeId].statement[challenger].challengerVerifyTransactionFee +=
             (uint128(startGasNum) -
                 uint128(gasleft()) +
@@ -673,6 +674,79 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             statement: _challenges[challengeId].statement[challenger],
             result: _challenges[challengeId].result
         });
+    }
+
+    struct PublicInputData {
+        uint64 sourceChainId;
+        bytes32 sourceTxHash;
+        uint256 txIndex;
+        address from;
+        address to;
+        address token;
+        uint256 amount;
+        uint256 nonce;
+        uint64 timestamp;
+        address dest;
+        address destToken;
+        bytes32 L1TXBlockHash;
+        uint256 L1TBlockNumber;
+        address mdcContractAddress;
+        address managerContractAddress;
+    }
+
+    function parsePublicInput(bytes calldata proofData) public pure returns (PublicInputData memory) {
+        return
+            PublicInputData({
+                sourceChainId: uint64(uint256(bytes32(proofData[544:576]))),
+                sourceTxHash: bytes32(
+                    (uint256(bytes32(proofData[448:480])) << 128) | uint256(bytes32(proofData[480:512]))
+                ),
+                txIndex: uint256(bytes32(proofData[512:544])),
+                from: address(uint160(uint256(bytes32(proofData[576:608])))),
+                to: address(uint160(uint256(bytes32(proofData[608:640])))),
+                token: address(uint160(uint256(bytes32(proofData[640:672])))),
+                amount: uint256(bytes32(proofData[672:704])),
+                nonce: uint256(bytes32(proofData[704:736])),
+                timestamp: uint64(uint256(bytes32(proofData[736:768]))),
+                dest: address(uint160(uint256(bytes32(proofData[768:800])))),
+                destToken: address(uint160(uint256(bytes32(proofData[800:832])))),
+                L1TXBlockHash: bytes32(
+                    (uint256(bytes32(proofData[384:416])) << 128) | uint256(bytes32(proofData[416:448]))
+                ),
+                L1TBlockNumber: uint256(bytes32(proofData[1408:1440])),
+                mdcContractAddress: address(uint160(uint256(bytes32(proofData[2560:2592])))),
+                managerContractAddress: address(uint160(uint256(bytes32(proofData[2592:2624]))))
+            });
+    }
+
+    function verifyChallengeSourceLaboratory(
+        address spvAddress,
+        address challenger,
+        // bytes calldata publicInput, TODO: enable this argument after public input data is ready to hash encode
+        bytes calldata proof
+    ) external {
+        uint256 startGasNum = gasleft();
+        PublicInputData memory publicInputData = parsePublicInput(proof);
+        require(
+            (publicInputData.managerContractAddress == _mdcFactory.manager()) &&
+                (publicInputData.mdcContractAddress == address(this)),
+            "MCE"
+        );
+        BridgeLib.ChainInfo memory chainInfo = IORManager(publicInputData.managerContractAddress).getChainInfo(
+            publicInputData.sourceChainId
+        );
+        require(chainInfo.spvs.includes(spvAddress), "SI"); // Invalid spv
+        (bool success, ) = spvAddress.call(proof);
+        require(success, "verify fail");
+        // Check chainId, hash, timestamp
+        bytes32 challengeId = abi.encode(publicInputData.sourceChainId, publicInputData.sourceTxHash).hash();
+        ChallengeStatement memory statement = _challenges[challengeId].statement[challenger];
+        ChallengeResult memory result = _challenges[challengeId].result;
+        require(statement.challengeTime > 0, "CTZ");
+        require(result.verifiedTime0 == 0, "VT0NZ");
+        require(publicInputData.timestamp == statement.sourceTxTime, "ST");
+
+        require(publicInputData.to == _owner, "TNEO");
     }
 
     /**

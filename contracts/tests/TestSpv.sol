@@ -15,6 +15,43 @@ contract testSpv {
         v_address = _v;
     }
 
+    struct publicInputData {
+        uint64 chainId;
+        bytes32 txHash;
+        uint256 txIndex;
+        address from;
+        address to;
+        address token;
+        uint256 amount;
+        uint256 nonce;
+        uint256 timestamp;
+        address dest;
+        address destToken;
+        bytes32 L1TXBlockHash;
+        uint256 L1TBlockNumber;
+    }
+
+    function parsePublicInput(bytes calldata proofData) external pure returns (publicInputData memory) {
+        return
+            publicInputData({
+                chainId: uint64(uint256(bytes32(proofData[544:576]))),
+                txHash: bytes32((uint256(bytes32(proofData[448:480])) << 128) | uint256(bytes32(proofData[480:512]))),
+                txIndex: uint256(bytes32(proofData[512:544])),
+                from: address(uint160(uint256(bytes32(proofData[576:608])))),
+                to: address(uint160(uint256(bytes32(proofData[608:640])))),
+                token: address(uint160(uint256(bytes32(proofData[640:672])))),
+                amount: uint256(bytes32(proofData[672:704])),
+                nonce: uint256(bytes32(proofData[704:736])),
+                timestamp: uint256(bytes32(proofData[736:768])),
+                dest: address(uint160(uint256(bytes32(proofData[768:800])))),
+                destToken: address(uint160(uint256(bytes32(proofData[800:832])))),
+                L1TXBlockHash: bytes32(
+                    (uint256(bytes32(proofData[384:416])) << 128) | uint256(bytes32(proofData[416:448]))
+                ),
+                L1TBlockNumber: uint256(bytes32(proofData[1408:1440]))
+            });
+    }
+
     function parseProofData(
         bytes calldata proofData
     )
