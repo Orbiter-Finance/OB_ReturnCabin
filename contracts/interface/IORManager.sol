@@ -68,13 +68,9 @@ interface IORManager {
 
     function updateSpvDataContract(address spvDataContract_) external;
 
-    function updateSpvBlockInterval(uint64 spvBlockInterval) external;
+    function updateSpvBlockInterval(uint64 spvBlockInterval_) external;
 
-    function injectSpvBlocks(
-        uint startBlockNumber,
-        uint endBlockNumber,
-        IORSpvData.InjectionBlock[] calldata injectionBlocks
-    ) external;
+    function updateSpvDataInjectOwner(address injectOwner_) external;
 
     function getExtraTransferContract(uint64 chainId) external view returns (uint);
 

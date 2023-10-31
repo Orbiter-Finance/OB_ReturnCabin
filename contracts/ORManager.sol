@@ -199,16 +199,12 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
         emit SpvDataContractUpdated(spvDataContract_);
     }
 
-    function updateSpvBlockInterval(uint64 spvBlockInterval) external onlyOwner {
-        IORSpvData(_spvDataContract).updateBlockInterval(spvBlockInterval);
+    function updateSpvBlockInterval(uint64 spvBlockInterval_) external onlyOwner {
+        IORSpvData(_spvDataContract).updateBlockInterval(spvBlockInterval_);
     }
 
-    function injectSpvBlocks(
-        uint startBlockNumber,
-        uint endBlockNumber,
-        IORSpvData.InjectionBlock[] calldata injectionBlocks
-    ) external onlyOwner {
-        IORSpvData(_spvDataContract).injectBlocksByManager(startBlockNumber, endBlockNumber, injectionBlocks);
+    function updateSpvDataInjectOwner(address injectOwner_) external onlyOwner {
+        IORSpvData(_spvDataContract).updateInjectOwner(injectOwner_);
     }
 
     function getExtraTransferContract(uint64 chainId) external view returns (uint) {
