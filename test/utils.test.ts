@@ -620,13 +620,11 @@ export const createChallenge = async (
     const args = tx.events?.[0].args;
     expect(args).not.empty;
     if (!!args) {
-      // console.warn('args.ChallengeInfo:', args.ChallengeInfo);
       expect(args.challengeId).not.empty;
       expect(args.statement.sourceTxFrom).eql(BigNumber.from(0));
       expect(args.statement.sourceTxTime).eql(
         BigNumber.from(challenge.sourceTxTime),
       );
-      // expect(args.challengeInfo.challenger).eql(mdcOwner.address);
       expect(args.statement.freezeToken).eql(challenge.freezeToken);
       expect(args.statement.freezeAmount0).eql(challenge.freezeAmount);
       expect(args.statement.freezeAmount1).eql(challenge.freezeAmount);

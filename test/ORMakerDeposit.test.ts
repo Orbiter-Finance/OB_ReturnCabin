@@ -884,16 +884,20 @@ describe('ORMakerDeposit', () => {
         sourceBlockNum,
         sourceTxIndex,
       );
+      const lastChallengeIdentNum = getLastChallengeIdentNum(
+        [],
+        challengeIdentNum,
+      );
       const challenge: challengeInputInfo = {
-        sourceTxTime: sourceTxTime,
-        sourceChainId: sourceChainId,
-        sourceBlockNum: sourceBlockNum,
-        sourceTxIndex: sourceTxIndex,
+        sourceTxTime,
+        sourceChainId,
+        sourceBlockNum,
+        sourceTxIndex,
         sourceTxHash: utils.keccak256(mdcOwner.address),
         from: await orMakerDeposit.owner(),
         freezeToken: constants.AddressZero,
-        freezeAmount: utils.parseEther('0.001'),
-        lastChallengeIdentNum: getLastChallengeIdentNum([], challengeIdentNum),
+        lastChallengeIdentNum,
+        freezeAmount: utils.parseEther('0.01'),
       };
       await createChallenge(orMakerDeposit, challenge);
       const invalidVerifyInfo0: VerifyInfo = {
@@ -910,6 +914,7 @@ describe('ORMakerDeposit', () => {
       await expect(
         orMakerDeposit.verifyChallengeSource(
           invalidSPV0,
+          mdcOwner.address,
           [],
           [
             utils.keccak256(mdcOwner.address),
@@ -933,6 +938,7 @@ describe('ORMakerDeposit', () => {
       await expect(
         orMakerDeposit.verifyChallengeSource(
           invalidSPV0,
+          mdcOwner.address,
           [],
           [
             utils.keccak256(mdcOwner.address),
@@ -1115,24 +1121,27 @@ describe('ORMakerDeposit', () => {
       };
       await createChallenge(orMakerDeposit, challengeFake, 'STOF');
       await createChallenge(orMakerDeposit, challenge);
-
       await mineXTimes(100);
-      expect(
-        await orMakerDeposit.checkChallenge(
+      await expect(
+        orMakerDeposit.checkChallenge(
           case1SourceChainId,
           case1SourceTxHash,
           [],
           [mdcOwner.address],
         ),
-      ).to.be.satisfy;
+      ).revertedWith('NCCF');
       const case1balanceOfMakerAfter = utils.formatEther(
         await ethers.provider.getBalance(orMakerDeposit.address),
       );
-      // console.log(
-      //   `challenge 1 balanceOfMakerbefore: ${ case1balanceOfMakerbefore }, balanceOfMakerAfter: ${ case1balanceOfMakerAfter }, freezeAmount: ${ case1freezeAmount } `,
-      // );
+      console.log(
+        `challenge 1 balanceOfMakerbefore: ${case1balanceOfMakerbefore}, balanceOfMakerAfter: ${case1balanceOfMakerAfter}, freezeAmount: ${case1freezeAmount} `,
+      );
       expect(parseFloat(case1balanceOfMakerAfter).toFixed(2)).equal(
-        (parseFloat(case1balanceOfMakerbefore) + parseFloat(case1freezeAmount))
+        (
+          parseFloat(case1balanceOfMakerbefore) +
+          parseFloat(case1freezeAmount) +
+          0.01
+        )
           .toFixed(2)
           .toString(),
       );
@@ -1144,7 +1153,7 @@ describe('ORMakerDeposit', () => {
           [],
           [mdcOwner.address],
         ),
-      ).to.revertedWith('CA');
+      ).to.revertedWith('NCCF');
       const challengeIdentNum2 = getChallengeIdentNumSortList(
         (await getCurrentTime()) - 1,
         challenge.sourceChainId,
