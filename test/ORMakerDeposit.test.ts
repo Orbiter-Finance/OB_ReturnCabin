@@ -1013,7 +1013,17 @@ describe('ORMakerDeposit', () => {
             v.sourceBlockNum,
             v.sourceTxIndex,
           ) === challengeIdentNumList[0],
-      );
+      ) || {
+        sourceTxTime: 0,
+        sourceChainId: 0,
+        sourceBlockNum: 0,
+        sourceTxIndex: 0,
+        sourceTxHash: 0,
+        from: '',
+        freezeToken: '',
+        freezeAmount: 0,
+        lastChallengeIdentNum: 0,
+      };
       const addRequireInputInfo = {
         sourceTxTime: maxNumInputInfo.sourceTxTime - 100000,
         sourceChainId:
