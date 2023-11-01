@@ -77,7 +77,7 @@ describe('ORSpvData', () => {
   });
 
   it('Test ORManager.updateSpvBlockInterval should success', async function () {
-    const spvBlockInterval = 200;
+    const spvBlockInterval = 192;
 
     await testRevertedOwner(
       orManager.connect(signers[2]).updateSpvBlockInterval(spvBlockInterval),

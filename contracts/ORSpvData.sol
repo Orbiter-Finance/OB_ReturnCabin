@@ -12,7 +12,7 @@ contract ORSpvData is IORSpvData {
     using HelperLib for bytes;
 
     IORManager private _manager;
-    uint64 private _blockInterval = 200;
+    uint64 private _blockInterval = 192;
     address private _injectOwner;
 
     mapping(uint => bytes32) private _blocksRoots; // startBlockNumber => [start ..._blockInterval... end]'s blocks root
@@ -31,22 +31,32 @@ contract ORSpvData is IORSpvData {
         return _blocksRoots[startBlockNumber];
     }
 
+    // TODO: Not review
     function _calculateRoot(uint startBlockNumber) internal view returns (bytes32) {
-        bytes32[] memory leaves = new bytes32[](_blockInterval);
-        for (uint i = 0; i < _blockInterval; ) {
+        // The lowest layer is calculated separately from other layers to save gas
+        uint len = _blockInterval / 2;
+        bytes32[] memory leaves = new bytes32[](len);
+        for (uint i = 0; i < len; ) {
+            bytes32 leavesRoot;
+
+            assembly {
+                let ix2 := mul(i, 2)
+                let leafL := blockhash(add(startBlockNumber, ix2))
+                let leafR := blockhash(add(startBlockNumber, add(ix2, 1)))
+
+                let data := mload(64)
+                mstore(data, leafL)
+                mstore(add(data, 32), leafR)
+
+                leavesRoot := keccak256(data, 64)
+            }
+
             unchecked {
-                leaves[i] = blockhash(startBlockNumber + i);
-
-                if (leaves[i] == bytes32(0)) {
-                    return bytes32(0);
-                }
-
+                leaves[i] = leavesRoot;
                 i++;
             }
         }
 
-        // TODO: Not review
-        uint len = leaves.length;
         while (true) {
             for (uint i = 0; i < len; ) {
                 uint ni;
@@ -57,12 +67,13 @@ contract ORSpvData is IORSpvData {
                 }
 
                 if (ni < len) {
-                    bytes32 leafL = leaves[i];
-                    bytes32 leafR = leaves[ni];
                     assembly {
+                        let ptrL := add(leaves, mul(ni, 32))
+                        let ptrR := add(ptrL, 32)
+
                         let data := mload(64)
-                        mstore(data, leafL)
-                        mstore(add(data, 32), leafR)
+                        mstore(data, mload(ptrL))
+                        mstore(add(data, 32), mload(ptrR))
 
                         leavesRoot := keccak256(data, 64)
                     }
