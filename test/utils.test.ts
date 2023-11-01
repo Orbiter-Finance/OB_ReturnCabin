@@ -625,7 +625,7 @@ export const createChallenge = async (
       // (await ethers.provider.getTransaction(tx.transactionHash)).data,
       // 'chailneId:',
       // challenge.sourceChainId,
-      'gasUsed:',
+      'Create challenge! gasUsed:',
       tx.gasUsed.toNumber(),
       'inputGasUsed',
       callDataCost(

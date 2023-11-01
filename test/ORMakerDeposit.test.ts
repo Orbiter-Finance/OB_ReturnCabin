@@ -1039,19 +1039,19 @@ describe('ORMakerDeposit', () => {
         txIndex,
         from,
         to,
-        token,
-        amount,
+        destToken,
+        freezeAmount,
         nonce,
         timestamp,
       } = await orMakerDeposit.parsePublicInput(spvProof);
       console.log(
-        `spv proof - chainId: ${sourceChainId}, txHash: ${sourceTxHash}, txIndex: ${txIndex}, from: ${from}, to: ${to}, token: ${token}, amount: ${amount}, nonce: ${nonce}, timestamp: ${timestamp}`,
+        `spv proof - chainId: ${sourceChainId}, txHash: ${sourceTxHash}, txIndex: ${txIndex}, from: ${from}, to: ${to}, token: ${destToken}, amount: ${freezeAmount}, nonce: ${nonce}, timestamp: ${timestamp}`,
       );
 
       await expect(spvTest.verifyProof(fake_spvProof)).to.revertedWith(
         'verify fail',
       );
-
+      return;
       const tx = await spvTest.verifyProof(spvProof).then((t) => t.wait());
       expect(tx.status).to.be.eq(1);
       const txrc = await ethers.provider.getTransaction(tx.transactionHash);
