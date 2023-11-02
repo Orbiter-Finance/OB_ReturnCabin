@@ -27,7 +27,7 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
 
     uint64 private _maxMDCLimit = 2 ** 64 - 1;
     uint8 private _priorityFee = 1; // 1wei
-    uint24 private _challengeBasefee = 316_000; // proof calldata 114000 + rule data 20000 + submit tx 21000 + verify source 21000 + challenge slot cost 140000
+    uint24 private _challengeBasefee = 176000; // proof calldata 114000 + rule data 20000 + submit tx 21000 + verify source 21000
     uint32 private _challengeWithdrawDelay = 604800; // Unit: seconds of 7 days: Op Arb
     address private _spvDataContract;
 

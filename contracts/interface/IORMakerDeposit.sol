@@ -144,7 +144,6 @@ interface IORMakerDeposit {
     function verifyChallengeSource(
         address spvAddress,
         address challenger,
-        // bytes calldata publicInput, TODO: enable this argument after public input data is ready to hash encode
         bytes calldata proof,
         IORChallengeSpv.VerifyInfo calldata verifyInfo,
         bytes calldata rawDatas
