@@ -867,29 +867,149 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
      * @param verifiedData0 [minVerifyChallengeDestTxSecond, maxVerifyChallengeDestTxSecond, nonce, destChainId, destAddress, destToken, destAmount, responeMakersHash]
      * @param rawDatas The raw data list in preimage. [responeMakers]
      */
+    // function verifyChallengeDest(
+    //     address spvAddress,
+    //     address challenger,
+    //     bytes calldata proof,
+    //     bytes32[2] calldata spvBlockHashs,
+    //     IORChallengeSpv.VerifyInfo calldata verifyInfo,
+    //     uint[] calldata verifiedData0,
+    //     bytes calldata rawDatas,
+    //     uint64 sourceChainId
+    // ) external {
+    //     require(IORChallengeSpv(spvAddress).verifyChallenge(proof, spvBlockHashs, abi.encode(verifyInfo).hash()), "VF");
+
+    //     bytes32 challengeId = abi.encode(uint64(verifyInfo.data[0]), verifyInfo.data[1]).hash();
+    //     require(_challenges[challengeId].result.verifiedTime0 > 0, "VT0Z");
+    //     require(_challenges[challengeId].result.verifiedTime1 == 0, "VT1NZ");
+
+    //     require(
+    //         _getCanChallengeContinue(
+    //             HelperLib.uint64ConcatToDecimal(
+    //                 _challenges[challengeId].statement[challenger].sourceTxTime,
+    //                 sourceChainId,
+    //                 _challenges[challengeId].statement[challenger].sourceTxBlockNum,
+    //                 _challenges[challengeId].statement[challenger].sourceTxIndex
+    //             )
+    //         ),
+    //         "NCCF"
+    //     );
+
+    //     // Parse rawDatas
+    //     uint[] memory responseMakers = abi.decode(rawDatas, (uint[]));
+
+    //     // Check verifiedData0
+    //     require(abi.encode(verifiedData0).hash() == _challenges[challengeId].result.verifiedDataHash0, "VDH0");
+    //     require(abi.encode(responseMakers).hash() == bytes32(verifiedData0[7]), "RMH");
+
+    //     // Check minVerifyChallengeDestTxSecond, maxVerifyChallengeDestTxSecond
+    //     {
+    //         uint timeDiff = block.timestamp - _challenges[challengeId].statement[challenger].sourceTxTime;
+    //         require(timeDiff >= verifiedData0[0], "MINTOF");
+    //         require(timeDiff <= verifiedData0[1], "MAXTOF");
+    //     }
+
+    //     // Check dest chainId
+    //     require(verifyInfo.data[0] == verifiedData0[3], "DCID");
+
+    //     // Check dest from address in responseMakers
+    //     require(responseMakers.includes(verifyInfo.data[2]), "MIC");
+
+    //     // Check dest address
+    //     require(verifiedData0[4] == verifyInfo.data[3], "DADDR");
+
+    //     // Check dest token
+    //     require(verifiedData0[5] == verifyInfo.data[4], "DT");
+
+    //     // Check dest amount (Warning: The nonce is at the end of the amount)
+    //     require(verifiedData0[6] - verifiedData0[2] == verifyInfo.data[5], "DT");
+
+    //     // TODO: check responseTime. Source tx timestamp may be more than dest tx timestamp.
+
+    //     _challenges[challengeId].result.verifiedTime1 = uint64(block.timestamp);
+
+    //     emit ChallengeInfoUpdated({
+    //         challengeId: challengeId,
+    //         statement: _challenges[challengeId].statement[msg.sender],
+    //         result: _challenges[challengeId].result
+    //     });
+    // }
+
+    struct PublicInputDataDest {
+        bytes32 txHash;
+        uint64 chainId;
+        uint256 txIndex;
+        uint256 from;
+        uint256 to;
+        uint256 token;
+        uint256 amount;
+        uint256 nonce;
+        uint64 timestamp;
+        bytes32 L1TXBlockHash;
+        uint256 L1TBlockNumber;
+    }
+
+    function parsePublicInputDest(bytes calldata proofData) public pure returns (PublicInputDataDest memory) {
+        uint256 ProofLength = 384;
+        uint256 splitStep = 32;
+        uint256 splitStart = ProofLength + 64; // 384 is proof length;64 is blockHash length
+        uint256 TrackBlockSplitStart = splitStart + splitStep * 12;
+        return
+            PublicInputDataDest({
+                txHash: bytes32(
+                    (uint256(bytes32(proofData[splitStart:splitStart + splitStep])) << 128) |
+                        uint256(bytes32(proofData[splitStart + splitStep:splitStart + splitStep * 2]))
+                ),
+                chainId: uint64(uint256(bytes32(proofData[splitStart + splitStep * 3:splitStart + splitStep * 4]))),
+                txIndex: uint256(bytes32(proofData[splitStart + splitStep * 2:splitStart + splitStep * 3])),
+                from: ((uint256(bytes32(proofData[splitStart + splitStep * 4:splitStart + splitStep * 5])))),
+                to: ((uint256(bytes32(proofData[splitStart + splitStep * 5:splitStart + splitStep * 6])))),
+                token: ((uint256(bytes32(proofData[splitStart + splitStep * 6:splitStart + splitStep * 7])))),
+                amount: uint256(bytes32(proofData[splitStart + splitStep * 7:splitStart + splitStep * 8])),
+                nonce: uint256(bytes32(proofData[splitStart + splitStep * 8:splitStart + splitStep * 9])),
+                timestamp: uint64(uint256(bytes32(proofData[splitStart + splitStep * 9:splitStart + splitStep * 10]))),
+                L1TXBlockHash: bytes32(
+                    (uint256(bytes32(proofData[TrackBlockSplitStart:TrackBlockSplitStart + splitStep])) << 128) |
+                        uint256(
+                            bytes32(proofData[TrackBlockSplitStart + splitStep:TrackBlockSplitStart + splitStep * 2])
+                        )
+                ),
+                L1TBlockNumber: uint256(
+                    bytes32(proofData[TrackBlockSplitStart + splitStep * 2:TrackBlockSplitStart + splitStep * 3])
+                )
+            });
+    }
+
     function verifyChallengeDest(
         address spvAddress,
         address challenger,
+        uint64 sourceChainId,
+        bytes32 sourceTxHash,
+        // bytes calldata publicInput, // TODO: Enable this parameter after the circuit has finished hash-encoding the public input.
         bytes calldata proof,
-        bytes32[2] calldata spvBlockHashs,
-        IORChallengeSpv.VerifyInfo calldata verifyInfo,
         uint[] calldata verifiedData0,
-        bytes calldata rawDatas,
-        uint64 sourceChainId
+        bytes calldata rawDatas
     ) external {
-        require(IORChallengeSpv(spvAddress).verifyChallenge(proof, spvBlockHashs, abi.encode(verifyInfo).hash()), "VF");
+        PublicInputDataDest memory publicInputData = parsePublicInputDest(proof);
 
-        bytes32 challengeId = abi.encode(uint64(verifyInfo.data[0]), verifyInfo.data[1]).hash();
-        require(_challenges[challengeId].result.verifiedTime0 > 0, "VT0Z");
-        require(_challenges[challengeId].result.verifiedTime1 == 0, "VT1NZ");
+        BridgeLib.ChainInfo memory chainInfo = IORManager(_mdcFactory.manager()).getChainInfo(publicInputData.chainId);
+        require(chainInfo.spvs.includes(spvAddress), "SI"); // Invalid spv
+        (bool success, ) = spvAddress.call(proof);
+        require(success, "VF");
+        bytes32 challengeId = abi.encode(sourceChainId, sourceTxHash).hash();
+        ChallengeStatement memory statement = _challenges[challengeId].statement[challenger];
+        ChallengeResult memory result = _challenges[challengeId].result;
+
+        require(result.verifiedTime0 > 0, "VT0Z");
+        require(result.verifiedTime1 == 0, "VT1NZ");
 
         require(
             _getCanChallengeContinue(
                 HelperLib.uint64ConcatToDecimal(
-                    _challenges[challengeId].statement[challenger].sourceTxTime,
+                    statement.sourceTxTime,
                     sourceChainId,
-                    _challenges[challengeId].statement[challenger].sourceTxBlockNum,
-                    _challenges[challengeId].statement[challenger].sourceTxIndex
+                    statement.sourceTxBlockNum,
+                    statement.sourceTxIndex
                 )
             ),
             "NCCF"
@@ -904,25 +1024,25 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
         // Check minVerifyChallengeDestTxSecond, maxVerifyChallengeDestTxSecond
         {
-            uint timeDiff = block.timestamp - _challenges[challengeId].statement[challenger].sourceTxTime;
+            uint timeDiff = block.timestamp - statement.sourceTxTime;
             require(timeDiff >= verifiedData0[0], "MINTOF");
             require(timeDiff <= verifiedData0[1], "MAXTOF");
         }
 
         // Check dest chainId
-        require(verifyInfo.data[0] == verifiedData0[3], "DCID");
+        require(verifiedData0[3] == publicInputData.chainId, "DCID");
 
         // Check dest from address in responseMakers
-        require(responseMakers.includes(verifyInfo.data[2]), "MIC");
+        require(responseMakers.includes(publicInputData.from), "MIC");
 
         // Check dest address
-        require(verifiedData0[4] == verifyInfo.data[3], "DADDR");
+        require(verifiedData0[4] == publicInputData.to, "DADDR");
 
         // Check dest token
-        require(verifiedData0[5] == verifyInfo.data[4], "DT");
+        require(verifiedData0[5] == publicInputData.token, "DT");
 
         // Check dest amount (Warning: The nonce is at the end of the amount)
-        require(verifiedData0[6] - verifiedData0[2] == verifyInfo.data[5], "DT");
+        require(verifiedData0[6] - verifiedData0[2] == publicInputData.amount, "DT");
 
         // TODO: check responseTime. Source tx timestamp may be more than dest tx timestamp.
 

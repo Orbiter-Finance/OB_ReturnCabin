@@ -132,15 +132,6 @@ interface IORMakerDeposit {
         address[] calldata challenger
     ) external;
 
-    // function verifyChallengeSource(
-    //     address spvAddress,
-    //     address challenger,
-    //     bytes calldata proof,
-    //     bytes32[2] calldata spvBlockHashs,
-    //     IORChallengeSpv.VerifyInfo calldata verifyInfo,
-    //     bytes calldata rawDatas
-    // ) external;
-
     function verifyChallengeSource(
         address spvAddress,
         address challenger,
@@ -152,11 +143,30 @@ interface IORMakerDeposit {
     function verifyChallengeDest(
         address spvAddress,
         address challenger,
+        uint64 sourceChainId,
+        bytes32 sourceTxHash,
         bytes calldata proof,
-        bytes32[2] calldata spvBlockHashs,
-        IORChallengeSpv.VerifyInfo calldata verifyInfo,
         uint[] calldata verifiedData0,
-        bytes calldata rawDatas,
-        uint64 sourceChainId
+        bytes calldata rawDatas
     ) external;
+
+    // function verifyChallengeSource(
+    //     address spvAddress,
+    //     address challenger,
+    //     bytes calldata proof,
+    //     bytes32[2] calldata spvBlockHashs,
+    //     IORChallengeSpv.VerifyInfo calldata verifyInfo,
+    //     bytes calldata rawDatas
+    // ) external;
+
+    // function verifyChallengeDest(
+    //     address spvAddress,
+    //     address challenger,
+    //     bytes calldata proof,
+    //     bytes32[2] calldata spvBlockHashs,
+    //     IORChallengeSpv.VerifyInfo calldata verifyInfo,
+    //     uint[] calldata verifiedData0,
+    //     bytes calldata rawDatas,
+    //     uint64 sourceChainId
+    // ) external;
 }
