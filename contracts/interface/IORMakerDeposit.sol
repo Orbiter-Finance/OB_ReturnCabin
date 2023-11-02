@@ -132,11 +132,20 @@ interface IORMakerDeposit {
         address[] calldata challenger
     ) external;
 
+    // function verifyChallengeSource(
+    //     address spvAddress,
+    //     address challenger,
+    //     bytes calldata proof,
+    //     bytes32[2] calldata spvBlockHashs,
+    //     IORChallengeSpv.VerifyInfo calldata verifyInfo,
+    //     bytes calldata rawDatas
+    // ) external;
+
     function verifyChallengeSource(
         address spvAddress,
         address challenger,
+        // bytes calldata publicInput, TODO: enable this argument after public input data is ready to hash encode
         bytes calldata proof,
-        bytes32[2] calldata spvBlockHashs,
         IORChallengeSpv.VerifyInfo calldata verifyInfo,
         bytes calldata rawDatas
     ) external;
