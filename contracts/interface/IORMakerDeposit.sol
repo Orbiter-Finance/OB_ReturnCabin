@@ -125,12 +125,7 @@ interface IORMakerDeposit {
         uint256 lastChallengeIdentNum
     ) external payable;
 
-    function checkChallenge(
-        uint64 sourceChainId,
-        bytes32 sourceTxHash,
-        uint[] calldata verifiedData0,
-        address[] calldata challenger
-    ) external;
+    function checkChallenge(uint64 sourceChainId, bytes32 sourceTxHash, address[] calldata challenger) external;
 
     function verifyChallengeSource(
         address spvAddress,

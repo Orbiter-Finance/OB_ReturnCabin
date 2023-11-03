@@ -418,12 +418,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             uint128(gasleft()));
     }
 
-    function checkChallenge(
-        uint64 sourceChainId,
-        bytes32 sourceTxHash,
-        uint[] calldata verifiedData0,
-        address[] calldata challenger
-    ) external {
+    function checkChallenge(uint64 sourceChainId, bytes32 sourceTxHash, address[] calldata challenger) external {
         bytes32 challengeId = abi.encode(uint64(sourceChainId), sourceTxHash).hash();
         ChallengeInfo storage challengeInfo = _challenges[challengeId];
         ChallengeStatement memory winnerStatement = challengeInfo.statement[challengeInfo.result.winner];
@@ -451,43 +446,35 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
             require(challengeStatement.abortTime == 0, "CA");
 
-            // Make sure verifyChallengeDest is not done yet
-            require(result.verifiedTime1 == 0, "VT1NZ");
-
-            IORManager manager = IORManager(_mdcFactory.manager());
-
-            if (result.verifiedTime0 == 0) {
-                /****** challenger fai ******/
-                BridgeLib.ChainInfo memory chainInfo = manager.getChainInfo(sourceChainId);
-
-                require(
-                    block.timestamp > chainInfo.maxVerifyChallengeSourceTxSecond + challengeStatement.sourceTxTime,
-                    "VCST"
-                );
-
+            if (result.verifiedTime1 > uint64(block.timestamp)) {
+                // maker verified! all challenger fail
                 unFreezeAmount += _challengerFailed(challengeStatement, sourceChainId);
                 freezeToken = challengeStatement.freezeToken;
             } else {
-                /****** maker fai ******/
-                // Ensure the correctness of verifiedData0
-                require(abi.encode(verifiedData0).hash() == result.verifiedDataHash0, "VDH");
-                require(result.verifiedTime1 > uint64(block.timestamp), "VDD");
-
-                BridgeLib.ChainInfo memory chainInfo = manager.getChainInfo(uint64(verifiedData0[0]));
-                require(
-                    block.timestamp > chainInfo.maxVerifyChallengeDestTxSecond + challengeStatement.sourceTxTime,
-                    "VCDT"
-                );
-
-                unFreezeAmount += _makerFailed(
-                    challengeStatement,
-                    winnerStatement,
-                    result,
-                    challenger[i],
-                    sourceChainId
-                );
-                freezeToken = challengeStatement.freezeToken;
+                IORManager manager = IORManager(_mdcFactory.manager());
+                BridgeLib.ChainInfo memory chainInfo = manager.getChainInfo(sourceChainId);
+                if (result.verifiedTime0 > uint64(block.timestamp)) {
+                    // challenger verified! maker over time, maker fail
+                    require(block.timestamp > chainInfo.maxVerifyChallengeDestTxSecond + result.verifiedTime0, "VCST");
+                    unFreezeAmount += _makerFailed(
+                        challengeStatement,
+                        winnerStatement,
+                        result,
+                        challenger[i],
+                        sourceChainId
+                    );
+                    freezeToken = challengeStatement.freezeToken;
+                } else {
+                    // none challenger verify
+                    require(
+                        block.timestamp > chainInfo.maxVerifyChallengeSourceTxSecond + challengeStatement.sourceTxTime,
+                        "VDST"
+                    );
+                    unFreezeAmount += _challengerFailed(challengeStatement, sourceChainId);
+                    freezeToken = challengeStatement.freezeToken;
+                }
             }
+
             challengeStatement.abortTime = uint64(block.timestamp);
 
             emit ChallengeInfoUpdated({
@@ -686,7 +673,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         address freezeToken;
         uint256 freezeAmount;
         uint256 nonce;
-        uint64 timestamp;
+        uint64 sourceTxTimestamp;
         uint256 dest;
         uint256 destToken;
         bytes32 L1TXBlockHash;
@@ -699,7 +686,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         bytes32 RulePreRootHash;
     }
 
-    function parsePublicInput(bytes calldata proofData) public pure returns (PublicInputData memory) {
+    function _parsePublicInput(bytes calldata proofData) private pure returns (PublicInputData memory) {
         return
             PublicInputData({
                 sourceChainId: uint64(uint256(bytes32(proofData[544:576]))),
@@ -712,7 +699,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
                 freezeToken: address(uint160(uint256(bytes32(proofData[640:672])))),
                 freezeAmount: uint256(bytes32(proofData[672:704])),
                 nonce: uint256(bytes32(proofData[704:736])),
-                timestamp: uint64(uint256(bytes32(proofData[736:768]))),
+                sourceTxTimestamp: uint64(uint256(bytes32(proofData[736:768]))),
                 dest: ((uint256(bytes32(proofData[768:800])))),
                 destToken: ((uint256(bytes32(proofData[800:832])))),
                 L1TXBlockHash: bytes32(
@@ -742,7 +729,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         bytes calldata rawDatas
     ) external {
         uint256 startGasNum = gasleft();
-        PublicInputData memory publicInputData = parsePublicInput(proof);
+        PublicInputData memory publicInputData = _parsePublicInput(proof);
         require(
             (publicInputData.managerContractAddress == _mdcFactory.manager()) &&
                 (publicInputData.mdcContractAddress == address(this)),
@@ -761,7 +748,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         require(statement.challengeTime > 0, "CTZ");
         require(result.verifiedTime0 == 0, "VT0NZ");
         // Check timestamp
-        require(publicInputData.timestamp == statement.sourceTxTime, "ST");
+        require(publicInputData.sourceTxTimestamp == statement.sourceTxTime, "ST");
         // Check maker address
         require(uint160(publicInputData.to) == uint160(_owner), "TNEO");
         // Check freezeToken
@@ -771,9 +758,13 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         // Check L1blockHash
         require(publicInputData.L1TXBlockHash == blockhash(publicInputData.L1TBlockNumber));
 
-        uint timeDiff = block.timestamp - publicInputData.timestamp;
-        require(timeDiff >= uint64(verifyInfo.slots[0].value), "MINTOF");
-        require(timeDiff <= uint64(verifyInfo.slots[0].value >> 64), "MAXTOF");
+        // Check manager's chainInfo.minVerifyChallengeSourceTxSecond,maxVerifyChallengeSourceTxSecond
+        // TODO: make this public input
+        {
+            uint timeDiff = block.timestamp - publicInputData.sourceTxTimestamp;
+            require(timeDiff >= uint64(chainInfo.minVerifyChallengeSourceTxSecond), "MINTOF");
+            require(timeDiff <= uint64(chainInfo.maxVerifyChallengeSourceTxSecond), "MAXTOF");
+        }
 
         (
             address[] memory dealers,
@@ -949,7 +940,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         uint256 L1TBlockNumber;
     }
 
-    function parsePublicInputDest(bytes calldata proofData) public pure returns (PublicInputDataDest memory) {
+    function _parsePublicInputDest(bytes calldata proofData) private pure returns (PublicInputDataDest memory) {
         uint256 ProofLength = 384;
         uint256 splitStep = 32;
         uint256 splitStart = ProofLength + 64; // 384 is proof length;64 is blockHash length
@@ -990,9 +981,10 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         uint[] calldata verifiedData0,
         bytes calldata rawDatas
     ) external {
-        PublicInputDataDest memory publicInputData = parsePublicInputDest(proof);
-
-        BridgeLib.ChainInfo memory chainInfo = IORManager(_mdcFactory.manager()).getChainInfo(publicInputData.chainId);
+        // parse Public input
+        PublicInputDataDest memory publicInputData = _parsePublicInputDest(proof);
+        // get DestChainInfo
+        BridgeLib.ChainInfo memory chainInfo = IORManager(_mdcFactory.manager()).getChainInfo(sourceChainId);
         require(chainInfo.spvs.includes(spvAddress), "SI"); // Invalid spv
         (bool success, ) = spvAddress.call(proof);
         require(success, "VF");
@@ -1023,10 +1015,11 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         require(abi.encode(responseMakers).hash() == bytes32(verifiedData0[7]), "RMH");
 
         // Check minVerifyChallengeDestTxSecond, maxVerifyChallengeDestTxSecond
+        // TODO: make this public input
         {
-            uint timeDiff = block.timestamp - statement.sourceTxTime;
-            require(timeDiff >= verifiedData0[0], "MINTOF");
-            require(timeDiff <= verifiedData0[1], "MAXTOF");
+            uint timeDiff = block.timestamp - result.verifiedTime0;
+            require(timeDiff >= uint64(chainInfo.minVerifyChallengeDestTxSecond), "MINTOF");
+            require(timeDiff <= uint64(chainInfo.maxVerifyChallengeDestTxSecond), "MAXTOF");
         }
 
         // Check dest chainId
