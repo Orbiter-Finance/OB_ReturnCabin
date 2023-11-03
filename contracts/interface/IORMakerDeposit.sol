@@ -132,6 +132,24 @@ interface IORMakerDeposit {
         address[] calldata challenger
     ) external;
 
+    function verifyChallengeSource(
+        address spvAddress,
+        address challenger,
+        bytes calldata proof,
+        IORChallengeSpv.VerifyInfo calldata verifyInfo,
+        bytes calldata rawDatas
+    ) external;
+
+    function verifyChallengeDest(
+        address spvAddress,
+        address challenger,
+        uint64 sourceChainId,
+        bytes32 sourceTxHash,
+        bytes calldata proof,
+        uint[] calldata verifiedData0,
+        bytes calldata rawDatas
+    ) external;
+
     // function verifyChallengeSource(
     //     address spvAddress,
     //     address challenger,
@@ -141,23 +159,14 @@ interface IORMakerDeposit {
     //     bytes calldata rawDatas
     // ) external;
 
-    function verifyChallengeSource(
-        address spvAddress,
-        address challenger,
-        // bytes calldata publicInput, TODO: enable this argument after public input data is ready to hash encode
-        bytes calldata proof,
-        IORChallengeSpv.VerifyInfo calldata verifyInfo,
-        bytes calldata rawDatas
-    ) external;
-
-    function verifyChallengeDest(
-        address spvAddress,
-        address challenger,
-        bytes calldata proof,
-        bytes32[2] calldata spvBlockHashs,
-        IORChallengeSpv.VerifyInfo calldata verifyInfo,
-        uint[] calldata verifiedData0,
-        bytes calldata rawDatas,
-        uint64 sourceChainId
-    ) external;
+    // function verifyChallengeDest(
+    //     address spvAddress,
+    //     address challenger,
+    //     bytes calldata proof,
+    //     bytes32[2] calldata spvBlockHashs,
+    //     IORChallengeSpv.VerifyInfo calldata verifyInfo,
+    //     uint[] calldata verifiedData0,
+    //     bytes calldata rawDatas,
+    //     uint64 sourceChainId
+    // ) external;
 }

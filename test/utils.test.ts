@@ -619,7 +619,7 @@ export const createChallenge = async (
       )
       .then((t) => t.wait());
     const args = tx.events?.[0].args;
-    // const basefee = (await ethers.provider.getFeeData()).lastBaseFeePerGas;
+    const basefee = (await ethers.provider.getFeeData()).lastBaseFeePerGas;
     console.log(
       // 'challenge input:',
       // (await ethers.provider.getTransaction(tx.transactionHash)).data,
@@ -632,9 +632,9 @@ export const createChallenge = async (
         (await ethers.provider.getTransaction(tx.transactionHash)).data,
       ),
       // 'basefee',
-      // basefee,
+      // basefee?.toNumber(),
       // 'challengerVerifyTransactionFee',
-      // args?.statement.challengerVerifyTransactionFee.div(basefee),
+      // args?.statement.challengerVerifyTransactionFee.div(basefee).toNumber(),
     );
 
     expect(args).not.empty;

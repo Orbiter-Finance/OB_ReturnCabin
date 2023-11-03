@@ -394,6 +394,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
         // Freeze mdc's owner assets and the assets in of challenger
         _freezeAssets[freezeToken] += freezeAmount0 + freezeAmount1;
+        uint128 baseFeePerGas = (uint128(block.basefee) + uint128(IORManager(_mdcFactory.manager()).getPriorityFee()));
 
         _challenges[challengeId].statement[msg.sender] = ChallengeStatement({
             sourceTxFrom: 0,
@@ -406,15 +407,15 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             abortTime: 0,
             sourceTxBlockNum: sourceTxBlockNum,
             sourceTxIndex: sourceTxIndex,
-            challengerVerifyTransactionFee: (uint128(startGasNum) - uint128(gasleft())) *
-                (uint128(block.basefee) + uint128(IORManager(_mdcFactory.manager()).getPriorityFee()))
+            challengerVerifyTransactionFee: baseFeePerGas
         });
-
         emit ChallengeInfoUpdated({
             challengeId: challengeId,
             statement: _challenges[challengeId].statement[msg.sender],
             result: _challenges[challengeId].result
         });
+        _challenges[challengeId].statement[msg.sender].challengerVerifyTransactionFee *= (uint128(startGasNum) -
+            uint128(gasleft()));
     }
 
     function checkChallenge(
@@ -735,7 +736,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
     function verifyChallengeSource(
         address spvAddress,
         address challenger,
-        // bytes calldata publicInput, TODO: enable this argument after public input data is ready to hash encode
+        // bytes calldata publicInput, // TODO: Enable this parameter after the circuit has finished hash-encoding the public input.
         bytes calldata proof,
         IORChallengeSpv.VerifyInfo calldata verifyInfo,
         bytes calldata rawDatas
@@ -752,25 +753,22 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         );
         require(chainInfo.spvs.includes(spvAddress), "SI"); // Invalid spv
         (bool success, ) = spvAddress.call(proof);
-        require(success, "verify fail");
+        require(success, "VF");
         // Check chainId, hash, timestamp
         bytes32 challengeId = abi.encode(publicInputData.sourceChainId, publicInputData.sourceTxHash).hash();
         ChallengeStatement memory statement = _challenges[challengeId].statement[challenger];
         ChallengeResult memory result = _challenges[challengeId].result;
         require(statement.challengeTime > 0, "CTZ");
         require(result.verifiedTime0 == 0, "VT0NZ");
-        // timestamp
+        // Check timestamp
         require(publicInputData.timestamp == statement.sourceTxTime, "ST");
-        // maker
+        // Check maker address
         require(uint160(publicInputData.to) == uint160(_owner), "TNEO");
-        // freezeToken
+        // Check freezeToken
         require(statement.freezeToken == publicInputData.freezeToken, "FTV");
-        // FreezeAmount
-        require(statement.freezeAmount0 == publicInputData.freezeAmount, "FALV");
-
-        // TODO: destChain destToken. circuit doesn't expose this public input.abi
-
-        // L1blockHash
+        // Check FreezeAmount
+        require(statement.freezeAmount1 == publicInputData.freezeAmount, "FALV");
+        // Check L1blockHash
         require(publicInputData.L1TXBlockHash == blockhash(publicInputData.L1TBlockNumber));
 
         uint timeDiff = block.timestamp - publicInputData.timestamp;
@@ -785,19 +783,11 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             RuleLib.Rule memory rule
         ) = abi.decode(rawDatas, (address[], address[], uint64[], address, RuleLib.Rule));
 
-        // TODO: _columnArrayHash
+        // TODO: check _columnArrayHash
         (dealers);
-        // rule hash
-        require((abi.encode(rule).hash()) == publicInputData.RulePreRootHash, "RH");
+        // TODO: Check _responseMakersHash
 
-        // rule /enabletime slot
-        {
-            uint256 slot = uint256(abi.encode(ebc, 6).hash());
-            require(slot == publicInputData.ruleRootSlot, "RRSE");
-            require((slot + 1) == publicInputData.ruleRootSlot, "RVSE");
-            require(0 == publicInputData.enableTimeSlot, "RVSE");
-        }
-
+        // Check ebc address, destChainId, destToken
         uint destChainId;
         {
             IOREventBinding.AmountParams memory ap = IOREventBinding(ebc).getAmountParams(publicInputData.freezeAmount);
@@ -805,28 +795,44 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
             require(ap.chainIdIndex <= chainIds.length, "COF");
             destChainId = chainIds[ap.chainIdIndex - 1];
+
+            // TODO:. circuit doesn't expose this public input now
+            require(uint160(statement.freezeToken) == uint160(publicInputData.destToken), "DTV");
         }
 
-        // Calculate dest amount
+        // Check rule & enabletime slot, rule hash
+        {
+            uint256 slot = uint256(abi.encode(ebc, 6).hash());
+            require(slot == publicInputData.ruleRootSlot, "RRSE");
+            require((slot + 1) == publicInputData.ruleVersionSlot, "RVSE");
+            require(0 == publicInputData.enableTimeSlot, "RVSE");
+            // Check rule hash
+            require((abi.encode(rule).hash()) == publicInputData.RulePreRootHash, "RH");
+        }
+
+        // Check dest amount
         // TODO: Is there a more general solution. Not only amount
         RuleLib.RuleOneway memory ro = RuleLib.convertToOneway(rule, publicInputData.sourceChainId);
         uint destAmount = IOREventBinding(ebc).getResponseAmountFromIntent(
             IOREventBinding(ebc).getResponseIntent(publicInputData.freezeAmount, ro)
         );
 
+        ChallengeStatement storage statement_s = _challenges[challengeId].statement[challenger];
+        ChallengeResult storage result_s = _challenges[challengeId].result;
+
         // Save tx'from address, and compensate tx'from on the mainnet when the maker failed
-        _challenges[challengeId].statement[challenger].sourceTxFrom = publicInputData.from;
+        statement_s.sourceTxFrom = publicInputData.from;
 
-        // TODO: Save manager._challengeUserRatio
-        // _challenges[challengeId].statement[challenger].challengeUserRatio = uint64(verifyInfo.slots[2].value >> 64);
+        // TODO: save challengeUserRatio from public input in next version
+        statement_s.challengeUserRatio = uint64(verifyInfo.slots[2].value >> 64);
 
-        _challenges[challengeId].result.verifiedTime0 = uint64(block.timestamp);
+        result_s.verifiedTime0 = uint64(block.timestamp);
 
-        _challenges[challengeId].result.winner = challenger;
+        result_s.winner = challenger;
 
         // Save verified data's hash.
         // [minVerifyChallengeDestTxSecond, maxVerifyChallengeDestTxSecond, nonce, destChainId, destAddress, destToken, destAmount, responeMakersHash]
-        _challenges[challengeId].result.verifiedDataHash0 = abi
+        result_s.verifiedDataHash0 = abi
             .encode(
                 [
                     uint64(verifyInfo.slots[0].value >> 128),
@@ -840,19 +846,14 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
                 ]
             )
             .hash();
-
+        emit ChallengeInfoUpdated({challengeId: challengeId, statement: statement_s, result: result_s});
         // TODO: add verify source gas cost (solt & emit)
-        _challenges[challengeId].statement[challenger].challengerVerifyTransactionFee +=
+        uint128 baseFeePerGas = (uint128(block.basefee) + uint128(IORManager(_mdcFactory.manager()).getPriorityFee()));
+        statement_s.challengerVerifyTransactionFee +=
             (uint128(startGasNum) -
                 uint128(gasleft()) +
                 uint128(IORManager(_mdcFactory.manager()).getChallengeBasefee())) *
-            (uint128(block.basefee) + uint128(IORManager(_mdcFactory.manager()).getPriorityFee()));
-
-        emit ChallengeInfoUpdated({
-            challengeId: challengeId,
-            statement: _challenges[challengeId].statement[challenger],
-            result: _challenges[challengeId].result
-        });
+            baseFeePerGas;
     }
 
     /**
@@ -866,29 +867,149 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
      * @param verifiedData0 [minVerifyChallengeDestTxSecond, maxVerifyChallengeDestTxSecond, nonce, destChainId, destAddress, destToken, destAmount, responeMakersHash]
      * @param rawDatas The raw data list in preimage. [responeMakers]
      */
+    // function verifyChallengeDest(
+    //     address spvAddress,
+    //     address challenger,
+    //     bytes calldata proof,
+    //     bytes32[2] calldata spvBlockHashs,
+    //     IORChallengeSpv.VerifyInfo calldata verifyInfo,
+    //     uint[] calldata verifiedData0,
+    //     bytes calldata rawDatas,
+    //     uint64 sourceChainId
+    // ) external {
+    //     require(IORChallengeSpv(spvAddress).verifyChallenge(proof, spvBlockHashs, abi.encode(verifyInfo).hash()), "VF");
+
+    //     bytes32 challengeId = abi.encode(uint64(verifyInfo.data[0]), verifyInfo.data[1]).hash();
+    //     require(_challenges[challengeId].result.verifiedTime0 > 0, "VT0Z");
+    //     require(_challenges[challengeId].result.verifiedTime1 == 0, "VT1NZ");
+
+    //     require(
+    //         _getCanChallengeContinue(
+    //             HelperLib.uint64ConcatToDecimal(
+    //                 _challenges[challengeId].statement[challenger].sourceTxTime,
+    //                 sourceChainId,
+    //                 _challenges[challengeId].statement[challenger].sourceTxBlockNum,
+    //                 _challenges[challengeId].statement[challenger].sourceTxIndex
+    //             )
+    //         ),
+    //         "NCCF"
+    //     );
+
+    //     // Parse rawDatas
+    //     uint[] memory responseMakers = abi.decode(rawDatas, (uint[]));
+
+    //     // Check verifiedData0
+    //     require(abi.encode(verifiedData0).hash() == _challenges[challengeId].result.verifiedDataHash0, "VDH0");
+    //     require(abi.encode(responseMakers).hash() == bytes32(verifiedData0[7]), "RMH");
+
+    //     // Check minVerifyChallengeDestTxSecond, maxVerifyChallengeDestTxSecond
+    //     {
+    //         uint timeDiff = block.timestamp - _challenges[challengeId].statement[challenger].sourceTxTime;
+    //         require(timeDiff >= verifiedData0[0], "MINTOF");
+    //         require(timeDiff <= verifiedData0[1], "MAXTOF");
+    //     }
+
+    //     // Check dest chainId
+    //     require(verifyInfo.data[0] == verifiedData0[3], "DCID");
+
+    //     // Check dest from address in responseMakers
+    //     require(responseMakers.includes(verifyInfo.data[2]), "MIC");
+
+    //     // Check dest address
+    //     require(verifiedData0[4] == verifyInfo.data[3], "DADDR");
+
+    //     // Check dest token
+    //     require(verifiedData0[5] == verifyInfo.data[4], "DT");
+
+    //     // Check dest amount (Warning: The nonce is at the end of the amount)
+    //     require(verifiedData0[6] - verifiedData0[2] == verifyInfo.data[5], "DT");
+
+    //     // TODO: check responseTime. Source tx timestamp may be more than dest tx timestamp.
+
+    //     _challenges[challengeId].result.verifiedTime1 = uint64(block.timestamp);
+
+    //     emit ChallengeInfoUpdated({
+    //         challengeId: challengeId,
+    //         statement: _challenges[challengeId].statement[msg.sender],
+    //         result: _challenges[challengeId].result
+    //     });
+    // }
+
+    struct PublicInputDataDest {
+        bytes32 txHash;
+        uint64 chainId;
+        uint256 txIndex;
+        uint256 from;
+        uint256 to;
+        uint256 token;
+        uint256 amount;
+        uint256 nonce;
+        uint64 timestamp;
+        bytes32 L1TXBlockHash;
+        uint256 L1TBlockNumber;
+    }
+
+    function parsePublicInputDest(bytes calldata proofData) public pure returns (PublicInputDataDest memory) {
+        uint256 ProofLength = 384;
+        uint256 splitStep = 32;
+        uint256 splitStart = ProofLength + 64; // 384 is proof length;64 is blockHash length
+        uint256 TrackBlockSplitStart = splitStart + splitStep * 12;
+        return
+            PublicInputDataDest({
+                txHash: bytes32(
+                    (uint256(bytes32(proofData[splitStart:splitStart + splitStep])) << 128) |
+                        uint256(bytes32(proofData[splitStart + splitStep:splitStart + splitStep * 2]))
+                ),
+                chainId: uint64(uint256(bytes32(proofData[splitStart + splitStep * 3:splitStart + splitStep * 4]))),
+                txIndex: uint256(bytes32(proofData[splitStart + splitStep * 2:splitStart + splitStep * 3])),
+                from: ((uint256(bytes32(proofData[splitStart + splitStep * 4:splitStart + splitStep * 5])))),
+                to: ((uint256(bytes32(proofData[splitStart + splitStep * 5:splitStart + splitStep * 6])))),
+                token: ((uint256(bytes32(proofData[splitStart + splitStep * 6:splitStart + splitStep * 7])))),
+                amount: uint256(bytes32(proofData[splitStart + splitStep * 7:splitStart + splitStep * 8])),
+                nonce: uint256(bytes32(proofData[splitStart + splitStep * 8:splitStart + splitStep * 9])),
+                timestamp: uint64(uint256(bytes32(proofData[splitStart + splitStep * 9:splitStart + splitStep * 10]))),
+                L1TXBlockHash: bytes32(
+                    (uint256(bytes32(proofData[TrackBlockSplitStart:TrackBlockSplitStart + splitStep])) << 128) |
+                        uint256(
+                            bytes32(proofData[TrackBlockSplitStart + splitStep:TrackBlockSplitStart + splitStep * 2])
+                        )
+                ),
+                L1TBlockNumber: uint256(
+                    bytes32(proofData[TrackBlockSplitStart + splitStep * 2:TrackBlockSplitStart + splitStep * 3])
+                )
+            });
+    }
+
     function verifyChallengeDest(
         address spvAddress,
         address challenger,
+        uint64 sourceChainId,
+        bytes32 sourceTxHash,
+        // bytes calldata publicInput, // TODO: Enable this parameter after the circuit has finished hash-encoding the public input.
         bytes calldata proof,
-        bytes32[2] calldata spvBlockHashs,
-        IORChallengeSpv.VerifyInfo calldata verifyInfo,
         uint[] calldata verifiedData0,
-        bytes calldata rawDatas,
-        uint64 sourceChainId
+        bytes calldata rawDatas
     ) external {
-        require(IORChallengeSpv(spvAddress).verifyChallenge(proof, spvBlockHashs, abi.encode(verifyInfo).hash()), "VF");
+        PublicInputDataDest memory publicInputData = parsePublicInputDest(proof);
 
-        bytes32 challengeId = abi.encode(uint64(verifyInfo.data[0]), verifyInfo.data[1]).hash();
-        require(_challenges[challengeId].result.verifiedTime0 > 0, "VT0Z");
-        require(_challenges[challengeId].result.verifiedTime1 == 0, "VT1NZ");
+        BridgeLib.ChainInfo memory chainInfo = IORManager(_mdcFactory.manager()).getChainInfo(publicInputData.chainId);
+        require(chainInfo.spvs.includes(spvAddress), "SI"); // Invalid spv
+        (bool success, ) = spvAddress.call(proof);
+        require(success, "VF");
+        bytes32 challengeId = abi.encode(sourceChainId, sourceTxHash).hash();
+        ChallengeStatement memory statement = _challenges[challengeId].statement[challenger];
+        ChallengeResult memory result = _challenges[challengeId].result;
+
+        require(result.verifiedTime0 > 0, "VT0Z");
+        require(result.verifiedTime1 == 0, "VT1NZ");
 
         require(
             _getCanChallengeContinue(
                 HelperLib.uint64ConcatToDecimal(
-                    _challenges[challengeId].statement[challenger].sourceTxTime,
+                    statement.sourceTxTime,
                     sourceChainId,
-                    _challenges[challengeId].statement[challenger].sourceTxBlockNum,
-                    _challenges[challengeId].statement[challenger].sourceTxIndex
+                    statement.sourceTxBlockNum,
+                    statement.sourceTxIndex
                 )
             ),
             "NCCF"
@@ -903,25 +1024,25 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
         // Check minVerifyChallengeDestTxSecond, maxVerifyChallengeDestTxSecond
         {
-            uint timeDiff = block.timestamp - _challenges[challengeId].statement[challenger].sourceTxTime;
+            uint timeDiff = block.timestamp - statement.sourceTxTime;
             require(timeDiff >= verifiedData0[0], "MINTOF");
             require(timeDiff <= verifiedData0[1], "MAXTOF");
         }
 
         // Check dest chainId
-        require(verifyInfo.data[0] == verifiedData0[3], "DCID");
+        require(verifiedData0[3] == publicInputData.chainId, "DCID");
 
         // Check dest from address in responseMakers
-        require(responseMakers.includes(verifyInfo.data[2]), "MIC");
+        require(responseMakers.includes(publicInputData.from), "MIC");
 
         // Check dest address
-        require(verifiedData0[4] == verifyInfo.data[3], "DADDR");
+        require(verifiedData0[4] == publicInputData.to, "DADDR");
 
         // Check dest token
-        require(verifiedData0[5] == verifyInfo.data[4], "DT");
+        require(verifiedData0[5] == publicInputData.token, "DT");
 
         // Check dest amount (Warning: The nonce is at the end of the amount)
-        require(verifiedData0[6] - verifiedData0[2] == verifyInfo.data[5], "DT");
+        require(verifiedData0[6] - verifiedData0[2] == publicInputData.amount, "DT");
 
         // TODO: check responseTime. Source tx timestamp may be more than dest tx timestamp.
 
