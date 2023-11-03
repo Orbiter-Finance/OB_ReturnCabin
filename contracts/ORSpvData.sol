@@ -5,9 +5,6 @@ import {HelperLib} from "./library/HelperLib.sol";
 import {IORSpvData} from "./interface/IORSpvData.sol";
 import {IORManager} from "./interface/IORManager.sol";
 
-// TODO: test
-import "hardhat/console.sol";
-
 contract ORSpvData is IORSpvData {
     using HelperLib for bytes;
 
@@ -33,70 +30,69 @@ contract ORSpvData is IORSpvData {
 
     // TODO: Not review
     function _calculateRoot(uint startBlockNumber) internal view returns (bytes32) {
-        // The lowest layer is calculated separately from other layers to save gas
         uint len = _blockInterval / 2;
-        bytes32[] memory leaves = new bytes32[](len);
-        for (uint i = 0; i < len; ) {
-            bytes32 leavesRoot;
+        bytes32 root;
+        assembly {
+            let leaves := mload(0x40)
+            mstore(0x40, add(leaves, mul(len, 0x20)))
 
-            assembly {
+            // The lowest layer is calculated separately from other layers to save gas
+            for {
+                let i := 0
+                let leavesPtr := leaves
+            } lt(i, len) {
+                i := add(i, 1)
+            } {
                 let ix2 := mul(i, 2)
-                let leafL := blockhash(add(startBlockNumber, ix2))
-                let leafR := blockhash(add(startBlockNumber, add(ix2, 1)))
+                let data := mload(0x40)
+                mstore(data, blockhash(add(startBlockNumber, ix2)))
+                mstore(add(data, 0x20), blockhash(add(startBlockNumber, add(ix2, 1))))
 
-                let data := mload(64)
-                mstore(data, leafL)
-                mstore(add(data, 32), leafR)
+                mstore(leavesPtr, keccak256(data, 0x40))
 
-                leavesRoot := keccak256(data, 64)
+                // Release memory
+                data := mload(0x40)
+
+                leavesPtr := add(leavesPtr, 0x20)
             }
 
-            unchecked {
-                leaves[i] = leavesRoot;
-                i++;
-            }
-        }
+            for {
 
-        while (true) {
-            for (uint i = 0; i < len; ) {
-                uint ni;
-                bytes32 leavesRoot;
+            } gt(len, 1) {
+                len := add(div(len, 2), mod(len, 2))
+            } {
+                for {
+                    let i := 0
+                    let leavesPtr := leaves
+                } lt(i, len) {
+                    i := add(i, 2)
+                } {
+                    // Default
+                    let ptrL := add(leaves, mul(i, 0x20))
+                    mstore(leavesPtr, mload(ptrL))
 
-                unchecked {
-                    ni = i + 1;
-                }
+                    // When i+1 < len, hash(ptrL connect ptrR)
+                    if lt(add(i, 1), len) {
+                        let ptrR := add(ptrL, 0x20)
 
-                if (ni < len) {
-                    assembly {
-                        let ptrL := add(leaves, mul(ni, 32))
-                        let ptrR := add(ptrL, 32)
-
-                        let data := mload(64)
+                        let data := mload(0x40)
                         mstore(data, mload(ptrL))
-                        mstore(add(data, 32), mload(ptrR))
+                        mstore(add(data, 0x20), mload(ptrR))
 
-                        leavesRoot := keccak256(data, 64)
+                        mstore(leavesPtr, keccak256(data, 0x40))
+
+                        // Release memory
+                        data := mload(0x40)
                     }
-                } else {
-                    leavesRoot = leaves[i];
-                }
 
-                unchecked {
-                    leaves[i / 2] = leavesRoot;
-                    i += 2;
+                    leavesPtr := add(leavesPtr, 0x20)
                 }
             }
 
-            if (len == 2) {
-                return leaves[0];
-            }
-
-            unchecked {
-                len = len / 2 + (len % 2);
-            }
+            root := mload(leaves)
         }
 
-        return bytes32(0);
+        return root;
     }
 
     function saveHistoryBlocksRoots() external {
