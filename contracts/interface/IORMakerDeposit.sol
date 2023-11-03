@@ -122,7 +122,7 @@ interface IORMakerDeposit {
         bytes32 sourceTxHash,
         address freezeToken,
         uint freezeAmount1,
-        uint256 lastChallengeIdentNum
+        uint256 parentNodeNumOfTargetNode
     ) external payable;
 
     function checkChallenge(uint64 sourceChainId, bytes32 sourceTxHash, address[] calldata challenger) external;

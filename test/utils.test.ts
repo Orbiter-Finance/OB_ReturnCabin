@@ -106,7 +106,7 @@ export interface challengeInputInfo {
   from: string;
   freezeToken: string;
   freezeAmount: BigNumberish;
-  lastChallengeIdentNum: BigNumberish;
+  parentNodeNumOfTargetNode: BigNumberish;
 }
 
 export interface verifyinfoBase {
@@ -140,7 +140,7 @@ export const updateSpv = async (
   const enableTimeTime =
     // eslint-disable-next-line prettier/prettier
     (await getCurrentTime()) >
-      (await _orManager.getVersionAndEnableTime()).enableTime.toNumber()
+    (await _orManager.getVersionAndEnableTime()).enableTime.toNumber()
       ? await getCurrentTime()
       : (await _orManager.getVersionAndEnableTime()).enableTime;
 
@@ -553,7 +553,7 @@ export const getLastChallengeIdentNum = (
   challengeIdentNumList: bigint[],
   challengeIdentNum: bigint,
 ) => {
-  let lastChallengeIdentNum = null;
+  let parentNodeNumOfTargetNode = null;
   if (challengeIdentNumList.length > 0) {
     const challengeIdentNumSortList = challengeIdentNumList.sort((a, b) => {
       if (a > b) return -1;
@@ -569,11 +569,11 @@ export const getLastChallengeIdentNum = (
       lastNum = challengeIdentNumSortList[index];
       index++;
     }
-    lastChallengeIdentNum = lastNum;
+    parentNodeNumOfTargetNode = lastNum;
   } else {
-    lastChallengeIdentNum = 0;
+    parentNodeNumOfTargetNode = 0;
   }
-  return lastChallengeIdentNum;
+  return parentNodeNumOfTargetNode;
 };
 
 export const createChallenge = async (
@@ -599,7 +599,7 @@ export const createChallenge = async (
         challenge.sourceTxHash.toString(),
         challenge.freezeToken,
         challenge.freezeAmount,
-        challenge.lastChallengeIdentNum,
+        challenge.parentNodeNumOfTargetNode,
         { value: BigNumber.from(challenge.freezeAmount).add(minDeposit) },
       ),
     ).to.revertedWith(revertReason);
@@ -614,7 +614,7 @@ export const createChallenge = async (
         challenge.sourceTxHash.toString(),
         challenge.freezeToken,
         challenge.freezeAmount,
-        challenge.lastChallengeIdentNum,
+        challenge.parentNodeNumOfTargetNode,
         { value: BigNumber.from(challenge.freezeAmount).add(minDeposit) },
       )
       .then((t) => t.wait());
