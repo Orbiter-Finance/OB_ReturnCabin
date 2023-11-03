@@ -879,7 +879,7 @@ describe('ORMakerDeposit', () => {
     //     sourceBlockNum,
     //     sourceTxIndex,
     //   );
-    //   const lastChallengeIdentNum = getLastChallengeIdentNum(
+    //   const parentNodeNumOfTargetNode = getLastChallengeIdentNum(
     //     [],
     //     challengeIdentNum,
     //   );
@@ -891,7 +891,7 @@ describe('ORMakerDeposit', () => {
     //     sourceTxHash: utils.keccak256(mdcOwner.address),
     //     from: await orMakerDeposit.owner(),
     //     freezeToken: constants.AddressZero,
-    //     lastChallengeIdentNum,
+    //     parentNodeNumOfTargetNode,
     //     freezeAmount: utils.parseEther('0.01'),
     //   };
     //   await createChallenge(orMakerDeposit, challenge);
@@ -962,7 +962,7 @@ describe('ORMakerDeposit', () => {
           sourceTxIndex,
         );
         challengeIdentNumList.push(challengeIdentNum);
-        const lastChallengeIdentNum = getLastChallengeIdentNum(
+        const parentNodeNumOfTargetNode = getLastChallengeIdentNum(
           challengeIdentNumList,
           challengeIdentNum,
         );
@@ -975,7 +975,7 @@ describe('ORMakerDeposit', () => {
           from: await orMakerDeposit.owner(),
           freezeToken: constants.AddressZero,
           freezeAmount: utils.parseEther('0.001'),
-          lastChallengeIdentNum,
+          parentNodeNumOfTargetNode,
         };
         challengeInputInfos.push(challengeInputInfo);
         const res = await createChallenge(orMakerDeposit, challengeInputInfo);
@@ -1020,7 +1020,7 @@ describe('ORMakerDeposit', () => {
         from: await orMakerDeposit.owner(),
         freezeToken: constants.AddressZero,
         freezeAmount: utils.parseEther('0.001'),
-        lastChallengeIdentNum: 0,
+        parentNodeNumOfTargetNode: 0,
       };
       await expect(
         createChallenge(orMakerDeposit, addRequireInputInfo),
@@ -1059,7 +1059,11 @@ describe('ORMakerDeposit', () => {
       const inpudataGas = callDataCost(txrc.data);
       console.log(
         // eslint-disable-next-line prettier/prettier
-        `verify totalGas: ${tx.gasUsed}, callDataGas: ${inpudataGas}, excuteGas: ${tx.gasUsed.toNumber() - inpudataGas} `,
+        `verify totalGas: ${
+          tx.gasUsed
+        }, callDataGas: ${inpudataGas}, excuteGas: ${
+          tx.gasUsed.toNumber() - inpudataGas
+        } `,
       );
 
       // const verifyTx = await orMakerDeposit
@@ -1108,7 +1112,10 @@ describe('ORMakerDeposit', () => {
         from: await orMakerDeposit.owner(),
         freezeToken: constants.AddressZero,
         freezeAmount: utils.parseEther(case1freezeAmount),
-        lastChallengeIdentNum: getLastChallengeIdentNum([], challengeIdentNum),
+        parentNodeNumOfTargetNode: getLastChallengeIdentNum(
+          [],
+          challengeIdentNum,
+        ),
       };
       const case1balanceOfMakerbefore = utils.formatEther(
         await ethers.provider.getBalance(orMakerDeposit.address),
@@ -1133,7 +1140,7 @@ describe('ORMakerDeposit', () => {
         from: await orMakerDeposit.owner(),
         freezeToken: challenge.freezeToken,
         freezeAmount: challenge.freezeAmount,
-        lastChallengeIdentNum: getLastChallengeIdentNum(
+        parentNodeNumOfTargetNode: getLastChallengeIdentNum(
           [],
           challengeIdentNumFake,
         ),
@@ -1183,7 +1190,10 @@ describe('ORMakerDeposit', () => {
         from: await orMakerDeposit.owner(),
         freezeToken: challenge.freezeToken,
         freezeAmount: challenge.freezeAmount,
-        lastChallengeIdentNum: getLastChallengeIdentNum([], challengeIdentNum2),
+        parentNodeNumOfTargetNode: getLastChallengeIdentNum(
+          [],
+          challengeIdentNum2,
+        ),
       };
       await createChallenge(orMakerDeposit, challenge2, 'CT');
     });
@@ -1223,7 +1233,7 @@ describe('ORMakerDeposit', () => {
     //     from: await orMakerDeposit.owner(),
     //     freezeToken: freezeToken,
     //     freezeAmount: utils.parseEther(case1freezeAmount),
-    //     lastChallengeIdentNum: getLastChallengeIdentNum([], challengeIdentNum),
+    //     parentNodeNumOfTargetNode: getLastChallengeIdentNum([], challengeIdentNum),
     //   };
 
     //   const verifyinfoBase: verifyinfoBase = {

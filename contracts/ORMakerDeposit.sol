@@ -300,7 +300,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         emit RulesRootUpdated(_mdcFactory.implementation(), ebc, rootWithVersion);
     }
 
-    function _addChallengeNode(uint256 lastChallengeIdentNum, uint256 challengeIdentNum) private {
+    function _addChallengeNode(uint256 parentNodeNumOfTargetNode, uint256 challengeIdentNum) private {
         ChallengeNode storage challengeNode = _challengeNodeList[challengeIdentNum];
         uint64 currentTime = uint64(block.timestamp);
 
@@ -308,15 +308,15 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             _challengeNodeHead = challengeIdentNum;
             challengeNode.challengeCreateTime = currentTime;
         } else {
-            if (lastChallengeIdentNum == 0) {
+            if (parentNodeNumOfTargetNode == 0) {
                 challengeNode.prev = _challengeNodeHead;
                 challengeNode.challengeCreateTime = currentTime;
                 _challengeNodeHead = challengeIdentNum;
             } else {
-                ChallengeNode storage lastChallengeNode = _challengeNodeList[lastChallengeIdentNum];
+                ChallengeNode storage lastChallengeNode = _challengeNodeList[parentNodeNumOfTargetNode];
                 require(
                     lastChallengeNode.challengeCreateTime > 0 &&
-                        lastChallengeIdentNum > challengeIdentNum &&
+                        parentNodeNumOfTargetNode > challengeIdentNum &&
                         challengeIdentNum > lastChallengeNode.prev,
                     "VLNP"
                 );
@@ -354,7 +354,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         bytes32 sourceTxHash,
         address freezeToken,
         uint freezeAmount1,
-        uint256 lastChallengeIdentNum
+        uint256 parentNodeNumOfTargetNode
     ) external payable {
         uint256 startGasNum = gasleft();
         bytes32 challengeId = abi.encode(sourceChainId, sourceTxHash).hash();
@@ -381,12 +381,12 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         );
 
         if (_challengeNodeHead != 0 && _challengeNodeHead > challengeIdentNum) {
-            require(lastChallengeIdentNum > 0, "LCINE");
+            require(parentNodeNumOfTargetNode > 0, "LCINE");
         }
 
         // TODO: For more challenger challenge the same tx, the same challenge will pass
         if (_challengeNodeList[challengeIdentNum].challengeCreateTime == 0) {
-            _addChallengeNode(lastChallengeIdentNum, challengeIdentNum);
+            _addChallengeNode(parentNodeNumOfTargetNode, challengeIdentNum);
         }
 
         // TODO: Currently it is assumed that the pledged assets of the challenger and the owner are the same
