@@ -1,7 +1,7 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { ethers } from 'hardhat';
 
-import { mine } from '@nomicfoundation/hardhat-network-helpers';
+import { mine, mineUpTo } from '@nomicfoundation/hardhat-network-helpers';
 import { assert, expect } from 'chai';
 import {
   IORSpvData,
@@ -10,17 +10,36 @@ import {
   ORSpvData,
   ORSpvData__factory,
 } from '../typechain-types';
-import { BigNumber } from 'ethers';
+import { BigNumber, BigNumberish } from 'ethers';
 import { testReverted, testRevertedOwner } from './utils.test';
-import { id } from 'ethers/lib/utils';
+import { defaultAbiCoder, id, keccak256 } from 'ethers/lib/utils';
+import { MerkleTree } from 'merkletreejs';
 
 describe('ORSpvData', () => {
   let signers: SignerWithAddress[];
   let orManager: ORManager;
   let orSpvData: ORSpvData;
+  let injectOwner: SignerWithAddress;
+
+  const _calculateMerkleTree = async (
+    startBlockNumber: BigNumberish,
+    blockInterval: number,
+  ) => {
+    const leaves = await Promise.all(
+      new Array(blockInterval)
+        .fill(undefined)
+        .map((_, index) =>
+          orSpvData.provider
+            .getBlock(BigNumber.from(startBlockNumber).add(index).toHexString())
+            .then((b) => b.hash),
+        ),
+    );
+    return new MerkleTree(leaves, keccak256);
+  };
 
   before(async function () {
     signers = await ethers.getSigners();
+    injectOwner = signers[3];
 
     const envORManagerAddress = process.env['OR_MANAGER_ADDRESS'];
     assert(
@@ -58,7 +77,7 @@ describe('ORSpvData', () => {
   });
 
   it('Test ORManager.updateSpvBlockInterval should success', async function () {
-    const spvBlockInterval = BigNumber.from(40);
+    const spvBlockInterval = 192;
 
     await testRevertedOwner(
       orManager.connect(signers[2]).updateSpvBlockInterval(spvBlockInterval),
@@ -77,40 +96,78 @@ describe('ORSpvData', () => {
     // Cross contract events do not automatically parse parameters
     expect(BigNumber.from(events[0].data)).to.deep.eq(spvBlockInterval);
 
-    const storageValue = await orSpvData.getBlockInterval();
+    const storageValue = await orSpvData.blockInterval();
     expect(storageValue).to.deep.eq(spvBlockInterval);
   });
 
-  it('Function ORManager.injectSpvBlocks should success', async function () {
+  it('Function saveHistoryBlocksRoots should success', async function () {
     // Only hardhat local network
-    await mine(1000);
+    await mineUpTo(1200);
 
-    const receipt = await orSpvData.saveHistoryBlocks().then((t) => t.wait());
+    const receipt = await orSpvData
+      .saveHistoryBlocksRoots()
+      .then((t) => t.wait());
     const events = receipt.events!;
+    const currentBlockNumber = receipt.blockNumber;
 
-    const blockInterval = await orSpvData.getBlockInterval();
+    const blockInterval = (await orSpvData.blockInterval()).toNumber();
 
     for (let i = 256, ei = 0; i > 0; i--) {
-      const blockNumber = receipt.blockNumber - i;
-      if (blockNumber % blockInterval.toNumber() === 0) {
-        expect(BigNumber.from(blockNumber)).to.deep.eq(
-          events[ei].args?.['blockNumber'],
+      const startBlockNumber = currentBlockNumber - i;
+      if (
+        startBlockNumber % blockInterval === 0 &&
+        startBlockNumber + blockInterval < currentBlockNumber
+      ) {
+        expect(BigNumber.from(startBlockNumber)).to.deep.eq(
+          events[ei].args?.['startBlockNumber'],
         );
 
-        const blockHash = await orSpvData.getBlockHash(blockNumber);
-        expect(BigNumber.from(blockHash)).not.deep.eq(BigNumber.from(0));
+        // Calculate block's hash root
+        const merkleTree = await _calculateMerkleTree(
+          startBlockNumber,
+          blockInterval,
+        );
+
+        const blockHash = await orSpvData.getBlocksRoot(startBlockNumber);
+        expect(BigNumber.from(blockHash)).to.eq(
+          BigNumber.from(merkleTree.getHexRoot()),
+        );
 
         ei++;
       }
     }
   });
 
-  it('Test saveHistoryBlocks should success', async function () {
-    const eventHistoryBlockSavedKey = id('HistoryBlockSaved(uint256,bytes32)');
+  it('Test ORManager.updateSpvDataInjectOwner should success', async function () {
+    await testRevertedOwner(
+      orManager
+        .connect(signers[2])
+        .updateSpvDataInjectOwner(injectOwner.address),
+    );
+    await testReverted(
+      orSpvData.updateInjectOwner(injectOwner.address),
+      'Forbidden: caller is not the manager',
+    );
 
-    const blockInterval = await orSpvData.getBlockInterval();
+    const events = (
+      await orManager
+        .updateSpvDataInjectOwner(injectOwner.address)
+        .then((t) => t.wait())
+    ).events!;
 
-    const startBlock = (
+    // Cross contract events do not automatically parse parameters
+    expect(BigNumber.from(events[0].data)).to.deep.eq(injectOwner.address);
+
+    const storageValue = await orSpvData.injectOwner();
+    expect(storageValue).to.deep.eq(injectOwner.address);
+  });
+
+  it('Function injectBlocksRoots should success', async function () {
+    const eventHistoryBlockSavedKey = id(
+      'HistoryBlocksRootSaved(uint256,bytes32,uint256)',
+    );
+    const blockInterval = (await orSpvData.blockInterval()).toNumber();
+    const block0 = (
       await orSpvData.provider.getLogs({
         address: orSpvData.address,
         fromBlock: 0,
@@ -118,137 +175,144 @@ describe('ORSpvData', () => {
         topics: [eventHistoryBlockSavedKey],
       })
     ).pop();
-    const startBlockNumber = BigNumber.from(startBlock?.topics[1]);
-    const startBlockHash = startBlock?.data || '';
-    // ?.topics[1],
-    // ;
-
-    await testRevertedOwner(
-      orManager
-        .connect(signers[2])
-        .injectSpvBlocks(
-          startBlockNumber.sub(blockInterval),
-          startBlockNumber,
-          [],
-        ),
+    const blockNumber0 = BigNumber.from(block0?.topics[1]);
+    const [blocksRoot0] = defaultAbiCoder.decode(
+      ['bytes32', 'uint256'],
+      block0?.data!,
     );
+
     await testReverted(
-      orSpvData.injectBlocksByManager(
-        startBlockNumber.sub(blockInterval),
-        startBlockNumber,
+      orSpvData.injectBlocksRoots(
+        blockNumber0.sub(blockInterval),
+        blockNumber0,
         [],
       ),
-      'Forbidden: caller is not the manager',
+      'Forbidden: caller is not the inject owner',
     );
+
+    const connectedORSpvData = orSpvData.connect(injectOwner);
+
     await testReverted(
-      orManager.injectSpvBlocks(startBlockNumber, startBlockNumber, []),
+      connectedORSpvData.injectBlocksRoots(blockNumber0, blockNumber0, []),
       'SNLE',
     );
     await testReverted(
-      orManager.injectSpvBlocks(startBlockNumber.add(1), startBlockNumber, []),
+      connectedORSpvData.injectBlocksRoots(
+        blockNumber0.add(1),
+        blockNumber0,
+        [],
+      ),
       'SNLE',
     );
     await testReverted(
-      orManager.injectSpvBlocks(
-        startBlockNumber.sub(blockInterval.sub(1)),
-        startBlockNumber,
+      connectedORSpvData.injectBlocksRoots(
+        blockNumber0.sub(blockInterval - 1),
+        blockNumber0,
         [],
       ),
       'SZ',
     );
     await testReverted(
-      orManager.injectSpvBlocks(
-        startBlockNumber,
-        startBlockNumber.add(blockInterval.sub(1)),
+      connectedORSpvData.injectBlocksRoots(
+        blockNumber0,
+        blockNumber0.add(blockInterval - 1),
         [],
       ),
       'EZ',
     );
 
     // Only hardhat local network
-    await mine(1000);
+    const mineBlockNumber = blockInterval * 5;
+    await mine(mineBlockNumber);
 
-    await orSpvData.saveHistoryBlocks().then((t) => t.wait());
-
-    const endBlock = (
+    await orSpvData.saveHistoryBlocksRoots().then((t) => t.wait());
+    const block1 = (
       await orSpvData.provider.getLogs({
         address: orSpvData.address,
-        fromBlock: startBlockNumber.add(1000).toHexString(),
+        fromBlock: blockNumber0.add(mineBlockNumber).toHexString(),
         toBlock: 'latest',
         topics: [eventHistoryBlockSavedKey],
       })
     ).shift();
-    const endBlockNumber = BigNumber.from(endBlock?.topics[1]);
-    const endBlockHash = endBlock?.data || '';
-
-    const injectionBlocks: IORSpvData.InjectionBlockStruct[] = [];
+    const blockNumber1 = BigNumber.from(block1?.topics[1]);
+    const [blocksRoot1] = defaultAbiCoder.decode(
+      ['bytes32', 'uint256'],
+      block1?.data!,
+    );
+    const injectionBlocksRoots: IORSpvData.InjectionBlocksRootStruct[] = [];
     for (let i = 0; i < 2; i++) {
-      const _blockNumber = startBlockNumber.add(blockInterval.mul(i + 1));
-      const _blockHash = (
-        await orSpvData.provider.getBlock(_blockNumber.toHexString())
-      ).hash;
-      injectionBlocks.push({
-        blockNumber: _blockNumber,
-        blockHash: _blockHash,
+      const _blockNumber = blockNumber0.add(blockInterval * (i + 1));
+      const merkleTree = await _calculateMerkleTree(
+        blockNumber0,
+        blockInterval,
+      );
+
+      injectionBlocksRoots.push({
+        startBlockNumber: _blockNumber,
+        blocksRoot: merkleTree.getHexRoot(),
       });
     }
-
     await testReverted(
-      orManager.injectSpvBlocks(
-        endBlockNumber,
-        endBlockNumber.add(blockInterval),
-        injectionBlocks,
-      ),
-      'SGEIB',
-    );
-    await testReverted(
-      orManager.injectSpvBlocks(startBlockNumber, endBlockNumber, [
+      connectedORSpvData.injectBlocksRoots(blockNumber0, blockNumber1, [
         {
-          blockNumber: endBlockNumber,
-          blockHash: endBlockHash,
+          startBlockNumber: blockNumber0,
+          blocksRoot: blocksRoot0,
         },
       ]),
-      'ELEIB',
+      'IBLE0',
     );
     await testReverted(
-      orManager.injectSpvBlocks(
-        startBlockNumber,
-        endBlockNumber,
-        injectionBlocks.slice(1, 2),
-      ),
+      connectedORSpvData.injectBlocksRoots(blockNumber0, blockNumber1, [
+        {
+          startBlockNumber: blockNumber1,
+          blocksRoot: blocksRoot1,
+        },
+      ]),
+      'IBGE1',
+    );
+    await testReverted(
+      connectedORSpvData.injectBlocksRoots(blockNumber0, blockNumber1, [
+        {
+          startBlockNumber: blockNumber0.add(1),
+          blocksRoot: injectionBlocksRoots[0].blocksRoot,
+        },
+      ]),
       'IIB',
     );
-    await testReverted(
-      orManager.injectSpvBlocks(
-        startBlockNumber.sub(blockInterval),
-        endBlockNumber,
-        [
-          {
-            blockNumber: startBlockNumber,
-            blockHash: startBlockHash,
-          },
-        ],
-      ),
-      'BE',
-    );
+
+    console.log('Length of injectionBlocksRoots:', injectionBlocksRoots.length);
 
     const events = (
-      await orManager
-        .injectSpvBlocks(startBlockNumber, endBlockNumber, injectionBlocks)
+      await connectedORSpvData
+        .injectBlocksRoots(blockNumber0, blockNumber1, injectionBlocksRoots)
         .then((t) => t.wait())
     ).events!;
-    for (let i = 0; i < injectionBlocks.length; i++) {
+    for (let i = 0; i < injectionBlocksRoots.length; i++) {
       expect(BigNumber.from(events[i].topics[1])).to.deep.eq(
-        injectionBlocks[i].blockNumber,
-      );
-      expect(BigNumber.from(events[i].data)).to.deep.eq(
-        BigNumber.from(injectionBlocks[i].blockHash),
+        injectionBlocksRoots[i].startBlockNumber,
       );
 
-      const _blockHash = await orSpvData.getBlockHash(
-        injectionBlocks[i].blockNumber,
+      const [_blocksRoot] = defaultAbiCoder.decode(
+        ['bytes32', 'uint256'],
+        events[i].data,
+      );
+      expect(BigNumber.from(_blocksRoot)).to.deep.eq(
+        BigNumber.from(injectionBlocksRoots[i].blocksRoot),
+      );
+
+      const _blockHash = await orSpvData.getBlocksRoot(
+        injectionBlocksRoots[i].startBlockNumber,
       );
       expect(BigNumber.from(_blockHash)).not.deep.eq(BigNumber.from(0));
     }
+
+    await testReverted(
+      connectedORSpvData.injectBlocksRoots(
+        blockNumber0,
+        blockNumber1,
+        injectionBlocksRoots,
+      ),
+      'BE',
+    );
   });
 });

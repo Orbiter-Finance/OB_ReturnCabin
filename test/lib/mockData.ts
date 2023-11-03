@@ -1,6 +1,6 @@
 import hre, { ethers } from 'hardhat';
 import { BridgeLib } from '../../typechain-types/contracts/ORManager';
-import { BigNumber, Bytes, constants, utils } from 'ethers';
+import { BigNumber, Bytes, Wallet, constants, utils } from 'ethers';
 import lodash from 'lodash';
 import axios from 'axios';
 import fs from 'fs';
@@ -95,8 +95,10 @@ export interface withdrawVerification {
 /************************ Mock Data ***************************/
 
 export const dealersMock = async () => {
-  const signers = await ethers.getSigners();
-  return signers.slice(0, 2).map((signer) => signer.address);
+  const dealers = new Array(99)
+    .fill(undefined)
+    .map(() => Wallet.createRandom().address);
+  return dealers;
 };
 
 export const submitterMock = async () => {

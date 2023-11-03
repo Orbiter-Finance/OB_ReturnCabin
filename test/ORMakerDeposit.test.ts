@@ -249,7 +249,7 @@ describe('ORMakerDeposit', () => {
         //         await orMakerDeposit.getVersionAndEnableTime()
         //       ).enableTime,
         //     ),
-        //     new Array(11).fill(constants.AddressZero),
+        //     new Array(101).fill(constants.AddressZero),
         //     [],
         //     [],
         //     {
@@ -1059,10 +1059,8 @@ describe('ORMakerDeposit', () => {
       const inpudataGas = callDataCost(txrc.data);
       console.log(
         // eslint-disable-next-line prettier/prettier
-        `verify totalGas: ${
-          tx.gasUsed
-        }, callDataGas: ${inpudataGas}, excuteGas: ${
-          tx.gasUsed.toNumber() - inpudataGas
+        `verify totalGas: ${tx.gasUsed
+        }, callDataGas: ${inpudataGas}, excuteGas: ${tx.gasUsed.toNumber() - inpudataGas
         } `,
       );
 

@@ -1,17 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
+import {HelperLib} from "./library/HelperLib.sol";
 import {IORSpvData} from "./interface/IORSpvData.sol";
 import {IORManager} from "./interface/IORManager.sol";
 
-// TODO: test
-import "hardhat/console.sol";
-
 contract ORSpvData is IORSpvData {
-    IORManager private _manager;
-    uint64 private _blockInterval = 20;
+    using HelperLib for bytes;
 
-    mapping(uint => bytes32) private _blocks;
+    IORManager private _manager;
+    uint64 private _blockInterval = 192;
+    address private _injectOwner;
+
+    mapping(uint => bytes32) private _blocksRoots; // startBlockNumber => [start ..._blockInterval... end]'s blocks root
 
     constructor(address manager_) {
         require(manager_ != address(0), "MZ");
@@ -23,66 +24,160 @@ contract ORSpvData is IORSpvData {
         _;
     }
 
-    function getBlockHash(uint blkNumber) external view returns (bytes32) {
-        return _blocks[blkNumber];
+    function getBlocksRoot(uint startBlockNumber) external view returns (bytes32) {
+        return _blocksRoots[startBlockNumber];
     }
 
-    function saveHistoryBlocks() external {
-        for (uint i = 256; i > 0; ) {
-            uint256 blockNumber = block.number - i;
+    // TODO: Not review
+    function _calculateRoot(uint startBlockNumber) internal view returns (bytes32) {
+        uint len = _blockInterval / 2;
+        bytes32 root;
+        assembly {
+            let leaves := mload(0x40)
+            mstore(0x40, add(leaves, mul(len, 0x20)))
 
-            if (blockNumber % _blockInterval == 0) {
-                if (_blocks[blockNumber] == bytes32(0)) {
-                    bytes32 blockHash = blockhash(blockNumber);
-                    _blocks[blockNumber] = blockHash;
-                    emit HistoryBlockSaved(blockNumber, blockHash);
+            // The lowest layer is calculated separately from other layers to save gas
+            for {
+                let i := 0
+                let leavesPtr := leaves
+            } lt(i, len) {
+                i := add(i, 1)
+            } {
+                let ix2 := mul(i, 2)
+                let data := mload(0x40)
+                mstore(data, blockhash(add(startBlockNumber, ix2)))
+                mstore(add(data, 0x20), blockhash(add(startBlockNumber, add(ix2, 1))))
+
+                mstore(leavesPtr, keccak256(data, 0x40))
+
+                // Release memory
+                data := mload(0x40)
+
+                leavesPtr := add(leavesPtr, 0x20)
+            }
+
+            for {
+
+            } gt(len, 1) {
+                len := add(div(len, 2), mod(len, 2))
+            } {
+                for {
+                    let i := 0
+                    let leavesPtr := leaves
+                } lt(i, len) {
+                    i := add(i, 2)
+                } {
+                    // Default
+                    let ptrL := add(leaves, mul(i, 0x20))
+                    mstore(leavesPtr, mload(ptrL))
+
+                    // When i+1 < len, hash(ptrL connect ptrR)
+                    if lt(add(i, 1), len) {
+                        let ptrR := add(ptrL, 0x20)
+
+                        let data := mload(0x40)
+                        mstore(data, mload(ptrL))
+                        mstore(add(data, 0x20), mload(ptrR))
+
+                        mstore(leavesPtr, keccak256(data, 0x40))
+
+                        // Release memory
+                        data := mload(0x40)
+                    }
+
+                    leavesPtr := add(leavesPtr, 0x20)
                 }
             }
 
+            root := mload(leaves)
+        }
+
+        return root;
+    }
+
+    function saveHistoryBlocksRoots() external {
+        uint currentBlockNumber = block.number;
+        uint bi = _blockInterval;
+        uint startBlockNumber = currentBlockNumber - 256;
+        uint batchLen;
+        unchecked {
+            uint m = startBlockNumber % bi;
+            if (m > 0) {
+                startBlockNumber += bi - m;
+            }
+
+            batchLen = (currentBlockNumber - 1 - startBlockNumber) / bi;
+        }
+
+        // Reject when batchLen == 0, save gas
+        require(batchLen > 0, "IBL");
+
+        for (uint i = 0; i < batchLen; ) {
+            bytes32 root = _calculateRoot(startBlockNumber);
+
+            if (_blocksRoots[startBlockNumber] == bytes32(0) && root != bytes32(0)) {
+                _blocksRoots[startBlockNumber] = root;
+                emit HistoryBlocksRootSaved(startBlockNumber, root, bi);
+            }
+
             unchecked {
-                i--;
+                startBlockNumber += bi;
+                i++;
             }
         }
     }
 
-    function getBlockInterval() external view returns (uint64) {
+    function blockInterval() external view returns (uint64) {
         return _blockInterval;
     }
 
-    function updateBlockInterval(uint64 blockInterval) external onlyManager {
-        require(blockInterval > 0, "IV");
-        _blockInterval = blockInterval;
+    function updateBlockInterval(uint64 blockInterval_) external onlyManager {
+        require(blockInterval_ >= 2 && blockInterval_ <= 256, "IOF");
+        require(blockInterval_ % 2 == 0, "IV");
 
-        emit BlockIntervalUpdated(blockInterval);
+        _blockInterval = blockInterval_;
+
+        emit BlockIntervalUpdated(blockInterval_);
     }
 
-    function injectBlocksByManager(
-        uint startBlockNumber,
-        uint endBlockNumber,
-        InjectionBlock[] calldata injectionBlocks
-    ) external onlyManager {
-        require(startBlockNumber < endBlockNumber, "SNLE");
+    function injectOwner() external view returns (address) {
+        return _injectOwner;
+    }
 
-        // Make sure the startBlockNumber and endBlockNumber at storage
-        require(_blocks[startBlockNumber] != bytes32(0), "SZ");
-        require(_blocks[endBlockNumber] != bytes32(0), "EZ");
+    function updateInjectOwner(address injectOwner_) external onlyManager {
+        _injectOwner = injectOwner_;
+        emit InjectOwnerUpdated(injectOwner_);
+    }
+
+    function injectBlocksRoots(
+        uint blockNumber0,
+        uint blockNumber1,
+        InjectionBlocksRoot[] calldata injectionBlocksRoots
+    ) external {
+        require(msg.sender == _injectOwner, "Forbidden: caller is not the inject owner");
+
+        require(blockNumber0 < blockNumber1, "SNLE");
+
+        // Make sure the blockNumber0 and blockNumber1 at storage
+        require(_blocksRoots[blockNumber0] != bytes32(0), "SZ");
+        require(_blocksRoots[blockNumber1] != bytes32(0), "EZ");
 
         uint i = 0;
         uint ni = 0;
-        for (; i < injectionBlocks.length; ) {
+        for (; i < injectionBlocksRoots.length; ) {
             unchecked {
                 ni = i + 1;
             }
 
-            InjectionBlock memory injectionBlock = injectionBlocks[i];
+            InjectionBlocksRoot memory ibsr = injectionBlocksRoots[i];
 
-            require(startBlockNumber < injectionBlock.blkNumber, "SGEIB");
-            require(endBlockNumber > injectionBlock.blkNumber, "ELEIB");
-            require(startBlockNumber + _blockInterval * ni == injectionBlock.blkNumber, "IIB");
-            require(_blocks[injectionBlock.blkNumber] == bytes32(0), "BE");
+            require(blockNumber0 < ibsr.startBlockNumber, "IBLE0");
+            require(blockNumber1 > ibsr.startBlockNumber, "IBGE1");
+            require(ibsr.startBlockNumber % _blockInterval == 0, "IIB");
+            require(_blocksRoots[ibsr.startBlockNumber] == bytes32(0), "BE");
 
-            _blocks[injectionBlock.blkNumber] = injectionBlock.blockHash;
-            emit HistoryBlockSaved(injectionBlock.blkNumber, injectionBlock.blockHash);
+            _blocksRoots[ibsr.startBlockNumber] = ibsr.blocksRoot;
+            emit HistoryBlocksRootSaved(ibsr.startBlockNumber, ibsr.blocksRoot, _blockInterval);
 
             i = ni;
         }
