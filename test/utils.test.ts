@@ -301,7 +301,7 @@ export const getVerifyinfo = async (
 
   // --------------------------------------------------------------
   // set Verifyinfo 2
-  // ORManager.sol - _minChallengeRatio
+  // ORManager.sol - _challengeUserRatio
   // slot: 6
   const slot2 = BigNumber.from(6).toHexString();
   const value2 = (await orManager.minChallengeRatio()).toBigInt();
