@@ -102,7 +102,7 @@ export interface challengeInputInfo {
   sourceChainId: BigNumberish;
   sourceBlockNum: number;
   sourceTxIndex: number;
-  sourceTxHash: BigNumberish;
+  sourceTxHash: string;
   from: string;
   freezeToken: string;
   freezeAmount: BigNumberish;

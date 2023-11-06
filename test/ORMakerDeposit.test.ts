@@ -72,6 +72,11 @@ describe('ORMakerDeposit', () => {
   let testToken: TestToken;
   let columnArray: columnArray;
   let ebc: OREventBinding;
+  const challengeNodeInfoList: {
+    sourceChainId: BigNumberish;
+    sourceTxHash: string;
+    challengeIdentNum: BigNumberish;
+  }[] = [];
 
   before(async function () {
     signers = await ethers.getSigners();
@@ -849,28 +854,29 @@ describe('ORMakerDeposit', () => {
       return utils.arrayify(contractEncode);
     };
 
-    before(async function () {
-      const verifyBytesCode = await compile_yul(
-        'contracts/zkp/goerli_1_evm.yul',
-      );
+    // before(async function () {
+    //   const verifyBytesCode = await compile_yul(
+    //     'contracts/zkp/goerli_1_evm.yul',
+    //   );
 
-      const verifyFactory = new ethers.ContractFactory(
-        VerifierAbi,
-        verifyBytesCode,
-        mdcOwner,
-      );
-      spv = await verifyFactory.deploy();
-      spvTest = await new TestSpv__factory(mdcOwner).deploy(spv.address);
+    //   const verifyFactory = new ethers.ContractFactory(
+    //     VerifierAbi,
+    //     verifyBytesCode,
+    //     mdcOwner,
+    //   );
+    //   spv = await verifyFactory.deploy();
+    //   spvTest = await new TestSpv__factory(mdcOwner).deploy(spv.address);
 
-      console.log(
-        `Address of spv: ${spv.address}, Address of spvTest: ${spvTest.address}, Address of ebc ${ebc.address} `,
-      );
-    });
+    //   console.log(
+    //     `Address of spv: ${spv.address}, Address of spvTest: ${spvTest.address}, Address of ebc ${ebc.address} `,
+    //   );
+    // });
 
     // it('test function verifyChallengeSource Revert case', async function () {
     //   const latestBlockRes = await orMakerDeposit.provider?.getBlock('latest');
     //   const sourceTxTime = random(5000000);
     //   const sourceChainId = random(200);
+    //   const sourceTxHash = utils.keccak256(mdcOwner.address);
     //   const sourceBlockNum = random(latestBlockRes.number);
     //   const sourceTxIndex = random(100);
     //   const challengeIdentNum = getChallengeIdentNumSortList(
@@ -888,13 +894,18 @@ describe('ORMakerDeposit', () => {
     //     sourceChainId,
     //     sourceBlockNum,
     //     sourceTxIndex,
-    //     sourceTxHash: utils.keccak256(mdcOwner.address),
+    //     sourceTxHash,
     //     from: await orMakerDeposit.owner(),
     //     freezeToken: constants.AddressZero,
     //     parentNodeNumOfTargetNode,
     //     freezeAmount: utils.parseEther('0.01'),
     //   };
     //   await createChallenge(orMakerDeposit, challenge);
+    //   challengeNodeInfoList.push({
+    //     sourceChainId,
+    //     sourceTxHash,
+    //     challengeIdentNum,
+    //   })
     //   const invalidVerifyInfo0: VerifyInfo = {
     //     data: [1],
     //     slots: [
@@ -955,6 +966,7 @@ describe('ORMakerDeposit', () => {
         const sourceChainId = random(500000);
         const sourceBlockNum = random(latestBlockRes.number);
         const sourceTxIndex = random(i);
+        const sourceTxHash = utils.keccak256(mdcOwner.address);
         const challengeIdentNum = getChallengeIdentNumSortList(
           sourceTxTime,
           sourceChainId,
@@ -971,7 +983,7 @@ describe('ORMakerDeposit', () => {
           sourceChainId,
           sourceBlockNum,
           sourceTxIndex,
-          sourceTxHash: utils.keccak256(mdcOwner.address),
+          sourceTxHash,
           from: await orMakerDeposit.owner(),
           freezeToken: constants.AddressZero,
           freezeAmount: utils.parseEther('0.001'),
@@ -979,6 +991,11 @@ describe('ORMakerDeposit', () => {
         };
         challengeInputInfos.push(challengeInputInfo);
         const res = await createChallenge(orMakerDeposit, challengeInputInfo);
+        challengeNodeInfoList.push({
+          sourceChainId,
+          sourceTxHash,
+          challengeIdentNum,
+        });
         gasUseList.push(res.gasUsed);
       }
       // console.log(gasUseList);
@@ -1059,8 +1076,10 @@ describe('ORMakerDeposit', () => {
       const inpudataGas = callDataCost(txrc.data);
       console.log(
         // eslint-disable-next-line prettier/prettier
-        `verify totalGas: ${tx.gasUsed
-        }, callDataGas: ${inpudataGas}, excuteGas: ${tx.gasUsed.toNumber() - inpudataGas
+        `verify totalGas: ${
+          tx.gasUsed
+        }, callDataGas: ${inpudataGas}, excuteGas: ${
+          tx.gasUsed.toNumber() - inpudataGas
         } `,
       );
 
@@ -1145,6 +1164,11 @@ describe('ORMakerDeposit', () => {
       };
       await createChallenge(orMakerDeposit, challengeFake, 'STOF');
       await createChallenge(orMakerDeposit, challenge);
+      challengeNodeInfoList.push({
+        sourceChainId: BigNumber.from(challenge.sourceChainId).toNumber(),
+        sourceTxHash: challenge.sourceTxHash,
+        challengeIdentNum,
+      });
       await mineXTimes(100);
       await expect(
         orMakerDeposit.checkChallenge(case1SourceChainId, case1SourceTxHash, [
@@ -1256,7 +1280,11 @@ describe('ORMakerDeposit', () => {
     //   const rawData = await getRawData(columnArray, ebc.address, makerRule);
 
     //   await createChallenge(orMakerDeposit, challenge);
-
+    //   challengeNodeInfoList.push({
+    //     sourceChainId: challenge.sourceChainId,
+    //     sourceTxHash: challenge.sourceTxHash,
+    //     challengeIdentNum,
+    //   })
     //   await mineXTimes(2);
 
     //   // expect(
@@ -1275,5 +1303,80 @@ describe('ORMakerDeposit', () => {
     //   //   ),
     //   // ).is.satisfy;
     // });
+    it('checkChallenge test with no verify source', async function () {
+      const sourceTxHash = utils.keccak256(randomBytes(100));
+      const freezeAmount = utils.formatEther(100000000000001111n);
+      const latestBlockRes = await orMakerDeposit.provider?.getBlock('latest');
+      const sourceTxTime = (await getCurrentTime()) - 1;
+      const sourceChainId = random(500000);
+      const sourceBlockNum = random(latestBlockRes.number);
+      const sourceTxIndex = random(100);
+      const challengeIdentNum = getChallengeIdentNumSortList(
+        sourceTxTime,
+        sourceChainId,
+        sourceBlockNum,
+        sourceTxIndex,
+      );
+      const challenge: challengeInputInfo = {
+        sourceTxTime: (await getCurrentTime()) - 1,
+        sourceChainId,
+        sourceBlockNum,
+        sourceTxIndex,
+        sourceTxHash,
+        from: await orMakerDeposit.owner(),
+        freezeToken: constants.AddressZero,
+        freezeAmount: utils.parseEther(freezeAmount),
+        parentNodeNumOfTargetNode: getLastChallengeIdentNum(
+          [],
+          challengeIdentNum,
+        ),
+      };
+      await createChallenge(orMakerDeposit, challenge);
+      challengeNodeInfoList.push({
+        sourceChainId: challenge.sourceChainId,
+        sourceTxHash: challenge.sourceTxHash,
+        challengeIdentNum,
+      });
+
+      const challengeSortNodeList: {
+        sourceChainId: BigNumberish;
+        sourceTxHash: string;
+        challengeIdentNum: BigNumberish;
+      }[] = challengeNodeInfoList.sort((a, b) => {
+        if (a.challengeIdentNum > b.challengeIdentNum) return 1;
+        if (a.challengeIdentNum < b.challengeIdentNum) return -1;
+        return 0;
+      });
+
+      // i >= 1: min challengeIdentNum node will pass
+      for (let i = challengeSortNodeList.length - 1; i >= 1; i--) {
+        await expect(
+          orMakerDeposit.checkChallenge(
+            challengeSortNodeList[i].sourceChainId,
+            challengeSortNodeList[i].sourceTxHash,
+            [mdcOwner.address],
+          ),
+        ).to.revertedWith('NCCF');
+      }
+      const beforeCheckBalance = await orMakerDeposit.provider.getBalance(
+        mdcOwner.address,
+      );
+      let checkGasUsed = BigNumber.from(0);
+      for (let i = 0; i < challengeSortNodeList.length; i++) {
+        const { gasUsed, effectiveGasPrice } = await orMakerDeposit
+          .checkChallenge(
+            challengeSortNodeList[i].sourceChainId,
+            challengeSortNodeList[i].sourceTxHash,
+            [mdcOwner.address],
+          )
+          .then((t) => t.wait());
+        checkGasUsed = checkGasUsed.add(gasUsed.mul(effectiveGasPrice));
+      }
+      const afterCheckBalance = await orMakerDeposit.provider.getBalance(
+        mdcOwner.address,
+      );
+      // The frozen deposit will not be refunded if the source is not verified.
+      expect(afterCheckBalance.add(checkGasUsed)).to.eq(beforeCheckBalance);
+    });
   });
 });
