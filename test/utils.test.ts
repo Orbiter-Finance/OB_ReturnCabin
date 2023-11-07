@@ -283,8 +283,14 @@ export const getVerifyinfo = async (
       ],
     ),
   );
-  const value1 = (await orManager.getChainTokenInfo(chainId, freezeToken))
-    .mainnetToken;
+  // slot value: address mainnetToken + uint8 decimals;
+  const value1 =
+    utils.hexZeroPad(
+      (BigNumber.from((await orManager.getChainTokenInfo(chainId, freezeToken)).decimals).toHexString()), 12)
+    +
+    (await orManager.getChainTokenInfo(chainId, freezeToken))
+      .mainnetToken.slice(2)
+
   {
     const hashKey = keccak256(
       solidityPack(['uint256', 'uint256'], [chainId, freezeToken]),
@@ -298,21 +304,16 @@ export const getVerifyinfo = async (
     );
 
     const storageValue =
-      '0x' +
       (
         await ethers.provider.getStorageAt(
           managerAddress,
           utils.hexZeroPad(itemSlot, 32),
         )
-      ).slice(-40);
+      );
 
-    const value1_S =
-      '0x' +
-      utils.hexZeroPad(BigNumber.from(value).toHexString(), 32).slice(-40);
     slot1 = itemSlot;
     expect(slot).to.equal(slot1_I).to.equal(BigNumber.from(itemSlot).sub(1));
     expect(value1.toLocaleLowerCase())
-      .to.equal(value1_S)
       .to.equal(storageValue);
   }
 
@@ -320,8 +321,13 @@ export const getVerifyinfo = async (
   // set Verifyinfo 2
   // ORManager.sol - _challengeUserRatio
   // slot: 6
+  // slot value = int64 private _minChallengeRatio + 
+  // uint64 private _challengeUserRatio + 
+  // uint64 private _feeChallengeSecond +
+  // uint64 private _feeTakeOnChallengeSecond
+  let value2;
   const slot2 = BigNumber.from(6).toHexString();
-  const value2 = (await orManager.minChallengeRatio()).toBigInt();
+  const minChallengeRatioValue2 = (await orManager.minChallengeRatio()).toBigInt();
   {
     const storageValue = await ethers.provider.getStorageAt(
       managerAddress,
@@ -330,7 +336,9 @@ export const getVerifyinfo = async (
     const minChallengeRatio = BigNumber.from(
       '0x' + storageValue.slice(-16),
     ).toBigInt();
-    expect(value2).to.equal(minChallengeRatio);
+    value2 = storageValue;
+    expect(minChallengeRatioValue2).to.equal(minChallengeRatio);
+
   }
 
   // --------------------------------------------------------------
@@ -366,9 +374,13 @@ export const getVerifyinfo = async (
       ],
     ),
   );
-  const value4 = (
-    await orManager.getChainTokenInfo(chainId_Dest, freezeToken_Dest)
-  ).mainnetToken;
+  // slot value: address mainnetToken + uint8 decimals;
+  const value4 =
+    utils.hexZeroPad(
+      (BigNumber.from((await orManager.getChainTokenInfo(chainId_Dest, freezeToken_Dest)).decimals).toHexString()), 12)
+    +
+    (await orManager.getChainTokenInfo(chainId_Dest, freezeToken_Dest))
+      .mainnetToken.slice(2)
   {
     const hashKey = keccak256(
       defaultAbiCoder.encode(
@@ -385,29 +397,23 @@ export const getVerifyinfo = async (
     );
 
     const storageValue =
-      '0x' +
       (
         await ethers.provider.getStorageAt(
           managerAddress,
           utils.hexZeroPad(itemSlot, 32),
         )
-      ).slice(-40);
+      );
 
     // const contractSlotK = await spv.createFreezeTokenSlotKey(
     //   chainId_Dest,
     //   freezeToken_Dest,
     // );
-
-    const value4_S =
-      '0x' +
-      utils.hexZeroPad(BigNumber.from(value).toHexString(), 32).slice(-40);
     slot4 = itemSlot;
     expect(slot)
       .to.equal(slot4_I)
       .to.equal(BigNumber.from(itemSlot).sub(1))
     // .to.equal(contractSlotK);
     expect(value4.toLocaleLowerCase())
-      .to.equal(value4_S)
       .to.equal(storageValue);
   }
   // --------------------------------------------------------------
@@ -429,11 +435,13 @@ export const getVerifyinfo = async (
   // ORMakerDeposit.sol - ruleRoot
   // slot 6
   let slot6;
+  let slot7;
   const slot6_I = keccak256(solidityPack(['uint256', 'uint256'], [ebc, 6]));
   let value6;
+  let value7;
   {
     const { root, version } = await orMakerDeposit.rulesRoot(ebc);
-    value6 = root;
+    // value6 = root;
     const hashKey = keccak256(
       defaultAbiCoder.encode(['uint256', 'uint256'], [ebc, 6]),
     );
@@ -451,14 +459,16 @@ export const getVerifyinfo = async (
       await getMappingStructXSlot('0x6', makerAddress, ebc, 1, 'number')
     ).itemSlot;
 
-    slot6 = slot6_I;
+    slot6 = valueRootitemSlot
+    value6 = valueRoot ? utils.hexZeroPad(valueRoot.toHexString(), 32) : "0x00"
+    slot7 = valueVersionitemSlot
+    value7 = valueVersion ? utils.hexZeroPad(valueVersion.toHexString(), 32) : "0x00"
+
     expect(slot6_I).to.equal(hashKey);
     expect(value6).to.equal(valueRoot?.toHexString());
     expect(version).to.equal(BigNumber.from(valueVersion).toNumber());
 
-    // console.log(
-    //   `root slot :${valueRootitemSlot}, version slot: ${valueVersionitemSlot}`,
-    // );
+
   }
 
   const slotValue: VerifyInfoSlotStruct[] = [
@@ -521,6 +531,14 @@ export const getVerifyinfo = async (
       key: slot6,
       value: value6,
     },
+    {
+      // Verifyinfo 7
+      // ORMakerDeposit.sol - ruleVersion
+      // slot 7
+      account: makerAddress,
+      key: slot7,
+      value: value7,
+    }
   ];
 
   // --------------------------------------------------------------
