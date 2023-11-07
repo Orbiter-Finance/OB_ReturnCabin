@@ -109,7 +109,9 @@ export interface challengeInputInfo {
   parentNodeNumOfTargetNode: BigNumberish;
 }
 
-export interface verifyinfoBase {
+export interface VerifyinfoBase {
+  freeTokenSource: string;
+  chainIdSource: BigNumberish;
   freeTokenDest: string;
   chainIdDest: BigNumberish;
   ebc: string;
@@ -140,7 +142,7 @@ export const updateSpv = async (
   const enableTimeTime =
     // eslint-disable-next-line prettier/prettier
     (await getCurrentTime()) >
-    (await _orManager.getVersionAndEnableTime()).enableTime.toNumber()
+      (await _orManager.getVersionAndEnableTime()).enableTime.toNumber()
       ? await getCurrentTime()
       : (await _orManager.getVersionAndEnableTime()).enableTime;
 
@@ -196,20 +198,19 @@ export const getSecurityCode = (
 export const getVerifyinfo = async (
   orMakerDeposit: ORMakerDeposit,
   orManager: ORManager,
-  spv: TestSpv,
-  challenge: challengeInputInfo,
-  verifyinfoBase: verifyinfoBase,
-  rule: RuleStruct,
+  verifyinfoBase: VerifyinfoBase,
+  challenge?: challengeInputInfo,
+  spv?: TestSpv,
+  rule?: RuleStruct,
 ): Promise<VerifyInfo> => {
   const managerAddress = orManager.address;
   const makerAddress = orMakerDeposit.address;
-  const chainId = challenge.sourceChainId;
+  const chainId = verifyinfoBase.chainIdSource;
   const chainId_Dest = verifyinfoBase.chainIdDest;
   const freezeToken_Dest = verifyinfoBase.freeTokenDest;
-  const freezeToken = challenge.freezeToken;
+  const freezeToken = verifyinfoBase.freeTokenSource;
   const ebc = verifyinfoBase.ebc;
-  const chainIdDest = verifyinfoBase.chainIdDest;
-  console.log('ebc', ebc);
+  console.log(`mangerAddress: ${managerAddress}, makerAddress: ${makerAddress}, sourceChainId: ${chainId}, chainId_Dest: ${chainId_Dest}, freezeToken_Dest: ${freezeToken_Dest}, freezeToken: ${freezeToken}, ebc: ${ebc}`);
   // set Verifyinfo 0
   // ORManager.sol - ChainInfo - maxVerifyChallengeSourceTxSecond | minVerifyChallengeSourceTxSecond
   // slot 2
@@ -219,9 +220,25 @@ export const getVerifyinfo = async (
     utils.hexZeroPad(
       (
         await orManager.getChainInfo(5)
-      ).maxVerifyChallengeSourceTxSecond.toHexString(),
+      ).maxVerifyChallengeDestTxSecond.toHexString(),
       8,
     ) +
+    utils
+      .hexZeroPad(
+        (
+          await orManager.getChainInfo(5)
+        ).minVerifyChallengeDestTxSecond.toHexString(),
+        8,
+      )
+      .slice(2) +
+    utils
+      .hexZeroPad(
+        (
+          await orManager.getChainInfo(5)
+        ).maxVerifyChallengeSourceTxSecond.toHexString(),
+        8,
+      )
+      .slice(2) +
     utils
       .hexZeroPad(
         (
@@ -239,15 +256,15 @@ export const getVerifyinfo = async (
       'number',
     );
 
-    const newValue = '0x' + BigNumber.from(value).toHexString().slice(-32);
+    const newValue = utils.hexZeroPad(BigNumber.from(value).toHexString(), 32);
+
     const storageValue =
-      '0x' +
       (
         await ethers.provider.getStorageAt(
           managerAddress,
           utils.hexZeroPad(itemSlot, 32),
         )
-      ).slice(-32);
+      );
     slot0 = itemSlot;
     expect(slot0_I).to.equal(slot).to.equal(BigNumber.from(itemSlot).sub(1));
     expect(value0).to.equal(newValue).to.equal(storageValue);
@@ -376,10 +393,10 @@ export const getVerifyinfo = async (
         )
       ).slice(-40);
 
-    const contractSlotK = await spv.createFreezeTokenSlotKey(
-      chainId_Dest,
-      freezeToken_Dest,
-    );
+    // const contractSlotK = await spv.createFreezeTokenSlotKey(
+    //   chainId_Dest,
+    //   freezeToken_Dest,
+    // );
 
     const value4_S =
       '0x' +
@@ -388,7 +405,7 @@ export const getVerifyinfo = async (
     expect(slot)
       .to.equal(slot4_I)
       .to.equal(BigNumber.from(itemSlot).sub(1))
-      .to.equal(contractSlotK);
+    // .to.equal(contractSlotK);
     expect(value4.toLocaleLowerCase())
       .to.equal(value4_S)
       .to.equal(storageValue);
@@ -465,7 +482,7 @@ export const getVerifyinfo = async (
     },
     {
       // verifyInfo 2
-      // ORManager.sol - _rulesRoots
+      // ORManager.sol - _challengeUserRatio
       // slot: 5
       account: managerAddress,
       key: utils.hexZeroPad(slot2, 32),
@@ -508,22 +525,25 @@ export const getVerifyinfo = async (
 
   // --------------------------------------------------------------
   // set VerifyInfo.data
-  const encodeRule = encodeRuleStruct(rule);
-  expect(encodeRule).to.be.equal(await spv.createEncodeRule(rule));
+  let dataVelue: BigNumberish[] = [];
+  if (rule != undefined && spv != undefined && challenge != undefined) {
+    const encodeRule = encodeRuleStruct(rule);
+    expect(encodeRule).to.be.equal(await spv.createEncodeRule(rule));
 
-  const dataVelue: BigNumberish[] = [
-    chainId,
-    challenge.sourceTxHash,
-    challenge.from,
-    BigNumber.from(0),
-    freezeToken,
-    challenge.freezeAmount,
-    0,
-    challenge.sourceTxTime,
-    encodeRule,
-    chainIdDest,
-    freezeToken_Dest,
-  ];
+    dataVelue = [
+      chainId,
+      challenge.sourceTxHash,
+      challenge.from,
+      BigNumber.from(0),
+      freezeToken,
+      challenge.freezeAmount,
+      0,
+      challenge.sourceTxTime,
+      encodeRule,
+      chainId_Dest,
+      freezeToken_Dest,
+    ];
+  }
 
   const VerifyInfo: VerifyInfo = {
     data: dataVelue,

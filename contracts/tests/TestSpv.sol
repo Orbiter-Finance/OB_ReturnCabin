@@ -15,40 +15,59 @@ contract testSpv {
         v_address = _v;
     }
 
-    struct publicInputData {
-        uint64 chainId;
-        bytes32 txHash;
+    struct PublicInputData {
+        uint64 sourceChainId;
+        bytes32 sourceTxHash;
         uint256 txIndex;
-        address from;
-        address to;
-        address token;
-        uint256 amount;
+        uint256 from;
+        uint256 to;
+        address freezeToken;
+        uint256 freezeAmount;
         uint256 nonce;
-        uint256 timestamp;
-        address dest;
-        address destToken;
+        uint64 sourceTxTimestamp;
+        uint256 dest;
+        uint256 destToken;
         bytes32 L1TXBlockHash;
         uint256 L1TBlockNumber;
+        address mdcContractAddress;
+        address managerContractAddress;
+        uint256 ruleRootSlot;
+        uint256 ruleVersionSlot;
+        uint256 enableTimeSlot;
+        bytes32 RulePreRootHash;
     }
 
-    function parsePublicInput(bytes calldata proofData) external pure returns (publicInputData memory) {
+    function parsePublicInput(bytes calldata proofData) external pure returns (PublicInputData memory) {
         return
-            publicInputData({
-                chainId: uint64(uint256(bytes32(proofData[544:576]))),
-                txHash: bytes32((uint256(bytes32(proofData[448:480])) << 128) | uint256(bytes32(proofData[480:512]))),
+            PublicInputData({
+                sourceChainId: uint64(uint256(bytes32(proofData[544:576]))),
+                sourceTxHash: bytes32(
+                    (uint256(bytes32(proofData[448:480])) << 128) | uint256(bytes32(proofData[480:512]))
+                ),
                 txIndex: uint256(bytes32(proofData[512:544])),
-                from: address(uint160(uint256(bytes32(proofData[576:608])))),
-                to: address(uint160(uint256(bytes32(proofData[608:640])))),
-                token: address(uint160(uint256(bytes32(proofData[640:672])))),
-                amount: uint256(bytes32(proofData[672:704])),
+                from: ((uint256(bytes32(proofData[576:608])))),
+                to: ((uint256(bytes32(proofData[608:640])))),
+                freezeToken: address(uint160(uint256(bytes32(proofData[640:672])))),
+                freezeAmount: uint256(bytes32(proofData[672:704])),
                 nonce: uint256(bytes32(proofData[704:736])),
-                timestamp: uint256(bytes32(proofData[736:768])),
-                dest: address(uint160(uint256(bytes32(proofData[768:800])))),
-                destToken: address(uint160(uint256(bytes32(proofData[800:832])))),
+                sourceTxTimestamp: uint64(uint256(bytes32(proofData[736:768]))),
+                dest: ((uint256(bytes32(proofData[768:800])))),
+                destToken: ((uint256(bytes32(proofData[800:832])))),
                 L1TXBlockHash: bytes32(
                     (uint256(bytes32(proofData[384:416])) << 128) | uint256(bytes32(proofData[416:448]))
                 ),
-                L1TBlockNumber: uint256(bytes32(proofData[1408:1440]))
+                L1TBlockNumber: uint256(bytes32(proofData[1408:1440])),
+                mdcContractAddress: address(uint160(uint256(bytes32(proofData[2560:2592])))),
+                managerContractAddress: address(uint160(uint256(bytes32(proofData[2592:2624])))),
+                ruleRootSlot: ((uint256(bytes32(proofData[2816:2848])) << 128) |
+                    uint256(bytes32(proofData[2848:2880]))),
+                ruleVersionSlot: ((uint256(bytes32(proofData[2880:2912])) << 128) |
+                    uint256(bytes32(proofData[2912:2944]))),
+                enableTimeSlot: ((uint256(bytes32(proofData[2944:2976])) << 128) |
+                    uint256(bytes32(proofData[2976:3008]))),
+                RulePreRootHash: bytes32(
+                    (uint256(bytes32(proofData[2624:2656])) << 128) | uint256(bytes32(proofData[2656:2688]))
+                )
             });
     }
 
