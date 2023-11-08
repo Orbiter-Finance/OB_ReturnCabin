@@ -34,8 +34,7 @@ interface IORMakerDeposit {
     struct ChallengeNode {
         uint256 prev;
         uint64 challengeCreateTime;
-        uint64 makerFailedTime;
-        uint64 makerSuccessTime;
+        bool challengeFinished;
     }
 
     struct WithdrawRequestInfo {

@@ -52,6 +52,7 @@ import {
   getVerifyinfo,
   updateSpv,
   VerifyinfoBase,
+  calculateTxGas,
 } from './utils.test';
 import {
   callDataCost,
@@ -1288,13 +1289,16 @@ describe('ORMakerDeposit', () => {
       );
       let checkGasUsed = BigNumber.from(0);
       for (let i = 0; i < challengeSortNodeList.length; i++) {
-        const { gasUsed, effectiveGasPrice } = await orMakerDeposit
+        const tx = await orMakerDeposit
           .checkChallenge(
             challengeSortNodeList[i].sourceChainId,
             challengeSortNodeList[i].sourceTxHash,
             [mdcOwner.address],
           )
           .then((t) => t.wait());
+        const gasUsed = tx.gasUsed;
+        const effectiveGasPrice = tx.effectiveGasPrice;
+        await calculateTxGas(tx, "Liquidation", i);
         checkGasUsed = checkGasUsed.add(gasUsed.mul(effectiveGasPrice));
       }
       const afterCheckBalance = await orMakerDeposit.provider.getBalance(

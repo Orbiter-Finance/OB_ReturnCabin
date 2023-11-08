@@ -1,7 +1,7 @@
 import { ethers } from 'hardhat';
 import { expect } from 'chai';
 import 'cross-fetch/polyfill';
-import { BigNumber, BigNumberish, ContractTransaction, utils } from 'ethers';
+import { BigNumber, BigNumberish, ContractReceipt, ContractTransaction, utils } from 'ethers';
 import { ORMakerDeposit, ORManager, TestSpv } from '../typechain-types';
 import { callDataCost, getCurrentTime } from './lib/mockData';
 import { RuleStruct, encodeRuleStruct } from './lib/rule';
@@ -13,6 +13,7 @@ import {
 } from 'ethers/lib/utils';
 import { getMappingStructXSlot } from './lib/readStorage';
 import { assert } from 'console';
+import { title } from 'process';
 
 export function hexToBuffer(hex: string) {
   return Buffer.from(utils.arrayify(hex));
@@ -567,7 +568,7 @@ export const getVerifyinfo = async (
     data: dataVelue,
     slots: slotValue,
   };
-  console.log(VerifyInfo);
+  // console.log(VerifyInfo);
   return VerifyInfo;
 };
 
@@ -714,4 +715,25 @@ export const predictEnableBlock = async (
     enableBlockNumber,
     enableBlockHash,
   };
+};
+
+export const calculateTxGas = async (
+  tx: ContractReceipt,
+  title?: string,
+  index?: number
+) => {
+  const gasUsed = tx.gasUsed.toNumber();
+  const gasPrice = tx.effectiveGasPrice?.toNumber();
+  const gasFee = gasUsed * gasPrice;
+  const inputGasUsed = callDataCost(
+    (await ethers.provider.getTransaction(tx.transactionHash)).data,
+  );
+  console.log(
+    title ? title : 'gasUsed',
+    index ? index : '',
+    'totalGasUsed:',
+    gasUsed,
+    'inputGasUsed:',
+    inputGasUsed,
+  );
 };

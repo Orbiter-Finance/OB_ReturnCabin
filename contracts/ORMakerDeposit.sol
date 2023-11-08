@@ -336,14 +336,22 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         ChallengeNode memory currChallengeNode = _challengeNodeList[challengeIdentNum];
         require(currChallengeNode.challengeCreateTime > 0, "UCY");
 
-        bool makerNotResponded = currChallengeNode.makerFailedTime == 0 && currChallengeNode.makerSuccessTime == 0;
+        bool makerNotResponded = currChallengeNode.challengeFinished == false;
         if (currChallengeNode.prev == 0) {
             return makerNotResponded;
         } else {
-            bool prevMakerResponded = _challengeNodeList[currChallengeNode.prev].makerFailedTime > 0 ||
-                _challengeNodeList[currChallengeNode.prev].makerSuccessTime > 0;
+            bool prevMakerResponded = _challengeNodeList[currChallengeNode.prev].challengeFinished == true;
             return makerNotResponded && prevMakerResponded;
         }
+
+        // bool makerNotResponded = currChallengeNode.makerFailedTime == 0 && currChallengeNode.makerSuccessTime == 0;
+        // if (currChallengeNode.prev == 0) {
+        //     return makerNotResponded;
+        // } else {
+        //     bool prevMakerResponded = _challengeNodeList[currChallengeNode.prev].makerFailedTime > 0 ||
+        //         _challengeNodeList[currChallengeNode.prev].makerSuccessTime > 0;
+        //     return makerNotResponded && prevMakerResponded;
+        // }
     }
 
     function challenge(
@@ -420,19 +428,22 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
     function checkChallenge(uint64 sourceChainId, bytes32 sourceTxHash, address[] calldata challenger) external {
         bytes32 challengeId = abi.encode(uint64(sourceChainId), sourceTxHash).hash();
+        uint256 challengeIdentNum;
         ChallengeInfo storage challengeInfo = _challenges[challengeId];
         ChallengeStatement memory winnerStatement = challengeInfo.statement[challengeInfo.result.winner];
         ChallengeResult memory result = challengeInfo.result;
-        address freezeToken;
-        uint256 unFreezeAmount;
+        IORManager manager = IORManager(_mdcFactory.manager());
+        BridgeLib.ChainInfo memory chainInfo = manager.getChainInfo(sourceChainId);
 
-        for (uint i = 0; i < challenger.length; i++) {
-            ChallengeStatement storage challengeStatement = challengeInfo.statement[challenger[i]];
+        for (uint i = 0; ; ) {
+            ChallengeStatement memory challengeStatement = challengeInfo.statement[challenger[i]];
 
             // Make sure the challenge exists
             require(challengeStatement.challengeTime > 0, "CNE");
 
-            uint256 challengeIdentNum = HelperLib.uint64ConcatToDecimal(
+            require(challengeStatement.abortTime == 0, "CA");
+
+            challengeIdentNum = HelperLib.uint64ConcatToDecimal(
                 challengeStatement.sourceTxTime,
                 sourceChainId,
                 challengeStatement.sourceTxBlockNum,
@@ -440,53 +451,53 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             );
 
             // For more challenger challenge the same tx, the same challenge will pass
-            if (
-                _challengeNodeList[challengeIdentNum].makerFailedTime == 0 &&
-                _challengeNodeList[challengeIdentNum].makerSuccessTime == 0
-            ) {
+            if (_challengeNodeList[challengeIdentNum].challengeFinished == false) {
                 require(_getCanChallengeContinue(challengeIdentNum), "NCCF");
             }
 
-            require(challengeStatement.abortTime == 0, "CA");
-
             if (result.verifiedTime1 > uint64(block.timestamp)) {
                 // maker verified! all challenger fail
-                unFreezeAmount += _challengerFailed(challengeStatement, challengeIdentNum);
-                freezeToken = challengeStatement.freezeToken;
+                _unFreezeToken(
+                    challengeStatement.freezeToken,
+                    _challengerFailed(challengeStatement, challengeIdentNum)
+                );
             } else {
-                IORManager manager = IORManager(_mdcFactory.manager());
-                BridgeLib.ChainInfo memory chainInfo = manager.getChainInfo(sourceChainId);
                 if (result.verifiedTime0 > uint64(block.timestamp)) {
                     // challenger verified! maker over time, maker fail
                     require(block.timestamp > chainInfo.maxVerifyChallengeDestTxSecond + result.verifiedTime0, "VCST");
-                    unFreezeAmount += _makerFailed(
-                        challengeStatement,
-                        winnerStatement,
-                        result,
-                        challenger[i],
-                        sourceChainId
+                    _unFreezeToken(
+                        challengeStatement.freezeToken,
+                        _makerFailed(challengeStatement, winnerStatement, result, challenger[i], sourceChainId)
                     );
-                    freezeToken = challengeStatement.freezeToken;
                 } else {
                     // none challenger verify
                     require(
                         block.timestamp > chainInfo.maxVerifyChallengeSourceTxSecond + challengeStatement.sourceTxTime,
                         "VDST"
                     );
-                    unFreezeAmount += _challengerFailed(challengeStatement, challengeIdentNum);
-                    freezeToken = challengeStatement.freezeToken;
+                    _unFreezeToken(
+                        challengeStatement.freezeToken,
+                        _challengerFailed(challengeStatement, challengeIdentNum)
+                    );
                 }
             }
 
-            challengeStatement.abortTime = uint64(block.timestamp);
+            challengeInfo.statement[challenger[i]].abortTime = uint64(block.timestamp);
 
             emit ChallengeInfoUpdated({
                 challengeId: challengeId,
-                statement: challengeStatement,
-                result: challengeInfo.result
+                statement: challengeInfo.statement[challenger[i]],
+                result: result
             });
+
+            if (i == challenger.length - 1) {
+                break;
+            }
+
+            unchecked {
+                i += 1;
+            }
         }
-        _unFreezeToken(freezeToken, unFreezeAmount);
         _challengeDeposit -= challenger.length * MIN_CHALLENGE_DEPOSIT_AMOUNT;
     }
 
@@ -800,7 +811,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         uint256 challengeIdentNum
     ) internal returns (uint256 unFreezeAmount) {
         unFreezeAmount = (challengeInfo.freezeAmount0 + challengeInfo.freezeAmount1);
-        _challengeNodeList[challengeIdentNum].makerSuccessTime = uint64(block.timestamp);
+        _challengeNodeList[challengeIdentNum].challengeFinished = true;
     }
 
     function _unFreezeToken(address freezeToken, uint256 unFreezeAmount) internal {
@@ -824,7 +835,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             require(challengeUserAmount <= challengeInfo.freezeAmount0, "UAOF");
 
             uint challengerAmount = unFreezeAmount - challengeUserAmount;
-            _challengeNodeList[challengeIdentNum].makerFailedTime = uint64(block.timestamp);
+            _challengeNodeList[challengeIdentNum].challengeFinished = true;
 
             // TODO: Not compatible with starknet network
             address user = address(uint160(challengeInfo.sourceTxFrom));
