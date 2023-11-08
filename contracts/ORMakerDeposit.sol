@@ -343,15 +343,6 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             bool prevMakerResponded = _challengeNodeList[currChallengeNode.prev].challengeFinished == true;
             return makerNotResponded && prevMakerResponded;
         }
-
-        // bool makerNotResponded = currChallengeNode.makerFailedTime == 0 && currChallengeNode.makerSuccessTime == 0;
-        // if (currChallengeNode.prev == 0) {
-        //     return makerNotResponded;
-        // } else {
-        //     bool prevMakerResponded = _challengeNodeList[currChallengeNode.prev].makerFailedTime > 0 ||
-        //         _challengeNodeList[currChallengeNode.prev].makerSuccessTime > 0;
-        //     return makerNotResponded && prevMakerResponded;
-        // }
     }
 
     function challenge(
@@ -455,14 +446,14 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
                 require(_getCanChallengeContinue(challengeIdentNum), "NCCF");
             }
 
-            if (result.verifiedTime1 > uint64(block.timestamp)) {
+            if (result.verifiedTime1 > 0) {
                 // maker verified! all challenger fail
                 _unFreezeToken(
                     challengeStatement.freezeToken,
                     _challengerFailed(challengeStatement, challengeIdentNum)
                 );
             } else {
-                if (result.verifiedTime0 > uint64(block.timestamp)) {
+                if (result.verifiedTime0 > 0) {
                     // challenger verified! maker over time, maker fail
                     require(block.timestamp > chainInfo.maxVerifyChallengeDestTxSecond + result.verifiedTime0, "VCST");
                     _unFreezeToken(
@@ -499,28 +490,6 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             }
         }
         _challengeDeposit -= challenger.length * MIN_CHALLENGE_DEPOSIT_AMOUNT;
-    }
-
-    struct PublicInputData {
-        uint64 sourceChainId;
-        bytes32 sourceTxHash;
-        uint256 txIndex;
-        uint256 from;
-        uint256 to;
-        address freezeToken;
-        uint256 freezeAmount;
-        uint256 nonce;
-        uint64 sourceTxTimestamp;
-        uint256 dest;
-        uint256 destToken;
-        bytes32 L1TXBlockHash;
-        uint256 L1TBlockNumber;
-        address mdcContractAddress;
-        address managerContractAddress;
-        uint256 ruleRootSlot;
-        uint256 ruleVersionSlot;
-        uint256 enableTimeSlot;
-        bytes32 RulePreRootHash;
     }
 
     function _parsePublicInput(bytes calldata proofData) private pure returns (PublicInputData memory) {
@@ -682,20 +651,6 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
                 uint128(gasleft()) +
                 uint128(IORManager(_mdcFactory.manager()).getChallengeBasefee())) *
             baseFeePerGas;
-    }
-
-    struct PublicInputDataDest {
-        bytes32 txHash;
-        uint64 chainId;
-        uint256 txIndex;
-        uint256 from;
-        uint256 to;
-        uint256 token;
-        uint256 amount;
-        uint256 nonce;
-        uint64 timestamp;
-        bytes32 L1TXBlockHash;
-        uint256 L1TBlockNumber;
     }
 
     function _parsePublicInputDest(bytes calldata proofData) private pure returns (PublicInputDataDest memory) {

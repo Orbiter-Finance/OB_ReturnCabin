@@ -6,6 +6,42 @@ import {BridgeLib} from "../library/BridgeLib.sol";
 import {RuleLib} from "../library/RuleLib.sol";
 
 interface IORMakerDeposit {
+    struct PublicInputData {
+        uint64 sourceChainId;
+        bytes32 sourceTxHash;
+        uint256 txIndex;
+        uint256 from;
+        uint256 to;
+        address freezeToken;
+        uint256 freezeAmount;
+        uint256 nonce;
+        uint64 sourceTxTimestamp;
+        uint256 dest;
+        uint256 destToken;
+        bytes32 L1TXBlockHash;
+        uint256 L1TBlockNumber;
+        address mdcContractAddress;
+        address managerContractAddress;
+        uint256 ruleRootSlot;
+        uint256 ruleVersionSlot;
+        uint256 enableTimeSlot;
+        bytes32 RulePreRootHash;
+    }
+
+    struct PublicInputDataDest {
+        bytes32 txHash;
+        uint64 chainId;
+        uint256 txIndex;
+        uint256 from;
+        uint256 to;
+        uint256 token;
+        uint256 amount;
+        uint256 nonce;
+        uint64 timestamp;
+        bytes32 L1TXBlockHash;
+        uint256 L1TBlockNumber;
+    }
+
     struct ChallengeStatement {
         uint sourceTxFrom; // From of the source tx. Uint to support other networks
         uint64 sourceTxTime; // Timestamp of the source tx
