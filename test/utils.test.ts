@@ -110,6 +110,13 @@ export interface challengeInputInfo {
   parentNodeNumOfTargetNode: BigNumberish;
 }
 
+export interface challengeNodeInfoList {
+  sourceChainId: BigNumberish;
+  sourceTxHash: string;
+  challengeIdentNum: BigNumberish;
+  challenge: challengeInputInfo;
+}
+
 export interface VerifyinfoBase {
   freeTokenSource: string;
   chainIdSource: BigNumberish;
@@ -572,49 +579,6 @@ export const getVerifyinfo = async (
   return VerifyInfo;
 };
 
-export const getChallengeIdentNumSortList = (
-  sourceTxTime: any,
-  sourceChainId: any,
-  sourceBlockNum: any,
-  sourceTxIndex: any,
-): bigint => {
-  let challengeIdentNum = BigInt(sourceTxTime);
-
-  challengeIdentNum = (challengeIdentNum << BigInt(64)) | BigInt(sourceChainId);
-  challengeIdentNum =
-    (challengeIdentNum << BigInt(64)) | BigInt(sourceBlockNum);
-  challengeIdentNum = (challengeIdentNum << BigInt(64)) | BigInt(sourceTxIndex);
-
-  return challengeIdentNum;
-};
-
-export const getLastChallengeIdentNum = (
-  challengeIdentNumList: bigint[],
-  challengeIdentNum: bigint,
-) => {
-  let parentNodeNumOfTargetNode = null;
-  if (challengeIdentNumList.length > 0) {
-    const challengeIdentNumSortList = challengeIdentNumList.sort((a, b) => {
-      if (a > b) return -1;
-      if (a < b) return 1;
-      return 0;
-    });
-    let lastNum = 0n;
-    let index = 0;
-    while (
-      index <= challengeIdentNumSortList.length - 1 &&
-      challengeIdentNum < challengeIdentNumSortList[index]
-    ) {
-      lastNum = challengeIdentNumSortList[index];
-      index++;
-    }
-    parentNodeNumOfTargetNode = lastNum;
-  } else {
-    parentNodeNumOfTargetNode = 0;
-  }
-  return parentNodeNumOfTargetNode;
-};
-
 export const createChallenge = async (
   orMakerDeposit: ORMakerDeposit,
   challenge: challengeInputInfo,
@@ -628,22 +592,19 @@ export const createChallenge = async (
   }>
 > => {
   const minDeposit = utils.parseEther('0.005');
-  if (revertReason != undefined) {
-    await expect(
-      orMakerDeposit.challenge(
-        challenge.sourceTxTime,
-        challenge.sourceChainId,
-        challenge.sourceBlockNum,
-        challenge.sourceTxIndex,
-        challenge.sourceTxHash.toString(),
-        challenge.freezeToken,
-        challenge.freezeAmount,
-        challenge.parentNodeNumOfTargetNode,
-        { value: BigNumber.from(challenge.freezeAmount).add(minDeposit) },
-      ),
-    ).to.revertedWith(revertReason);
-    return { revertReason };
-  } else {
+  if (revertReason == undefined) {
+    const challengeIdentNum = challengeManager.getChallengeIdentNumSortList(
+      challenge.sourceTxTime,
+      challenge.sourceChainId,
+      challenge.sourceBlockNum,
+      challenge.sourceTxIndex,
+    );
+    challengeManager.addNum(challengeIdentNum);
+    const parentNodeNumOfTargetNode = challengeManager.getLastChallengeIdentNum(
+      challengeManager.numList,
+      challengeIdentNum,
+    );
+    challenge.parentNodeNumOfTargetNode = parentNodeNumOfTargetNode;
     const tx = await orMakerDeposit
       .challenge(
         challenge.sourceTxTime,
@@ -687,11 +648,36 @@ export const createChallenge = async (
       expect(args.statement.freezeAmount0).eql(challenge.freezeAmount);
       expect(args.statement.freezeAmount1).eql(challenge.freezeAmount);
     }
+
+    challengeManager.addChallengeNodeInfo(
+      {
+        sourceChainId: challenge.sourceChainId,
+        sourceTxHash: challenge.sourceTxHash,
+        challengeIdentNum: challengeIdentNum,
+        challenge: challenge,
+      }
+    )
+
     return {
       challengeId: args?.challengeId,
       challengeInfo: args?.challengeInfo,
       gasUsed: tx.gasUsed,
     };
+  } else {
+    await expect(
+      orMakerDeposit.challenge(
+        challenge.sourceTxTime,
+        challenge.sourceChainId,
+        challenge.sourceBlockNum,
+        challenge.sourceTxIndex,
+        challenge.sourceTxHash.toString(),
+        challenge.freezeToken,
+        challenge.freezeAmount,
+        challenge.parentNodeNumOfTargetNode,
+        { value: BigNumber.from(challenge.freezeAmount).add(minDeposit) },
+      ),
+    ).to.revertedWith(revertReason);
+    return { revertReason };
   }
 };
 
@@ -737,3 +723,76 @@ export const calculateTxGas = async (
     inputGasUsed,
   );
 };
+
+export class challengeManager {
+  static challengeInfoList: challengeInputInfo[] = [];
+  static challengeNodeInfoList: challengeNodeInfoList[] = [];
+  static sortingNodeInfoList: challengeNodeInfoList[] = [];
+  static numList: bigint[] = [];
+  static numSortingList: bigint[] = [];
+
+  static addChallengeInfo(challengeInfo: challengeInputInfo) {
+    this.challengeInfoList.push(challengeInfo);
+  }
+
+  static addChallengeNodeInfo(challengeNodeInfo: challengeNodeInfoList) {
+    this.challengeNodeInfoList.push(challengeNodeInfo);
+    this.sortingNodeInfoList = this.challengeNodeInfoList.sort((a, b) => {
+      if (a.challengeIdentNum > b.challengeIdentNum) return 1;
+      if (a.challengeIdentNum < b.challengeIdentNum) return -1;
+      return 0;
+    });
+  }
+
+  static addNum(challengeIdentNum: bigint) {
+    this.numList.push(challengeIdentNum);
+    this.numSortingList = this.numList.sort((a, b) => {
+      if (a > b) return -1;
+      if (a < b) return 1;
+      return 0;
+    });
+  }
+
+  static getChallengeIdentNumSortList(
+    sourceTxTime: any,
+    sourceChainId: any,
+    sourceBlockNum: any,
+    sourceTxIndex: any,
+  ): bigint {
+    let challengeIdentNum = BigInt(sourceTxTime);
+
+    challengeIdentNum = (challengeIdentNum << BigInt(64)) | BigInt(sourceChainId);
+    challengeIdentNum =
+      (challengeIdentNum << BigInt(64)) | BigInt(sourceBlockNum);
+    challengeIdentNum = (challengeIdentNum << BigInt(64)) | BigInt(sourceTxIndex);
+
+    return challengeIdentNum;
+  };
+
+  static getLastChallengeIdentNum(
+    challengeIdentNumList: bigint[],
+    challengeIdentNum: bigint,
+  ) {
+    let parentNodeNumOfTargetNode = null;
+    if (challengeIdentNumList.length > 0) {
+      const challengeIdentNumSortList = challengeIdentNumList.sort((a, b) => {
+        if (a > b) return -1;
+        if (a < b) return 1;
+        return 0;
+      });
+      let lastNum = 0n;
+      let index = 0;
+      while (
+        index <= challengeIdentNumSortList.length - 1 &&
+        challengeIdentNum < challengeIdentNumSortList[index]
+      ) {
+        lastNum = challengeIdentNumSortList[index];
+        index++;
+      }
+      parentNodeNumOfTargetNode = lastNum;
+    } else {
+      parentNodeNumOfTargetNode = 0;
+    }
+    return parentNodeNumOfTargetNode;
+  };
+}
