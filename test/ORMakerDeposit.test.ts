@@ -58,6 +58,7 @@ import {
   callDataCost,
   chainIdsMock,
   dealersMock,
+  defaultChainInfoArray,
   getCurrentTime,
   mineXTimes,
 } from './lib/mockData';
@@ -1233,9 +1234,48 @@ describe('ORMakerDeposit', () => {
       }
 
       for (let i = 0; i < challengeList.length; i++) {
-        await liquidateChallenge(orMakerDeposit, challengeList[i], [mdcOwner.address]);
+        await liquidateChallenge(orMakerDeposit, [challengeList[i]], [mdcOwner.address]);
       }
 
+      expect(challengeManager.getChallengeInfoList().length).eq(0);
+    });
+
+    it('checkChallenge test with special challengeId', async function () {
+      const sourceTxHash = utils.keccak256(randomBytes(100));
+      const freezeAmount = utils.formatEther(100000000000001111n);
+      const latestBlockRes = await orMakerDeposit.provider?.getBlock('latest');
+      const sourceChainId = defaultChainInfoArray[0].id;
+      const sourceBlockNum = random(latestBlockRes.number);
+      const sourceTxIndex = random(100);
+
+      const maxVerifyTime: number = (
+        await orManager.getChainInfo(sourceChainId)
+      ).maxVerifyChallengeSourceTxSecond.toNumber();
+
+      const currentTime: number = await getCurrentTime();
+
+      const challengerList: string[] = [];
+
+      for (let i = 0; i < 5; i++) {
+        const maker = new ORMakerDeposit__factory(
+          signers[i],
+        ).attach(orMakerDeposit.address);
+        const challenge: challengeInputInfo = {
+          sourceTxTime: currentTime - maxVerifyTime,
+          sourceChainId: sourceChainId.toString(),
+          sourceBlockNum,
+          sourceTxIndex,
+          sourceTxHash,
+          from: await orMakerDeposit.owner(),
+          freezeToken: constants.AddressZero,
+          freezeAmount: utils.parseEther(freezeAmount),
+          parentNodeNumOfTargetNode: 0,
+        };
+        await createChallenge(maker, challenge);
+        challengerList.push(signers[i].address);
+      }
+      const challengeList = challengeManager.getChallengeInfoList()
+      await liquidateChallenge(orMakerDeposit, challengeList, challengerList);
       expect(challengeManager.getChallengeInfoList().length).eq(0);
     });
   });

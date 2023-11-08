@@ -730,10 +730,14 @@ export const calculateTxGas = async (
 
 export const liquidateChallenge = async (
   orMakerDeposit: ORMakerDeposit,
-  challengeNode: challengeNodeInfoList,
+  challengeNodeList: challengeNodeInfoList[],
   chalengers: string[],
 ) => {
+  assert(challengeNodeList.map((item) => item.sourceChainId).every((val, i, arr) => val === arr[0]), 'sourceChainId are not same');
+  assert(challengeNodeList.map((item) => item.sourceTxHash).every((val, i, arr) => val === arr[0]), 'sourceTxHash are not same');
+
   let checkGasUsed = BigNumber.from(0);
+  const challengeNode = challengeNodeList[0];
   const freezeTokenAssetsBefore: BigNumberish = await orMakerDeposit.freezeAssets(challengeNode.challenge.freezeToken);
   const tx = await orMakerDeposit
     .checkChallenge(
@@ -744,22 +748,23 @@ export const liquidateChallenge = async (
     .then((t) => t.wait());
   const gasUsed = tx.gasUsed;
   const effectiveGasPrice = tx.effectiveGasPrice;
-  await calculateTxGas(tx, "Liquidation");
-  const args = tx.events?.[0].args!;
-  const challenge = challengeNode.challenge;
-  expect(args.statement.sourceTxFrom).eql(BigNumber.from(0));
-  expect(args.statement.sourceTxTime).eql(
-    BigNumber.from(challenge.sourceTxTime),
-  );
-  expect(args.statement.freezeToken).eql(challenge.freezeToken);
-  expect(args.statement.freezeAmount0).eql(challenge.freezeAmount);
-  expect(args.statement.freezeAmount1).eql(challenge.freezeAmount);
-  const freezeTokenAssetsAfter: BigNumberish = await orMakerDeposit.freezeAssets(challengeNode.challenge.freezeToken);
-  expect(freezeTokenAssetsAfter)
-    .equal(freezeTokenAssetsBefore.sub(challenge.freezeAmount).sub(challenge.freezeAmount));
-
-  challengeManager.liquidateChallengeNodeInfo(challengeNode.index!, true);
-
+  await calculateTxGas(tx, `Liquidation ${chalengers.length} challengers!`);
+  tx.events?.forEach((event, index) => {
+    const args = event.args!;
+    expect(args.challengeId).not.empty;
+    expect(args.statement.sourceTxFrom).eql(BigNumber.from(0));
+    expect(args.statement.sourceTxTime).eql(
+      BigNumber.from(challengeNode.challenge.sourceTxTime),
+    );
+    expect(args.statement.freezeToken).eql(challengeNode.challenge.freezeToken);
+    expect(args.statement.freezeAmount0).eql(challengeNode.challenge.freezeAmount);
+    expect(args.statement.freezeAmount1).eql(challengeNode.challenge.freezeAmount);
+    checkGasUsed = checkGasUsed.add(tx.gasUsed);
+  });
+  expect(tx.events?.length).to.equal(chalengers.length);
+  challengeNodeList.forEach((item) => {
+    challengeManager.liquidateChallengeNodeInfo(item.index!, true);
+  });
 }
 
 export class challengeManager {
@@ -784,9 +789,10 @@ export class challengeManager {
       if (a.challengeIdentNum < b.challengeIdentNum) return -1;
       return 0;
     });
-    // set index
     this.sortingNodeInfoList.forEach((item, index) => {
-      item.index = index;
+      if (item.index == undefined) {
+        item.index = index;
+      }
     });
   }
 
