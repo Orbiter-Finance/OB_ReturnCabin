@@ -51,7 +51,8 @@ import {
   updateSpv,
   VerifyinfoBase,
   calculateTxGas,
-  challengeManager
+  challengeManager,
+  liquidateChallenge
 } from './utils.test';
 import {
   callDataCost,
@@ -1203,7 +1204,6 @@ describe('ORMakerDeposit', () => {
       const sourceTxHash = utils.keccak256(randomBytes(100));
       const freezeAmount = utils.formatEther(100000000000001111n);
       const latestBlockRes = await orMakerDeposit.provider?.getBlock('latest');
-      const sourceTxTime = (await getCurrentTime()) - 1;
       const sourceChainId = random(500000);
       const sourceBlockNum = random(latestBlockRes.number);
       const sourceTxIndex = random(100);
@@ -1219,49 +1219,24 @@ describe('ORMakerDeposit', () => {
         parentNodeNumOfTargetNode: 0,
       };
       await createChallenge(orMakerDeposit, challenge);
+      const challengeList = challengeManager.getChallengeInfoList()
+
       // i >= 1: min challengeIdentNum node will pass
-      let challengeSortNodeList = challengeManager.sortingNodeInfoList;
-      for (let i = challengeSortNodeList.length - 1; i >= 1; i--) {
+      for (let i = challengeList.length - 1; i >= 1; i--) {
         await expect(
           orMakerDeposit.checkChallenge(
-            challengeSortNodeList[i].sourceChainId,
-            challengeSortNodeList[i].sourceTxHash,
+            challengeList[i].sourceChainId,
+            challengeList[i].sourceTxHash,
             [mdcOwner.address],
           ),
         ).to.revertedWith('NCCF');
       }
 
-      const beforeCheckBalance = await orMakerDeposit.provider.getBalance(
-        mdcOwner.address,
-      );
-      let checkGasUsed = BigNumber.from(0);
-      for (let i = 0; i < challengeSortNodeList.length; i++) {
-        const tx = await orMakerDeposit
-          .checkChallenge(
-            challengeSortNodeList[i].sourceChainId,
-            challengeSortNodeList[i].sourceTxHash,
-            [mdcOwner.address],
-          )
-          .then((t) => t.wait());
-        const gasUsed = tx.gasUsed;
-        const effectiveGasPrice = tx.effectiveGasPrice;
-        checkGasUsed = checkGasUsed.add(gasUsed.mul(effectiveGasPrice));
-        await calculateTxGas(tx, "Liquidation", i);
-        const args = tx.events?.[0].args!;
-        const challenge = challengeSortNodeList[i].challenge;
-        expect(args.statement.sourceTxFrom).eql(BigNumber.from(0));
-        expect(args.statement.sourceTxTime).eql(
-          BigNumber.from(challenge.sourceTxTime),
-        );
-        expect(args.statement.freezeToken).eql(challenge.freezeToken);
-        expect(args.statement.freezeAmount0).eql(challenge.freezeAmount);
-        expect(args.statement.freezeAmount1).eql(challenge.freezeAmount);
+      for (let i = 0; i < challengeList.length; i++) {
+        await liquidateChallenge(orMakerDeposit, challengeList[i], [mdcOwner.address]);
       }
-      const afterCheckBalance = await orMakerDeposit.provider.getBalance(
-        mdcOwner.address,
-      );
-      // The frozen deposit will not be refunded if the source is not verified.
-      expect(afterCheckBalance.add(checkGasUsed)).to.eq(beforeCheckBalance);
+
+      expect(challengeManager.getChallengeInfoList().length).eq(0);
     });
   });
 });

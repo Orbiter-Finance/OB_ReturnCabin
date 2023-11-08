@@ -115,6 +115,8 @@ export interface challengeNodeInfoList {
   sourceTxHash: string;
   challengeIdentNum: BigNumberish;
   challenge: challengeInputInfo;
+  liquidated: boolean;
+  index?: number;
 }
 
 export interface VerifyinfoBase {
@@ -218,7 +220,6 @@ export const getVerifyinfo = async (
   const freezeToken_Dest = verifyinfoBase.freeTokenDest;
   const freezeToken = verifyinfoBase.freeTokenSource;
   const ebc = verifyinfoBase.ebc;
-  console.log(`mangerAddress: ${managerAddress}, makerAddress: ${makerAddress}, sourceChainId: ${chainId}, chainId_Dest: ${chainId_Dest}, freezeToken_Dest: ${freezeToken_Dest}, freezeToken: ${freezeToken}, ebc: ${ebc}`);
   // set Verifyinfo 0
   // ORManager.sol - ChainInfo - maxVerifyChallengeSourceTxSecond | minVerifyChallengeSourceTxSecond
   // slot 2
@@ -575,6 +576,7 @@ export const getVerifyinfo = async (
     data: dataVelue,
     slots: slotValue,
   };
+  // console.log(`mangerAddress: ${managerAddress}, makerAddress: ${makerAddress}, sourceChainId: ${chainId}, chainId_Dest: ${chainId_Dest}, freezeToken_Dest: ${freezeToken_Dest}, freezeToken: ${freezeToken}, ebc: ${ebc}`);
   // console.log(VerifyInfo);
   return VerifyInfo;
 };
@@ -655,6 +657,7 @@ export const createChallenge = async (
         sourceTxHash: challenge.sourceTxHash,
         challengeIdentNum: challengeIdentNum,
         challenge: challenge,
+        liquidated: false,
       }
     )
 
@@ -724,6 +727,41 @@ export const calculateTxGas = async (
   );
 };
 
+
+export const liquidateChallenge = async (
+  orMakerDeposit: ORMakerDeposit,
+  challengeNode: challengeNodeInfoList,
+  chalengers: string[],
+) => {
+  let checkGasUsed = BigNumber.from(0);
+  const freezeTokenAssetsBefore: BigNumberish = await orMakerDeposit.freezeAssets(challengeNode.challenge.freezeToken);
+  const tx = await orMakerDeposit
+    .checkChallenge(
+      challengeNode.sourceChainId,
+      challengeNode.sourceTxHash,
+      chalengers,
+    )
+    .then((t) => t.wait());
+  const gasUsed = tx.gasUsed;
+  const effectiveGasPrice = tx.effectiveGasPrice;
+  await calculateTxGas(tx, "Liquidation");
+  const args = tx.events?.[0].args!;
+  const challenge = challengeNode.challenge;
+  expect(args.statement.sourceTxFrom).eql(BigNumber.from(0));
+  expect(args.statement.sourceTxTime).eql(
+    BigNumber.from(challenge.sourceTxTime),
+  );
+  expect(args.statement.freezeToken).eql(challenge.freezeToken);
+  expect(args.statement.freezeAmount0).eql(challenge.freezeAmount);
+  expect(args.statement.freezeAmount1).eql(challenge.freezeAmount);
+  const freezeTokenAssetsAfter: BigNumberish = await orMakerDeposit.freezeAssets(challengeNode.challenge.freezeToken);
+  expect(freezeTokenAssetsAfter)
+    .equal(freezeTokenAssetsBefore.sub(challenge.freezeAmount).sub(challenge.freezeAmount));
+
+  challengeManager.liquidateChallengeNodeInfo(challengeNode.index!, true);
+
+}
+
 export class challengeManager {
   static challengeInfoList: challengeInputInfo[] = [];
   static challengeNodeInfoList: challengeNodeInfoList[] = [];
@@ -735,12 +773,20 @@ export class challengeManager {
     this.challengeInfoList.push(challengeInfo);
   }
 
+  static getChallengeInfoList() {
+    return this.sortingNodeInfoList.filter((v) => !v.liquidated);
+  }
+
   static addChallengeNodeInfo(challengeNodeInfo: challengeNodeInfoList) {
     this.challengeNodeInfoList.push(challengeNodeInfo);
     this.sortingNodeInfoList = this.challengeNodeInfoList.sort((a, b) => {
       if (a.challengeIdentNum > b.challengeIdentNum) return 1;
       if (a.challengeIdentNum < b.challengeIdentNum) return -1;
       return 0;
+    });
+    // set index
+    this.sortingNodeInfoList.forEach((item, index) => {
+      item.index = index;
     });
   }
 
@@ -750,6 +796,17 @@ export class challengeManager {
       if (a > b) return -1;
       if (a < b) return 1;
       return 0;
+    });
+  }
+
+  static liquidateChallengeNodeInfo(
+    index: number,
+    liquidated: boolean,
+  ) {
+    this.sortingNodeInfoList.forEach((item) => {
+      if (item.index == index) {
+        item.liquidated = liquidated;
+      }
     });
   }
 
