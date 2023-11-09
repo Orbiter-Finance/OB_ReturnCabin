@@ -493,35 +493,439 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
     }
 
     function _parsePublicInput(bytes calldata proofData) private pure returns (PublicInputData memory) {
+        uint256 ProofLength = 384;
+        uint256 SplitStep = 32;
+        uint256 TransactionSplitStart = ProofLength + 64; // 384 is proof length;64 is blockHash length
+        uint256 TrackBlockSplitStart = TransactionSplitStart + SplitStep * 12;
+        uint256 MdcContractSplitStart = TrackBlockSplitStart + SplitStep * 9;
+        uint256 EbcConfigSplitStart = MdcContractSplitStart + SplitStep * 56;
         return
             PublicInputData({
-                sourceChainId: uint64(uint256(bytes32(proofData[544:576]))),
-                sourceTxHash: bytes32(
-                    (uint256(bytes32(proofData[448:480])) << 128) | uint256(bytes32(proofData[480:512]))
+                tx_hash: bytes32(
+                    (uint256(bytes32(proofData[TransactionSplitStart:TransactionSplitStart + SplitStep])) << 128) |
+                        uint256(
+                            bytes32(proofData[TransactionSplitStart + SplitStep:TransactionSplitStart + SplitStep * 2])
+                        )
                 ),
-                txIndex: uint256(bytes32(proofData[512:544])),
-                from: ((uint256(bytes32(proofData[576:608])))),
-                to: ((uint256(bytes32(proofData[608:640])))),
-                freezeToken: address(uint160(uint256(bytes32(proofData[640:672])))),
-                freezeAmount: uint256(bytes32(proofData[672:704])),
-                nonce: uint256(bytes32(proofData[704:736])),
-                sourceTxTimestamp: uint64(uint256(bytes32(proofData[736:768]))),
-                dest: ((uint256(bytes32(proofData[768:800])))),
-                destToken: ((uint256(bytes32(proofData[800:832])))),
-                L1TXBlockHash: bytes32(
-                    (uint256(bytes32(proofData[384:416])) << 128) | uint256(bytes32(proofData[416:448]))
+                chain_id: uint64(
+                    uint256(
+                        bytes32(proofData[TransactionSplitStart + SplitStep * 2:TransactionSplitStart + SplitStep * 3])
+                    )
                 ),
-                L1TBlockNumber: uint256(bytes32(proofData[1408:1440])),
-                mdcContractAddress: address(uint160(uint256(bytes32(proofData[2560:2592])))),
-                managerContractAddress: address(uint160(uint256(bytes32(proofData[2592:2624])))),
-                ruleRootSlot: ((uint256(bytes32(proofData[2816:2848])) << 128) |
-                    uint256(bytes32(proofData[2848:2880]))),
-                ruleVersionSlot: ((uint256(bytes32(proofData[2880:2912])) << 128) |
-                    uint256(bytes32(proofData[2912:2944]))),
-                enableTimeSlot: ((uint256(bytes32(proofData[2944:2976])) << 128) |
-                    uint256(bytes32(proofData[2976:3008]))),
-                RulePreRootHash: bytes32(
-                    (uint256(bytes32(proofData[2624:2656])) << 128) | uint256(bytes32(proofData[2656:2688]))
+                index: uint256(
+                    bytes32(proofData[TransactionSplitStart + SplitStep * 3:TransactionSplitStart + SplitStep * 4])
+                ),
+                from: (
+                    (
+                        uint256(
+                            bytes32(
+                                proofData[TransactionSplitStart + SplitStep * 4:TransactionSplitStart + SplitStep * 5]
+                            )
+                        )
+                    )
+                ),
+                to: (
+                    uint160(
+                        uint256(
+                            bytes32(
+                                proofData[TransactionSplitStart + SplitStep * 5:TransactionSplitStart + SplitStep * 6]
+                            )
+                        )
+                    )
+                ),
+                token: address(
+                    uint160(
+                        uint256(
+                            bytes32(
+                                proofData[TransactionSplitStart + SplitStep * 6:TransactionSplitStart + SplitStep * 7]
+                            )
+                        )
+                    )
+                ),
+                amount: uint256(
+                    bytes32(proofData[TransactionSplitStart + SplitStep * 7:TransactionSplitStart + SplitStep * 8])
+                ),
+                nonce: uint256(
+                    bytes32(proofData[TransactionSplitStart + SplitStep * 8:TransactionSplitStart + SplitStep * 9])
+                ),
+                time_stamp: uint256(
+                    bytes32(proofData[TransactionSplitStart + SplitStep * 9:TransactionSplitStart + SplitStep * 10])
+                ),
+                dest: (
+                    uint160(
+                        uint256(
+                            bytes32(
+                                proofData[TransactionSplitStart + SplitStep * 10:TransactionSplitStart + SplitStep * 11]
+                            )
+                        )
+                    )
+                ),
+                dest_token: (
+                    uint160(
+                        uint256(
+                            bytes32(
+                                proofData[TransactionSplitStart + SplitStep * 11:TransactionSplitStart + SplitStep * 12]
+                            )
+                        )
+                    )
+                ),
+                l1_tx_block_hash: bytes32(
+                    (uint256(bytes32(proofData[TrackBlockSplitStart:TrackBlockSplitStart + SplitStep])) << 128) |
+                        uint256(
+                            bytes32(proofData[TrackBlockSplitStart + SplitStep:TrackBlockSplitStart + SplitStep * 2])
+                        )
+                ),
+                l1_tx_block_number: uint256(
+                    bytes32(proofData[TrackBlockSplitStart + SplitStep * 2:TrackBlockSplitStart + SplitStep * 3])
+                ),
+                mdc_contract_address: address(
+                    uint160(uint256(bytes32(proofData[MdcContractSplitStart:MdcContractSplitStart + SplitStep])))
+                ),
+                manager_contract_address: address(
+                    uint160(
+                        uint256(
+                            bytes32(proofData[MdcContractSplitStart + SplitStep:MdcContractSplitStart + SplitStep * 2])
+                        )
+                    )
+                ),
+                mdc_rule_root_slot: ((uint256(
+                    bytes32(proofData[MdcContractSplitStart + SplitStep * 2:MdcContractSplitStart + SplitStep * 3])
+                ) << 128) |
+                    uint256(
+                        bytes32(proofData[MdcContractSplitStart + SplitStep * 3:MdcContractSplitStart + SplitStep * 4])
+                    )),
+                mdc_rule_version_slot: ((uint256(
+                    bytes32(proofData[MdcContractSplitStart + SplitStep * 4:MdcContractSplitStart + SplitStep * 5])
+                ) << 128) |
+                    uint256(
+                        bytes32(proofData[MdcContractSplitStart + SplitStep * 5:MdcContractSplitStart + SplitStep * 6])
+                    )),
+                mdc_rule_enable_time_slot: ((uint256(
+                    bytes32(proofData[MdcContractSplitStart + SplitStep * 6:MdcContractSplitStart + SplitStep * 7])
+                ) << 128) |
+                    uint256(
+                        bytes32(proofData[MdcContractSplitStart + SplitStep * 7:MdcContractSplitStart + SplitStep * 8])
+                    )),
+                mdc_column_array_hash_slot: bytes32(
+                    (uint256(
+                        bytes32(proofData[MdcContractSplitStart + SplitStep * 8:MdcContractSplitStart + SplitStep * 9])
+                    ) << 128) |
+                        uint256(
+                            bytes32(
+                                proofData[MdcContractSplitStart + SplitStep * 9:MdcContractSplitStart + SplitStep * 10]
+                            )
+                        )
+                ),
+                mdc_response_makers_hash_slot: bytes32(
+                    (uint256(
+                        bytes32(
+                            proofData[MdcContractSplitStart + SplitStep * 10:MdcContractSplitStart + SplitStep * 11]
+                        )
+                    ) << 128) |
+                        uint256(
+                            bytes32(
+                                proofData[MdcContractSplitStart + SplitStep * 11:MdcContractSplitStart + SplitStep * 12]
+                            )
+                        )
+                ),
+                manage_source_chain_info_slot: bytes32(
+                    (uint256(
+                        bytes32(
+                            proofData[MdcContractSplitStart + SplitStep * 12:MdcContractSplitStart + SplitStep * 13]
+                        )
+                    ) << 128) |
+                        uint256(
+                            bytes32(
+                                proofData[MdcContractSplitStart + SplitStep * 13:MdcContractSplitStart + SplitStep * 14]
+                            )
+                        )
+                ),
+                manage_source_chain_mainnet_token_info_slot: bytes32(
+                    (uint256(
+                        bytes32(
+                            proofData[MdcContractSplitStart + SplitStep * 14:MdcContractSplitStart + SplitStep * 15]
+                        )
+                    ) << 128) |
+                        uint256(
+                            bytes32(
+                                proofData[MdcContractSplitStart + SplitStep * 15:MdcContractSplitStart + SplitStep * 16]
+                            )
+                        )
+                ),
+                manage_dest_chain_mainnet_token_slot: bytes32(
+                    (uint256(
+                        bytes32(
+                            proofData[MdcContractSplitStart + SplitStep * 16:MdcContractSplitStart + SplitStep * 17]
+                        )
+                    ) << 128) |
+                        uint256(
+                            bytes32(
+                                proofData[MdcContractSplitStart + SplitStep * 17:MdcContractSplitStart + SplitStep * 18]
+                            )
+                        )
+                ),
+                manage_challenge_user_ratio_slot: bytes32(
+                    (uint256(
+                        bytes32(
+                            proofData[MdcContractSplitStart + SplitStep * 18:MdcContractSplitStart + SplitStep * 19]
+                        )
+                    ) << 128) |
+                        uint256(
+                            bytes32(
+                                proofData[MdcContractSplitStart + SplitStep * 19:MdcContractSplitStart + SplitStep * 20]
+                            )
+                        )
+                ),
+                mdc_pre_rule_root: bytes32(
+                    (uint256(
+                        bytes32(
+                            proofData[MdcContractSplitStart + SplitStep * 20:MdcContractSplitStart + SplitStep * 21]
+                        )
+                    ) << 128) |
+                        uint256(
+                            bytes32(
+                                proofData[MdcContractSplitStart + SplitStep * 21:MdcContractSplitStart + SplitStep * 22]
+                            )
+                        )
+                ),
+                mdc_pre_rule_version: uint256(
+                    bytes32(
+                        (uint256(
+                            bytes32(
+                                proofData[MdcContractSplitStart + SplitStep * 22:MdcContractSplitStart + SplitStep * 23]
+                            )
+                        ) << 128) |
+                            uint256(
+                                bytes32(
+                                    proofData[MdcContractSplitStart + SplitStep * 23:MdcContractSplitStart +
+                                        SplitStep *
+                                        24]
+                                )
+                            )
+                    )
+                ),
+                mdc_pre_rule_enable_time: uint64(
+                    bytes8(
+                        proofData[MdcContractSplitStart + SplitStep * 24 + SplitStep / 2:MdcContractSplitStart +
+                            SplitStep *
+                            24 +
+                            SplitStep /
+                            2 +
+                            SplitStep /
+                            4]
+                    )
+                ),
+                mdc_pre_column_array_hash: bytes32(
+                    (uint256(
+                        bytes32(
+                            proofData[MdcContractSplitStart + SplitStep * 26:MdcContractSplitStart + SplitStep * 27]
+                        )
+                    ) << 128) |
+                        uint256(
+                            bytes32(
+                                proofData[MdcContractSplitStart + SplitStep * 27:MdcContractSplitStart + SplitStep * 28]
+                            )
+                        )
+                ),
+                mdc_pre_response_makers_hash: bytes32(
+                    (uint256(
+                        bytes32(
+                            proofData[MdcContractSplitStart + SplitStep * 28:MdcContractSplitStart + SplitStep * 29]
+                        )
+                    ) << 128) |
+                        uint256(
+                            bytes32(
+                                proofData[MdcContractSplitStart + SplitStep * 29:MdcContractSplitStart + SplitStep * 30]
+                            )
+                        )
+                ),
+                manage_pre_source_chain_max_verify_challenge_source_tx_second: uint64(
+                    bytes8(
+                        proofData[MdcContractSplitStart + SplitStep * 31 + SplitStep / 2:MdcContractSplitStart +
+                            SplitStep *
+                            31 +
+                            SplitStep /
+                            2 +
+                            SplitStep /
+                            4]
+                    )
+                ),
+                manage_pre_source_chain_mix_verify_challenge_source_tx_second: uint64(
+                    bytes8(
+                        proofData[MdcContractSplitStart +
+                            SplitStep *
+                            31 +
+                            SplitStep /
+                            2 +
+                            SplitStep /
+                            4:MdcContractSplitStart + SplitStep * 32]
+                    )
+                ),
+                manage_pre_source_chain_mainnet_token: address(
+                    uint160(
+                        uint256(
+                            bytes32(
+                                (uint256(
+                                    bytes32(
+                                        proofData[MdcContractSplitStart + SplitStep * 32:MdcContractSplitStart +
+                                            SplitStep *
+                                            33]
+                                    )
+                                ) << 128) |
+                                    uint256(
+                                        bytes32(
+                                            proofData[MdcContractSplitStart + SplitStep * 33:MdcContractSplitStart +
+                                                SplitStep *
+                                                34]
+                                        )
+                                    )
+                            )
+                        )
+                    )
+                ),
+                manage_pre_dest_chain_mainnet_token: address(
+                    uint160(
+                        uint256(
+                            bytes32(
+                                (uint256(
+                                    bytes32(
+                                        proofData[MdcContractSplitStart + SplitStep * 34:MdcContractSplitStart +
+                                            SplitStep *
+                                            35]
+                                    )
+                                ) << 128) |
+                                    uint256(
+                                        bytes32(
+                                            proofData[MdcContractSplitStart + SplitStep * 35:MdcContractSplitStart +
+                                                SplitStep *
+                                                36]
+                                        )
+                                    )
+                            )
+                        )
+                    )
+                ),
+                manage_pre_challenge_user_ratio: uint64(
+                    bytes8(
+                        proofData[MdcContractSplitStart + SplitStep * 37 + SplitStep / 2:MdcContractSplitStart +
+                            SplitStep *
+                            37 +
+                            SplitStep /
+                            2 +
+                            SplitStep /
+                            4]
+                    )
+                ),
+                mdc_current_rule_root: bytes32(
+                    (uint256(
+                        bytes32(
+                            proofData[MdcContractSplitStart + SplitStep * 38:MdcContractSplitStart + SplitStep * 39]
+                        )
+                    ) << 128) |
+                        uint256(
+                            bytes32(
+                                proofData[MdcContractSplitStart + SplitStep * 39:MdcContractSplitStart + SplitStep * 40]
+                            )
+                        )
+                ),
+                mdc_current_rule_version: uint256(
+                    bytes32(
+                        (uint256(
+                            bytes32(
+                                proofData[MdcContractSplitStart + SplitStep * 40:MdcContractSplitStart + SplitStep * 41]
+                            )
+                        ) << 128) |
+                            uint256(
+                                bytes32(
+                                    proofData[MdcContractSplitStart + SplitStep * 41:MdcContractSplitStart +
+                                        SplitStep *
+                                        42]
+                                )
+                            )
+                    )
+                ),
+                mdc_current_rule_enable_time: uint64(
+                    bytes8(
+                        proofData[MdcContractSplitStart + SplitStep * 42 + SplitStep / 2:MdcContractSplitStart +
+                            SplitStep *
+                            42 +
+                            SplitStep /
+                            2 +
+                            SplitStep /
+                            4]
+                    )
+                ),
+                source_chain_id: uint256(bytes32(proofData[EbcConfigSplitStart:EbcConfigSplitStart + SplitStep])),
+                source_token: address(
+                    uint160(
+                        uint256(bytes32(proofData[EbcConfigSplitStart + SplitStep:EbcConfigSplitStart + SplitStep * 2]))
+                    )
+                ),
+                source_min_price: uint256(
+                    bytes32(proofData[EbcConfigSplitStart + SplitStep * 2:EbcConfigSplitStart + SplitStep * 3])
+                ),
+                source_max_price: uint256(
+                    bytes32(proofData[EbcConfigSplitStart + SplitStep * 3:EbcConfigSplitStart + SplitStep * 4])
+                ),
+                source_with_holding_fee: uint256(
+                    bytes32(proofData[EbcConfigSplitStart + SplitStep * 4:EbcConfigSplitStart + SplitStep * 5])
+                ),
+                source_trading_fee: uint256(
+                    bytes32(proofData[EbcConfigSplitStart + SplitStep * 5:EbcConfigSplitStart + SplitStep * 6])
+                ),
+                source_response_time: uint256(
+                    bytes32(proofData[EbcConfigSplitStart + SplitStep * 6:EbcConfigSplitStart + SplitStep * 7])
+                ),
+                dest_chain_id: uint256(
+                    bytes32(proofData[EbcConfigSplitStart + SplitStep * 7:EbcConfigSplitStart + SplitStep * 8])
+                ),
+                dest_token_rule: address(
+                    uint160(
+                        uint256(
+                            bytes32(proofData[EbcConfigSplitStart + SplitStep * 8:EbcConfigSplitStart + SplitStep * 9])
+                        )
+                    )
+                ),
+                dest_min_price: uint256(
+                    bytes32(proofData[EbcConfigSplitStart + SplitStep * 9:EbcConfigSplitStart + SplitStep * 10])
+                ),
+                dest_max_price: uint256(
+                    bytes32(proofData[EbcConfigSplitStart + SplitStep * 10:EbcConfigSplitStart + SplitStep * 11])
+                ),
+                dest_with_holding_fee: uint256(
+                    bytes32(proofData[EbcConfigSplitStart + SplitStep * 11:EbcConfigSplitStart + SplitStep * 12])
+                ),
+                dest_trading_fee: uint256(
+                    bytes32(proofData[EbcConfigSplitStart + SplitStep * 12:EbcConfigSplitStart + SplitStep * 13])
+                ),
+                dest_response_time: uint256(
+                    bytes32(proofData[EbcConfigSplitStart + SplitStep * 13:EbcConfigSplitStart + SplitStep * 14])
+                ),
+                ob_contracts_pre_block_hash: bytes32(
+                    (uint256(
+                        bytes32(proofData[TrackBlockSplitStart + SplitStep * 3:TrackBlockSplitStart + SplitStep * 4])
+                    ) << 128) |
+                        uint256(
+                            bytes32(
+                                proofData[TrackBlockSplitStart + SplitStep * 4:TrackBlockSplitStart + SplitStep * 5]
+                            )
+                        )
+                ),
+                ob_contracts_pre_block_number: uint256(
+                    bytes32(proofData[TrackBlockSplitStart + SplitStep * 5:TrackBlockSplitStart + SplitStep * 6])
+                ),
+                ob_contracts_current_block_hash: bytes32(
+                    (uint256(
+                        bytes32(proofData[TrackBlockSplitStart + SplitStep * 6:TrackBlockSplitStart + SplitStep * 7])
+                    ) << 128) |
+                        uint256(
+                            bytes32(
+                                proofData[TrackBlockSplitStart + SplitStep * 7:TrackBlockSplitStart + SplitStep * 8]
+                            )
+                        )
+                ),
+                ob_contracts_current_block_number: uint256(
+                    bytes32(proofData[TrackBlockSplitStart + SplitStep * 8:TrackBlockSplitStart + SplitStep * 9])
                 )
             });
     }
@@ -537,39 +941,42 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         uint256 startGasNum = gasleft();
         PublicInputData memory publicInputData = _parsePublicInput(proof);
         require(
-            (publicInputData.managerContractAddress == _mdcFactory.manager()) &&
-                (publicInputData.mdcContractAddress == address(this)),
+            (publicInputData.manager_contract_address == _mdcFactory.manager()) &&
+                (publicInputData.mdc_contract_address == address(this)),
             "MCE"
         );
-        BridgeLib.ChainInfo memory chainInfo = IORManager(publicInputData.managerContractAddress).getChainInfo(
-            publicInputData.sourceChainId
+        BridgeLib.ChainInfo memory chainInfo = IORManager(publicInputData.manager_contract_address).getChainInfo(
+            publicInputData.chain_id
         );
         require(chainInfo.spvs.includes(spvAddress), "SI"); // Invalid spv
         (bool success, ) = spvAddress.call(proof);
         require(success, "VF");
         // Check chainId, hash, timestamp
-        bytes32 challengeId = abi.encode(publicInputData.sourceChainId, publicInputData.sourceTxHash).hash();
+        bytes32 challengeId = abi.encode(publicInputData.chain_id, publicInputData.tx_hash).hash();
         ChallengeStatement memory statement = _challenges[challengeId].statement[challenger];
         ChallengeResult memory result = _challenges[challengeId].result;
         require(statement.challengeTime > 0, "CTZ");
         require(result.verifiedTime0 == 0, "VT0NZ");
         // Check timestamp
-        require(publicInputData.sourceTxTimestamp == statement.sourceTxTime, "ST");
+        require(publicInputData.time_stamp == statement.sourceTxTime, "ST");
         // Check maker address
         require(uint160(publicInputData.to) == uint160(_owner), "TNEO");
         // Check freezeToken
-        require(statement.freezeToken == publicInputData.freezeToken, "FTV");
+        require(statement.freezeToken == publicInputData.token, "FTV");
         // Check FreezeAmount
-        require(statement.freezeAmount1 == publicInputData.freezeAmount, "FALV");
-        // Check L1blockHash
-        require(publicInputData.L1TXBlockHash == blockhash(publicInputData.L1TBlockNumber));
+        require(statement.freezeAmount1 == publicInputData.amount, "FALV");
 
         // Check manager's chainInfo.minVerifyChallengeSourceTxSecond,maxVerifyChallengeSourceTxSecond
-        // TODO: make this public input
         {
-            uint timeDiff = block.timestamp - publicInputData.sourceTxTimestamp;
-            require(timeDiff >= uint64(chainInfo.minVerifyChallengeSourceTxSecond), "MINTOF");
-            require(timeDiff <= uint64(chainInfo.maxVerifyChallengeSourceTxSecond), "MAXTOF");
+            uint timeDiff = block.timestamp - publicInputData.time_stamp;
+            require(
+                timeDiff >= uint64(publicInputData.manage_pre_source_chain_mix_verify_challenge_source_tx_second),
+                "MINTOF"
+            );
+            require(
+                timeDiff <= uint64(publicInputData.manage_pre_source_chain_max_verify_challenge_source_tx_second),
+                "MAXTOF"
+            );
         }
 
         (
@@ -580,38 +987,40 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             RuleLib.Rule memory rule
         ) = abi.decode(rawDatas, (address[], address[], uint64[], address, RuleLib.Rule));
 
-        // TODO: check _columnArrayHash
-        (dealers);
+        // check _columnArrayHash
+        require(abi.encodePacked(dealers, ebcs, chainIds).hash() == publicInputData.mdc_pre_column_array_hash);
         // TODO: Check _responseMakersHash
 
         // Check ebc address, destChainId, destToken
         uint destChainId;
         {
-            IOREventBinding.AmountParams memory ap = IOREventBinding(ebc).getAmountParams(publicInputData.freezeAmount);
+            IOREventBinding.AmountParams memory ap = IOREventBinding(ebc).getAmountParams(publicInputData.amount);
             require(ebc == ebcs[ap.ebcIndex - 1], "ENE");
 
             require(ap.chainIdIndex <= chainIds.length, "COF");
             destChainId = chainIds[ap.chainIdIndex - 1];
 
-            // TODO:. circuit doesn't expose this public input now
-            require(uint160(statement.freezeToken) == uint160(publicInputData.destToken), "DTV");
+            require(
+                uint160(statement.freezeToken) == uint160(publicInputData.manage_pre_dest_chain_mainnet_token),
+                "DTV"
+            );
         }
 
         // Check rule & enabletime slot, rule hash
         {
             uint256 slot = uint256(abi.encode(ebc, 6).hash());
-            require(slot == publicInputData.ruleRootSlot, "RRSE");
-            require((slot + 1) == publicInputData.ruleVersionSlot, "RVSE");
-            require(0 == publicInputData.enableTimeSlot, "RVSE");
+            require(slot == publicInputData.mdc_rule_root_slot, "RRSE");
+            require((slot + 1) == publicInputData.mdc_rule_version_slot, "RVSE");
+            require(0 == publicInputData.mdc_rule_enable_time_slot, "RVSE");
             // Check rule hash
-            require((abi.encode(rule).hash()) == publicInputData.RulePreRootHash, "RH");
+            require((abi.encode(rule).hash()) == publicInputData.mdc_pre_rule_root, "RH");
         }
 
         // Check dest amount
         // TODO: Is there a more general solution. Not only amount
-        RuleLib.RuleOneway memory ro = RuleLib.convertToOneway(rule, publicInputData.sourceChainId);
+        RuleLib.RuleOneway memory ro = RuleLib.convertToOneway(rule, publicInputData.chain_id);
         uint destAmount = IOREventBinding(ebc).getResponseAmountFromIntent(
-            IOREventBinding(ebc).getResponseIntent(publicInputData.freezeAmount, ro)
+            IOREventBinding(ebc).getResponseIntent(publicInputData.amount, ro)
         );
 
         ChallengeStatement storage statement_s = _challenges[challengeId].statement[challenger];
@@ -620,8 +1029,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         // Save tx'from address, and compensate tx'from on the mainnet when the maker failed
         statement_s.sourceTxFrom = publicInputData.from;
 
-        // TODO: save challengeUserRatio from public input in next version
-        statement_s.challengeUserRatio = uint64(verifyInfo.slots[2].value >> 64);
+        statement_s.challengeUserRatio = publicInputData.manage_pre_challenge_user_ratio;
 
         result_s.verifiedTime0 = uint64(block.timestamp);
 
@@ -634,10 +1042,10 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
                 [
                     uint64(verifyInfo.slots[0].value >> 128),
                     uint64(verifyInfo.slots[0].value >> 128),
-                    publicInputData.sourceChainId,
+                    publicInputData.chain_id,
                     destChainId,
                     publicInputData.dest,
-                    publicInputData.destToken,
+                    publicInputData.dest_token,
                     destAmount,
                     publicInputData.to
                 ]

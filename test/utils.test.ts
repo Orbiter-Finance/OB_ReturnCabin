@@ -144,6 +144,64 @@ export interface columnArray {
   chainIds: number[];
 }
 
+export interface PublicInputDataStruct {
+  tx_hash: string;
+  chain_id: string;
+  index: string;
+  from: string;
+  to: string;
+  token: string;
+  amount: string;
+  nonce: string;
+  time_stamp: string;
+  dest: string;
+  dest_token: string;
+  l1_tx_block_hash: string;
+  l1_tx_block_number: string;
+  mdc_contract_address: string;
+  manage_contract_address: string;
+  mdc_rule_root_slot: string;
+  mdc_rule_version_slot: string;
+  mdc_rule_enable_time_slot: string;
+  mdc_column_array_hash_slot: string;
+  mdc_response_makers_hash_slot: string;
+  manage_source_chain_info_slot: string;
+  manage_source_chain_mainnet_token_info_slot: string;
+  manage_dest_chain_mainnet_token_slot: string;
+  manage_challenge_user_ratio_slot: string;
+  mdc_pre_rule_root: string;
+  mdc_pre_rule_version: string;
+  mdc_pre_rule_enable_time: string;
+  mdc_pre_column_array_hash: string;
+  mdc_pre_response_makers_hash: string;
+  manage_pre_source_chain_max_verify_challenge_source_tx_second: string;
+  manage_pre_source_chain_mix_verify_challenge_source_tx_second: string;
+  manage_pre_source_chain_mainnet_token: string;
+  manage_pre_dest_chain_mainnet_token: string;
+  manage_pre_challenge_user_ratio: string;
+  mdc_current_rule_root: string;
+  mdc_current_rule_version: string;
+  mdc_current_rule_enable_time: string;
+  source_chain_id: string;
+  source_token: string;
+  source_min_price: string;
+  source_max_price: string;
+  source_with_holding_fee: string;
+  source_trading_fee: string;
+  source_response_time: string;
+  dest_chain_id: string;
+  dest_token_rule: string;
+  dest_min_price: string;
+  dest_max_price: string;
+  dest_with_holding_fee: string;
+  dest_trading_fee: string;
+  dest_response_time: string;
+  ob_contracts_pre_block_hash: string;
+  ob_contracts_pre_block_number: string;
+  ob_contracts_current_block_hash: string;
+  ob_contracts_current_block_number: string;
+}
+
 export const updateSpv = async (
   challengeInputInfo: challengeInputInfo,
   spvAddress: string,
@@ -738,7 +796,6 @@ export const liquidateChallenge = async (
 
   let checkGasUsed = BigNumber.from(0);
   const challengeNode = challengeNodeList[0];
-  const freezeTokenAssetsBefore: BigNumberish = await orMakerDeposit.freezeAssets(challengeNode.challenge.freezeToken);
   const tx = await orMakerDeposit
     .checkChallenge(
       challengeNode.sourceChainId,

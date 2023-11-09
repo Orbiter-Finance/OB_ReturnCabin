@@ -52,7 +52,8 @@ import {
   VerifyinfoBase,
   calculateTxGas,
   challengeManager,
-  liquidateChallenge
+  liquidateChallenge,
+  PublicInputDataStruct
 } from './utils.test';
 import {
   callDataCost,
@@ -954,40 +955,17 @@ describe('ORMakerDeposit', () => {
 
     it('test prase spv proof data', async function () {
       const fake_spvProof: BytesLike = utils.keccak256(mdcOwner.address);
-      const spvProof: BytesLike = utils.arrayify(
-        '0x' + fs.readFileSync('test/example/spv.calldata', 'utf-8'),
+      let spvProof: BytesLike = utils.arrayify(
+        '0x' + fs.readFileSync('test/example/spv.calldata', 'utf-8').replace(/\t|\n|\v|\r|\f/g, '')
       );
 
       await expect(spvTest.verifyProof(fake_spvProof)).to.revertedWith(
         'verify fail',
       );
 
-      interface PublicInputDataStruct {
-        sourceChainId: BigNumberish;
-        sourceTxHash: BigNumberish;
-        txIndex: BigNumberish;
-        from: BigNumberish;
-        to: BigNumberish;
-        freezeToken: BigNumberish;
-        freezeAmount: BigNumberish;
-        nonce: BigNumberish;
-        sourceTxTimestamp: BigNumberish;
-        dest: BigNumberish;
-        destToken: BigNumberish;
-        L1TXBlockHash: BigNumberish;
-        L1TBlockNumber: BigNumberish;
-        mdcContractAddress: BigNumberish;
-        managerContractAddress: BigNumberish;
-        ruleRootSlot: BigNumberish;
-        ruleVersionSlot: BigNumberish;
-        enableTimeSlot: BigNumberish;
-        RulePreRootHash: BigNumberish;
-      }
-
       const publicInputData: PublicInputDataStruct = await spvTest.parsePublicInput(spvProof);
-      return
-      console.log(publicInputData);
-
+      expect(publicInputData).not.null;
+      return;
 
       const tx = await spvTest.verifyProof(spvProof).then((t: any) => t.wait());
       expect(tx.status).to.be.eq(1);
