@@ -53,7 +53,7 @@ import {
   calculateTxGas,
   challengeManager,
   liquidateChallenge,
-  PublicInputDataStruct
+  PublicInputDataStruct,
 } from './utils.test';
 import {
   callDataCost,
@@ -79,7 +79,6 @@ describe('ORMakerDeposit', () => {
   let testToken: TestToken;
   let columnArray: columnArray;
   let ebc: OREventBinding;
-
 
   before(async function () {
     signers = await ethers.getSigners();
@@ -955,15 +954,19 @@ describe('ORMakerDeposit', () => {
 
     it('test prase spv proof data', async function () {
       const fake_spvProof: BytesLike = utils.keccak256(mdcOwner.address);
-      let spvProof: BytesLike = utils.arrayify(
-        '0x' + fs.readFileSync('test/example/spv.calldata', 'utf-8').replace(/\t|\n|\v|\r|\f/g, '')
+      const spvProof: BytesLike = utils.arrayify(
+        '0x' +
+          fs
+            .readFileSync('test/example/spv.calldata', 'utf-8')
+            .replace(/\t|\n|\v|\r|\f/g, ''),
       );
 
       await expect(spvTest.verifyProof(fake_spvProof)).to.revertedWith(
         'verify fail',
       );
 
-      const publicInputData: PublicInputDataStruct = await spvTest.parsePublicInput(spvProof);
+      const publicInputData: PublicInputDataStruct =
+        await spvTest.parsePublicInput(spvProof);
       expect(publicInputData).not.null;
       return;
 
@@ -973,8 +976,10 @@ describe('ORMakerDeposit', () => {
       const inpudataGas = callDataCost(txrc.data);
       console.log(
         // eslint-disable-next-line prettier/prettier
-        `verify totalGas: ${tx.gasUsed
-        }, callDataGas: ${inpudataGas}, excuteGas: ${tx.gasUsed.toNumber() - inpudataGas
+        `verify totalGas: ${
+          tx.gasUsed
+        }, callDataGas: ${inpudataGas}, excuteGas: ${
+          tx.gasUsed.toNumber() - inpudataGas
         } `,
       );
     });
@@ -1019,12 +1024,13 @@ describe('ORMakerDeposit', () => {
           mdcOwner.address,
         ]),
       ).to.revertedWith('CNE');
-      const challengeIdentNumFake = challengeManager.getChallengeIdentNumSortList(
-        (await getCurrentTime()) + 7800,
-        challenge.sourceChainId,
-        sourceBlockNum,
-        sourceTxIndex,
-      );
+      const challengeIdentNumFake =
+        challengeManager.getChallengeIdentNumSortList(
+          (await getCurrentTime()) + 7800,
+          challenge.sourceChainId,
+          sourceBlockNum,
+          sourceTxIndex,
+        );
       const challengeFake: challengeInputInfo = {
         sourceTxTime: (await getCurrentTime()) + 7800,
         sourceChainId: challenge.sourceChainId,
@@ -1092,7 +1098,6 @@ describe('ORMakerDeposit', () => {
       await createChallenge(orMakerDeposit, challenge2, 'CT');
     });
 
-
     it('challenge Verify Source TX should success', async function () {
       const testFreezeAmount =
         '10000000000000' +
@@ -1128,7 +1133,10 @@ describe('ORMakerDeposit', () => {
         from: await orMakerDeposit.owner(),
         freezeToken: freezeToken,
         freezeAmount: utils.parseEther(case1freezeAmount),
-        parentNodeNumOfTargetNode: challengeManager.getLastChallengeIdentNum([], challengeIdentNum),
+        parentNodeNumOfTargetNode: challengeManager.getLastChallengeIdentNum(
+          [],
+          challengeIdentNum,
+        ),
       };
 
       const verifyinfoBase: VerifyinfoBase = {
@@ -1198,7 +1206,7 @@ describe('ORMakerDeposit', () => {
         parentNodeNumOfTargetNode: 0,
       };
       await createChallenge(orMakerDeposit, challenge);
-      const challengeList = challengeManager.getChallengeInfoList()
+      const challengeList = challengeManager.getChallengeInfoList();
 
       // i >= 1: min challengeIdentNum node will pass
       for (let i = challengeList.length - 1; i >= 1; i--) {
@@ -1212,7 +1220,11 @@ describe('ORMakerDeposit', () => {
       }
 
       for (let i = 0; i < challengeList.length; i++) {
-        await liquidateChallenge(orMakerDeposit, [challengeList[i]], [mdcOwner.address]);
+        await liquidateChallenge(
+          orMakerDeposit,
+          [challengeList[i]],
+          [mdcOwner.address],
+        );
       }
 
       expect(challengeManager.getChallengeInfoList().length).eq(0);
@@ -1235,9 +1247,9 @@ describe('ORMakerDeposit', () => {
       const challengerList: string[] = [];
 
       for (let i = 0; i < 5; i++) {
-        const maker = new ORMakerDeposit__factory(
-          signers[i],
-        ).attach(orMakerDeposit.address);
+        const maker = new ORMakerDeposit__factory(signers[i]).attach(
+          orMakerDeposit.address,
+        );
         const challenge: challengeInputInfo = {
           sourceTxTime: currentTime - maxVerifyTime,
           sourceChainId: sourceChainId.toString(),
@@ -1252,7 +1264,7 @@ describe('ORMakerDeposit', () => {
         await createChallenge(maker, challenge);
         challengerList.push(signers[i].address);
       }
-      const challengeList = challengeManager.getChallengeInfoList()
+      const challengeList = challengeManager.getChallengeInfoList();
       await liquidateChallenge(orMakerDeposit, challengeList, challengerList);
       expect(challengeManager.getChallengeInfoList().length).eq(0);
     });
