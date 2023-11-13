@@ -175,11 +175,11 @@ export interface PublicInputDataStruct {
   mdc_pre_rule_enable_time: BigNumberish;
   mdc_pre_column_array_hash: BytesLike;
   mdc_pre_response_makers_hash: BytesLike;
-  manage_pre_source_chain_info: BytesLike;
-  // manage_pre_source_chain_max_verify_challenge_source_tx_second: BigNumberish;
-  // manage_pre_source_chain_mix_verify_challenge_source_tx_second: BigNumberish;
-  // manage_pre_source_chain_max_verify_challenge_dest_tx_second: BigNumberish;
-  // manage_pre_source_chain_mix_verify_challenge_dest_tx_second: BigNumberish;
+  // manage_pre_source_chain_info: BytesLike;
+  manage_pre_source_chain_max_verify_challenge_source_tx_second: BigNumberish;
+  manage_pre_source_chain_min_verify_challenge_source_tx_second: BigNumberish;
+  manage_pre_source_chain_max_verify_challenge_dest_tx_second: BigNumberish;
+  manage_pre_source_chain_min_verify_challenge_dest_tx_second: BigNumberish;
   manage_pre_source_chain_mainnet_token: string;
   manage_pre_dest_chain_mainnet_token: string;
   manage_pre_challenge_user_ratio: BigNumberish;

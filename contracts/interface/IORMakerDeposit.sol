@@ -36,11 +36,11 @@ interface IORMakerDeposit {
         uint256 mdc_pre_rule_enable_time;
         bytes32 mdc_pre_column_array_hash;
         uint256 mdc_pre_response_makers_hash;
-        // uint64 manage_pre_source_chain_max_verify_challenge_source_tx_second;
-        // uint64 manage_pre_source_chain_min_verify_challenge_source_tx_second;
-        // uint64 manage_pre_source_chain_max_verify_challenge_dest_tx_second;
-        // uint64 manage_pre_source_chain_min_verify_challenge_dest_tx_second;
-        uint256 manage_pre_source_chain_info;
+        uint64 manage_pre_source_chain_max_verify_challenge_source_tx_second;
+        uint64 manage_pre_source_chain_min_verify_challenge_source_tx_second;
+        uint64 manage_pre_source_chain_max_verify_challenge_dest_tx_second;
+        uint64 manage_pre_source_chain_min_verify_challenge_dest_tx_second;
+        // uint256 manage_pre_source_chain_info;
         address manage_pre_source_chain_mainnet_token;
         address manage_pre_dest_chain_mainnet_token;
         uint64 manage_pre_challenge_user_ratio;

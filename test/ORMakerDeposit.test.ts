@@ -848,7 +848,7 @@ describe('ORMakerDeposit', () => {
       // console.log('publicInputData', publicInputData);
       // expect(publicInputData).not.null;
 
-      const tx = await spvTest.verifyProofXinstance(spvProof, instanceBytesLength).then((t: any) => t.wait());
+      const tx = await spvTest.verifyProofXinstance(spvProof, instanceBytesLength).then((t) => t.wait());
       expect(tx.status).to.be.eq(1);
       const txrc = await ethers.provider.getTransaction(tx.transactionHash);
       const inpudataGas = callDataCost(txrc.data);
@@ -1111,7 +1111,7 @@ describe('ORMakerDeposit', () => {
       );
 
       const publicInputData : PublicInputDataStruct = await spvTest.parsePublicInputNew(spvProof);
-      console.log('publicInputData', publicInputData);
+      // console.log('publicInputData', publicInputData);
       expect(publicInputData).not.null;
 
       const challengeColumnArray: columnArray = {
@@ -1160,7 +1160,11 @@ describe('ORMakerDeposit', () => {
         mdc_contract_address: orMakerDeposit.address,
         manager_contract_address: orManager.address,
         token: constants.AddressZero,
-        manage_pre_source_chain_info: verifyTimeMax,
+        // manage_pre_source_chain_info: verifyTimeMax,
+        manage_pre_source_chain_max_verify_challenge_dest_tx_second: BigNumber.from(99999999999999).toHexString(),
+        manage_pre_source_chain_max_verify_challenge_source_tx_second: BigNumber.from(99999999999999).toHexString(),
+        manage_pre_source_chain_min_verify_challenge_dest_tx_second:0,
+        manage_pre_source_chain_min_verify_challenge_source_tx_second:0,
         mdc_pre_column_array_hash: columnArrayHash,
         amount: BigNumber.from(testFreezeAmount),
         dest_chain_id: makerRule.chainId1,
@@ -1185,16 +1189,18 @@ describe('ORMakerDeposit', () => {
       // spv should be setting by manager
       await updateSpv(challenge, await spv.address, orManager);
       await createChallenge(orMakerDeposit, challenge);
-      expect(
-        await orMakerDeposit.verifyChallengeSource(
+
+      const tx = await orMakerDeposit.verifyChallengeSource(
           await spv.address,
           mdcOwner.address,
           instanceBytesLength,
           makerPublicInputData,
           spvProof,
           rawData
-        )
-      ).to.be.satisfy;
+      ).then((t:any) => t.wait());
+      expect(tx.status).to.be.eq(1);
+      await calculateTxGas(tx, 'verifyChallengeSourceTx');
+      
     });
 
   });
