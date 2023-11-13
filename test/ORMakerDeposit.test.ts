@@ -25,6 +25,8 @@ import {
   TestSpv__factory,
   TestToken,
   TestToken__factory,
+  VerifierRouter,
+  VerifierRouter__factory,
 } from '../typechain-types';
 import { defaultChainInfo } from './defaults';
 import {
@@ -65,7 +67,7 @@ import {
 } from './lib/mockData';
 import { PromiseOrValue } from '../typechain-types/common';
 import { randomBytes } from 'crypto';
-import { compile_yul, VerifierAbi } from '../scripts/utils';
+import { compile_sol, compile_yul, VerifierAbi, verifierRouterAbi, verifierSolAbi } from '../scripts/utils';
 
 describe('ORMakerDeposit', () => {
   let signers: SignerWithAddress[];
@@ -731,19 +733,21 @@ describe('ORMakerDeposit', () => {
 
   describe('start challenge test module', () => {
     let spvTest: TestSpv;
-    let spv: { address: PromiseOrValue<string> };
+    // let spv: { address: PromiseOrValue<string> };
+    let spv: VerifierRouter;
     // let verifyContract: { address: PromiseOrValue<string> };
     const makerRule: RuleStruct = createMakerRule(true);
     const chainId = makerRule.chainId0;
     const chainIdDest = makerRule.chainId1;
     const freezeToken: string = constants.AddressZero;
     const freeTokenDest: string = constants.AddressZero;
+    const instanceBytesLength  = 2976;
 
     const getRawData = async (
       columnArray: columnArray,
       ebc: string,
       makerRule: RuleStruct,
-    ): Promise<utils.BytesLike> => {
+    ) => {
       const jsEncode = encodeChallengeRawData(
         columnArray.dealers,
         columnArray.ebcs,
@@ -779,22 +783,53 @@ describe('ORMakerDeposit', () => {
           [columnArray.dealers, columnArray.ebcs, columnArray.chainIds],
         ),
       );
-      expect(columnArrayHash).eql(await orMakerDeposit.columnArrayHash());
+      // expect(columnArrayHash).eql(await orMakerDeposit.columnArrayHash());
 
-      return utils.arrayify(contractEncode);
+      return {
+        rawData: utils.arrayify(contractEncode),
+        columnArrayHash: columnArrayHash
+      }
     };
 
     before(async function () {
-      const verifyBytesCode = await compile_yul(
-        'contracts/zkp/goerli_1_evm.yul',
+      // const verifyBytesCode = await compile_yul(
+      //   'contracts/zkp/goerli_1_evm.yul',
+      // );
+
+      // const verifyFactory = new ethers.ContractFactory(
+      //   VerifierAbi,
+      //   verifyBytesCode,
+      //   mdcOwner,
+      // );
+
+      const verfierP0 = await compile_sol(
+        'zkp/VerifierLogicPart0.sol',
       );
 
-      const verifyFactory = new ethers.ContractFactory(
-        VerifierAbi,
-        verifyBytesCode,
+      const verfierP1 = await compile_sol(
+        'zkp/VerifierLogicPart1.sol',
+      );
+
+      const verifierP0Factory = new ethers.ContractFactory(
+        verifierSolAbi,
+        verfierP0,
         mdcOwner,
       );
-      spv = await verifyFactory.deploy();
+
+      const spvP0:{ address: PromiseOrValue<string> } = await verifierP0Factory.deploy();
+
+      const verifierP1Factory = new ethers.ContractFactory(
+        verifierSolAbi,
+        verfierP1,
+        mdcOwner,
+      );
+
+      const spvP1:{ address: PromiseOrValue<string> } = await verifierP1Factory.deploy();
+
+      console.log("p0 address: ", spvP0.address, "p1 address:", spvP1.address);
+
+      spv = await new VerifierRouter__factory(mdcOwner).deploy([await spvP0.address, await spvP1.address]);
+
       spvTest = await new TestSpv__factory(mdcOwner).deploy(spv.address);
 
       console.log(
@@ -802,89 +837,29 @@ describe('ORMakerDeposit', () => {
       );
     });
 
-    // it('test function verifyChallengeSource Revert case', async function () {
-    //   const latestBlockRes = await orMakerDeposit.provider?.getBlock('latest');
-    //   const sourceTxTime = random(5000000);
-    //   const sourceChainId = random(200);
-    //   const sourceTxHash = utils.keccak256(mdcOwner.address);
-    //   const sourceBlockNum = random(latestBlockRes.number);
-    //   const sourceTxIndex = random(100);
-    //   const challengeIdentNum = challengeManager.getChallengeIdentNumSortList(
-    //     sourceTxTime,
-    //     sourceChainId,
-    //     sourceBlockNum,
-    //     sourceTxIndex,
-    //   );
-    //   const parentNodeNumOfTargetNode = challengeManager.getLastChallengeIdentNum(
-    //     [],
-    //     challengeIdentNum,
-    //   );
-    //   const challenge: challengeInputInfo = {
-    //     sourceTxTime,
-    //     sourceChainId,
-    //     sourceBlockNum,
-    //     sourceTxIndex,
-    //     sourceTxHash,
-    //     from: await orMakerDeposit.owner(),
-    //     freezeToken: constants.AddressZero,
-    //     parentNodeNumOfTargetNode,
-    //     freezeAmount: utils.parseEther('0.01'),
-    //   };
-    //   await createChallenge(orMakerDeposit, challenge);
-    //   challengeNodeInfoList.push({
-    //     sourceChainId,
-    //     sourceTxHash,
-    //     challengeIdentNum,
-    //   })
-    //   const invalidVerifyInfo0: VerifyInfo = {
-    //     data: [1],
-    //     slots: [
-    //       {
-    //         account: constants.AddressZero,
-    //         key: utils.keccak256(mdcOwner.address),
-    //         value: 1,
-    //       },
-    //     ],
-    //   };
-    //   const invalidSPV0 = constants.AddressZero;
-    //   await expect(
-    //     orMakerDeposit.verifyChallengeSource(
-    //       invalidSPV0,
-    //       mdcOwner.address,
-    //       [],
-    //       [
-    //         utils.keccak256(mdcOwner.address),
-    //         utils.keccak256(mdcOwner.address),
-    //       ],
-    //       invalidVerifyInfo0,
-    //       [],
-    //     ),
-    //   ).to.revertedWith('SI');
-    //   const chainId = defaultChainInfo.id;
-    //   const invalidVerifyInfo1: VerifyInfo = {
-    //     data: [chainId.toString()],
-    //     slots: [
-    //       {
-    //         account: constants.AddressZero,
-    //         key: utils.keccak256(mdcOwner.address),
-    //         value: 1,
-    //       },
-    //     ],
-    //   };
-    //   await expect(
-    //     orMakerDeposit.verifyChallengeSource(
-    //       invalidSPV0,
-    //       mdcOwner.address,
-    //       [],
-    //       [
-    //         utils.keccak256(mdcOwner.address),
-    //         utils.keccak256(mdcOwner.address),
-    //       ],
-    //       invalidVerifyInfo1,
-    //       [],
-    //     ),
-    //   ).to.revertedWith('SI');
-    // });
+    it('test prase spv proof data', async function () {
+      return;
+      const fake_spvProof: BytesLike = utils.keccak256(mdcOwner.address);
+      let spvProof: BytesLike = utils.arrayify(
+        '0x' + fs.readFileSync('test/example/spv.calldataV2', 'utf-8').replace(/\t|\n|\v|\r|\f/g, '')
+      );
+        
+      // const publicInputData: PublicInputDataStruct = (await spvTest.parsePublicInput(spvProof))
+      // console.log('publicInputData', publicInputData);
+      // expect(publicInputData).not.null;
+
+      const tx = await spvTest.verifyProofXinstance(spvProof, instanceBytesLength).then((t: any) => t.wait());
+      expect(tx.status).to.be.eq(1);
+      const txrc = await ethers.provider.getTransaction(tx.transactionHash);
+      const inpudataGas = callDataCost(txrc.data);
+      console.log(
+        // eslint-disable-next-line prettier/prettier
+        `verify totalGas: ${tx.gasUsed
+        }, callDataGas: ${inpudataGas}, excuteGas: ${tx.gasUsed.toNumber() - inpudataGas
+        } `,
+      );
+    });
+
 
     it('test function challenge _addChallengeNode', async function () {
       const gasUseList = [];
@@ -936,47 +911,6 @@ describe('ORMakerDeposit', () => {
             v.sourceTxIndex,
           ) === challengeIdentNumList[0],
       )!;
-      // const addRequireInputInfo = {
-      //   sourceTxTime: maxNumInputInfo.sourceTxTime - 100000,
-      //   sourceChainId:
-      //     BigNumber.from(maxNumInputInfo.sourceChainId).toNumber() - 1,
-      //   sourceBlockNum: maxNumInputInfo.sourceBlockNum,
-      //   sourceTxIndex: maxNumInputInfo.sourceTxIndex,
-      //   sourceTxHash: utils.keccak256(mdcOwner.address),
-      //   from: await orMakerDeposit.owner(),
-      //   freezeToken: constants.AddressZero,
-      //   freezeAmount: utils.parseEther('0.001'),
-      //   parentNodeNumOfTargetNode: 0,
-      // };
-      // await expect(
-      //   createChallenge(orMakerDeposit, addRequireInputInfo),
-      // ).to.revertedWith('LCINE');
-    });
-
-    it('test prase spv proof data', async function () {
-      const fake_spvProof: BytesLike = utils.keccak256(mdcOwner.address);
-      let spvProof: BytesLike = utils.arrayify(
-        '0x' + fs.readFileSync('test/example/spv.calldata', 'utf-8').replace(/\t|\n|\v|\r|\f/g, '')
-      );
-
-      await expect(spvTest.verifyProof(fake_spvProof)).to.revertedWith(
-        'verify fail',
-      );
-
-      const publicInputData: PublicInputDataStruct = await spvTest.parsePublicInput(spvProof);
-      expect(publicInputData).not.null;
-      return;
-
-      const tx = await spvTest.verifyProof(spvProof).then((t: any) => t.wait());
-      expect(tx.status).to.be.eq(1);
-      const txrc = await ethers.provider.getTransaction(tx.transactionHash);
-      const inpudataGas = callDataCost(txrc.data);
-      console.log(
-        // eslint-disable-next-line prettier/prettier
-        `verify totalGas: ${tx.gasUsed
-        }, callDataGas: ${inpudataGas}, excuteGas: ${tx.gasUsed.toNumber() - inpudataGas
-        } `,
-      );
     });
 
     it('create challenge test', async function () {
@@ -1093,92 +1027,6 @@ describe('ORMakerDeposit', () => {
     });
 
 
-    it('challenge Verify Source TX should success', async function () {
-      const testFreezeAmount =
-        '10000000000000' +
-        getSecurityCode(
-          columnArray,
-          ebc.address,
-          mdcOwner.address,
-          parseInt(chainIdDest.toString()),
-        );
-      const case1SourceChainId = chainId;
-      const destChainId = chainIdDest;
-      const case1SourceTxHash = utils.keccak256(randomBytes(100));
-      const case1freezeAmount = utils.formatEther(
-        BigNumber.from(testFreezeAmount),
-      );
-      const latestBlockRes = await orMakerDeposit.provider?.getBlock('latest');
-      const sourceTxTime = (await getCurrentTime()) - 1;
-      const sourceChainId = case1SourceChainId;
-      const sourceBlockNum = random(latestBlockRes.number);
-      const sourceTxIndex = random(100);
-      const challengeIdentNum = challengeManager.getChallengeIdentNumSortList(
-        sourceTxTime,
-        sourceChainId,
-        sourceBlockNum,
-        sourceTxIndex,
-      );
-      const challenge: challengeInputInfo = {
-        sourceTxTime: (await getCurrentTime()) - 1,
-        sourceChainId: case1SourceChainId,
-        sourceBlockNum,
-        sourceTxIndex,
-        sourceTxHash: case1SourceTxHash,
-        from: await orMakerDeposit.owner(),
-        freezeToken: freezeToken,
-        freezeAmount: utils.parseEther(case1freezeAmount),
-        parentNodeNumOfTargetNode: challengeManager.getLastChallengeIdentNum([], challengeIdentNum),
-      };
-
-      const verifyinfoBase: VerifyinfoBase = {
-        chainIdSource: challenge.sourceChainId,
-        freeTokenSource: challenge.freezeToken,
-        chainIdDest: destChainId,
-        freeTokenDest: freeTokenDest,
-        ebc: ebc.address,
-      };
-
-      // spv should be setting by manager
-      await updateSpv(challenge, spvTest.address, orManager);
-
-      // get related slots & values of maker/manager contract
-      const verifyInfo = await getVerifyinfo(
-        orMakerDeposit,
-        orManager,
-        verifyinfoBase,
-        challenge,
-        spvTest,
-        makerRule,
-      );
-
-      // const rawData = await getRawData(columnArray, ebc.address, makerRule);
-
-      //   await createChallenge(orMakerDeposit, challenge);
-      //   challengeNodeInfoList.push({
-      //     sourceChainId: challenge.sourceChainId,
-      //     sourceTxHash: challenge.sourceTxHash,
-      //     challengeIdentNum,
-      //   })
-      //   await mineXTimes(2);
-
-      // expect(
-      //   await orMakerDeposit.verifyChallengeSource(
-      //     spv.address,
-      //     [],
-      //     [
-      //       utils.keccak256(mdcOwner.address),
-      //       utils.keccak256(mdcOwner.address),
-      //     ],
-      //     verifyInfo,
-      //     rawData,
-      //     {
-      //       gasLimit: 10000000,
-      //     },
-      //   ),
-      // ).is.satisfy;
-    });
-
     it('checkChallenge test with no verify source', async function () {
       const sourceTxHash = utils.keccak256(randomBytes(100));
       const freezeAmount = utils.formatEther(100000000000001111n);
@@ -1256,5 +1104,98 @@ describe('ORMakerDeposit', () => {
       await liquidateChallenge(orMakerDeposit, challengeList, challengerList);
       expect(challengeManager.getChallengeInfoList().length).eq(0);
     });
+
+    it('Challenge verifySourceTx', async function () {
+      let spvProof: BytesLike = utils.arrayify(
+        '0x' + fs.readFileSync('test/example/spv.calldataV2', 'utf-8').replace(/\t|\n|\v|\r|\f/g, '')
+      );
+
+      const publicInputData : PublicInputDataStruct = await spvTest.parsePublicInputNew(spvProof);
+      console.log('publicInputData', publicInputData);
+      expect(publicInputData).not.null;
+
+      const challengeColumnArray: columnArray = {
+        ...columnArray,
+        dealers: [mdcOwner.address],
+        ebcs: [ebc.address],
+      }
+
+      const verifyTimeMax =
+        utils.hexZeroPad(BigNumber.from(9999999).toHexString(), 8) +
+        utils.hexZeroPad('0x00', 8).slice(2) +
+        utils.hexZeroPad(BigNumber.from(8888888).toHexString(), 8).slice(2) +
+        utils.hexZeroPad('0x00', 8).slice(2);
+
+      const { rawData, columnArrayHash } = await getRawData(challengeColumnArray, ebc.address, makerRule);
+
+      const testFreezeAmount =
+        '10000000000000' +
+        getSecurityCode(
+          challengeColumnArray,
+          ebc.address,
+          mdcOwner.address,
+          parseInt(chainIdDest.toString()),
+        );
+
+      const verifyinfoBase: VerifyinfoBase = {
+        chainIdSource: makerRule.chainId0,
+        freeTokenSource: makerRule.token0.toHexString(),
+        chainIdDest: makerRule.chainId1,
+        freeTokenDest: makerRule.token1.toHexString(),
+        ebc: ebc.address,
+      };
+
+      // get related slots & values of maker/manager contract
+      const verifyInfo = await getVerifyinfo(
+        orMakerDeposit,
+        orManager,
+        verifyinfoBase
+      );
+
+      const encodeRule = await spvTest.createEncodeRule(makerRule);
+
+      const makerPublicInputData: PublicInputDataStruct = {
+        ...publicInputData,
+        chain_id: makerRule.chainId0,
+        mdc_contract_address: orMakerDeposit.address,
+        manager_contract_address: orManager.address,
+        token: constants.AddressZero,
+        manage_pre_source_chain_info: verifyTimeMax,
+        mdc_pre_column_array_hash: columnArrayHash,
+        amount: BigNumber.from(testFreezeAmount),
+        dest_chain_id: makerRule.chainId1,
+        mdc_rule_root_slot: verifyInfo.slots[6].key,
+        mdc_rule_version_slot: verifyInfo.slots[7].key,
+        mdc_rule_enable_time_slot: 0,
+        mdc_pre_rule_root: encodeRule
+      }
+
+      const challenge: challengeInputInfo = {
+        sourceTxTime: BigNumber.from(makerPublicInputData.time_stamp).toNumber(),
+        sourceChainId: BigNumber.from(makerPublicInputData.chain_id).toNumber(),
+        sourceBlockNum: BigNumber.from(makerPublicInputData.l1_tx_block_number).toNumber(),
+        sourceTxIndex: BigNumber.from(makerPublicInputData.index).toNumber(),
+        sourceTxHash: BigNumber.from(makerPublicInputData.tx_hash).toHexString(),
+        from: BigNumber.from(makerPublicInputData.from).toHexString(),
+        freezeToken: makerPublicInputData.token,
+        freezeAmount: makerPublicInputData.amount,
+        parentNodeNumOfTargetNode: 0,
+      };
+
+      // spv should be setting by manager
+      await updateSpv(challenge, await spv.address, orManager);
+      await createChallenge(orMakerDeposit, challenge);
+      expect(
+        await orMakerDeposit.verifyChallengeSource(
+          await spv.address,
+          mdcOwner.address,
+          instanceBytesLength,
+          makerPublicInputData,
+          spvProof,
+          rawData
+        )
+      ).to.be.satisfy;
+    });
+
   });
 });

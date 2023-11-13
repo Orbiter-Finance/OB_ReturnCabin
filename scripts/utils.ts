@@ -40,10 +40,71 @@ export const compile_yul = async (codePath: string): Promise<string> => {
   return evm_compiled_code;
 };
 
+export const compile_sol = async (codePath: string): Promise<string> => {
+  const cmd = `solc --bin --ignore-missing --optimize-runs 10 ${codePath}`;
+  // console.log(`cmdString ${cmd}`);
+
+  const output = await executeCommand(cmd);
+  const string_slice = output.split(/[\s\n]/);
+  const evm_compiled_code = string_slice[string_slice.length - 2];
+
+  return evm_compiled_code;
+};
+
 export const VerifierAbi = [
   {
     "payable": true,
     "stateMutability": 'payable',
     "type": 'fallback',
   },
+];
+
+export const verifierSolAbi = [
+  {
+    "inputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "pubInputs",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "bytes",
+        "name": "proof",
+        "type": "bytes"
+      },
+      {
+        "internalType": "bool",
+        "name": "success",
+        "type": "bool"
+      },
+      {
+        "internalType": "bytes32[1033]",
+        "name": "transcript",
+        "type": "bytes32[1033]"
+      }
+    ],
+    "name": "verifyPartial",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      },
+      {
+        "internalType": "bytes32[1033]",
+        "name": "",
+        "type": "bytes32[1033]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+];
+
+export const verifierRouterAbi = [
+  {
+    "internalType": "address[]",
+    "name": "_verifierLogicParts",
+    "type": "address[]"
+  }
 ];

@@ -14,6 +14,9 @@ import {RuleLib} from "./library/RuleLib.sol";
 import {ConstantsLib} from "./library/ConstantsLib.sol";
 import {BridgeLib} from "./library/BridgeLib.sol";
 import {VersionAndEnableTime} from "./VersionAndEnableTime.sol";
+import {IVerifierRouter} from "./zkp/IVerifierRouter.sol";
+// import hardhat
+import "hardhat/console.sol";
 
 contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
     using HelperLib for uint[];
@@ -727,40 +730,50 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
                             )
                         )
                 ),
-                mdc_pre_response_makers_hash: bytes32(
-                    (uint256(
+                mdc_pre_response_makers_hash: ((uint256(
+                    bytes32(proofData[MdcContractSplitStart + SplitStep * 28:MdcContractSplitStart + SplitStep * 29])
+                ) << 128) |
+                    uint256(
                         bytes32(
-                            proofData[MdcContractSplitStart + SplitStep * 28:MdcContractSplitStart + SplitStep * 29]
+                            proofData[MdcContractSplitStart + SplitStep * 29:MdcContractSplitStart + SplitStep * 30]
+                        )
+                    )),
+                manage_pre_source_chain_info: (
+                    ((uint256(
+                        bytes32(
+                            proofData[MdcContractSplitStart + SplitStep * 30:MdcContractSplitStart + SplitStep * 31]
                         )
                     ) << 128) |
                         uint256(
                             bytes32(
-                                proofData[MdcContractSplitStart + SplitStep * 29:MdcContractSplitStart + SplitStep * 30]
+                                proofData[MdcContractSplitStart + SplitStep * 31:MdcContractSplitStart + SplitStep * 32]
                             )
-                        )
+                        ))
                 ),
-                manage_pre_source_chain_max_verify_challenge_source_tx_second: uint64(
-                    bytes8(
-                        proofData[MdcContractSplitStart + SplitStep * 31 + SplitStep / 2:MdcContractSplitStart +
-                            SplitStep *
-                            31 +
-                            SplitStep /
-                            2 +
-                            SplitStep /
-                            4]
-                    )
-                ),
-                manage_pre_source_chain_mix_verify_challenge_source_tx_second: uint64(
-                    bytes8(
-                        proofData[MdcContractSplitStart +
-                            SplitStep *
-                            31 +
-                            SplitStep /
-                            2 +
-                            SplitStep /
-                            4:MdcContractSplitStart + SplitStep * 32]
-                    )
-                ),
+                // manage_pre_source_chain_max_verify_challenge_source_tx_second: uint64(
+                //     bytes8(
+                //         proofData[MdcContractSplitStart + SplitStep * 31 + SplitStep / 2:MdcContractSplitStart +
+                //             SplitStep *
+                //             31 +
+                //             SplitStep /
+                //             2 +
+                //             SplitStep /
+                //             4]
+                //     )
+                // ),
+                // manage_pre_source_chain_min_verify_challenge_source_tx_second: uint64(
+                //     bytes8(
+                //         proofData[MdcContractSplitStart +
+                //             SplitStep *
+                //             31 +
+                //             SplitStep /
+                //             2 +
+                //             SplitStep /
+                //             4:MdcContractSplitStart + SplitStep * 32]
+                //     )
+                // ),
+                // manage_pre_source_chain_max_verify_challenge_dest_tx_second: 0,
+                // manage_pre_source_chain_min_verify_challenge_dest_tx_second: 0,
                 manage_pre_source_chain_mainnet_token: address(
                     uint160(
                         uint256(
@@ -879,8 +892,8 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
                 dest_chain_id: uint256(
                     bytes32(proofData[EbcConfigSplitStart + SplitStep * 7:EbcConfigSplitStart + SplitStep * 8])
                 ),
-                dest_token_rule: address(
-                    uint160(
+                dest_token_rule: (
+                    (
                         uint256(
                             bytes32(proofData[EbcConfigSplitStart + SplitStep * 8:EbcConfigSplitStart + SplitStep * 9])
                         )
@@ -933,13 +946,15 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
     function verifyChallengeSource(
         address spvAddress,
         address challenger,
+        uint256 instanceBytesLength,
         // bytes calldata publicInput, // TODO: Enable this parameter after the circuit has finished hash-encoding the public input.
+        PublicInputData calldata publicInputData,
         bytes calldata proof,
-        IORChallengeSpv.VerifyInfo calldata verifyInfo,
         bytes calldata rawDatas
     ) external {
+        (proof);
         uint256 startGasNum = gasleft();
-        PublicInputData memory publicInputData = _parsePublicInput(proof);
+        // PublicInputData memory publicInputData = _parsePublicInput(proof);
         require(
             (publicInputData.manager_contract_address == _mdcFactory.manager()) &&
                 (publicInputData.mdc_contract_address == address(this)),
@@ -949,8 +964,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             publicInputData.chain_id
         );
         require(chainInfo.spvs.includes(spvAddress), "SI"); // Invalid spv
-        (bool success, ) = spvAddress.call(proof);
-        require(success, "VF");
+        require(IVerifierRouter(spvAddress).verify(proof, instanceBytesLength), "VF");
         // Check chainId, hash, timestamp
         bytes32 challengeId = abi.encode(publicInputData.chain_id, publicInputData.tx_hash).hash();
         ChallengeStatement memory statement = _challenges[challengeId].statement[challenger];
@@ -969,16 +983,9 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         // Check manager's chainInfo.minVerifyChallengeSourceTxSecond,maxVerifyChallengeSourceTxSecond
         {
             uint timeDiff = block.timestamp - publicInputData.time_stamp;
-            require(
-                timeDiff >= uint64(publicInputData.manage_pre_source_chain_mix_verify_challenge_source_tx_second),
-                "MINTOF"
-            );
-            require(
-                timeDiff <= uint64(publicInputData.manage_pre_source_chain_max_verify_challenge_source_tx_second),
-                "MAXTOF"
-            );
+            require(timeDiff >= ((publicInputData.manage_pre_source_chain_info << 192) >> 192), "MINTOF");
+            require(timeDiff <= ((publicInputData.manage_pre_source_chain_info << 128) >> 192), "MAXTOF");
         }
-
         (
             address[] memory dealers,
             address[] memory ebcs,
@@ -986,10 +993,8 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             address ebc,
             RuleLib.Rule memory rule
         ) = abi.decode(rawDatas, (address[], address[], uint64[], address, RuleLib.Rule));
-
         // check _columnArrayHash
-        require(abi.encodePacked(dealers, ebcs, chainIds).hash() == publicInputData.mdc_pre_column_array_hash);
-        // TODO: Check _responseMakersHash
+        require(abi.encode(dealers, ebcs, chainIds).hash() == publicInputData.mdc_pre_column_array_hash, "CHE");
 
         // Check ebc address, destChainId, destToken
         uint destChainId;
@@ -999,6 +1004,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
             require(ap.chainIdIndex <= chainIds.length, "COF");
             destChainId = chainIds[ap.chainIdIndex - 1];
+            require(destChainId == publicInputData.dest_chain_id, "DCI");
 
             require(
                 uint160(statement.freezeToken) == uint160(publicInputData.manage_pre_dest_chain_mainnet_token),
@@ -1023,6 +1029,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             IOREventBinding(ebc).getResponseIntent(publicInputData.amount, ro)
         );
 
+
         ChallengeStatement storage statement_s = _challenges[challengeId].statement[challenger];
         ChallengeResult storage result_s = _challenges[challengeId].result;
 
@@ -1040,19 +1047,18 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         result_s.verifiedDataHash0 = abi
             .encode(
                 [
-                    uint64(verifyInfo.slots[0].value >> 128),
-                    uint64(verifyInfo.slots[0].value >> 128),
-                    publicInputData.chain_id,
+                    publicInputData.manage_pre_source_chain_info >> 128,
+                    publicInputData.nonce,
                     destChainId,
-                    publicInputData.dest,
-                    publicInputData.dest_token,
+                    publicInputData.from,
+                    publicInputData.dest_token_rule,
                     destAmount,
-                    publicInputData.to
+                    publicInputData.mdc_pre_response_makers_hash
                 ]
             )
             .hash();
         emit ChallengeInfoUpdated({challengeId: challengeId, statement: statement_s, result: result_s});
-        // TODO: add verify source gas cost (solt & emit)
+        // TODO: add verify source gas cost (slot & emit)
         uint128 baseFeePerGas = (uint128(block.basefee) + uint128(IORManager(_mdcFactory.manager()).getPriorityFee()));
         statement_s.challengerVerifyTransactionFee +=
             (uint128(startGasNum) -
@@ -1112,7 +1118,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         bytes32 challengeId = abi.encode(sourceChainId, sourceTxHash).hash();
         ChallengeStatement memory statement = _challenges[challengeId].statement[challenger];
         ChallengeResult memory result = _challenges[challengeId].result;
-
+        require(result.winner == challenger, "WNE");
         require(result.verifiedTime0 > 0, "VT0Z");
         require(result.verifiedTime1 == 0, "VT1NZ");
 
