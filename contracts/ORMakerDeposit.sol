@@ -39,7 +39,6 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
     mapping(address => WithdrawRequestInfo) private _withdrawRequestInfo;
     mapping(uint256 => ChallengeNode) private _challengeNodeList;
     uint256 private _challengeNodeHead;
-    uint256 private _challengeDeposit;
 
     modifier onlyOwner() {
         require(msg.sender == _owner, "Ownable: caller is not the owner");
@@ -188,7 +187,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
         uint256 balance;
         if (token == address(0)) {
-            balance = address(this).balance - _freezeAssets[requestInfo.requestToken] - _challengeDeposit;
+            balance = address(this).balance - _freezeAssets[requestInfo.requestToken];
 
             require(balance >= requestInfo.requestAmount, "ETH: IF");
 
@@ -364,13 +363,16 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
         require(_challenges[challengeId].statement[msg.sender].challengeTime == 0, "CT");
 
+        uint freezeAmount0 = freezeAmount1;
+
         if (freezeToken == address(0)) {
             require(msg.value == (freezeAmount1 + MIN_CHALLENGE_DEPOSIT_AMOUNT), "IF+MD");
+            _freezeAssets[freezeToken] += freezeAmount0 + freezeAmount1 + MIN_CHALLENGE_DEPOSIT_AMOUNT;
         } else {
             require(msg.value == MIN_CHALLENGE_DEPOSIT_AMOUNT, "IF");
             IERC20(freezeToken).safeTransferFrom(msg.sender, address(this), freezeAmount1);
+            _freezeAssets[freezeToken] += freezeAmount0 + freezeAmount1;
         }
-        _challengeDeposit += MIN_CHALLENGE_DEPOSIT_AMOUNT;
 
         uint256 challengeIdentNum = HelperLib.uint64ConcatToDecimal(
             sourceTxTime,
@@ -389,10 +391,8 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         }
 
         // TODO: Currently it is assumed that the pledged assets of the challenger and the owner are the same
-        uint freezeAmount0 = freezeAmount1;
 
         // Freeze mdc's owner assets and the assets in of challenger
-        _freezeAssets[freezeToken] += freezeAmount0 + freezeAmount1;
         uint128 baseFeePerGas = (uint128(block.basefee) + uint128(IORManager(_mdcFactory.manager()).getPriorityFee()));
 
         _challenges[challengeId].statement[msg.sender] = ChallengeStatement({
@@ -489,7 +489,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
                 i += 1;
             }
         }
-        _challengeDeposit -= challenger.length * MIN_CHALLENGE_DEPOSIT_AMOUNT;
+        _freezeAssets[address(0)] -= challenger.length * MIN_CHALLENGE_DEPOSIT_AMOUNT;
     }
 
     function _parsePublicInput(bytes calldata proofData) private pure returns (PublicInputData memory) {
@@ -1173,7 +1173,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         ChallengeStatement memory challengeInfo,
         uint256 challengeIdentNum
     ) internal returns (uint256 unFreezeAmount) {
-        unFreezeAmount = (challengeInfo.freezeAmount0 + challengeInfo.freezeAmount1);
+        unFreezeAmount = (challengeInfo.freezeAmount0 + challengeInfo.freezeAmount1 + MIN_CHALLENGE_DEPOSIT_AMOUNT);
         _challengeNodeList[challengeIdentNum].challengeFinished = true;
     }
 
@@ -1191,7 +1191,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         address challenger,
         uint256 challengeIdentNum
     ) internal returns (uint256 unFreezeAmount) {
-        unFreezeAmount = challengeInfo.freezeAmount0 + challengeInfo.freezeAmount1;
+        unFreezeAmount = challengeInfo.freezeAmount0 + challengeInfo.freezeAmount1 + MIN_CHALLENGE_DEPOSIT_AMOUNT;
         if (result.winner == challenger) {
             uint challengeUserAmount = (challengeInfo.freezeAmount0 * challengeInfo.challengeUserRatio) /
                 ConstantsLib.RATIO_MULTIPLE;
@@ -1219,13 +1219,17 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
                 token.safeTransfer(result.winner, challengerAmount);
 
                 (bool sent3, ) = payable(result.winner).call{
-                    value: MIN_CHALLENGE_DEPOSIT_AMOUNT + challengeInfo.challengerVerifyTransactionFee
+                    value: MIN_CHALLENGE_DEPOSIT_AMOUNT +
+                        challengeInfo.challengerVerifyTransactionFee +
+                        challengeInfo.freezeAmount0
                 }("");
                 require(sent3, "ETH: SE3");
             }
         } else if (_compareChallengerStatementHash(challengeInfo, challengeInfoWinner) == true) {
             (bool sent4, ) = payable(challenger).call{
-                value: MIN_CHALLENGE_DEPOSIT_AMOUNT + challengeInfo.challengerVerifyTransactionFee
+                value: MIN_CHALLENGE_DEPOSIT_AMOUNT +
+                    challengeInfo.challengerVerifyTransactionFee +
+                    challengeInfo.freezeAmount0
             }("");
             require(sent4, "ETH: SE4");
         }
