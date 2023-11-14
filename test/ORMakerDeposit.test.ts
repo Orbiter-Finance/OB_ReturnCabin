@@ -607,7 +607,10 @@ describe('ORMakerDeposit', () => {
             ),
             ebc.address,
             rules,
-            { root, version: rootWithVersion.version + 1 },
+            {
+              root,
+              version: BigNumber.from(rootWithVersion.version).toNumber() + 1,
+            },
             sourceChainIds,
             pledgeAmounts,
             testToken.address,
@@ -626,7 +629,10 @@ describe('ORMakerDeposit', () => {
             ),
             ebc.address,
             rules,
-            { root, version: rootWithVersion.version + 1 },
+            {
+              root,
+              version: BigNumber.from(rootWithVersion.version).toNumber() + 1,
+            },
             sourceChainIds,
             pledgeAmounts,
             testToken.address,
@@ -642,7 +648,10 @@ describe('ORMakerDeposit', () => {
             ),
             ebc.address,
             rules,
-            { root, version: rootWithVersion.version + 2 },
+            {
+              root,
+              version: BigNumber.from(rootWithVersion.version).toNumber() + 2,
+            },
             [],
             pledgeAmounts,
             testToken.address,
@@ -650,21 +659,22 @@ describe('ORMakerDeposit', () => {
           'SPL',
         );
         await testRevertedOwner(
-          orMakerDeposit
-            .connect(signers[2])
-            .updateRulesRootERC20(
-              getMinEnableTime(
-                (
-                  await orMakerDeposit.getVersionAndEnableTime()
-                ).enableTime,
-              ),
-              ebc.address,
-              rules,
-              { root, version: rootWithVersion.version + 2 },
-              sourceChainIds,
-              pledgeAmounts,
-              testToken.address,
+          orMakerDeposit.connect(signers[2]).updateRulesRootERC20(
+            getMinEnableTime(
+              (
+                await orMakerDeposit.getVersionAndEnableTime()
+              ).enableTime,
             ),
+            ebc.address,
+            rules,
+            {
+              root,
+              version: BigNumber.from(rootWithVersion.version).toNumber() + 2,
+            },
+            sourceChainIds,
+            pledgeAmounts,
+            testToken.address,
+          ),
         );
       },
     ),
@@ -1232,6 +1242,17 @@ describe('ORMakerDeposit', () => {
         makerPublicInputData.amount,
       );
 
+      const verifiedDataHashData: any[] = [
+        makerPublicInputData.manage_pre_source_chain_min_verify_challenge_dest_tx_second,
+        makerPublicInputData.manage_pre_source_chain_max_verify_challenge_dest_tx_second,
+        makerPublicInputData.nonce,
+        makerPublicInputData.dest_chain_id,
+        makerPublicInputData.from,
+        makerRule.chainId1,
+        destAmount,
+        makerPublicInputData.mdc_pre_response_makers_hash,
+      ];
+      console.log('verifiedDataHashData', verifiedDataHashData);
       const verifiedDataHash0 = keccak256(
         solidityPack(
           [
@@ -1244,16 +1265,7 @@ describe('ORMakerDeposit', () => {
             'uint256',
             'uint256',
           ],
-          [
-            makerPublicInputData.manage_pre_source_chain_min_verify_challenge_dest_tx_second,
-            makerPublicInputData.manage_pre_source_chain_max_verify_challenge_dest_tx_second,
-            makerPublicInputData.nonce,
-            makerPublicInputData.dest_chain_id,
-            makerPublicInputData.from,
-            makerRule.chainId1,
-            destAmount,
-            makerPublicInputData.mdc_pre_response_makers_hash,
-          ],
+          verifiedDataHashData,
         ),
       );
 
