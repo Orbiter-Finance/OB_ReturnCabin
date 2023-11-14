@@ -211,6 +211,8 @@ export const updateSpv = async (
   spvAddress: string,
   _orManager: ORManager,
 ) => {
+  const currentSpvs: string[] = (await _orManager.getChainInfo(challengeInputInfo.sourceChainId)).spvs.concat(spvAddress)
+
   const enableTimeTime =
     // eslint-disable-next-line prettier/prettier
     (await getCurrentTime()) >
@@ -222,7 +224,7 @@ export const updateSpv = async (
     .updateChainSpvs(
       getMinEnableTime(BigNumber.from(enableTimeTime)),
       challengeInputInfo.sourceChainId,
-      [spvAddress],
+      currentSpvs,
       [0],
       {
         gasLimit: 10e6,
@@ -684,22 +686,24 @@ export const createChallenge = async (
       .then((t) => t.wait());
     const args = tx.events?.[0].args;
     const basefee = (await ethers.provider.getFeeData()).lastBaseFeePerGas;
-    console.log(
-      // 'challenge input:',
-      // (await ethers.provider.getTransaction(tx.transactionHash)).data,
-      // 'chailneId:',
-      // challenge.sourceChainId,
-      'Create challenge! gasUsed:',
-      tx.gasUsed.toNumber(),
-      'inputGasUsed',
-      callDataCost(
-        (await ethers.provider.getTransaction(tx.transactionHash)).data,
-      ),
-      // 'basefee',
-      // basefee?.toNumber(),
-      // 'challengerVerifyTransactionFee',
-      // args?.statement.challengerVerifyTransactionFee.div(basefee).toNumber(),
-    );
+    await calculateTxGas(tx, `Create challenge!`);
+
+    // console.log(
+    //   // 'challenge input:',
+    //   // (await ethers.provider.getTransaction(tx.transactionHash)).data,
+    //   // 'chailneId:',
+    //   // challenge.sourceChainId,
+    //   'Create challenge! gasUsed:',
+    //   tx.gasUsed.toNumber(),
+    //   'inputGasUsed',
+    //   callDataCost(
+    //     (await ethers.provider.getTransaction(tx.transactionHash)).data,
+    //   ),
+    //   // 'basefee',
+    //   // basefee?.toNumber(),
+    //   // 'challengerVerifyTransactionFee',
+    //   // args?.statement.challengerVerifyTransactionFee.div(basefee).toNumber(),
+    // );
 
     expect(args).not.empty;
     if (!!args) {
@@ -782,9 +786,11 @@ export const calculateTxGas = async (
   console.log(
     title ? title : 'gasUsed',
     index ? index : '',
-    'totalGasUsed:',
+    'total_Gas:',
     gasUsed,
-    'inputGasUsed:',
+    'excution_Gas',
+    gasUsed - inputGasUsed - 21000,
+    'inputData_Gas:',
     inputGasUsed,
   );
 };

@@ -3,13 +3,16 @@ pragma solidity ^0.8.17;
 import {RuleLib} from "../library/RuleLib.sol";
 import {HelperLib} from "../library/HelperLib.sol";
 import {IVerifierRouter} from "../zkp/IVerifierRouter.sol";
+import {IOREventBinding} from "../interface/IOREventBinding.sol";
 
 contract testSpv {
     using HelperLib for bytes;
     address public v_address;
+    address public ebc_address;
 
-    constructor(address verifier) {
+    constructor(address verifier, address ebc) {
         v_address = verifier;
+        ebc_address = ebc;
     }
 
     function set_v(address _v) public {
@@ -508,9 +511,9 @@ contract testSpv {
     // }
 
     function parsePublicInputNew(bytes calldata proofData) external pure returns (PublicInputData memory) {
-        return 
+        return
             PublicInputData({
-               tx_hash: bytes32((uint256(bytes32(proofData[448:480])) << 128) | uint256(bytes32(proofData[480:512]))),
+                tx_hash: bytes32((uint256(bytes32(proofData[448:480])) << 128) | uint256(bytes32(proofData[480:512]))),
                 chain_id: uint64(uint256(bytes32(proofData[512:544]))),
                 index: uint256(bytes32(proofData[544:576])),
                 from: uint256(bytes32(proofData[576:608])),
@@ -554,7 +557,8 @@ contract testSpv {
                 mdc_pre_rule_root: bytes32(
                     (uint256(bytes32(proofData[1760:1792])) << 128) | uint256(bytes32(proofData[1792:1824]))
                 ),
-                mdc_pre_rule_version: uint256(bytes32(proofData[1824:1856]) << 128) | uint256(bytes32(proofData[1856:1888])),
+                mdc_pre_rule_version: uint256(bytes32(proofData[1824:1856]) << 128) |
+                    uint256(bytes32(proofData[1856:1888])),
                 mdc_pre_rule_enable_time: uint64(bytes8(proofData[1904:1912])),
                 mdc_pre_column_array_hash: bytes32(
                     (uint256(bytes32(proofData[1952:1984])) << 128) | uint256(bytes32(proofData[1984:2016]))
@@ -567,18 +571,20 @@ contract testSpv {
                 // ),
                 manage_pre_source_chain_max_verify_challenge_source_tx_second: uint64(bytes8(proofData[2128:2136])),
                 manage_pre_source_chain_min_verify_challenge_source_tx_second: uint64(bytes8(proofData[2136:2144])),
-
                 manage_pre_source_chain_max_verify_challenge_dest_tx_second: uint64(bytes8(proofData[2096:2104])),
                 manage_pre_source_chain_min_verify_challenge_dest_tx_second: uint64(bytes8(proofData[2104:2112])),
-
-                
-                manage_pre_source_chain_mainnet_token: address(uint160(uint256(bytes32(proofData[2144:2176]) << 128) | uint256(bytes32(proofData[2176:2208])))),
-                manage_pre_dest_chain_mainnet_token: address(uint160(uint256(bytes32(proofData[2208:2240]) << 128) | uint256(bytes32(proofData[2240:2272])))),
+                manage_pre_source_chain_mainnet_token: address(
+                    uint160(uint256(bytes32(proofData[2144:2176]) << 128) | uint256(bytes32(proofData[2176:2208])))
+                ),
+                manage_pre_dest_chain_mainnet_token: address(
+                    uint160(uint256(bytes32(proofData[2208:2240]) << 128) | uint256(bytes32(proofData[2240:2272])))
+                ),
                 manage_pre_challenge_user_ratio: uint64(bytes8(proofData[2320:2328])),
                 mdc_current_rule_root: bytes32(
                     (uint256(bytes32(proofData[2336:2368])) << 128) | uint256(bytes32(proofData[2368:2400]))
                 ),
-                mdc_current_rule_version: uint256(bytes32(proofData[2400:2432]) << 128) | uint256(bytes32(proofData[2432:2464])),
+                mdc_current_rule_version: uint256(bytes32(proofData[2400:2432]) << 128) |
+                    uint256(bytes32(proofData[2432:2464])),
                 mdc_current_rule_enable_time: uint64(bytes8(proofData[2480:2488])),
                 source_chain_id: uint256(bytes32(proofData[2528:2560])),
                 source_token: address(uint160(uint256(bytes32(proofData[2560:2592])))),
@@ -603,7 +609,6 @@ contract testSpv {
                 ),
                 ob_contracts_current_block_number: uint256(bytes32(proofData[1088:1120]))
             });
-              
     }
 
     // struct PublicInputData {
@@ -683,8 +688,8 @@ contract testSpv {
         return success;
     }
 
-    function verifyProofXinstance(bytes calldata input, uint256 instanceBytesLength) external view{
-      require(IVerifierRouter(v_address).verify(input, instanceBytesLength), "verify fail");
+    function verifyProofXinstance(bytes calldata input, uint256 instanceBytesLength) external view {
+        require(IVerifierRouter(v_address).verify(input, instanceBytesLength), "verify fail");
     }
 
     function encodeRawDatas(
@@ -726,5 +731,16 @@ contract testSpv {
 
     function createEncodeRule(RuleLib.Rule calldata rule) external pure returns (uint encodeRule) {
         encodeRule = uint(abi.encode(rule).hash());
+    }
+
+    function calculateDestAmount(
+        RuleLib.Rule calldata rule,
+        uint64 chainId,
+        uint256 amount
+    ) external view returns (uint256 destAmount) {
+        RuleLib.RuleOneway memory ro = RuleLib.convertToOneway(rule, chainId);
+        destAmount = IOREventBinding(ebc_address).getResponseAmountFromIntent(
+            IOREventBinding(ebc_address).getResponseIntent(amount, ro)
+        );
     }
 }

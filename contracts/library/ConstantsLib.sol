@@ -15,11 +15,7 @@ library ConstantsLib {
 
     uint constant LOCK_DURATION = 240; // Unit: second
 
-    // uint constant DEALER_WITHDRAW_DELAY = 30; // Unit: second for test off-chain
-
-    // uint constant WITHDRAW_DURATION = 300; // Unit: second for test off-chain
-
-    // uint constant LOCK_DURATION = 180; // Unit: second for test off-chain
-
     uint constant EBC_AMOUNT_PARAMS_MODULUS = 100000;
+
+    uint constant MIN_CHALLENGE_DEPOSIT_AMOUNT = 0.005 ether;
 }

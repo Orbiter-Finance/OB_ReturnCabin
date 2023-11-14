@@ -13,9 +13,12 @@ interface IORChallengeSpv {
         VerifyInfoSlot[] slots;
     }
 
-    function verifyChallenge(
-        bytes calldata proof,
-        bytes32[2] calldata spvBlockHashs,
-        bytes32 verifyInfoHash
-    ) external view returns (bool);
+    function verifySourceTx(bytes calldata zkProof, uint64 chainId) external returns (bool);
+    function verifyDestTx(bytes calldata zkProof) external returns (bool);
+
+    // function verifyChallenge(
+    //     bytes calldata proof,
+    //     bytes32[2] calldata spvBlockHashs,
+    //     bytes32 verifyInfoHash
+    // ) external view returns (bool);
 }

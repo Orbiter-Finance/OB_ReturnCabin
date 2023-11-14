@@ -103,7 +103,7 @@ export const createMakerRule = (getNative: boolean): RuleStruct => {
   } = getRulesSetting(getNative);
 
   const rule: RuleStruct = {
-    chainId0: BigNumber.from(chain0Id).add(0),
+    chainId0: BigNumber.from(5).add(0),
     chainId1: BigNumber.from(chain1Id).add(0),
     status0: randomStatus1,
     status1: randomStatus2,

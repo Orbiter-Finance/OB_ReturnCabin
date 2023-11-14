@@ -22,9 +22,6 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
     using HelperLib for bytes;
     using SafeERC20 for IERC20;
     using ECDSA for bytes32;
-
-    uint internal constant MIN_CHALLENGE_DEPOSIT_AMOUNT = 0.005 ether;
-
     // VersionAndEnableTime._version and _enableTime use a slot
 
     // Warning: the following order and type changes will cause state verification changes
@@ -366,12 +363,12 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         require(_challenges[challengeId].statement[msg.sender].challengeTime == 0, "CT");
 
         if (freezeToken == address(0)) {
-            require(msg.value == (freezeAmount1 + MIN_CHALLENGE_DEPOSIT_AMOUNT), "IF+MD");
+            require(msg.value == (freezeAmount1 + ConstantsLib.MIN_CHALLENGE_DEPOSIT_AMOUNT), "IF+MD");
         } else {
-            require(msg.value == MIN_CHALLENGE_DEPOSIT_AMOUNT, "IF");
+            require(msg.value == ConstantsLib.MIN_CHALLENGE_DEPOSIT_AMOUNT, "IF");
             IERC20(freezeToken).safeTransferFrom(msg.sender, address(this), freezeAmount1);
         }
-        _challengeDeposit += MIN_CHALLENGE_DEPOSIT_AMOUNT;
+        _challengeDeposit += ConstantsLib.MIN_CHALLENGE_DEPOSIT_AMOUNT;
 
         uint256 challengeIdentNum = HelperLib.uint64ConcatToDecimal(
             sourceTxTime,
@@ -490,13 +487,13 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
                 i += 1;
             }
         }
-        _challengeDeposit -= challenger.length * MIN_CHALLENGE_DEPOSIT_AMOUNT;
+        _challengeDeposit -= challenger.length * ConstantsLib.MIN_CHALLENGE_DEPOSIT_AMOUNT;
     }
 
     function _parsePublicInput(bytes calldata proofData) private pure returns (PublicInputData memory) {
         return
-                  PublicInputData({
-               tx_hash: bytes32((uint256(bytes32(proofData[448:480])) << 128) | uint256(bytes32(proofData[480:512]))),
+            PublicInputData({
+                tx_hash: bytes32((uint256(bytes32(proofData[448:480])) << 128) | uint256(bytes32(proofData[480:512]))),
                 chain_id: uint64(uint256(bytes32(proofData[512:544]))),
                 index: uint256(bytes32(proofData[544:576])),
                 from: uint256(bytes32(proofData[576:608])),
@@ -540,31 +537,33 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
                 mdc_pre_rule_root: bytes32(
                     (uint256(bytes32(proofData[1760:1792])) << 128) | uint256(bytes32(proofData[1792:1824]))
                 ),
-                mdc_pre_rule_version: uint256(bytes32(proofData[1824:1856]) << 128) | uint256(bytes32(proofData[1856:1888])),
+                mdc_pre_rule_version: uint256(bytes32(proofData[1824:1856]) << 128) |
+                    uint256(bytes32(proofData[1856:1888])),
                 mdc_pre_rule_enable_time: uint64(bytes8(proofData[1904:1912])),
                 mdc_pre_column_array_hash: bytes32(
                     (uint256(bytes32(proofData[1952:1984])) << 128) | uint256(bytes32(proofData[1984:2016]))
                 ),
-                mdc_pre_response_makers_hash: (
-                    (uint256(bytes32(proofData[2016:2048])) << 128) | uint256(bytes32(proofData[2048:2080]))
-                ),
+                mdc_pre_response_makers_hash: ((uint256(bytes32(proofData[2016:2048])) << 128) |
+                    uint256(bytes32(proofData[2048:2080]))),
                 // manage_pre_source_chain_info: bytes32(
                 //     (uint256(bytes32(proofData[2080:2112])) << 128) | uint256(bytes32(proofData[2112:2144]))
                 // ),
                 manage_pre_source_chain_max_verify_challenge_source_tx_second: uint64(bytes8(proofData[2128:2136])),
                 manage_pre_source_chain_min_verify_challenge_source_tx_second: uint64(bytes8(proofData[2136:2144])),
-
                 manage_pre_source_chain_max_verify_challenge_dest_tx_second: uint64(bytes8(proofData[2096:2104])),
                 manage_pre_source_chain_min_verify_challenge_dest_tx_second: uint64(bytes8(proofData[2104:2112])),
-
-                
-                manage_pre_source_chain_mainnet_token: address(uint160(uint256(bytes32(proofData[2144:2176]) << 128) | uint256(bytes32(proofData[2176:2208])))),
-                manage_pre_dest_chain_mainnet_token: address(uint160(uint256(bytes32(proofData[2208:2240]) << 128) | uint256(bytes32(proofData[2240:2272])))),
+                manage_pre_source_chain_mainnet_token: address(
+                    uint160(uint256(bytes32(proofData[2144:2176]) << 128) | uint256(bytes32(proofData[2176:2208])))
+                ),
+                manage_pre_dest_chain_mainnet_token: address(
+                    uint160(uint256(bytes32(proofData[2208:2240]) << 128) | uint256(bytes32(proofData[2240:2272])))
+                ),
                 manage_pre_challenge_user_ratio: uint64(bytes8(proofData[2320:2328])),
                 mdc_current_rule_root: bytes32(
                     (uint256(bytes32(proofData[2336:2368])) << 128) | uint256(bytes32(proofData[2368:2400]))
                 ),
-                mdc_current_rule_version: uint256(bytes32(proofData[2400:2432]) << 128) | uint256(bytes32(proofData[2432:2464])),
+                mdc_current_rule_version: uint256(bytes32(proofData[2400:2432]) << 128) |
+                    uint256(bytes32(proofData[2432:2464])),
                 mdc_current_rule_enable_time: uint64(bytes8(proofData[2480:2488])),
                 source_chain_id: uint256(bytes32(proofData[2528:2560])),
                 source_token: address(uint160(uint256(bytes32(proofData[2560:2592])))),
@@ -592,17 +591,16 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
     }
 
     function verifyChallengeSource(
-        address spvAddress,
         address challenger,
-        uint256 instanceBytesLength,
         // bytes calldata publicInput, // TODO: Enable this parameter after the circuit has finished hash-encoding the public input.
         PublicInputData calldata publicInputData,
         bytes calldata proof,
         bytes calldata rawDatas
     ) external {
-        (proof);
         uint256 startGasNum = gasleft();
-        // PublicInputData memory publicInputData = _parsePublicInput(proof);
+        PublicInputData memory publicInputData2 = _parsePublicInput(proof);
+        (proof);
+        (publicInputData2);
         require(
             (publicInputData.manager_contract_address == _mdcFactory.manager()) &&
                 (publicInputData.mdc_contract_address == address(this)),
@@ -611,8 +609,11 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         BridgeLib.ChainInfo memory chainInfo = IORManager(publicInputData.manager_contract_address).getChainInfo(
             publicInputData.chain_id
         );
-        require(chainInfo.spvs.includes(spvAddress), "SI"); // Invalid spv
-        require(IVerifierRouter(spvAddress).verify(proof, instanceBytesLength), "VF");
+
+        require(
+            IORChallengeSpv(chainInfo.spvs[chainInfo.spvs.length - 1]).verifySourceTx(proof, publicInputData.chain_id),
+            "VF"
+        );
         // Check chainId, hash, timestamp
         bytes32 challengeId = abi.encode(publicInputData.chain_id, publicInputData.tx_hash).hash();
         ChallengeStatement memory statement = _challenges[challengeId].statement[challenger];
@@ -631,8 +632,14 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         // Check manager's chainInfo.minVerifyChallengeSourceTxSecond,maxVerifyChallengeSourceTxSecond
         {
             uint timeDiff = block.timestamp - publicInputData.time_stamp;
-            require(timeDiff >= publicInputData.manage_pre_source_chain_min_verify_challenge_source_tx_second, "MINTOF");
-            require(timeDiff <= publicInputData.manage_pre_source_chain_max_verify_challenge_source_tx_second, "MAXTOF");
+            require(
+                timeDiff >= publicInputData.manage_pre_source_chain_min_verify_challenge_source_tx_second,
+                "MINTOF"
+            );
+            require(
+                timeDiff <= publicInputData.manage_pre_source_chain_max_verify_challenge_source_tx_second,
+                "MAXTOF"
+            );
         }
         (
             address[] memory dealers,
@@ -677,7 +684,6 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             IOREventBinding(ebc).getResponseIntent(publicInputData.amount, ro)
         );
 
-
         ChallengeStatement storage statement_s = _challenges[challengeId].statement[challenger];
         ChallengeResult storage result_s = _challenges[challengeId].result;
 
@@ -700,7 +706,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
                     publicInputData.nonce,
                     destChainId,
                     publicInputData.from,
-                    publicInputData.dest_token_rule,
+                    ro.destToken,
                     destAmount,
                     publicInputData.mdc_pre_response_makers_hash
                 ]
@@ -748,7 +754,6 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
     }
 
     function verifyChallengeDest(
-        address spvAddress,
         address challenger,
         uint64 sourceChainId,
         bytes32 sourceTxHash,
@@ -761,9 +766,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         PublicInputDataDest memory publicInputData = _parsePublicInputDest(proof);
         // get DestChainInfo
         BridgeLib.ChainInfo memory chainInfo = IORManager(_mdcFactory.manager()).getChainInfo(sourceChainId);
-        require(chainInfo.spvs.includes(spvAddress), "SI"); // Invalid spv
-        (bool success, ) = spvAddress.call(proof);
-        require(success, "VF");
+        require(IORChallengeSpv(chainInfo.spvs[chainInfo.spvs.length - 1]).verifyDestTx(proof), "VF");
         bytes32 challengeId = abi.encode(sourceChainId, sourceTxHash).hash();
         ChallengeStatement memory statement = _challenges[challengeId].statement[challenger];
         ChallengeResult memory result = _challenges[challengeId].result;
@@ -865,7 +868,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
                 (bool sent2, ) = payable(result.winner).call{
                     value: (challengerAmount +
-                        MIN_CHALLENGE_DEPOSIT_AMOUNT +
+                        ConstantsLib.MIN_CHALLENGE_DEPOSIT_AMOUNT +
                         challengeInfo.challengerVerifyTransactionFee)
                 }("");
                 require(sent2, "ETH: SE2");
@@ -874,13 +877,13 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
                 token.safeTransfer(result.winner, challengerAmount);
 
                 (bool sent3, ) = payable(result.winner).call{
-                    value: MIN_CHALLENGE_DEPOSIT_AMOUNT + challengeInfo.challengerVerifyTransactionFee
+                    value: ConstantsLib.MIN_CHALLENGE_DEPOSIT_AMOUNT + challengeInfo.challengerVerifyTransactionFee
                 }("");
                 require(sent3, "ETH: SE3");
             }
         } else if (_compareChallengerStatementHash(challengeInfo, challengeInfoWinner) == true) {
             (bool sent4, ) = payable(challenger).call{
-                value: MIN_CHALLENGE_DEPOSIT_AMOUNT + challengeInfo.challengerVerifyTransactionFee
+                value: ConstantsLib.MIN_CHALLENGE_DEPOSIT_AMOUNT + challengeInfo.challengerVerifyTransactionFee
             }("");
             require(sent4, "ETH: SE4");
         }
