@@ -22,7 +22,7 @@ contract ORFeeManager is IORFeeManager, Ownable, ReentrancyGuard {
     Submission public submissions;
 
     mapping(address => DealerInfo) private _dealers;
-    mapping(address => uint) public submitter;
+    mapping(address => uint256) public submitter;
     mapping(address => uint64) public withdrawLock;
 
     modifier isChallengerQualified() {
@@ -31,12 +31,12 @@ contract ORFeeManager is IORFeeManager, Ownable, ReentrancyGuard {
     }
 
     function durationCheck() public view returns (FeeMangerDuration duration) {
-        uint challengeEnd = submissions.submitTimestamp + ConstantsLib.DEALER_WITHDRAW_DELAY;
+        uint256 challengeEnd = submissions.submitTimestamp + ConstantsLib.DEALER_WITHDRAW_DELAY;
         if (block.timestamp <= challengeEnd) {
             return FeeMangerDuration.challenge;
         }
 
-        uint mod = (block.timestamp - challengeEnd) % (ConstantsLib.WITHDRAW_DURATION + ConstantsLib.LOCK_DURATION);
+        uint256 mod = (block.timestamp - challengeEnd) % (ConstantsLib.WITHDRAW_DURATION + ConstantsLib.LOCK_DURATION);
         if (mod <= ConstantsLib.WITHDRAW_DURATION) {
             return FeeMangerDuration.withdraw;
         } else {
@@ -72,7 +72,7 @@ contract ORFeeManager is IORFeeManager, Ownable, ReentrancyGuard {
         require(challengeStatus == ChallengeStatus.none, "WDC");
         require(withdrawLock[msg.sender] < submissions.submitTimestamp, "WL");
         withdrawLock[msg.sender] = submissions.submitTimestamp;
-        for (uint i = 0; i < smtLeaves.length; ) {
+        for (uint256 i = 0; i < smtLeaves.length; ) {
             address token = smtLeaves[i].token;
             address user = smtLeaves[i].user;
             uint64 chainId = smtLeaves[i].chainId;
@@ -120,7 +120,7 @@ contract ORFeeManager is IORFeeManager, Ownable, ReentrancyGuard {
         emit SubmissionUpdated(startBlock, endBlock, uint64(block.timestamp), profitRoot, stateTransTreeRoot);
     }
 
-    function updateDealer(uint feeRatio, bytes calldata extraInfo) external {
+    function updateDealer(uint256 feeRatio, bytes calldata extraInfo) external {
         bytes32 extraInfoHash = extraInfo.hash();
         _dealers[msg.sender] = DealerInfo(feeRatio, extraInfoHash);
         emit DealerUpdated(msg.sender, feeRatio, extraInfo);
@@ -135,7 +135,7 @@ contract ORFeeManager is IORFeeManager, Ownable, ReentrancyGuard {
         _transferOwnership(newOwner);
     }
 
-    function registerSubmitter(uint marginAmount, address _submitter) external override onlyOwner {
+    function registerSubmitter(uint256 marginAmount, address _submitter) external override onlyOwner {
         require(_submitter == IORManager(_manager).submitter(), "NSR");
         submitter[_submitter] = marginAmount;
         emit SubmitterRegistered(_submitter, marginAmount);
@@ -143,7 +143,10 @@ contract ORFeeManager is IORFeeManager, Ownable, ReentrancyGuard {
 
     function getCurrentBlockInfo() external view override returns (Submission memory) {}
 
-    function startChallenge(uint marginAmount, address _submitter) public override isChallengerQualified nonReentrant {
+    function startChallenge(
+        uint256 marginAmount,
+        address _submitter
+    ) public override isChallengerQualified nonReentrant {
         challengeStatus = ChallengeStatus.challengeAccepted;
         (marginAmount, _submitter);
     }

@@ -16,13 +16,13 @@ import {BridgeLib} from "./library/BridgeLib.sol";
 import {VersionAndEnableTime} from "./VersionAndEnableTime.sol";
 
 contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
-    using HelperLib for uint[];
+    using HelperLib for uint256[];
     using HelperLib for address[];
     using HelperLib for bytes;
     using SafeERC20 for IERC20;
     using ECDSA for bytes32;
 
-    uint internal constant MIN_CHALLENGE_DEPOSIT_AMOUNT = 0.005 ether;
+    uint256 internal constant MIN_CHALLENGE_DEPOSIT_AMOUNT = 0.005 ether;
 
     // VersionAndEnableTime._version and _enableTime use a slot
 
@@ -33,8 +33,8 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
     mapping(uint64 => address) private _spvs; // chainId => spvAddress
     bytes32 private _responseMakersHash; // hash(response maker list), not just owner, to improve tps
     mapping(address => RuleLib.RootWithVersion) private _rulesRoots; // ebc => merkleRoot(rules), version
-    mapping(bytes32 => uint) private _pledgeBalances; // hash(ebc, sourceChainId, sourceToken) => pledgeBalance
-    mapping(address => uint) private _freezeAssets; // token(ETH: 0) => freezeAmount
+    mapping(bytes32 => uint256) private _pledgeBalances; // hash(ebc, sourceChainId, sourceToken) => pledgeBalance
+    mapping(address => uint256) private _freezeAssets; // token(ETH: 0) => freezeAmount
     mapping(bytes32 => ChallengeInfo) private _challenges; // hash(sourceChainId, transactionHash) => ChallengeInfo
     mapping(address => WithdrawRequestInfo) private _withdrawRequestInfo;
     mapping(uint256 => ChallengeNode) private _challengeNodeList;
@@ -93,7 +93,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         require(dealers.length < 100 && ebcs.length < 10 && chainIds.length < 100, "DECOF");
 
         IORManager manager = IORManager(_mdcFactory.manager());
-        for (uint i = 0; i < ebcs.length; ) {
+        for (uint256 i = 0; i < ebcs.length; ) {
             require(manager.ebcIncludes(ebcs[i]), "EI"); // Has invalid ebc
 
             unchecked {
@@ -101,7 +101,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             }
         }
 
-        for (uint i = 0; i < chainIds.length; ) {
+        for (uint256 i = 0; i < chainIds.length; ) {
             BridgeLib.ChainInfo memory chainInfo = manager.getChainInfo(chainIds[i]);
             require(chainInfo.id > 0, "CI"); // Invalid chainId
 
@@ -124,7 +124,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         IORManager manager = IORManager(_mdcFactory.manager());
         address impl = _mdcFactory.implementation();
 
-        for (uint i = 0; i < chainIds.length; i++) {
+        for (uint256 i = 0; i < chainIds.length; i++) {
             BridgeLib.ChainInfo memory chainInfo = manager.getChainInfo(chainIds[i]);
             require(chainInfo.id > 0, "CI"); // Invalid chainId
             require(chainInfo.spvs.includes(spvs[i]), "SI"); // Invalid spv
@@ -144,20 +144,20 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
         bytes32 data = abi.encode(address(this)).hash();
 
-        uint[] memory responseMakers_ = new uint[](responseMakerSignatures.length);
-        for (uint i = 0; i < responseMakerSignatures.length; i++) {
-            responseMakers_[i] = uint(uint160(data.toEthSignedMessageHash().recover(responseMakerSignatures[i])));
+        uint256[] memory responseMakers_ = new uint256[](responseMakerSignatures.length);
+        for (uint256 i = 0; i < responseMakerSignatures.length; i++) {
+            responseMakers_[i] = uint256(uint160(data.toEthSignedMessageHash().recover(responseMakerSignatures[i])));
         }
 
         _responseMakersHash = abi.encode(responseMakers_).hash();
         emit ResponseMakersUpdated(_mdcFactory.implementation(), responseMakers_);
     }
 
-    function freezeAssets(address token) external view returns (uint) {
+    function freezeAssets(address token) external view returns (uint256) {
         return _freezeAssets[token];
     }
 
-    function deposit(address token, uint amount) external payable {
+    function deposit(address token, uint256 amount) external payable {
         // TODO: This method is useless if it does not need to throw an event
         // ETH received by default
         // ERC20 calls safeTransferFrom, can also call `transfer` send assets to address(this)
@@ -172,7 +172,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
     function withdrawRequest(
         address requestToken,
-        uint requestAmount
+        uint256 requestAmount
     ) external onlyOwner onlyNoRequestTimestamp(requestToken) {
         uint64 requestTimestamp = uint64(
             block.timestamp + IORManager(_mdcFactory.manager()).getChallengeWithdrawDelay()
@@ -215,7 +215,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         RuleLib.Rule[] calldata rules,
         RuleLib.RootWithVersion calldata rootWithVersion,
         uint64[] calldata sourceChainIds,
-        uint[] calldata pledgeAmounts
+        uint256[] calldata pledgeAmounts
     ) external payable onlyOwner {
         versionIncreaseAndEnableTime(enableTime);
 
@@ -223,14 +223,14 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
         require(sourceChainIds.length == pledgeAmounts.length, "SPL");
 
-        uint increaseAmount;
-        for (uint i = 0; i < sourceChainIds.length; ) {
+        uint256 increaseAmount;
+        for (uint256 i = 0; i < sourceChainIds.length; ) {
             // TODO: Must save pledge amount by sourceChainId?
             //       Is it feasible to only by token?
             bytes32 k = abi.encode(ebc, sourceChainIds[i], address(0)).hash();
 
             if (pledgeAmounts[i] > _pledgeBalances[k]) {
-                uint _d = pledgeAmounts[i] - _pledgeBalances[k];
+                uint256 _d = pledgeAmounts[i] - _pledgeBalances[k];
                 increaseAmount += _d;
             }
 
@@ -250,7 +250,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         RuleLib.Rule[] calldata rules,
         RuleLib.RootWithVersion calldata rootWithVersion,
         uint64[] calldata sourceChainIds,
-        uint[] calldata pledgeAmounts,
+        uint256[] calldata pledgeAmounts,
         address token
     ) external onlyOwner {
         versionIncreaseAndEnableTime(enableTime);
@@ -259,7 +259,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
         require(sourceChainIds.length == pledgeAmounts.length, "SPL");
 
-        for (uint i = 0; i < sourceChainIds.length; ) {
+        for (uint256 i = 0; i < sourceChainIds.length; ) {
             bytes32 k = abi.encode(ebc, sourceChainIds[i], token).hash();
 
             if (pledgeAmounts[i] > _pledgeBalances[k]) {
@@ -277,7 +277,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         RuleLib.Rule[] calldata rules,
         RuleLib.RootWithVersion calldata rootWithVersion
     ) private {
-        for (uint i = 0; i < rules.length; ) {
+        for (uint256 i = 0; i < rules.length; ) {
             RuleLib.checkChainIds(rules[i].chainId0, rules[i].chainId1);
             RuleLib.checkWithholdingFees(rules[i].withholdingFee0, rules[i].withholdingFee1);
 
@@ -303,35 +303,30 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         ChallengeNode storage challengeNode = _challengeNodeList[challengeIdentNum];
         uint64 currentTime = uint64(block.timestamp);
 
-        if (_challengeNodeHead == 0) {
-            _challengeNodeHead = challengeIdentNum;
+        if (challengeIdentNum > _challengeNodeHead) {
+            challengeNode.prev = _challengeNodeHead;
             challengeNode.challengeCreateTime = currentTime;
+            _challengeNodeHead = challengeIdentNum;
         } else {
-            if (parentNodeNumOfTargetNode == 0) {
-                challengeNode.prev = _challengeNodeHead;
-                challengeNode.challengeCreateTime = currentTime;
-                _challengeNodeHead = challengeIdentNum;
-            } else {
-                ChallengeNode storage lastChallengeNode = _challengeNodeList[parentNodeNumOfTargetNode];
-                require(
-                    lastChallengeNode.challengeCreateTime > 0 &&
-                        parentNodeNumOfTargetNode > challengeIdentNum &&
-                        challengeIdentNum > lastChallengeNode.prev,
-                    "VLNP"
-                );
+            ChallengeNode storage parentChallengeNode = _challengeNodeList[parentNodeNumOfTargetNode];
+            require(
+                parentChallengeNode.challengeCreateTime > 0 &&
+                    parentNodeNumOfTargetNode > challengeIdentNum &&
+                    challengeIdentNum > parentChallengeNode.prev,
+                "VLNP"
+            );
 
-                challengeNode.prev = lastChallengeNode.prev;
-                challengeNode.challengeCreateTime = currentTime;
-                lastChallengeNode.prev = challengeIdentNum;
-            }
+            challengeNode.prev = parentChallengeNode.prev;
+            challengeNode.challengeCreateTime = currentTime;
+            parentChallengeNode.prev = challengeIdentNum;
         }
     }
 
-    function getCanChallengeContinue(uint256 challengeIdentNum) external view returns (bool) {
-        return _getCanChallengeContinue(challengeIdentNum);
+    function canChallengeContinue(uint256 challengeIdentNum) external view returns (bool) {
+        return _canChallengeContinue(challengeIdentNum);
     }
 
-    function _getCanChallengeContinue(uint256 challengeIdentNum) private view returns (bool) {
+    function _canChallengeContinue(uint256 challengeIdentNum) private view returns (bool) {
         ChallengeNode memory currChallengeNode = _challengeNodeList[challengeIdentNum];
         require(currChallengeNode.challengeCreateTime > 0, "UCY");
 
@@ -351,7 +346,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         uint64 sourceTxIndex,
         bytes32 sourceTxHash,
         address freezeToken,
-        uint freezeAmount1,
+        uint256 freezeAmount1,
         uint256 parentNodeNumOfTargetNode
     ) external payable {
         uint256 startGasNum = gasleft();
@@ -363,7 +358,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
         require(_challenges[challengeId].statement[msg.sender].challengeTime == 0, "CT");
 
-        uint freezeAmount0 = freezeAmount1;
+        uint256 freezeAmount0 = freezeAmount1;
 
         if (freezeToken == address(0)) {
             require(msg.value == (freezeAmount1 + MIN_CHALLENGE_DEPOSIT_AMOUNT), "IF+MD");
@@ -374,16 +369,12 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             _freezeAssets[freezeToken] += freezeAmount0 + freezeAmount1;
         }
 
-        uint256 challengeIdentNum = HelperLib.uint64ConcatToDecimal(
+        uint256 challengeIdentNum = HelperLib.calculateChallengeIdentNum(
             sourceTxTime,
             sourceChainId,
             sourceTxBlockNum,
             sourceTxIndex
         );
-
-        if (_challengeNodeHead != 0 && _challengeNodeHead > challengeIdentNum) {
-            require(parentNodeNumOfTargetNode > 0, "LCINE");
-        }
 
         // For more challenger challenge the same tx, the same challenge will pass
         if (_challengeNodeList[challengeIdentNum].challengeCreateTime == 0) {
@@ -393,7 +384,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         // TODO: Currently it is assumed that the pledged assets of the challenger and the owner are the same
 
         // Freeze mdc's owner assets and the assets in of challenger
-        uint128 baseFeePerGas = (uint128(block.basefee) + uint128(IORManager(_mdcFactory.manager()).getPriorityFee()));
+        uint128 challengeGasPrice = uint128(block.basefee + IORManager(_mdcFactory.manager()).getPriorityFee());
 
         _challenges[challengeId].statement[msg.sender] = ChallengeStatement({
             sourceTxFrom: 0,
@@ -406,15 +397,16 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             abortTime: 0,
             sourceTxBlockNum: sourceTxBlockNum,
             sourceTxIndex: sourceTxIndex,
-            challengerVerifyTransactionFee: baseFeePerGas
+            challengerVerifyTransactionFee: challengeGasPrice
         });
         emit ChallengeInfoUpdated({
             challengeId: challengeId,
             statement: _challenges[challengeId].statement[msg.sender],
             result: _challenges[challengeId].result
         });
-        _challenges[challengeId].statement[msg.sender].challengerVerifyTransactionFee *= (uint128(startGasNum) -
-            uint128(gasleft()));
+        _challenges[challengeId].statement[msg.sender].challengerVerifyTransactionFee *= uint128(
+            startGasNum - gasleft()
+        );
     }
 
     function checkChallenge(uint64 sourceChainId, bytes32 sourceTxHash, address[] calldata challenger) external {
@@ -426,7 +418,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         IORManager manager = IORManager(_mdcFactory.manager());
         BridgeLib.ChainInfo memory chainInfo = manager.getChainInfo(sourceChainId);
 
-        for (uint i = 0; ; ) {
+        for (uint256 i = 0; ; ) {
             ChallengeStatement memory challengeStatement = challengeInfo.statement[challenger[i]];
 
             // Make sure the challenge exists
@@ -434,7 +426,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
             require(challengeStatement.abortTime == 0, "CA");
 
-            challengeIdentNum = HelperLib.uint64ConcatToDecimal(
+            challengeIdentNum = HelperLib.calculateChallengeIdentNum(
                 challengeStatement.sourceTxTime,
                 sourceChainId,
                 challengeStatement.sourceTxBlockNum,
@@ -443,7 +435,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
             // For more challenger challenge the same tx, the same challenge will pass
             if (_challengeNodeList[challengeIdentNum].challengeFinished == false) {
-                require(_getCanChallengeContinue(challengeIdentNum), "NCCF");
+                require(_canChallengeContinue(challengeIdentNum), "NCCF");
             }
 
             if (result.verifiedTime1 > 0) {
@@ -968,7 +960,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
         // Check manager's chainInfo.minVerifyChallengeSourceTxSecond,maxVerifyChallengeSourceTxSecond
         {
-            uint timeDiff = block.timestamp - publicInputData.time_stamp;
+            uint256 timeDiff = block.timestamp - publicInputData.time_stamp;
             require(
                 timeDiff >= uint64(publicInputData.manage_pre_source_chain_mix_verify_challenge_source_tx_second),
                 "MINTOF"
@@ -992,7 +984,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         // TODO: Check _responseMakersHash
 
         // Check ebc address, destChainId, destToken
-        uint destChainId;
+        uint256 destChainId;
         {
             IOREventBinding.AmountParams memory ap = IOREventBinding(ebc).getAmountParams(publicInputData.amount);
             require(ebc == ebcs[ap.ebcIndex - 1], "ENE");
@@ -1019,7 +1011,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         // Check dest amount
         // TODO: Is there a more general solution. Not only amount
         RuleLib.RuleOneway memory ro = RuleLib.convertToOneway(rule, publicInputData.chain_id);
-        uint destAmount = IOREventBinding(ebc).getResponseAmountFromIntent(
+        uint256 destAmount = IOREventBinding(ebc).getResponseAmountFromIntent(
             IOREventBinding(ebc).getResponseIntent(publicInputData.amount, ro)
         );
 
@@ -1053,12 +1045,10 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             .hash();
         emit ChallengeInfoUpdated({challengeId: challengeId, statement: statement_s, result: result_s});
         // TODO: add verify source gas cost (solt & emit)
-        uint128 baseFeePerGas = (uint128(block.basefee) + uint128(IORManager(_mdcFactory.manager()).getPriorityFee()));
+        uint128 actualGasPrice = uint128(block.basefee + IORManager(_mdcFactory.manager()).getPriorityFee());
         statement_s.challengerVerifyTransactionFee +=
-            (uint128(startGasNum) -
-                uint128(gasleft()) +
-                uint128(IORManager(_mdcFactory.manager()).getChallengeBasefee())) *
-            baseFeePerGas;
+            uint128((startGasNum - gasleft() + IORManager(_mdcFactory.manager()).getChallengeGasUsed())) *
+            actualGasPrice;
     }
 
     function _parsePublicInputDest(bytes calldata proofData) private pure returns (PublicInputDataDest memory) {
@@ -1099,7 +1089,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         bytes32 sourceTxHash,
         // bytes calldata publicInput, // TODO: Enable this parameter after the circuit has finished hash-encoding the public input.
         bytes calldata proof,
-        uint[] calldata verifiedData0,
+        uint256[] calldata verifiedData0,
         bytes calldata rawDatas
     ) external {
         // parse Public input
@@ -1117,8 +1107,8 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         require(result.verifiedTime1 == 0, "VT1NZ");
 
         require(
-            _getCanChallengeContinue(
-                HelperLib.uint64ConcatToDecimal(
+            _canChallengeContinue(
+                HelperLib.calculateChallengeIdentNum(
                     statement.sourceTxTime,
                     sourceChainId,
                     statement.sourceTxBlockNum,
@@ -1129,7 +1119,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         );
 
         // Parse rawDatas
-        uint[] memory responseMakers = abi.decode(rawDatas, (uint[]));
+        uint256[] memory responseMakers = abi.decode(rawDatas, (uint256[]));
 
         // Check verifiedData0
         require(abi.encode(verifiedData0).hash() == _challenges[challengeId].result.verifiedDataHash0, "VDH0");
@@ -1138,7 +1128,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         // Check minVerifyChallengeDestTxSecond, maxVerifyChallengeDestTxSecond
         // TODO: make this public input
         {
-            uint timeDiff = block.timestamp - result.verifiedTime0;
+            uint256 timeDiff = block.timestamp - result.verifiedTime0;
             require(timeDiff >= uint64(chainInfo.minVerifyChallengeDestTxSecond), "MINTOF");
             require(timeDiff <= uint64(chainInfo.maxVerifyChallengeDestTxSecond), "MAXTOF");
         }
@@ -1193,11 +1183,11 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
     ) internal returns (uint256 unFreezeAmount) {
         unFreezeAmount = challengeInfo.freezeAmount0 + challengeInfo.freezeAmount1 + MIN_CHALLENGE_DEPOSIT_AMOUNT;
         if (result.winner == challenger) {
-            uint challengeUserAmount = (challengeInfo.freezeAmount0 * challengeInfo.challengeUserRatio) /
+            uint256 challengeUserAmount = (challengeInfo.freezeAmount0 * challengeInfo.challengeUserRatio) /
                 ConstantsLib.RATIO_MULTIPLE;
             require(challengeUserAmount <= challengeInfo.freezeAmount0, "UAOF");
 
-            uint challengerAmount = unFreezeAmount - challengeUserAmount;
+            uint256 challengerAmount = unFreezeAmount - challengeUserAmount;
             _challengeNodeList[challengeIdentNum].challengeFinished = true;
 
             // TODO: Not compatible with starknet network

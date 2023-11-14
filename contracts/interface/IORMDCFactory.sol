@@ -9,7 +9,7 @@ interface IORMDCFactory {
 
     function implementation() external view returns (address);
 
-    function mdcCreatedTotal() external view returns (uint);
+    function mdcCreatedTotal() external view returns (uint256);
 
     function createMDC() external;
 

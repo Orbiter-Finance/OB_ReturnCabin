@@ -12,7 +12,7 @@ contract ORSpvData is IORSpvData {
     uint64 private _blockInterval = 192;
     address private _injectOwner;
 
-    mapping(uint => bytes32) private _blocksRoots; // startBlockNumber => [start ..._blockInterval... end]'s blocks root
+    mapping(uint256 => bytes32) private _blocksRoots; // startBlockNumber => [start ..._blockInterval... end]'s blocks root
 
     constructor(address manager_) {
         require(manager_ != address(0), "MZ");
@@ -24,13 +24,13 @@ contract ORSpvData is IORSpvData {
         _;
     }
 
-    function getBlocksRoot(uint startBlockNumber) external view returns (bytes32) {
+    function getBlocksRoot(uint256 startBlockNumber) external view returns (bytes32) {
         return _blocksRoots[startBlockNumber];
     }
 
     // TODO: Not review
-    function _calculateRoot(uint startBlockNumber) internal view returns (bytes32) {
-        uint len = _blockInterval / 2;
+    function _calculateRoot(uint256 startBlockNumber) internal view returns (bytes32) {
+        uint256 len = _blockInterval / 2;
         bytes32 root;
         assembly {
             let leaves := mload(0x40)
@@ -96,12 +96,12 @@ contract ORSpvData is IORSpvData {
     }
 
     function saveHistoryBlocksRoots() external {
-        uint currentBlockNumber = block.number;
-        uint bi = _blockInterval;
-        uint startBlockNumber = currentBlockNumber - 256;
-        uint batchLen;
+        uint256 currentBlockNumber = block.number;
+        uint256 bi = _blockInterval;
+        uint256 startBlockNumber = currentBlockNumber - 256;
+        uint256 batchLen;
         unchecked {
-            uint m = startBlockNumber % bi;
+            uint256 m = startBlockNumber % bi;
             if (m > 0) {
                 startBlockNumber += bi - m;
             }
@@ -112,7 +112,7 @@ contract ORSpvData is IORSpvData {
         // Reject when batchLen == 0, save gas
         require(batchLen > 0, "IBL");
 
-        for (uint i = 0; i < batchLen; ) {
+        for (uint256 i = 0; i < batchLen; ) {
             bytes32 root = _calculateRoot(startBlockNumber);
 
             if (_blocksRoots[startBlockNumber] == bytes32(0) && root != bytes32(0)) {
@@ -150,8 +150,8 @@ contract ORSpvData is IORSpvData {
     }
 
     function injectBlocksRoots(
-        uint blockNumber0,
-        uint blockNumber1,
+        uint256 blockNumber0,
+        uint256 blockNumber1,
         InjectionBlocksRoot[] calldata injectionBlocksRoots
     ) external {
         require(msg.sender == _injectOwner, "Forbidden: caller is not the inject owner");
@@ -162,8 +162,8 @@ contract ORSpvData is IORSpvData {
         require(_blocksRoots[blockNumber0] != bytes32(0), "SZ");
         require(_blocksRoots[blockNumber1] != bytes32(0), "EZ");
 
-        uint i = 0;
-        uint ni = 0;
+        uint256 i = 0;
+        uint256 ni = 0;
         for (; i < injectionBlocksRoots.length; ) {
             unchecked {
                 ni = i + 1;

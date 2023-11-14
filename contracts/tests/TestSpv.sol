@@ -628,15 +628,15 @@ contract testSpv {
         );
     }
 
-    function createFreezeTokenSlotKey(uint chainId, uint token) external pure returns (uint slotK) {
-        slotK = uint(abi.encode(abi.encode(uint64(chainId), token).hash(), 3).hash());
+    function createFreezeTokenSlotKey(uint256 chainId, uint256 token) external pure returns (uint256 slotK) {
+        slotK = uint256(abi.encode(abi.encode(uint64(chainId), token).hash(), 3).hash());
     }
 
-    function createChainInfoSlotKey(uint chainId) external pure returns (uint slotK) {
-        slotK = uint(abi.encode(chainId, 2).hash());
+    function createChainInfoSlotKey(uint256 chainId) external pure returns (uint256 slotK) {
+        slotK = uint256(abi.encode(chainId, 2).hash());
     }
 
-    function createEncodeRule(RuleLib.Rule calldata rule) external pure returns (uint encodeRule) {
-        encodeRule = uint(abi.encode(rule).hash());
+    function createEncodeRule(RuleLib.Rule calldata rule) external pure returns (uint256 encodeRule) {
+        encodeRule = uint256(abi.encode(rule).hash());
     }
 }

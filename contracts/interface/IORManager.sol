@@ -16,13 +16,13 @@ interface IORManager {
     event FeeTakeOnChallengeSecondUpdated(uint64 feeTakeOnChallengeSecond);
     event MaxMDCLimitUpdated(uint64 maxMDCLimit);
     event SpvDataContractUpdated(address spvDataContract);
-    event ExtraTransferContractsUpdated(uint64[] chainIds, uint[] extraTransferContracts);
+    event ExtraTransferContractsUpdated(uint64[] chainIds, uint256[] extraTransferContracts);
 
     function registerChains(uint64 enableTime, BridgeLib.ChainInfo[] calldata chains_) external;
 
     function getPriorityFee() external view returns (uint8);
 
-    function getChallengeBasefee() external view returns (uint24);
+    function getChallengeGasUsed() external view returns (uint24);
 
     function getChallengeWithdrawDelay() external view returns (uint32);
 
@@ -32,7 +32,7 @@ interface IORManager {
 
     function updateChallengeWithdrawDelay(uint32 challengeWithdrawDelay) external;
 
-    function updateChainSpvs(uint64 enableTime, uint64 id, address[] calldata spvs, uint[] calldata indexs) external;
+    function updateChainSpvs(uint64 enableTime, uint64 id, address[] calldata spvs, uint256[] calldata indexs) external;
 
     function getChainInfo(uint64 id) external view returns (BridgeLib.ChainInfo memory);
 
@@ -42,7 +42,7 @@ interface IORManager {
         BridgeLib.TokenInfo[] calldata tokenInfos
     ) external;
 
-    function getChainTokenInfo(uint64 id, uint token) external view returns (BridgeLib.TokenInfo memory);
+    function getChainTokenInfo(uint64 id, uint256 token) external view returns (BridgeLib.TokenInfo memory);
 
     function ebcIncludes(address ebc) external view returns (bool);
 
@@ -84,11 +84,11 @@ interface IORManager {
 
     function updateSpvDataInjectOwner(address injectOwner_) external;
 
-    function getExtraTransferContract(uint64 chainId) external view returns (uint);
+    function getExtraTransferContract(uint64 chainId) external view returns (uint256);
 
     function updateExtraTransferContracts(
         uint64 enableTime,
         uint64[] calldata chainIds,
-        uint[] calldata extraTransferContracts
+        uint256[] calldata extraTransferContracts
     ) external;
 }

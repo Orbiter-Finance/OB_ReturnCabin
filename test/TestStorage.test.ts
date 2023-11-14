@@ -119,7 +119,7 @@ describe('TestStorage', () => {
     await testStorage.updateMappingStruct(key, struct).then((t) => t.wait());
 
     const storageKey = keccak256(
-      defaultAbiCoder.encode(['uint', 'uint'], [key, '0x05']),
+      defaultAbiCoder.encode(['uint256', 'uint256'], [key, '0x05']),
     );
     const storageValue = await getStorageAt(storageKey);
     const storageU128_1 = hexDataSlice(storageValue, 16, 32);
@@ -155,7 +155,7 @@ describe('TestStorage', () => {
     );
 
     const k_byEncode = keccak256(
-      defaultAbiCoder.encode(['uint', 'uint'], [sub, position]),
+      defaultAbiCoder.encode(['uint256', 'uint256'], [sub, position]),
     );
     expect(k_byConcat).to.eq(k_byEncode);
 

@@ -6,12 +6,12 @@ import {ConstantsLib} from "../library/ConstantsLib.sol";
 import {RuleLib} from "../library/RuleLib.sol";
 
 contract OREventBinding is IOREventBinding {
-    function getSecurityCode(uint amount) public pure returns (uint) {
+    function getSecurityCode(uint256 amount) public pure returns (uint256) {
         return uint16(amount % ConstantsLib.EBC_AMOUNT_PARAMS_MODULUS);
     }
 
-    function splitSecurityCode(uint securityCode) public pure returns (uint[] memory) {
-        uint[] memory splits = new uint[](3);
+    function splitSecurityCode(uint256 securityCode) public pure returns (uint256[] memory) {
+        uint256[] memory splits = new uint256[](3);
 
         unchecked {
             splits[0] = securityCode / 1000;
@@ -22,8 +22,8 @@ contract OREventBinding is IOREventBinding {
         return splits;
     }
 
-    function getAmountParams(uint amount) public pure returns (AmountParams memory) {
-        uint[] memory params = splitSecurityCode(getSecurityCode(amount));
+    function getAmountParams(uint256 amount) public pure returns (AmountParams memory) {
+        uint256[] memory params = splitSecurityCode(getSecurityCode(amount));
 
         require(params[0] > 0, "P0Z");
         require(params[1] > 0, "P1Z");
@@ -37,18 +37,18 @@ contract OREventBinding is IOREventBinding {
      * @param amount Source tx amount
      * @param ro Rule oneway
      */
-    function getResponseIntent(uint amount, RuleLib.RuleOneway calldata ro) external pure returns (bytes memory) {
-        uint securityCode = getSecurityCode(amount);
+    function getResponseIntent(uint256 amount, RuleLib.RuleOneway calldata ro) external pure returns (bytes memory) {
+        uint256 securityCode = getSecurityCode(amount);
         require(securityCode > 0, "SCZ");
 
-        uint tradeAmount = amount - securityCode - ro.withholdingFee;
+        uint256 tradeAmount = amount - securityCode - ro.withholdingFee;
         require(tradeAmount >= ro.minPrice, "MINOF");
         require(tradeAmount <= ro.maxPrice, "MAXOF");
 
-        uint fee = (tradeAmount * ro.tradingFee) / ConstantsLib.RATIO_MULTIPLE;
+        uint256 fee = (tradeAmount * ro.tradingFee) / ConstantsLib.RATIO_MULTIPLE;
         require(tradeAmount > fee, "FOF");
 
-        uint responseAmount = ((tradeAmount - fee) / ConstantsLib.EBC_AMOUNT_PARAMS_MODULUS) *
+        uint256 responseAmount = ((tradeAmount - fee) / ConstantsLib.EBC_AMOUNT_PARAMS_MODULUS) *
             ConstantsLib.EBC_AMOUNT_PARAMS_MODULUS; // Clear out empty digits
 
         return abi.encode(responseAmount);
@@ -58,8 +58,8 @@ contract OREventBinding is IOREventBinding {
      * Get response amount from intent
      * @param intent Intent
      */
-    function getResponseAmountFromIntent(bytes calldata intent) external pure returns (uint) {
-        uint responseAmount = abi.decode(intent, (uint));
+    function getResponseAmountFromIntent(bytes calldata intent) external pure returns (uint256) {
+        uint256 responseAmount = abi.decode(intent, (uint256));
         return responseAmount;
     }
 }

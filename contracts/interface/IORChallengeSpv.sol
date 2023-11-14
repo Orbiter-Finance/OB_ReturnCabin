@@ -5,11 +5,11 @@ interface IORChallengeSpv {
     struct VerifyInfoSlot {
         address account; // Contract address
         bytes32 key;
-        uint value;
+        uint256 value;
     }
 
     struct VerifyInfo {
-        uint[] data;
+        uint256[] data;
         VerifyInfoSlot[] slots;
     }
 

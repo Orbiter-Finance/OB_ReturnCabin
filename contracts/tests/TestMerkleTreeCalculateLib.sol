@@ -70,15 +70,15 @@ library MerkleTreeLib {
     uint8 internal constant MERGE_ZEROS = 2;
     uint8 internal constant MAX_TREE_LEVEL = 255;
 
-    function isRight(bytes32 _hash, uint height) internal pure returns (bool) {
+    function isRight(bytes32 _hash, uint256 height) internal pure returns (bool) {
         return getBit(_hash, height);
     }
 
-    function setBit(bytes32 bitmap, uint index) internal pure returns (bytes32) {
+    function setBit(bytes32 bitmap, uint256 index) internal pure returns (bytes32) {
         return bytes32(uint256(bitmap) | (1 << (index & 0xff)));
     }
 
-    function getBit(uint256 bitmap, uint index) internal pure returns (bool) {
+    function getBit(uint256 bitmap, uint256 index) internal pure returns (bool) {
         bool result;
         assembly {
             let shifted := shl(index, 1)
@@ -89,7 +89,7 @@ library MerkleTreeLib {
         return result;
     }
 
-    function getBit(bytes32 bitmap, uint index) internal pure returns (bool) {
+    function getBit(bytes32 bitmap, uint256 index) internal pure returns (bool) {
         bool result;
         assembly {
             let shifted := shl(index, 1)
@@ -100,15 +100,15 @@ library MerkleTreeLib {
         return result;
     }
 
-    function clearBit(bytes32 bitmap, uint index) internal pure returns (bytes32) {
+    function clearBit(bytes32 bitmap, uint256 index) internal pure returns (bytes32) {
         return bytes32(uint256(bitmap) & (~(1 << index)));
     }
 
-    function copyBits(bytes32 bitmap, uint index) internal pure returns (bytes32) {
+    function copyBits(bytes32 bitmap, uint256 index) internal pure returns (bytes32) {
         return bytes32((uint256(bitmap) << index) >> index);
     }
 
-    function parentPath(bytes32 path, uint height) internal pure returns (bytes32) {
+    function parentPath(bytes32 path, uint256 height) internal pure returns (bytes32) {
         if (height == 255) {
             return bytes32(0);
         }
@@ -117,9 +117,9 @@ library MerkleTreeLib {
         }
     }
 
-    function searchIndex(uint256 bitmap) internal pure returns (uint) {
+    function searchIndex(uint256 bitmap) internal pure returns (uint256) {
         unchecked {
-            for (uint i = 255; i >= 0; i--) {
+            for (uint256 i = 255; i >= 0; i--) {
                 if ((bitmap >> i) & 1 == 1) {
                     return (255 - i);
                 }

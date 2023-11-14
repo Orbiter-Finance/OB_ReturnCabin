@@ -3,8 +3,8 @@
 pragma solidity ^0.8.17;
 
 library ArrayLib {
-    function includes(uint[] memory arr, uint element) internal pure returns (bool) {
-        for (uint i = 0; i < arr.length; ) {
+    function includes(uint256[] memory arr, uint256 element) internal pure returns (bool) {
+        for (uint256 i = 0; i < arr.length; ) {
             if (element == arr[i]) {
                 return true;
             }
@@ -15,10 +15,10 @@ library ArrayLib {
         return false;
     }
 
-    function arrayIncludes(uint[] memory arr, uint[] memory elements) internal pure returns (bool) {
-        for (uint i = 0; i < elements.length; i++) {
+    function arrayIncludes(uint256[] memory arr, uint256[] memory elements) internal pure returns (bool) {
+        for (uint256 i = 0; i < elements.length; i++) {
             bool ic = false;
-            for (uint j = 0; j < arr.length; ) {
+            for (uint256 j = 0; j < arr.length; ) {
                 if (elements[i] == arr[j]) {
                     ic = true;
                     break;
@@ -38,7 +38,7 @@ library ArrayLib {
     }
 
     function includes(address[] memory arr, address element) internal pure returns (bool) {
-        for (uint i = 0; i < arr.length; ) {
+        for (uint256 i = 0; i < arr.length; ) {
             if (element == arr[i]) {
                 return true;
             }
@@ -50,9 +50,9 @@ library ArrayLib {
     }
 
     function arrayIncludes(address[] memory arr, address[] memory elements) internal pure returns (bool) {
-        for (uint i = 0; i < elements.length; i++) {
+        for (uint256 i = 0; i < elements.length; i++) {
             bool ic = false;
-            for (uint j = 0; j < arr.length; ) {
+            for (uint256 j = 0; j < arr.length; ) {
                 if (elements[i] == arr[j]) {
                     ic = true;
                     break;

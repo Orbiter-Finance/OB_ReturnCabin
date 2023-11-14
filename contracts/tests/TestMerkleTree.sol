@@ -101,7 +101,7 @@ library MerkleTreeCalculate {
     function processNextLevel(
         MerkleTreeLib.MergeValue memory mergeValue,
         bytes32 zeroBits,
-        uint iReverse
+        uint256 iReverse
     ) internal pure {
         if (zeroBits.getBit(iReverse)) {
             zeroBits = zeroBits.clearBit(iReverse);
