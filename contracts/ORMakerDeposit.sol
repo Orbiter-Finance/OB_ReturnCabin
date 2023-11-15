@@ -821,7 +821,9 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         ChallengeStatement memory challengeInfo,
         uint256 challengeIdentNum
     ) internal returns (uint256 unFreezeAmount) {
-        unFreezeAmount = (challengeInfo.freezeAmount0 + challengeInfo.freezeAmount1 + MIN_CHALLENGE_DEPOSIT_AMOUNT);
+        unFreezeAmount = (challengeInfo.freezeAmount0 +
+            challengeInfo.freezeAmount1 +
+            ConstantsLib.MIN_CHALLENGE_DEPOSIT_AMOUNT);
         _challengeNodeList[challengeIdentNum].challengeFinished = true;
     }
 
@@ -839,7 +841,10 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         address challenger,
         uint256 challengeIdentNum
     ) internal returns (uint256 unFreezeAmount) {
-        unFreezeAmount = challengeInfo.freezeAmount0 + challengeInfo.freezeAmount1 + MIN_CHALLENGE_DEPOSIT_AMOUNT;
+        unFreezeAmount =
+            challengeInfo.freezeAmount0 +
+            challengeInfo.freezeAmount1 +
+            ConstantsLib.MIN_CHALLENGE_DEPOSIT_AMOUNT;
         if (result.winner == challenger) {
             uint256 challengeUserAmount = (challengeInfo.freezeAmount0 * challengeInfo.challengeUserRatio) /
                 ConstantsLib.RATIO_MULTIPLE;
