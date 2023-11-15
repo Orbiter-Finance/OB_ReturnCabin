@@ -479,7 +479,6 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
                 i += 1;
             }
         }
-        _freezeAssets[address(0)] -= challenger.length * ConstantsLib.MIN_CHALLENGE_DEPOSIT_AMOUNT;
     }
 
     function _parsePublicInput(bytes calldata proofData) private pure returns (PublicInputData memory) {
