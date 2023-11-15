@@ -149,47 +149,6 @@ export interface columnArray {
   chainIds: number[];
 }
 
-// struct PublicInputData {
-//   bytes32 tx_hash;
-//   uint256 chain_id;
-//   uint256 index;
-//   address from;
-//   address to;
-//   address token;
-//   uint256 amount;
-//   uint256 nonce;
-//   uint256 time_stamp;
-//   address dest;
-//   address dest_token;
-//   bytes32 l1_tx_block_hash;
-//   uint256 l1_tx_block_number;
-//   address mdc_contract_address;
-//   address manage_contract_address;
-//   bytes32 mdc_rule_root_slot;
-//   bytes32 mdc_rule_version_slot;
-//   bytes32 mdc_rule_enable_time_slot;
-//   bytes32 mdc_column_array_hash_slot;
-//   bytes32 mdc_response_makers_hash_slot;
-//   bytes32 manage_source_chain_info_slot;
-//   bytes32 manage_source_chain_mainnet_token_info_slot;
-//   bytes32 manage_dest_chain_mainnet_token_slot;
-//   bytes32 manage_challenge_user_ratio_slot;
-//   bytes32 mdc_current_rule_root;
-//   uint256 mdc_current_rule_enable_time;
-//   bytes32 mdc_current_column_array_hash;
-//   bytes32 mdc_current_response_makers_hash;
-//   bytes32 manage_current_source_chain_info;
-//   address manage_current_source_chain_mainnet_token;
-//   address manage_current_dest_chain_mainnet_token;
-//   uint256 manage_current_challenge_user_ratio;
-//   uint256 mdc_next_rule_enable_time;
-//   bytes32 mdc_current_rule_value_hash;
-//   // bytes32 ob_contracts_current_block_hash;
-//   // uint256 ob_contracts_current_block_number;
-//   // bytes32 ob_contracts_next_block_hash;
-//   // uint256 ob_contracts_next_block_number;
-// }
-
 export interface PublicInputData {
   tx_hash: BytesLike;
   chain_id: BigNumberish;
@@ -230,67 +189,6 @@ export interface PublicInputData {
   mdc_next_rule_enable_time: BigNumberish;
   mdc_current_rule_value_hash: BytesLike;
 }
-
-// export interface PublicInputDataStruct {
-//   tx_hash: BytesLike;
-//   chain_id: BigNumberish;
-//   index: BigNumberish;
-//   from: BigNumberish;
-//   to: BigNumberish;
-//   token: string;
-//   amount: BigNumberish;
-//   nonce: BigNumberish;
-//   time_stamp: BigNumberish;
-//   dest: BigNumberish;
-//   dest_token: BigNumberish;
-//   l1_tx_block_hash: BytesLike;
-//   l1_tx_block_number: BigNumberish;
-//   mdc_contract_address: string;
-//   manager_contract_address: string;
-//   mdc_rule_root_slot: BigNumberish;
-//   mdc_rule_version_slot: BigNumberish;
-//   mdc_rule_enable_time_slot: BigNumberish;
-//   mdc_column_array_hash_slot: BytesLike;
-//   mdc_response_makers_hash_slot: BytesLike;
-//   manage_source_chain_info_slot: BytesLike;
-//   manage_source_chain_mainnet_token_info_slot: BytesLike;
-//   manage_dest_chain_mainnet_token_slot: BytesLike;
-//   manage_challenge_user_ratio_slot: BytesLike;
-//   mdc_pre_rule_root: BytesLike;
-//   mdc_pre_rule_version: BigNumberish;
-//   mdc_pre_rule_enable_time: BigNumberish;
-//   mdc_pre_column_array_hash: BytesLike;
-//   mdc_pre_response_makers_hash: BytesLike;
-//   // manage_pre_source_chain_info: BytesLike;
-//   manage_pre_source_chain_max_verify_challenge_source_tx_second: BigNumberish;
-//   manage_pre_source_chain_min_verify_challenge_source_tx_second: BigNumberish;
-//   manage_pre_source_chain_max_verify_challenge_dest_tx_second: BigNumberish;
-//   manage_pre_source_chain_min_verify_challenge_dest_tx_second: BigNumberish;
-//   manage_pre_source_chain_mainnet_token: string;
-//   manage_pre_dest_chain_mainnet_token: string;
-//   manage_pre_challenge_user_ratio: BigNumberish;
-//   mdc_current_rule_root: BytesLike;
-//   mdc_current_rule_version: BigNumberish;
-//   mdc_current_rule_enable_time: BigNumberish;
-//   source_chain_id: BigNumberish;
-//   source_token: string;
-//   source_min_price: BigNumberish;
-//   source_max_price: BigNumberish;
-//   source_with_holding_fee: BigNumberish;
-//   source_trading_fee: BigNumberish;
-//   source_response_time: BigNumberish;
-//   dest_chain_id: BigNumberish;
-//   dest_token_rule: BigNumberish;
-//   dest_min_price: BigNumberish;
-//   dest_max_price: BigNumberish;
-//   dest_with_holding_fee: BigNumberish;
-//   dest_trading_fee: BigNumberish;
-//   dest_response_time: BigNumberish;
-//   ob_contracts_pre_block_hash: BytesLike;
-//   ob_contracts_pre_block_number: BigNumberish;
-//   ob_contracts_current_block_hash: BytesLike;
-//   ob_contracts_current_block_number: BigNumberish;
-// }
 
 export const updateSpv = async (
   challengeInputInfo: challengeInputInfo,

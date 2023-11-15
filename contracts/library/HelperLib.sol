@@ -104,19 +104,17 @@ library HelperLib {
         uint256 time_stamp;
         address dest;
         address dest_token;
-        bytes32 l1_tx_block_hash;
-        uint256 l1_tx_block_number;
         address mdc_contract_address;
         address manage_contract_address;
         uint256 mdc_rule_root_slot;
         uint256 mdc_rule_version_slot;
         uint256 mdc_rule_enable_time_slot;
-        bytes32 mdc_column_array_hash_slot;
-        bytes32 mdc_response_makers_hash_slot;
-        bytes32 manage_source_chain_info_slot;
-        bytes32 manage_source_chain_mainnet_token_info_slot;
-        bytes32 manage_dest_chain_mainnet_token_slot;
-        bytes32 manage_challenge_user_ratio_slot;
+        uint8 mdc_column_array_hash_slot;
+        uint8 mdc_response_makers_hash_slot;
+        uint256 manage_source_chain_info_slot;
+        uint256 manage_source_chain_mainnet_token_info_slot;
+        uint256 manage_dest_chain_mainnet_token_slot;
+        uint8 manage_challenge_user_ratio_slot;
         bytes32 mdc_current_rule_root;
         uint256 mdc_current_rule_enable_time;
         bytes32 mdc_current_column_array_hash;
@@ -209,15 +207,6 @@ library HelperLib {
                         )
                     )
                 ),
-                l1_tx_block_hash: bytes32(
-                    (uint256(bytes32(proofData[TrackBlockSplitStart:TrackBlockSplitStart + SplitStep])) << 128) |
-                        uint256(
-                            bytes32(proofData[TrackBlockSplitStart + SplitStep:TrackBlockSplitStart + SplitStep * 2])
-                        )
-                ),
-                l1_tx_block_number: uint256(
-                    bytes32(proofData[TrackBlockSplitStart + SplitStep * 2:TrackBlockSplitStart + SplitStep * 3])
-                ),
                 mdc_contract_address: address(
                     uint160(uint256(bytes32(proofData[MdcContractSplitStart:MdcContractSplitStart + SplitStep])))
                 ),
@@ -246,7 +235,7 @@ library HelperLib {
                     uint256(
                         bytes32(proofData[MdcContractSplitStart + SplitStep * 7:MdcContractSplitStart + SplitStep * 8])
                     )),
-                mdc_column_array_hash_slot: bytes32(
+                mdc_column_array_hash_slot: uint8(
                     (uint256(
                         bytes32(proofData[MdcContractSplitStart + SplitStep * 8:MdcContractSplitStart + SplitStep * 9])
                     ) << 128) |
@@ -256,7 +245,7 @@ library HelperLib {
                             )
                         )
                 ),
-                mdc_response_makers_hash_slot: bytes32(
+                mdc_response_makers_hash_slot: uint8(
                     (uint256(
                         bytes32(
                             proofData[MdcContractSplitStart + SplitStep * 10:MdcContractSplitStart + SplitStep * 11]
@@ -268,7 +257,7 @@ library HelperLib {
                             )
                         )
                 ),
-                manage_source_chain_info_slot: bytes32(
+                manage_source_chain_info_slot: uint256(
                     (uint256(
                         bytes32(
                             proofData[MdcContractSplitStart + SplitStep * 12:MdcContractSplitStart + SplitStep * 13]
@@ -280,7 +269,7 @@ library HelperLib {
                             )
                         )
                 ),
-                manage_source_chain_mainnet_token_info_slot: bytes32(
+                manage_source_chain_mainnet_token_info_slot: uint256(
                     (uint256(
                         bytes32(
                             proofData[MdcContractSplitStart + SplitStep * 14:MdcContractSplitStart + SplitStep * 15]
@@ -292,7 +281,7 @@ library HelperLib {
                             )
                         )
                 ),
-                manage_dest_chain_mainnet_token_slot: bytes32(
+                manage_dest_chain_mainnet_token_slot: uint256(
                     (uint256(
                         bytes32(
                             proofData[MdcContractSplitStart + SplitStep * 16:MdcContractSplitStart + SplitStep * 17]
@@ -304,7 +293,7 @@ library HelperLib {
                             )
                         )
                 ),
-                manage_challenge_user_ratio_slot: bytes32(
+                manage_challenge_user_ratio_slot: uint8(
                     (uint256(
                         bytes32(
                             proofData[MdcContractSplitStart + SplitStep * 18:MdcContractSplitStart + SplitStep * 19]
@@ -486,5 +475,19 @@ library HelperLib {
                         )
                 )
             });
+    }
+
+    struct PublicInputDataDest {
+        bytes32 txHash;
+        uint64 chainId;
+        uint256 txIndex;
+        uint256 from;
+        uint256 to;
+        uint256 token;
+        uint256 amount;
+        uint256 nonce;
+        uint64 timestamp;
+        bytes32 L1TXBlockHash;
+        uint256 L1TBlockNumber;
     }
 }

@@ -494,7 +494,6 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
     function verifyChallengeSource(
         address challenger,
-        // bytes calldata publicInput, // TODO: Enable this parameter after the circuit has finished hash-encoding the public input.
         HelperLib.PublicInputData calldata publicInputData,
         bytes calldata proof,
         bytes calldata rawDatas
@@ -519,11 +518,24 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         require(statement.challengeTime > 0, "CTZ");
         require(result.verifiedTime0 == 0, "VT0NZ");
         // Check timestamp
-        require(publicInputData.time_stamp == statement.sourceTxTime, "ST");
+        require(
+            publicInputData.mdc_current_rule_enable_time <= publicInputData.time_stamp &&
+                publicInputData.time_stamp == statement.sourceTxTime &&
+                statement.sourceTxTime < publicInputData.mdc_next_rule_enable_time,
+            "ST"
+        );
+        //Chcek Tx Index
+        require(statement.sourceTxIndex == publicInputData.index, "TI");
         // Check maker address
         require(uint160(publicInputData.to) == uint160(_owner), "TNEO");
         // Check freezeToken
-        require(statement.freezeToken == publicInputData.token, "FTV");
+        require(
+            statement.freezeToken == publicInputData.token &&
+                publicInputData.token == publicInputData.manage_current_source_chain_mainnet_token &&
+                publicInputData.manage_current_source_chain_mainnet_token ==
+                publicInputData.manage_current_dest_chain_mainnet_token,
+            "FTV"
+        );
         // Check FreezeAmount
         require(statement.freezeAmount1 == publicInputData.amount, "FALV");
 
@@ -558,16 +570,6 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             );
         }
 
-        // Check rule & enabletime slot, rule hash
-        {
-            uint256 slot = uint256(abi.encode(ebc, 6).hash());
-            require(slot == publicInputData.mdc_rule_root_slot, "RRSE");
-            require((slot + 1) == publicInputData.mdc_rule_version_slot, "RVSE");
-            require(0 == publicInputData.mdc_rule_enable_time_slot, "RVSE");
-            // Check rule hash
-            require((abi.encode(rule).hash()) == publicInputData.mdc_current_rule_value_hash, "RH");
-        }
-
         // Check dest amount
         // TODO: Is there a more general solution. Not only amount
         RuleLib.RuleOneway memory ro = RuleLib.convertToOneway(rule, publicInputData.chain_id);
@@ -575,6 +577,37 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             IOREventBinding(ebc).getResponseIntent(publicInputData.amount, ro)
         );
         require(destChainId == ro.destChainId, "DCI");
+
+        // Check slot
+        {
+            // Check rule & enabletime slot, rule hash
+            uint256 slot = uint256(abi.encode(ebc, 6).hash());
+            require(slot == publicInputData.mdc_rule_root_slot, "RRSE");
+            require((slot + 1) == publicInputData.mdc_rule_version_slot, "RVSE");
+            require(0 == publicInputData.mdc_rule_enable_time_slot, "RVSE");
+            // Check rule hash
+            require((abi.encode(rule).hash()) == publicInputData.mdc_current_rule_value_hash, "RH");
+        }
+        require(3 == publicInputData.mdc_column_array_hash_slot, "CAS");
+        require(5 == publicInputData.mdc_response_makers_hash_slot, "RMS");
+        {
+            // Check ChainInfo slot
+            uint256 slot = uint256(abi.encode(publicInputData.chain_id, 2).hash());
+            require(slot == publicInputData.manage_source_chain_info_slot, "CIS");
+        }
+
+        {
+            // check sourceChain mainnet token slot
+            uint slot = uint(abi.encode(abi.encode(publicInputData.chain_id, publicInputData.token).hash(), 3).hash());
+            require(slot == publicInputData.manage_source_chain_mainnet_token_info_slot, "MTS");
+        }
+
+        // {
+        //     // check destChain mainnet token slot
+        //     uint slot = uint(abi.encode(abi.encode(ro.destChainId, ro.destToken).hash(), 3).hash());
+        //     require(slot == publicInputData.manage_dest_chain_mainnet_token_slot, "MTS");
+        // }
+        require(6 == publicInputData.manage_challenge_user_ratio_slot, "CURS");
 
         ChallengeStatement storage statement_s = _challenges[challengeId].statement[challenger];
         ChallengeResult storage result_s = _challenges[challengeId].result;
@@ -590,15 +623,6 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
         // Save verified data's hash.
         // [minVerifyChallengeDestTxSecond, maxVerifyChallengeDestTxSecond, nonce, destChainId, destAddress, destToken, destAmount, responeMakersHash]
-        console.log("encode: 1 %d", publicInputData.min_verify_challenge_dest_tx_second);
-        console.log("encode: 2 %d", publicInputData.max_verify_challenge_dest_tx_second);
-        console.log("encode: 3 %d", publicInputData.nonce);
-        console.log("encode: 4 %d", destChainId);
-        console.log("encode: 5 %d", publicInputData.from);
-        console.log("encode: 6 %d", ro.destToken);
-        console.log("encode: 7 %d", destAmount);
-        console.log("encode: 8 %d", publicInputData.mdc_current_response_makers_hash);
-
         result_s.verifiedDataHash0 = abi
             .encode(
                 [
@@ -623,13 +647,15 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             baseFeePerGas;
     }
 
-    function _parsePublicInputDest(bytes calldata proofData) private pure returns (PublicInputDataDest memory) {
+    function _parsePublicInputDest(
+        bytes calldata proofData
+    ) private pure returns (HelperLib.PublicInputDataDest memory) {
         uint256 ProofLength = 384;
         uint256 splitStep = 32;
         uint256 splitStart = ProofLength + 64; // 384 is proof length;64 is blockHash length
         uint256 TrackBlockSplitStart = splitStart + splitStep * 12;
         return
-            PublicInputDataDest({
+            HelperLib.PublicInputDataDest({
                 txHash: bytes32(
                     (uint256(bytes32(proofData[splitStart:splitStart + splitStep])) << 128) |
                         uint256(bytes32(proofData[splitStart + splitStep:splitStart + splitStep * 2]))
@@ -664,7 +690,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         bytes calldata rawDatas
     ) external {
         // parse Public input
-        PublicInputDataDest memory publicInputData = _parsePublicInputDest(proof);
+        HelperLib.PublicInputDataDest memory publicInputData = _parsePublicInputDest(proof);
         // get DestChainInfo
         BridgeLib.ChainInfo memory chainInfo = IORManager(_mdcFactory.manager()).getChainInfo(sourceChainId);
         require(IORChallengeSpv(chainInfo.spvs[chainInfo.spvs.length - 1]).verifyDestTx(proof), "VF");
