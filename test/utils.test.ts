@@ -1,7 +1,13 @@
 import { ethers } from 'hardhat';
 import { expect } from 'chai';
 import 'cross-fetch/polyfill';
-import { BigNumber, BigNumberish, ContractReceipt, ContractTransaction, utils } from 'ethers';
+import {
+  BigNumber,
+  BigNumberish,
+  ContractReceipt,
+  ContractTransaction,
+  utils,
+} from 'ethers';
 import { ORMakerDeposit, ORManager, TestSpv } from '../typechain-types';
 import { callDataCost, getCurrentTime } from './lib/mockData';
 import { RuleStruct, encodeRuleStruct } from './lib/rule';
@@ -13,7 +19,6 @@ import {
 } from 'ethers/lib/utils';
 import { getMappingStructXSlot } from './lib/readStorage';
 import { assert } from 'console';
-import { title } from 'process';
 
 export function hexToBuffer(hex: string) {
   return Buffer.from(utils.arrayify(hex));
@@ -144,74 +149,157 @@ export interface columnArray {
   chainIds: number[];
 }
 
+// struct PublicInputData {
+//   bytes32 tx_hash;
+//   uint256 chain_id;
+//   uint256 index;
+//   address from;
+//   address to;
+//   address token;
+//   uint256 amount;
+//   uint256 nonce;
+//   uint256 time_stamp;
+//   address dest;
+//   address dest_token;
+//   bytes32 l1_tx_block_hash;
+//   uint256 l1_tx_block_number;
+//   address mdc_contract_address;
+//   address manage_contract_address;
+//   bytes32 mdc_rule_root_slot;
+//   bytes32 mdc_rule_version_slot;
+//   bytes32 mdc_rule_enable_time_slot;
+//   bytes32 mdc_column_array_hash_slot;
+//   bytes32 mdc_response_makers_hash_slot;
+//   bytes32 manage_source_chain_info_slot;
+//   bytes32 manage_source_chain_mainnet_token_info_slot;
+//   bytes32 manage_dest_chain_mainnet_token_slot;
+//   bytes32 manage_challenge_user_ratio_slot;
+//   bytes32 mdc_current_rule_root;
+//   uint256 mdc_current_rule_enable_time;
+//   bytes32 mdc_current_column_array_hash;
+//   bytes32 mdc_current_response_makers_hash;
+//   bytes32 manage_current_source_chain_info;
+//   address manage_current_source_chain_mainnet_token;
+//   address manage_current_dest_chain_mainnet_token;
+//   uint256 manage_current_challenge_user_ratio;
+//   uint256 mdc_next_rule_enable_time;
+//   bytes32 mdc_current_rule_value_hash;
+//   // bytes32 ob_contracts_current_block_hash;
+//   // uint256 ob_contracts_current_block_number;
+//   // bytes32 ob_contracts_next_block_hash;
+//   // uint256 ob_contracts_next_block_number;
+// }
 
-export interface PublicInputDataStruct {
+export interface PublicInputData {
   tx_hash: BytesLike;
   chain_id: BigNumberish;
   index: BigNumberish;
   from: BigNumberish;
-  to: BigNumberish;
+  to: string;
   token: string;
   amount: BigNumberish;
   nonce: BigNumberish;
   time_stamp: BigNumberish;
-  dest: BigNumberish;
-  dest_token: BigNumberish;
+  dest: string;
+  dest_token: string;
   l1_tx_block_hash: BytesLike;
   l1_tx_block_number: BigNumberish;
   mdc_contract_address: string;
-  manager_contract_address: string;
-  mdc_rule_root_slot: BigNumberish;
-  mdc_rule_version_slot: BigNumberish;
-  mdc_rule_enable_time_slot: BigNumberish;
+  manage_contract_address: string;
+  mdc_rule_root_slot: BytesLike;
+  mdc_rule_version_slot: BytesLike;
+  mdc_rule_enable_time_slot: BytesLike;
   mdc_column_array_hash_slot: BytesLike;
   mdc_response_makers_hash_slot: BytesLike;
   manage_source_chain_info_slot: BytesLike;
+  min_verify_challenge_src_tx_second: BigNumberish;
+  max_verify_challenge_src_tx_second: BigNumberish;
+  min_verify_challenge_dest_tx_second: BigNumberish;
+  max_verify_challenge_dest_tx_second: BigNumberish;
   manage_source_chain_mainnet_token_info_slot: BytesLike;
   manage_dest_chain_mainnet_token_slot: BytesLike;
   manage_challenge_user_ratio_slot: BytesLike;
-  mdc_pre_rule_root: BytesLike;
-  mdc_pre_rule_version: BigNumberish;
-  mdc_pre_rule_enable_time: BigNumberish;
-  mdc_pre_column_array_hash: BytesLike;
-  mdc_pre_response_makers_hash: BytesLike;
-  // manage_pre_source_chain_info: BytesLike;
-  manage_pre_source_chain_max_verify_challenge_source_tx_second: BigNumberish;
-  manage_pre_source_chain_min_verify_challenge_source_tx_second: BigNumberish;
-  manage_pre_source_chain_max_verify_challenge_dest_tx_second: BigNumberish;
-  manage_pre_source_chain_min_verify_challenge_dest_tx_second: BigNumberish;
-  manage_pre_source_chain_mainnet_token: string;
-  manage_pre_dest_chain_mainnet_token: string;
-  manage_pre_challenge_user_ratio: BigNumberish;
   mdc_current_rule_root: BytesLike;
-  mdc_current_rule_version: BigNumberish;
   mdc_current_rule_enable_time: BigNumberish;
-  source_chain_id: BigNumberish;
-  source_token: string;
-  source_min_price: BigNumberish;
-  source_max_price: BigNumberish;
-  source_with_holding_fee: BigNumberish;
-  source_trading_fee: BigNumberish;
-  source_response_time: BigNumberish;
-  dest_chain_id: BigNumberish;
-  dest_token_rule: BigNumberish;
-  dest_min_price: BigNumberish;
-  dest_max_price: BigNumberish;
-  dest_with_holding_fee: BigNumberish;
-  dest_trading_fee: BigNumberish;
-  dest_response_time: BigNumberish;
-  ob_contracts_pre_block_hash: BytesLike;
-  ob_contracts_pre_block_number: BigNumberish;
-  ob_contracts_current_block_hash: BytesLike;
-  ob_contracts_current_block_number: BigNumberish;
+  mdc_current_column_array_hash: BytesLike;
+  mdc_current_response_makers_hash: BytesLike;
+  // manage_current_source_chain_info: BytesLike;
+  manage_current_source_chain_mainnet_token: string;
+  manage_current_dest_chain_mainnet_token: string;
+  manage_current_challenge_user_ratio: BigNumberish;
+  mdc_next_rule_enable_time: BigNumberish;
+  mdc_current_rule_value_hash: BytesLike;
 }
+
+// export interface PublicInputDataStruct {
+//   tx_hash: BytesLike;
+//   chain_id: BigNumberish;
+//   index: BigNumberish;
+//   from: BigNumberish;
+//   to: BigNumberish;
+//   token: string;
+//   amount: BigNumberish;
+//   nonce: BigNumberish;
+//   time_stamp: BigNumberish;
+//   dest: BigNumberish;
+//   dest_token: BigNumberish;
+//   l1_tx_block_hash: BytesLike;
+//   l1_tx_block_number: BigNumberish;
+//   mdc_contract_address: string;
+//   manager_contract_address: string;
+//   mdc_rule_root_slot: BigNumberish;
+//   mdc_rule_version_slot: BigNumberish;
+//   mdc_rule_enable_time_slot: BigNumberish;
+//   mdc_column_array_hash_slot: BytesLike;
+//   mdc_response_makers_hash_slot: BytesLike;
+//   manage_source_chain_info_slot: BytesLike;
+//   manage_source_chain_mainnet_token_info_slot: BytesLike;
+//   manage_dest_chain_mainnet_token_slot: BytesLike;
+//   manage_challenge_user_ratio_slot: BytesLike;
+//   mdc_pre_rule_root: BytesLike;
+//   mdc_pre_rule_version: BigNumberish;
+//   mdc_pre_rule_enable_time: BigNumberish;
+//   mdc_pre_column_array_hash: BytesLike;
+//   mdc_pre_response_makers_hash: BytesLike;
+//   // manage_pre_source_chain_info: BytesLike;
+//   manage_pre_source_chain_max_verify_challenge_source_tx_second: BigNumberish;
+//   manage_pre_source_chain_min_verify_challenge_source_tx_second: BigNumberish;
+//   manage_pre_source_chain_max_verify_challenge_dest_tx_second: BigNumberish;
+//   manage_pre_source_chain_min_verify_challenge_dest_tx_second: BigNumberish;
+//   manage_pre_source_chain_mainnet_token: string;
+//   manage_pre_dest_chain_mainnet_token: string;
+//   manage_pre_challenge_user_ratio: BigNumberish;
+//   mdc_current_rule_root: BytesLike;
+//   mdc_current_rule_version: BigNumberish;
+//   mdc_current_rule_enable_time: BigNumberish;
+//   source_chain_id: BigNumberish;
+//   source_token: string;
+//   source_min_price: BigNumberish;
+//   source_max_price: BigNumberish;
+//   source_with_holding_fee: BigNumberish;
+//   source_trading_fee: BigNumberish;
+//   source_response_time: BigNumberish;
+//   dest_chain_id: BigNumberish;
+//   dest_token_rule: BigNumberish;
+//   dest_min_price: BigNumberish;
+//   dest_max_price: BigNumberish;
+//   dest_with_holding_fee: BigNumberish;
+//   dest_trading_fee: BigNumberish;
+//   dest_response_time: BigNumberish;
+//   ob_contracts_pre_block_hash: BytesLike;
+//   ob_contracts_pre_block_number: BigNumberish;
+//   ob_contracts_current_block_hash: BytesLike;
+//   ob_contracts_current_block_number: BigNumberish;
+// }
 
 export const updateSpv = async (
   challengeInputInfo: challengeInputInfo,
   spvAddress: string,
   _orManager: ORManager,
 ) => {
-  const currentSpvs: string[] = (await _orManager.getChainInfo(challengeInputInfo.sourceChainId)).spvs.concat(spvAddress)
+  const currentSpvs: string[] = (
+    await _orManager.getChainInfo(challengeInputInfo.sourceChainId)
+  ).spvs.concat(spvAddress);
 
   const enableTimeTime =
     // eslint-disable-next-line prettier/prettier
@@ -331,13 +419,10 @@ export const getVerifyinfo = async (
 
     const newValue = utils.hexZeroPad(BigNumber.from(value).toHexString(), 32);
 
-    const storageValue =
-      (
-        await ethers.provider.getStorageAt(
-          managerAddress,
-          utils.hexZeroPad(itemSlot, 32),
-        )
-      );
+    const storageValue = await ethers.provider.getStorageAt(
+      managerAddress,
+      utils.hexZeroPad(itemSlot, 32),
+    );
     slot0 = itemSlot;
     expect(slot0_I).to.equal(slot).to.equal(BigNumber.from(itemSlot).sub(1));
     expect(value0).to.equal(newValue).to.equal(storageValue);
@@ -359,10 +444,14 @@ export const getVerifyinfo = async (
   // slot value: address mainnetToken + uint8 decimals;
   const value1 =
     utils.hexZeroPad(
-      (BigNumber.from((await orManager.getChainTokenInfo(chainId, freezeToken)).decimals).toHexString()), 12)
-    +
-    (await orManager.getChainTokenInfo(chainId, freezeToken))
-      .mainnetToken.slice(2)
+      BigNumber.from(
+        (await orManager.getChainTokenInfo(chainId, freezeToken)).decimals,
+      ).toHexString(),
+      12,
+    ) +
+    (
+      await orManager.getChainTokenInfo(chainId, freezeToken)
+    ).mainnetToken.slice(2);
 
   {
     const hashKey = keccak256(
@@ -376,31 +465,29 @@ export const getVerifyinfo = async (
       'number',
     );
 
-    const storageValue =
-      (
-        await ethers.provider.getStorageAt(
-          managerAddress,
-          utils.hexZeroPad(itemSlot, 32),
-        )
-      );
+    const storageValue = await ethers.provider.getStorageAt(
+      managerAddress,
+      utils.hexZeroPad(itemSlot, 32),
+    );
 
     slot1 = itemSlot;
     expect(slot).to.equal(slot1_I).to.equal(BigNumber.from(itemSlot).sub(1));
-    expect(value1.toLocaleLowerCase())
-      .to.equal(storageValue);
+    expect(value1.toLocaleLowerCase()).to.equal(storageValue);
   }
 
   // --------------------------------------------------------------
   // set Verifyinfo 2
   // ORManager.sol - _challengeUserRatio
   // slot: 6
-  // slot value = int64 private _minChallengeRatio + 
-  // uint64 private _challengeUserRatio + 
+  // slot value = int64 private _minChallengeRatio +
+  // uint64 private _challengeUserRatio +
   // uint64 private _feeChallengeSecond +
   // uint64 private _feeTakeOnChallengeSecond
   let value2;
   const slot2 = BigNumber.from(6).toHexString();
-  const minChallengeRatioValue2 = (await orManager.minChallengeRatio()).toBigInt();
+  const minChallengeRatioValue2 = (
+    await orManager.minChallengeRatio()
+  ).toBigInt();
   {
     const storageValue = await ethers.provider.getStorageAt(
       managerAddress,
@@ -411,7 +498,6 @@ export const getVerifyinfo = async (
     ).toBigInt();
     value2 = storageValue;
     expect(minChallengeRatioValue2).to.equal(minChallengeRatio);
-
   }
 
   // --------------------------------------------------------------
@@ -450,10 +536,15 @@ export const getVerifyinfo = async (
   // slot value: address mainnetToken + uint8 decimals;
   const value4 =
     utils.hexZeroPad(
-      (BigNumber.from((await orManager.getChainTokenInfo(chainId_Dest, freezeToken_Dest)).decimals).toHexString()), 12)
-    +
-    (await orManager.getChainTokenInfo(chainId_Dest, freezeToken_Dest))
-      .mainnetToken.slice(2)
+      BigNumber.from(
+        (await orManager.getChainTokenInfo(chainId_Dest, freezeToken_Dest))
+          .decimals,
+      ).toHexString(),
+      12,
+    ) +
+    (
+      await orManager.getChainTokenInfo(chainId_Dest, freezeToken_Dest)
+    ).mainnetToken.slice(2);
   {
     const hashKey = keccak256(
       defaultAbiCoder.encode(
@@ -469,25 +560,19 @@ export const getVerifyinfo = async (
       'number',
     );
 
-    const storageValue =
-      (
-        await ethers.provider.getStorageAt(
-          managerAddress,
-          utils.hexZeroPad(itemSlot, 32),
-        )
-      );
+    const storageValue = await ethers.provider.getStorageAt(
+      managerAddress,
+      utils.hexZeroPad(itemSlot, 32),
+    );
 
     // const contractSlotK = await spv.createFreezeTokenSlotKey(
     //   chainId_Dest,
     //   freezeToken_Dest,
     // );
     slot4 = itemSlot;
-    expect(slot)
-      .to.equal(slot4_I)
-      .to.equal(BigNumber.from(itemSlot).sub(1))
+    expect(slot).to.equal(slot4_I).to.equal(BigNumber.from(itemSlot).sub(1));
     // .to.equal(contractSlotK);
-    expect(value4.toLocaleLowerCase())
-      .to.equal(storageValue);
+    expect(value4.toLocaleLowerCase()).to.equal(storageValue);
   }
   // --------------------------------------------------------------
   // set Verifyinfo 5
@@ -532,16 +617,16 @@ export const getVerifyinfo = async (
       await getMappingStructXSlot('0x6', makerAddress, ebc, 1, 'number')
     ).itemSlot;
 
-    slot6 = valueRootitemSlot
-    value6 = valueRoot ? utils.hexZeroPad(valueRoot.toHexString(), 32) : "0x00"
-    slot7 = valueVersionitemSlot
-    value7 = valueVersion ? utils.hexZeroPad(valueVersion.toHexString(), 32) : "0x00"
+    slot6 = valueRootitemSlot;
+    value6 = valueRoot ? utils.hexZeroPad(valueRoot.toHexString(), 32) : '0x00';
+    slot7 = valueVersionitemSlot;
+    value7 = valueVersion
+      ? utils.hexZeroPad(valueVersion.toHexString(), 32)
+      : '0x00';
 
     expect(slot6_I).to.equal(hashKey);
     expect(value6).to.equal(valueRoot?.toHexString());
     expect(version).to.equal(BigNumber.from(valueVersion).toNumber());
-
-
   }
 
   const slotValue: VerifyInfoSlotStruct[] = [
@@ -611,7 +696,7 @@ export const getVerifyinfo = async (
       account: makerAddress,
       key: slot7,
       value: value7,
-    }
+    },
   ];
 
   // --------------------------------------------------------------
@@ -717,15 +802,13 @@ export const createChallenge = async (
       expect(args.statement.freezeAmount1).eql(challenge.freezeAmount);
     }
 
-    challengeManager.addChallengeNodeInfo(
-      {
-        sourceChainId: challenge.sourceChainId,
-        sourceTxHash: challenge.sourceTxHash,
-        challengeIdentNum: challengeIdentNum,
-        challenge: challenge,
-        liquidated: false,
-      }
-    )
+    challengeManager.addChallengeNodeInfo({
+      sourceChainId: challenge.sourceChainId,
+      sourceTxHash: challenge.sourceTxHash,
+      challengeIdentNum: challengeIdentNum,
+      challenge: challenge,
+      liquidated: false,
+    });
 
     return {
       challengeId: args?.challengeId,
@@ -775,7 +858,7 @@ export const predictEnableBlock = async (
 export const calculateTxGas = async (
   tx: ContractReceipt,
   title?: string,
-  index?: number
+  index?: number,
 ) => {
   const gasUsed = tx.gasUsed.toNumber();
   const gasPrice = tx.effectiveGasPrice?.toNumber();
@@ -795,14 +878,23 @@ export const calculateTxGas = async (
   );
 };
 
-
 export const liquidateChallenge = async (
   orMakerDeposit: ORMakerDeposit,
   challengeNodeList: challengeNodeInfoList[],
   chalengers: string[],
 ) => {
-  assert(challengeNodeList.map((item) => item.sourceChainId).every((val, i, arr) => val === arr[0]), 'sourceChainId are not same');
-  assert(challengeNodeList.map((item) => item.sourceTxHash).every((val, i, arr) => val === arr[0]), 'sourceTxHash are not same');
+  assert(
+    challengeNodeList
+      .map((item) => item.sourceChainId)
+      .every((val, i, arr) => val === arr[0]),
+    'sourceChainId are not same',
+  );
+  assert(
+    challengeNodeList
+      .map((item) => item.sourceTxHash)
+      .every((val, i, arr) => val === arr[0]),
+    'sourceTxHash are not same',
+  );
 
   let checkGasUsed = BigNumber.from(0);
   const challengeNode = challengeNodeList[0];
@@ -824,15 +916,19 @@ export const liquidateChallenge = async (
       BigNumber.from(challengeNode.challenge.sourceTxTime),
     );
     expect(args.statement.freezeToken).eql(challengeNode.challenge.freezeToken);
-    expect(args.statement.freezeAmount0).eql(challengeNode.challenge.freezeAmount);
-    expect(args.statement.freezeAmount1).eql(challengeNode.challenge.freezeAmount);
+    expect(args.statement.freezeAmount0).eql(
+      challengeNode.challenge.freezeAmount,
+    );
+    expect(args.statement.freezeAmount1).eql(
+      challengeNode.challenge.freezeAmount,
+    );
     checkGasUsed = checkGasUsed.add(tx.gasUsed);
   });
   expect(tx.events?.length).to.equal(chalengers.length);
   challengeNodeList.forEach((item) => {
     challengeManager.liquidateChallengeNodeInfo(item.index!, true);
   });
-}
+};
 
 export class challengeManager {
   static challengeInfoList: challengeInputInfo[] = [];
@@ -872,10 +968,7 @@ export class challengeManager {
     });
   }
 
-  static liquidateChallengeNodeInfo(
-    index: number,
-    liquidated: boolean,
-  ) {
+  static liquidateChallengeNodeInfo(index: number, liquidated: boolean) {
     this.sortingNodeInfoList.forEach((item) => {
       if (item.index == index) {
         item.liquidated = liquidated;
@@ -891,13 +984,15 @@ export class challengeManager {
   ): bigint {
     let challengeIdentNum = BigInt(sourceTxTime);
 
-    challengeIdentNum = (challengeIdentNum << BigInt(64)) | BigInt(sourceChainId);
+    challengeIdentNum =
+      (challengeIdentNum << BigInt(64)) | BigInt(sourceChainId);
     challengeIdentNum =
       (challengeIdentNum << BigInt(64)) | BigInt(sourceBlockNum);
-    challengeIdentNum = (challengeIdentNum << BigInt(64)) | BigInt(sourceTxIndex);
+    challengeIdentNum =
+      (challengeIdentNum << BigInt(64)) | BigInt(sourceTxIndex);
 
     return challengeIdentNum;
-  };
+  }
 
   static getLastChallengeIdentNum(
     challengeIdentNumList: bigint[],
@@ -924,5 +1019,5 @@ export class challengeManager {
       parentNodeNumOfTargetNode = 0;
     }
     return parentNodeNumOfTargetNode;
-  };
+  }
 }
