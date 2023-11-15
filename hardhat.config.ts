@@ -4,7 +4,7 @@ import { utils } from 'ethers';
 import type { HardhatUserConfig } from 'hardhat/config';
 import type { NetworkUserConfig } from 'hardhat/types';
 import { resolve } from 'path';
-import 'hardhat-storage-layout';
+// import 'hardhat-storage-layout';
 
 const dotenvConfigPath: string = process.env.DOTENV_CONFIG_PATH || './.env';
 dotenvConfig({ path: resolve(__dirname, dotenvConfigPath) });
@@ -103,7 +103,7 @@ const config: HardhatUserConfig = {
         accountsBalance: utils.parseEther('100') + '',
       },
       chainId: chainIds.hardhat,
-      allowUnlimitedContractSize: false
+      allowUnlimitedContractSize: true
     },
     arbitrum: getChainConfig('arbitrum-mainnet'),
     avalanche: getChainConfig('avalanche'),

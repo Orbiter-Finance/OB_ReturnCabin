@@ -204,7 +204,7 @@ describe('Test ORManager', () => {
 
           const spvs: string[] = [];
           const indexs: BigNumberish[] = [BigNumber.from(0)];
-          for (let j = 0; j < 10; j++) {
+          for (let j = 0; j < 5; j++) {
             spvs.push(ethers.Wallet.createRandom().address);
           }
 

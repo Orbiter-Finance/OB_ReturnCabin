@@ -144,62 +144,66 @@ export interface columnArray {
   chainIds: number[];
 }
 
+
 export interface PublicInputDataStruct {
-  tx_hash: string;
-  chain_id: string;
-  index: string;
-  from: string;
-  to: string;
+  tx_hash: BytesLike;
+  chain_id: BigNumberish;
+  index: BigNumberish;
+  from: BigNumberish;
+  to: BigNumberish;
   token: string;
-  amount: string;
-  nonce: string;
-  time_stamp: string;
-  dest: string;
-  dest_token: string;
-  l1_tx_block_hash: string;
-  l1_tx_block_number: string;
+  amount: BigNumberish;
+  nonce: BigNumberish;
+  time_stamp: BigNumberish;
+  dest: BigNumberish;
+  dest_token: BigNumberish;
+  l1_tx_block_hash: BytesLike;
+  l1_tx_block_number: BigNumberish;
   mdc_contract_address: string;
-  manage_contract_address: string;
-  mdc_rule_root_slot: string;
-  mdc_rule_version_slot: string;
-  mdc_rule_enable_time_slot: string;
-  mdc_column_array_hash_slot: string;
-  mdc_response_makers_hash_slot: string;
-  manage_source_chain_info_slot: string;
-  manage_source_chain_mainnet_token_info_slot: string;
-  manage_dest_chain_mainnet_token_slot: string;
-  manage_challenge_user_ratio_slot: string;
-  mdc_pre_rule_root: string;
-  mdc_pre_rule_version: string;
-  mdc_pre_rule_enable_time: string;
-  mdc_pre_column_array_hash: string;
-  mdc_pre_response_makers_hash: string;
-  manage_pre_source_chain_max_verify_challenge_source_tx_second: string;
-  manage_pre_source_chain_mix_verify_challenge_source_tx_second: string;
+  manager_contract_address: string;
+  mdc_rule_root_slot: BigNumberish;
+  mdc_rule_version_slot: BigNumberish;
+  mdc_rule_enable_time_slot: BigNumberish;
+  mdc_column_array_hash_slot: BytesLike;
+  mdc_response_makers_hash_slot: BytesLike;
+  manage_source_chain_info_slot: BytesLike;
+  manage_source_chain_mainnet_token_info_slot: BytesLike;
+  manage_dest_chain_mainnet_token_slot: BytesLike;
+  manage_challenge_user_ratio_slot: BytesLike;
+  mdc_pre_rule_root: BytesLike;
+  mdc_pre_rule_version: BigNumberish;
+  mdc_pre_rule_enable_time: BigNumberish;
+  mdc_pre_column_array_hash: BytesLike;
+  mdc_pre_response_makers_hash: BytesLike;
+  // manage_pre_source_chain_info: BytesLike;
+  manage_pre_source_chain_max_verify_challenge_source_tx_second: BigNumberish;
+  manage_pre_source_chain_min_verify_challenge_source_tx_second: BigNumberish;
+  manage_pre_source_chain_max_verify_challenge_dest_tx_second: BigNumberish;
+  manage_pre_source_chain_min_verify_challenge_dest_tx_second: BigNumberish;
   manage_pre_source_chain_mainnet_token: string;
   manage_pre_dest_chain_mainnet_token: string;
-  manage_pre_challenge_user_ratio: string;
-  mdc_current_rule_root: string;
-  mdc_current_rule_version: string;
-  mdc_current_rule_enable_time: string;
-  source_chain_id: string;
+  manage_pre_challenge_user_ratio: BigNumberish;
+  mdc_current_rule_root: BytesLike;
+  mdc_current_rule_version: BigNumberish;
+  mdc_current_rule_enable_time: BigNumberish;
+  source_chain_id: BigNumberish;
   source_token: string;
-  source_min_price: string;
-  source_max_price: string;
-  source_with_holding_fee: string;
-  source_trading_fee: string;
-  source_response_time: string;
-  dest_chain_id: string;
-  dest_token_rule: string;
-  dest_min_price: string;
-  dest_max_price: string;
-  dest_with_holding_fee: string;
-  dest_trading_fee: string;
-  dest_response_time: string;
-  ob_contracts_pre_block_hash: string;
-  ob_contracts_pre_block_number: string;
-  ob_contracts_current_block_hash: string;
-  ob_contracts_current_block_number: string;
+  source_min_price: BigNumberish;
+  source_max_price: BigNumberish;
+  source_with_holding_fee: BigNumberish;
+  source_trading_fee: BigNumberish;
+  source_response_time: BigNumberish;
+  dest_chain_id: BigNumberish;
+  dest_token_rule: BigNumberish;
+  dest_min_price: BigNumberish;
+  dest_max_price: BigNumberish;
+  dest_with_holding_fee: BigNumberish;
+  dest_trading_fee: BigNumberish;
+  dest_response_time: BigNumberish;
+  ob_contracts_pre_block_hash: BytesLike;
+  ob_contracts_pre_block_number: BigNumberish;
+  ob_contracts_current_block_hash: BytesLike;
+  ob_contracts_current_block_number: BigNumberish;
 }
 
 export const updateSpv = async (
@@ -207,6 +211,8 @@ export const updateSpv = async (
   spvAddress: string,
   _orManager: ORManager,
 ) => {
+  const currentSpvs: string[] = (await _orManager.getChainInfo(challengeInputInfo.sourceChainId)).spvs.concat(spvAddress)
+
   const enableTimeTime =
     // eslint-disable-next-line prettier/prettier
     (await getCurrentTime()) >
@@ -218,7 +224,7 @@ export const updateSpv = async (
     .updateChainSpvs(
       getMinEnableTime(BigNumber.from(enableTimeTime)),
       challengeInputInfo.sourceChainId,
-      [spvAddress],
+      currentSpvs,
       [0],
       {
         gasLimit: 10e6,
@@ -680,22 +686,24 @@ export const createChallenge = async (
       .then((t) => t.wait());
     const args = tx.events?.[0].args;
     const basefee = (await ethers.provider.getFeeData()).lastBaseFeePerGas;
-    console.log(
-      // 'challenge input:',
-      // (await ethers.provider.getTransaction(tx.transactionHash)).data,
-      // 'chailneId:',
-      // challenge.sourceChainId,
-      'Create challenge! gasUsed:',
-      tx.gasUsed.toNumber(),
-      'inputGasUsed',
-      callDataCost(
-        (await ethers.provider.getTransaction(tx.transactionHash)).data,
-      ),
-      // 'basefee',
-      // basefee?.toNumber(),
-      // 'challengerVerifyTransactionFee',
-      // args?.statement.challengerVerifyTransactionFee.div(basefee).toNumber(),
-    );
+    await calculateTxGas(tx, `Create challenge!`);
+
+    // console.log(
+    //   // 'challenge input:',
+    //   // (await ethers.provider.getTransaction(tx.transactionHash)).data,
+    //   // 'chailneId:',
+    //   // challenge.sourceChainId,
+    //   'Create challenge! gasUsed:',
+    //   tx.gasUsed.toNumber(),
+    //   'inputGasUsed',
+    //   callDataCost(
+    //     (await ethers.provider.getTransaction(tx.transactionHash)).data,
+    //   ),
+    //   // 'basefee',
+    //   // basefee?.toNumber(),
+    //   // 'challengerVerifyTransactionFee',
+    //   // args?.statement.challengerVerifyTransactionFee.div(basefee).toNumber(),
+    // );
 
     expect(args).not.empty;
     if (!!args) {
@@ -778,9 +786,11 @@ export const calculateTxGas = async (
   console.log(
     title ? title : 'gasUsed',
     index ? index : '',
-    'totalGasUsed:',
+    'total_Gas:',
     gasUsed,
-    'inputGasUsed:',
+    'excution_Gas',
+    gasUsed - inputGasUsed - 21000,
+    'inputData_Gas:',
     inputGasUsed,
   );
 };

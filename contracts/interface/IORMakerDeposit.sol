@@ -35,9 +35,12 @@ interface IORMakerDeposit {
         uint256 mdc_pre_rule_version;
         uint256 mdc_pre_rule_enable_time;
         bytes32 mdc_pre_column_array_hash;
-        bytes32 mdc_pre_response_makers_hash;
-        uint256 manage_pre_source_chain_max_verify_challenge_source_tx_second;
-        uint256 manage_pre_source_chain_mix_verify_challenge_source_tx_second;
+        uint256 mdc_pre_response_makers_hash;
+        uint64 manage_pre_source_chain_max_verify_challenge_source_tx_second;
+        uint64 manage_pre_source_chain_min_verify_challenge_source_tx_second;
+        uint64 manage_pre_source_chain_max_verify_challenge_dest_tx_second;
+        uint64 manage_pre_source_chain_min_verify_challenge_dest_tx_second;
+        // uint256 manage_pre_source_chain_info;
         address manage_pre_source_chain_mainnet_token;
         address manage_pre_dest_chain_mainnet_token;
         uint64 manage_pre_challenge_user_ratio;
@@ -52,7 +55,7 @@ interface IORMakerDeposit {
         uint256 source_trading_fee;
         uint256 source_response_time;
         uint256 dest_chain_id;
-        address dest_token_rule;
+        uint256 dest_token_rule;
         uint256 dest_min_price;
         uint256 dest_max_price;
         uint256 dest_with_holding_fee;
@@ -198,16 +201,15 @@ interface IORMakerDeposit {
 
     function checkChallenge(uint64 sourceChainId, bytes32 sourceTxHash, address[] calldata challenger) external;
 
-    function verifyChallengeSource(
-        address spvAddress,
-        address challenger,
-        bytes calldata proof,
-        IORChallengeSpv.VerifyInfo calldata verifyInfo,
-        bytes calldata rawDatas
-    ) external;
+    // function verifyChallengeSource(
+    //     address spvAddress,
+    //     address challenger,
+    //     bytes calldata proof,
+    //     IORChallengeSpv.VerifyInfo calldata verifyInfo,
+    //     bytes calldata rawDatas
+    // ) external;
 
     function verifyChallengeDest(
-        address spvAddress,
         address challenger,
         uint64 sourceChainId,
         bytes32 sourceTxHash,
@@ -215,24 +217,4 @@ interface IORMakerDeposit {
         uint256[] calldata verifiedData0,
         bytes calldata rawDatas
     ) external;
-
-    // function verifyChallengeSource(
-    //     address spvAddress,
-    //     address challenger,
-    //     bytes calldata proof,
-    //     bytes32[2] calldata spvBlockHashs,
-    //     IORChallengeSpv.VerifyInfo calldata verifyInfo,
-    //     bytes calldata rawDatas
-    // ) external;
-
-    // function verifyChallengeDest(
-    //     address spvAddress,
-    //     address challenger,
-    //     bytes calldata proof,
-    //     bytes32[2] calldata spvBlockHashs,
-    //     IORChallengeSpv.VerifyInfo calldata verifyInfo,
-    //     uint256[] calldata verifiedData0,
-    //     bytes calldata rawDatas,
-    //     uint64 sourceChainId
-    // ) external;
 }
