@@ -613,14 +613,15 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         result_s.verifiedDataHash0 = abi
             .encode(
                 verifiedDataInfo({
-                    min_verify_challenge_dest_tx_second: publicInputData.min_verify_challenge_dest_tx_second,
-                    max_verify_challenge_dest_tx_second: publicInputData.max_verify_challenge_dest_tx_second,
+                    minChallengeSecond: publicInputData.min_verify_challenge_dest_tx_second,
+                    maxChallengeSecond: publicInputData.max_verify_challenge_dest_tx_second,
                     nonce: publicInputData.nonce,
                     destChainId: destChainId,
                     from: publicInputData.from,
                     destToken: ro.destToken,
                     destAmount: destAmount,
-                    mdc_current_response_makers_hash: publicInputData.mdc_current_response_makers_hash
+                    responseMakersHash: publicInputData.mdc_current_response_makers_hash,
+                    responseTime: ro.responseTime
                 })
             )
             .hash();
@@ -637,7 +638,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         uint64 sourceChainId,
         bytes32 sourceTxHash,
         bytes calldata proof,
-        verifiedDataInfo calldata verifiedData0,
+        verifiedDataInfo calldata verifiedSourceTxData,
         bytes calldata rawDatas
     ) external {
         // parse Public input
@@ -666,32 +667,36 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         // Parse rawDatas
         uint256[] memory responseMakers = abi.decode(rawDatas, (uint256[]));
 
-        // Check verifiedData0
-        require(abi.encode(verifiedData0).hash() == _challenges[challengeId].result.verifiedDataHash0, "VDH0");
-        require(abi.encode(responseMakers).hash() == bytes32(verifiedData0.mdc_current_response_makers_hash), "RMH");
+        // Check verifiedSourceTxData
+        require(abi.encode(verifiedSourceTxData).hash() == result.verifiedDataHash0, "VDH0");
+        require(abi.encode(responseMakers).hash() == bytes32(verifiedSourceTxData.responseMakersHash), "RMH");
         // Check minVerifyChallengeDestTxSecond, maxVerifyChallengeDestTxSecond
-        // TODO: make this public input
         {
             uint256 timeDiff = block.timestamp - result.verifiedTime0;
-            require(timeDiff >= uint64(chainInfo.minVerifyChallengeDestTxSecond), "MINTOF");
-            require(timeDiff <= uint64(chainInfo.maxVerifyChallengeDestTxSecond), "MAXTOF");
+            require(timeDiff >= uint64(verifiedSourceTxData.minChallengeSecond), "MINTOF");
+            require(timeDiff <= uint64(verifiedSourceTxData.maxChallengeSecond), "MAXTOF");
         }
         // Check dest chainId
-        require(verifiedData0.destChainId == publicInputData.chainId, "DCID");
+        require(verifiedSourceTxData.destChainId == publicInputData.chainId, "DCID");
 
         // Check dest from address in responseMakers
         require(responseMakers.includes(publicInputData.from), "MIC");
 
         // Check dest address
-        require(verifiedData0.from == publicInputData.to, "DADDR");
+        require(verifiedSourceTxData.from == publicInputData.to, "DADDR");
 
         // Check dest token
-        require(verifiedData0.destToken == publicInputData.token, "DT");
+        require(verifiedSourceTxData.destToken == publicInputData.token, "DT");
 
         // Check dest amount (Warning: The nonce is at the end of the amount)
-        require(verifiedData0.destAmount - verifiedData0.nonce == publicInputData.amount, "DT");
+        require(verifiedSourceTxData.destAmount - verifiedSourceTxData.nonce == publicInputData.amount, "DT");
 
-        // TODO: check responseTime. Source tx timestamp may be more than dest tx timestamp.
+        // Check Response time
+        require(
+            statement.sourceTxTime < publicInputData.timestamp &&
+                verifiedSourceTxData.responseTime < (publicInputData.timestamp - statement.sourceTxTime),
+            "RST"
+        );
 
         _challenges[challengeId].result.verifiedTime1 = uint64(block.timestamp);
 

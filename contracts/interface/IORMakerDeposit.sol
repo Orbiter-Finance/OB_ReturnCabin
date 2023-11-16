@@ -44,14 +44,15 @@ interface IORMakerDeposit {
     }
 
     struct verifiedDataInfo {
-        uint256 min_verify_challenge_dest_tx_second;
-        uint256 max_verify_challenge_dest_tx_second;
+        uint256 minChallengeSecond;
+        uint256 maxChallengeSecond;
         uint256 nonce;
         uint256 destChainId;
         uint256 from;
         uint256 destToken;
         uint256 destAmount;
-        uint256 mdc_current_response_makers_hash;
+        uint256 responseMakersHash;
+        uint256 responseTime;
     }
 
     event WithdrawRequested(uint256 requestAmount, uint64 requestTimestamp, address requestToken);

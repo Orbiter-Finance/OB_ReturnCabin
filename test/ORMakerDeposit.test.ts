@@ -1121,7 +1121,7 @@ describe('ORMakerDeposit', () => {
       expect(challengeManager.getChallengeInfoList().length).eq(0);
     });
 
-    it('Challenge verifySourceTx', async function () {
+    it('Challenge and verifyTx', async function () {
       const publicInputData: PublicInputData = await spvTest.parsePublicInput(
         spvProof,
       );
@@ -1248,10 +1248,12 @@ describe('ORMakerDeposit', () => {
         makerRule.token1,
         destAmount,
         makerPublicInputData.mdc_current_response_makers_hash,
+        makerRule.responseTime0,
       ];
       const verifiedDataHash = keccak256(
         solidityPack(
           [
+            'uint256',
             'uint256',
             'uint256',
             'uint256',
