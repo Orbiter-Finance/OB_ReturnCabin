@@ -86,6 +86,30 @@ export function createRandomRule(getNative: boolean) {
   ];
 }
 
+export const formatRule = (rule: BigNumberish[]): RuleStruct => {
+  const formatRule: RuleStruct = {
+    chainId0: BigNumber.from(rule[0]).add(0),
+    chainId1: BigNumber.from(rule[1]).add(0),
+    status0: BigNumber.from(rule[2]).toNumber(),
+    status1: BigNumber.from(rule[3]).toNumber(),
+    token0: BigNumber.from(rule[4]).add(0),
+    token1: BigNumber.from(rule[5]).add(0),
+    minPrice0: BigNumber.from(rule[6]).add(0),
+    minPrice1: BigNumber.from(rule[7]).add(0),
+    maxPrice0: BigNumber.from(rule[8]).add(0),
+    maxPrice1: BigNumber.from(rule[9]).add(0),
+    withholdingFee0: BigNumber.from(rule[10]).add(0),
+    withholdingFee1: BigNumber.from(rule[11]).add(0),
+    tradingFee0: BigNumber.from(rule[12]).toNumber(),
+    tradingFee1: BigNumber.from(rule[13]).toNumber(),
+    responseTime0: BigNumber.from(rule[14]).toNumber(),
+    responseTime1: BigNumber.from(rule[15]).toNumber(),
+    compensationRatio0: BigNumber.from(rule[16]).toNumber(),
+    compensationRatio1: BigNumber.from(rule[17]).toNumber(),
+  };
+  return formatRule;
+};
+
 export const createMakerRule = (getNative: boolean): RuleStruct => {
   const {
     chain0Id,
@@ -103,7 +127,7 @@ export const createMakerRule = (getNative: boolean): RuleStruct => {
   } = getRulesSetting(getNative);
 
   const rule: RuleStruct = {
-    chainId0: BigNumber.from(5).add(0),
+    chainId0: BigNumber.from(chain0Id).add(0),
     chainId1: BigNumber.from(chain1Id).add(0),
     status0: randomStatus1,
     status1: randomStatus2,

@@ -161,8 +161,8 @@ export interface PublicInputData {
   time_stamp: BigNumberish;
   dest: string;
   dest_token: string;
-  l1_tx_block_hash: BytesLike;
-  l1_tx_block_number: BigNumberish;
+  // l1_tx_block_hash: BytesLike;
+  // l1_tx_block_number: BigNumberish;
   mdc_contract_address: string;
   manage_contract_address: string;
   mdc_rule_root_slot: BytesLike;

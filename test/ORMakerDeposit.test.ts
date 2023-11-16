@@ -744,7 +744,32 @@ describe('ORMakerDeposit', () => {
   describe('start challenge test module', () => {
     let spvTest: TestSpv;
     let spv: ORChallengeSpv;
-    const makerRule: RuleStruct = createMakerRule(true);
+    // const defaultRule: BigNumberish[] = [
+    //   BigNumber.from(5),
+    //   BigNumber.from('0x08274f'),
+    //   1,
+    //   1,
+    //   constants.AddressZero,
+    //   constants.AddressZero,
+    //   BigNumber.from('0x01c6bf52634005'),
+    //   BigNumber.from('0x09b6e64a8ecbf5e1'),
+    //   BigNumber.from('0x01c6bf52634c35'),
+    //   BigNumber.from('0x0b1a2bc2ec503d09'),
+    //   BigNumber.from('0x00'),
+    //   BigNumber.from('0x00'),
+    //   1,
+    //   2,
+    //   33,
+    //   28,
+    //   27,
+    //   30,
+    // ];
+    const defaultRule = createMakerRule(true);
+    const makerRule: RuleStruct = {
+      ...defaultRule,
+      chainId0: BigNumber.from(5),
+      chainId1: BigNumber.from('0x08274f'),
+    };
     const chainId = makerRule.chainId0;
     const chainIdDest = makerRule.chainId1;
 
@@ -1127,14 +1152,21 @@ describe('ORMakerDeposit', () => {
         makerRule,
       );
 
+      const price = makerRule.maxPrice0
+        .sub(makerRule.minPrice0)
+        .div(2)
+        .toString()
+        .slice(0, -4);
+      console.log('price', price);
       const testFreezeAmount =
-        '10000000000000' +
+        price +
         getSecurityCode(
           challengeColumnArray,
           ebc.address,
           mdcOwner.address,
           parseInt(chainIdDest.toString()),
         );
+      console.log('testFreezeAmount', testFreezeAmount);
 
       const verifyinfoBase: VerifyinfoBase = {
         chainIdSource: makerRule.chainId0,
@@ -1152,35 +1184,34 @@ describe('ORMakerDeposit', () => {
       );
 
       const encodeRule = await spvTest.createEncodeRule(makerRule);
+      // console.log('encodeRule', encodeRule);
 
+      // with replace reason
       const makerPublicInputData: PublicInputData = {
         ...publicInputData,
-        chain_id: makerRule.chainId0,
-        mdc_contract_address: orMakerDeposit.address,
-        manage_contract_address: orManager.address,
-        token: constants.AddressZero,
+        mdc_contract_address: orMakerDeposit.address, // mdc not same
+        manage_contract_address: orManager.address, // manager not same
         max_verify_challenge_dest_tx_second:
-          BigNumber.from(99999999999999).toHexString(),
+          BigNumber.from(99999999999999).toHexString(), // max verify time too small
         max_verify_challenge_src_tx_second:
-          BigNumber.from(99999999999999).toHexString(),
-        min_verify_challenge_dest_tx_second: BigNumber.from(0).toHexString(),
-        min_verify_challenge_src_tx_second: BigNumber.from(0).toHexString(),
-        mdc_current_column_array_hash: columnArrayHash,
-        amount: BigNumber.from(testFreezeAmount),
-        mdc_rule_root_slot: verifyInfo.slots[6].key,
-        mdc_rule_version_slot: verifyInfo.slots[7].key,
-        mdc_rule_enable_time_slot: BigNumber.from(0).toHexString(),
-        mdc_current_rule_value_hash: encodeRule.toHexString(),
+          BigNumber.from(99999999999999).toHexString(), // max verify time too small
+        min_verify_challenge_dest_tx_second: BigNumber.from(0).toHexString(), // min verify time too long
+        min_verify_challenge_src_tx_second: BigNumber.from(0).toHexString(), // min verify time too long
+        mdc_current_column_array_hash: columnArrayHash, // dealer & ebc not same
+        amount: BigNumber.from(testFreezeAmount), // security code base on ebc & dealer, they both changed
+        mdc_rule_root_slot: verifyInfo.slots[6].key, // ebc not same
+        mdc_rule_version_slot: verifyInfo.slots[7].key, // ebc not same
+        // mdc_current_rule_value_hash: encodeRule.toHexString(), // TODO: enable this replacement after circuit update abi.encode(rule)
       };
+
+      // console.log('makerPublicInputData', makerPublicInputData);
 
       const challenge: challengeInputInfo = {
         sourceTxTime: BigNumber.from(
           makerPublicInputData.time_stamp,
         ).toNumber(),
         sourceChainId: BigNumber.from(makerPublicInputData.chain_id).toNumber(),
-        sourceBlockNum: BigNumber.from(
-          makerPublicInputData.l1_tx_block_number,
-        ).toNumber(),
+        sourceBlockNum: BigNumber.from(0).toNumber(),
         sourceTxIndex: BigNumber.from(makerPublicInputData.index).toNumber(),
         sourceTxHash: BigNumber.from(
           makerPublicInputData.tx_hash,
@@ -1192,7 +1223,7 @@ describe('ORMakerDeposit', () => {
       };
 
       // spv should be setting by manager
-      await updateSpv(challenge, await spv.address, orManager);
+      await updateSpv(challenge, spv.address, orManager);
       await createChallenge(orMakerDeposit, challenge);
 
       const tx = await orMakerDeposit

@@ -538,13 +538,14 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         );
         // Check FreezeAmount
         require(statement.freezeAmount1 == publicInputData.amount, "FALV");
-
+        // console.log("here0");
         // Check manager's chainInfo.minVerifyChallengeSourceTxSecond,maxVerifyChallengeSourceTxSecond
         {
             uint timeDiff = block.timestamp - publicInputData.time_stamp;
             require(timeDiff >= publicInputData.min_verify_challenge_src_tx_second, "MINTOF");
             require(timeDiff <= publicInputData.max_verify_challenge_src_tx_second, "MAXTOF");
         }
+        // console.log("here0-1");
         (
             address[] memory dealers,
             address[] memory ebcs,
@@ -554,7 +555,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         ) = abi.decode(rawDatas, (address[], address[], uint64[], address, RuleLib.Rule));
         // check _columnArrayHash
         require(abi.encode(dealers, ebcs, chainIds).hash() == publicInputData.mdc_current_column_array_hash, "CHE");
-
+        // console.log("here0-2");
         // Check ebc address, destChainId, destToken
         uint destChainId;
         {
@@ -569,15 +570,17 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
                 "DTV"
             );
         }
-
+        // console.log("here1");
         // Check dest amount
         // TODO: Is there a more general solution. Not only amount
         RuleLib.RuleOneway memory ro = RuleLib.convertToOneway(rule, publicInputData.chain_id);
+        // console.log("here1-1");
         uint destAmount = IOREventBinding(ebc).getResponseAmountFromIntent(
             IOREventBinding(ebc).getResponseIntent(publicInputData.amount, ro)
         );
+        // console.log("here1-3");
         require(destChainId == ro.destChainId, "DCI");
-
+        // console.log("here2");
         // Check slot
         {
             // Check rule & enabletime slot, rule hash
@@ -585,22 +588,27 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             require(slot == publicInputData.mdc_rule_root_slot, "RRSE");
             require((slot + 1) == publicInputData.mdc_rule_version_slot, "RVSE");
             require(0 == publicInputData.mdc_rule_enable_time_slot, "RVSE");
+            // TODO : current circuit use RLP to encode rule, disable this check for now
             // Check rule hash
-            require((abi.encode(rule).hash()) == publicInputData.mdc_current_rule_value_hash, "RH");
+            // require((abi.encode(rule).hash()) == publicInputData.mdc_current_rule_value_hash, "RH");
         }
+        // console.log("here3");
         require(3 == publicInputData.mdc_column_array_hash_slot, "CAS");
         require(5 == publicInputData.mdc_response_makers_hash_slot, "RMS");
         {
             // Check ChainInfo slot
-            uint256 slot = uint256(abi.encode(publicInputData.chain_id, 2).hash());
+            uint256 slot = uint256(abi.encode(publicInputData.chain_id, 2).hash()) + 1;
             require(slot == publicInputData.manage_source_chain_info_slot, "CIS");
         }
+        // console.log("here4");
 
         {
             // check sourceChain mainnet token slot
-            uint slot = uint(abi.encode(abi.encode(publicInputData.chain_id, publicInputData.token).hash(), 3).hash());
+            uint slot = uint(abi.encode(abi.encode(publicInputData.chain_id, publicInputData.token).hash(), 3).hash()) +
+                1;
             require(slot == publicInputData.manage_source_chain_mainnet_token_info_slot, "MTS");
         }
+        // console.log("here5");
 
         // {
         //     // check destChain mainnet token slot
