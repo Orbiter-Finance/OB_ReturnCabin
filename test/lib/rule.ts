@@ -11,8 +11,8 @@ export const ruleTypes = [
   'uint64', // chain1's id
   'uint8', // chain0's status
   'uint8', // chain1's status
-  'uint', // chain0's token
-  'uint', // chain1's token
+  'uint256', // chain0's token
+  'uint256', // chain1's token
   'uint128', // chain0's minPrice
   'uint128', // chain1's minPrice
   'uint128', // chain0's maxPrice
@@ -166,8 +166,8 @@ export const encodeChallengeRawData = (
       'uint64',
       'uint8',
       'uint8',
-      'uint',
-      'uint',
+      'uint256',
+      'uint256',
       'uint128',
       'uint128',
       'uint128',
@@ -216,8 +216,8 @@ export const encodeRuleStruct = (rule: RuleStruct): string => {
         'uint64',
         'uint8',
         'uint8',
-        'uint',
-        'uint',
+        'uint256',
+        'uint256',
         'uint128',
         'uint128',
         'uint128',
@@ -311,7 +311,7 @@ export async function getRulesRootUpdatedLogs(
         `tuple(${ruleTypes.join(',')})[]`,
         'tuple(bytes32,uint32)',
         'uint64[]',
-        'uint[]',
+        'uint256[]',
       ],
       utils.hexDataSlice(transaction.data, 4),
     );

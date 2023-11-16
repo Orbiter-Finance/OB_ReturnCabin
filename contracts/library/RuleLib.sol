@@ -10,8 +10,8 @@ library RuleLib {
         uint64 chainId1; // 10
         uint8 status0;
         uint8 status1;
-        uint token0;
-        uint token1;
+        uint256 token0;
+        uint256 token1;
         uint128 minPrice0;
         uint128 minPrice1;
         uint128 maxPrice0;
@@ -35,8 +35,8 @@ library RuleLib {
         uint64 sourceChainId;
         uint64 destChainId;
         uint8 status;
-        uint sourceToken;
-        uint destToken;
+        uint256 sourceToken;
+        uint256 destToken;
         uint128 minPrice;
         uint128 maxPrice;
         uint128 withholdingFee;

@@ -906,24 +906,14 @@ describe('ORMakerDeposit', () => {
         challengeIdentNumList[challengeIdentNumList?.length - 1],
       );
       expect(lastEleSortNumber).gt(firstEleSortNumber);
-      const canVerify = await orMakerDeposit.getCanChallengeContinue(
+      const canVerify = await orMakerDeposit.canChallengeContinue(
         firstEleSortNumber,
       );
-      const cantVerify = await orMakerDeposit.getCanChallengeContinue(
+      const cantVerify = await orMakerDeposit.canChallengeContinue(
         lastEleSortNumber,
       );
       expect(canVerify).to.be.true;
       expect(cantVerify).to.be.false;
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const maxNumInputInfo: challengeInputInfo = challengeInputInfos.find(
-        (v) =>
-          challengeManager.getChallengeIdentNumSortList(
-            v.sourceTxTime,
-            v.sourceChainId,
-            v.sourceBlockNum,
-            v.sourceTxIndex,
-          ) === challengeIdentNumList[0],
-      )!;
     });
 
     it('create challenge test', async function () {

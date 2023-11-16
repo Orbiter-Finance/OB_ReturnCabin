@@ -7,12 +7,12 @@ import {RuleLib} from "../library/RuleLib.sol";
 
 interface IORMakerDeposit {
     struct ChallengeStatement {
-        uint sourceTxFrom; // From of the source tx. Uint to support other networks
+        uint256 sourceTxFrom; // From of the source tx. Uint to support other networks
         uint64 sourceTxTime; // Timestamp of the source tx
         address freezeToken; // Freeze token on L1
         uint64 challengeUserRatio; // Manager's _challengeUserRatio
-        uint freezeAmount0; // Owner's freeze amount
-        uint freezeAmount1; // Challenger's freeze amount
+        uint256 freezeAmount0; // Owner's freeze amount
+        uint256 freezeAmount1; // Challenger's freeze amount
         uint64 challengeTime; // Time of challenge
         uint64 abortTime; // Time of abort caused by checkChallenge
         uint64 sourceTxBlockNum;
@@ -38,12 +38,12 @@ interface IORMakerDeposit {
     }
 
     struct WithdrawRequestInfo {
-        uint requestAmount;
+        uint256 requestAmount;
         uint64 requestTimestamp;
         address requestToken;
     }
 
-    event WithdrawRequested(uint requestAmount, uint64 requestTimestamp, address requestToken);
+    event WithdrawRequested(uint256 requestAmount, uint64 requestTimestamp, address requestToken);
 
     event ColumnArrayUpdated(
         address indexed impl,
@@ -53,7 +53,7 @@ interface IORMakerDeposit {
         uint64[] chainIds
     );
     event SpvUpdated(address indexed impl, uint64 chainId, address spv);
-    event ResponseMakersUpdated(address indexed impl, uint[] responseMakers);
+    event ResponseMakersUpdated(address indexed impl, uint256[] responseMakers);
     event RulesRootUpdated(address indexed impl, address ebc, RuleLib.RootWithVersion rootWithVersion);
     event ChallengeInfoUpdated(bytes32 indexed challengeId, ChallengeStatement statement, ChallengeResult result);
 
@@ -80,13 +80,13 @@ interface IORMakerDeposit {
 
     function updateResponseMakers(uint64 enableTime, bytes[] calldata responseMakerSignatures) external;
 
-    function freezeAssets(address token) external view returns (uint);
+    function freezeAssets(address token) external view returns (uint256);
 
-    function deposit(address token, uint amount) external payable;
+    function deposit(address token, uint256 amount) external payable;
 
     function getWithdrawRequestInfo(address targetToken) external view returns (WithdrawRequestInfo memory);
 
-    function withdrawRequest(address requestToken, uint requestAmount) external;
+    function withdrawRequest(address requestToken, uint256 requestAmount) external;
 
     function withdraw(address token) external;
 
@@ -98,7 +98,7 @@ interface IORMakerDeposit {
         RuleLib.Rule[] calldata rules,
         RuleLib.RootWithVersion calldata rootWithVersion,
         uint64[] calldata sourceChainIds,
-        uint[] calldata pledgeAmounts
+        uint256[] calldata pledgeAmounts
     ) external payable;
 
     function updateRulesRootERC20(
@@ -107,11 +107,11 @@ interface IORMakerDeposit {
         RuleLib.Rule[] calldata rules,
         RuleLib.RootWithVersion calldata rootWithVersion,
         uint64[] calldata sourceChainIds,
-        uint[] calldata pledgeAmounts,
+        uint256[] calldata pledgeAmounts,
         address token
     ) external;
 
-    function getCanChallengeContinue(uint256 challengeIdentNum) external view returns (bool);
+    function canChallengeContinue(uint256 challengeIdentNum) external view returns (bool);
 
     function challenge(
         uint64 sourceTxTime,
@@ -120,7 +120,7 @@ interface IORMakerDeposit {
         uint64 sourceTxIndex,
         bytes32 sourceTxHash,
         address freezeToken,
-        uint freezeAmount1,
+        uint256 freezeAmount1,
         uint256 parentNodeNumOfTargetNode
     ) external payable;
 
@@ -139,7 +139,7 @@ interface IORMakerDeposit {
         uint64 sourceChainId,
         bytes32 sourceTxHash,
         bytes calldata proof,
-        uint[] calldata verifiedData0,
+        uint256[] calldata verifiedData0,
         bytes calldata rawDatas
     ) external;
 }

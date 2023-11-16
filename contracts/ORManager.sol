@@ -31,7 +31,7 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
     uint32 private _challengeWithdrawDelay = 604800; // Unit: seconds of 7 days: Op Arb
     address private _spvDataContract;
 
-    mapping(uint64 => uint) private _extraTransferContracts; // Cross-address transfer contracts. chainId => contractAddress
+    mapping(uint64 => uint256) private _extraTransferContracts; // Cross-address transfer contracts. chainId => contractAddress
 
     constructor(address owner_) {
         require(owner_ != address(0), "OZ");
@@ -43,7 +43,7 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
         versionIncreaseAndEnableTime(enableTime);
 
         unchecked {
-            for (uint i = 0; i < chains_.length; i++) {
+            for (uint256 i = 0; i < chains_.length; i++) {
                 // TODO: There may be some settings that need to restrict modification
 
                 // TODO: ORMakerDeposit.checkChallenge use maxVerifyChallengeSourceTxSecond, maxVerifyChallengeSourceTxSecond cannot be modified.
@@ -59,7 +59,7 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
         return _priorityFee;
     }
 
-    function getChallengeBasefee() external view returns (uint24) {
+    function getChallengeGasUsed() external view returns (uint24) {
         return _challengeBasefee;
     }
 
@@ -83,12 +83,12 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
         uint64 enableTime,
         uint64 id,
         address[] calldata spvs,
-        uint[] calldata indexs
+        uint256[] calldata indexs
     ) external onlyOwner {
         versionIncreaseAndEnableTime(enableTime);
 
         unchecked {
-            for (uint i = 0; i < spvs.length; i++) {
+            for (uint256 i = 0; i < spvs.length; i++) {
                 if (i < indexs.length) {
                     _chains[id].spvs[indexs[i]] = spvs[i];
                 } else {
@@ -111,7 +111,7 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
         versionIncreaseAndEnableTime(enableTime);
 
         unchecked {
-            for (uint i = 0; i < ids.length; i++) {
+            for (uint256 i = 0; i < ids.length; i++) {
                 // TODO: If the token of layer2 changes, how should it be handled here?
                 bytes32 key = abi.encode(ids[i], tokenInfos[i].token).hash();
                 _chainTokens[key] = tokenInfos[i];
@@ -120,7 +120,7 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
         }
     }
 
-    function getChainTokenInfo(uint64 id, uint token) external view returns (BridgeLib.TokenInfo memory) {
+    function getChainTokenInfo(uint64 id, uint256 token) external view returns (BridgeLib.TokenInfo memory) {
         bytes32 key = abi.encode(id, token).hash();
         return _chainTokens[key];
     }
@@ -131,7 +131,7 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
 
     function updateEbcs(address[] calldata ebcs_, bool[] calldata statuses) external onlyOwner {
         unchecked {
-            for (uint i = 0; i < ebcs_.length; i++) {
+            for (uint256 i = 0; i < ebcs_.length; i++) {
                 if (i < statuses.length) {
                     _ebcs[ebcs_[i]] = statuses[i];
                 } else {
@@ -234,20 +234,20 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
         IORSpvData(_spvDataContract).updateInjectOwner(injectOwner_);
     }
 
-    function getExtraTransferContract(uint64 chainId) external view returns (uint) {
+    function getExtraTransferContract(uint64 chainId) external view returns (uint256) {
         return _extraTransferContracts[chainId];
     }
 
     function updateExtraTransferContracts(
         uint64 enableTime,
         uint64[] calldata chainIds,
-        uint[] calldata extraTransferContracts
+        uint256[] calldata extraTransferContracts
     ) external onlyOwner {
         versionIncreaseAndEnableTime(enableTime);
 
         require(chainIds.length == extraTransferContracts.length, "CEOF");
 
-        for (uint i = 0; i < chainIds.length; i++) {
+        for (uint256 i = 0; i < chainIds.length; i++) {
             _extraTransferContracts[chainIds[i]] = extraTransferContracts[i];
         }
         emit ExtraTransferContractsUpdated(chainIds, extraTransferContracts);

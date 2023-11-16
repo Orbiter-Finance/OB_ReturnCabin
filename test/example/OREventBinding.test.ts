@@ -66,7 +66,7 @@ describe('OREventBinding', () => {
       .add(ruleOneway.withholdingFee);
     const responseAmount = tradeAmount.sub(fee).div(10000).mul(10000); // Clear out empty digits
 
-    const intentDecode = defaultAbiCoder.decode(['uint'], intent);
+    const intentDecode = defaultAbiCoder.decode(['uint256'], intent);
     expect(intentDecode[0]).deep.eq(responseAmount);
   });
 });

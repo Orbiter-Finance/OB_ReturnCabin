@@ -5,18 +5,18 @@ import {RuleLib} from "../library/RuleLib.sol";
 
 interface IOREventBinding {
     struct AmountParams {
-        uint dealerIndex;
-        uint ebcIndex;
-        uint chainIdIndex;
+        uint256 dealerIndex;
+        uint256 ebcIndex;
+        uint256 chainIdIndex;
     }
 
-    function getSecurityCode(uint amount) external pure returns (uint);
+    function getSecurityCode(uint256 amount) external pure returns (uint256);
 
-    function splitSecurityCode(uint securityCode) external pure returns (uint[] memory);
+    function splitSecurityCode(uint256 securityCode) external pure returns (uint256[] memory);
 
-    function getAmountParams(uint amount) external pure returns (AmountParams memory);
+    function getAmountParams(uint256 amount) external pure returns (AmountParams memory);
 
-    function getResponseIntent(uint amount, RuleLib.RuleOneway calldata ro) external pure returns (bytes memory);
+    function getResponseIntent(uint256 amount, RuleLib.RuleOneway calldata ro) external pure returns (bytes memory);
 
-    function getResponseAmountFromIntent(bytes calldata intent) external pure returns (uint);
+    function getResponseAmountFromIntent(bytes calldata intent) external pure returns (uint256);
 }

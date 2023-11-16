@@ -30,7 +30,7 @@ contract ORMDCFactory is IORMDCFactory {
         return _implementation;
     }
 
-    function mdcCreatedTotal() external view returns (uint) {
+    function mdcCreatedTotal() external view returns (uint256) {
         return _mdcCreatedTotal;
     }
 

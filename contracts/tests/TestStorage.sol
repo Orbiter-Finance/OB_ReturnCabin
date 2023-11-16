@@ -7,13 +7,13 @@ struct TestStorageStruct {
     uint128 u128_1;
     uint128 u128_2;
     uint128 u128_3;
-    uint[] uarr;
+    uint256[] uarr;
 }
 
 contract TestStorage {
     using HelperLib for bytes;
 
-    uint private _u256;
+    uint256 private _u256;
 
     uint64 private _u64_1;
     uint64 private _u64_2;
@@ -25,7 +25,7 @@ contract TestStorage {
 
     uint128[] private _array;
 
-    mapping(uint32 => uint) private _mapping;
+    mapping(uint32 => uint256) private _mapping;
 
     mapping(uint32 => TestStorageStruct) private _mappingStruct;
 
@@ -45,9 +45,9 @@ contract TestStorage {
         _u128_2 = u128_2_;
     }
 
-    function updateArray(uint128[] memory array_, uint[] memory indexs) external {
+    function updateArray(uint128[] memory array_, uint256[] memory indexs) external {
         unchecked {
-            for (uint i = 0; i < array_.length; i++) {
+            for (uint256 i = 0; i < array_.length; i++) {
                 if (i < indexs.length) {
                     _array[indexs[i]] = array_[i];
                 } else {
@@ -57,7 +57,7 @@ contract TestStorage {
         }
     }
 
-    function updateMapping(uint32 key, uint value) external {
+    function updateMapping(uint32 key, uint256 value) external {
         _mapping[key] = value;
     }
 
@@ -65,7 +65,7 @@ contract TestStorage {
         _mappingStruct[key] = struct_;
     }
 
-    function calcSecondKey(uint position, uint sub) external pure returns (bytes32) {
+    function calcSecondKey(uint256 position, uint256 sub) external pure returns (bytes32) {
         bytes32 k = abi.encode(sub, position).hash();
         return k;
     }

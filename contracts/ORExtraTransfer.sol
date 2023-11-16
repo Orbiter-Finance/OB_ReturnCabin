@@ -17,21 +17,21 @@ contract ORExtraTransfer is IORExtraTransfer, ReentrancyGuard, Ownable {
         require(success, "TF_ETH");
     }
 
-    function transferErc20(IERC20 token, address to, uint amount, bytes calldata ext) external nonReentrant {
+    function transferErc20(IERC20 token, address to, uint256 amount, bytes calldata ext) external nonReentrant {
         ext;
         token.safeTransferFrom(msg.sender, to, amount);
     }
 
     function batchTransferNative(
         address payable[] calldata tos,
-        uint[] calldata amounts,
+        uint256[] calldata amounts,
         bytes[] calldata exts
     ) external payable nonReentrant {
         require(tos.length == amounts.length, "LF0");
         require(amounts.length == exts.length, "LF1");
 
-        uint totalAmount = 0;
-        for (uint i = 0; i < tos.length; i++) {
+        uint256 totalAmount = 0;
+        for (uint256 i = 0; i < tos.length; i++) {
             totalAmount += amounts[i];
 
             (bool success, ) = tos[i].call{value: amounts[i]}("");
@@ -44,13 +44,13 @@ contract ORExtraTransfer is IORExtraTransfer, ReentrancyGuard, Ownable {
     function batchTransferErc20(
         IERC20 token,
         address[] calldata tos,
-        uint[] calldata amounts,
+        uint256[] calldata amounts,
         bytes[] calldata exts
     ) external nonReentrant {
         require(tos.length == amounts.length, "LF0");
         require(amounts.length == exts.length, "LF1");
 
-        for (uint i = 0; i < tos.length; i++) {
+        for (uint256 i = 0; i < tos.length; i++) {
             token.safeTransferFrom(msg.sender, tos[i], amounts[i]);
         }
     }
@@ -59,14 +59,14 @@ contract ORExtraTransfer is IORExtraTransfer, ReentrancyGuard, Ownable {
     function batchTransferErc20WithTokens(
         IERC20[] calldata tokens,
         address[] calldata tos,
-        uint[] calldata amounts,
+        uint256[] calldata amounts,
         bytes[] calldata exts
     ) external nonReentrant {
         require(tos.length == amounts.length, "LF0");
         require(amounts.length == exts.length, "LF1");
         require(tokens.length == tos.length, "LF2");
 
-        for (uint i = 0; i < tos.length; i++) {
+        for (uint256 i = 0; i < tos.length; i++) {
             tokens[i].safeTransferFrom(msg.sender, tos[i], amounts[i]);
         }
     }

@@ -3,15 +3,15 @@ pragma solidity ^0.8.17;
 
 interface IORSpvData {
     struct InjectionBlocksRoot {
-        uint startBlockNumber;
+        uint256 startBlockNumber;
         bytes32 blocksRoot;
     }
 
     event BlockIntervalUpdated(uint64 blockInterval);
     event InjectOwnerUpdated(address injectOwner);
-    event HistoryBlocksRootSaved(uint indexed startBlockNumber, bytes32 blocksRoot, uint blockInterval);
+    event HistoryBlocksRootSaved(uint256 indexed startBlockNumber, bytes32 blocksRoot, uint256 blockInterval);
 
-    function getBlocksRoot(uint startBlockNumber) external view returns (bytes32);
+    function getBlocksRoot(uint256 startBlockNumber) external view returns (bytes32);
 
     function saveHistoryBlocksRoots() external;
 
@@ -24,8 +24,8 @@ interface IORSpvData {
     function updateInjectOwner(address injectOwner_) external;
 
     function injectBlocksRoots(
-        uint blockNumber0,
-        uint blockNumber1,
+        uint256 blockNumber0,
+        uint256 blockNumber1,
         InjectionBlocksRoot[] calldata injectionBlocksRoots
     ) external;
 }
