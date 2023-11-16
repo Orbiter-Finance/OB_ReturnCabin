@@ -26,8 +26,6 @@ import {
   TestSpv__factory,
   TestToken,
   TestToken__factory,
-  VerifierRouter,
-  VerifierRouter__factory,
   ORChallengeSpv,
   ORChallengeSpv__factory,
 } from '../typechain-types';
@@ -58,7 +56,7 @@ import {
   calculateTxGas,
   challengeManager,
   liquidateChallenge,
-  PublicInputDataStruct,
+  PublicInputData,
 } from './utils.test';
 import {
   callDataCost,
@@ -70,12 +68,7 @@ import {
 } from './lib/mockData';
 import { PromiseOrValue } from '../typechain-types/common';
 import { randomBytes } from 'crypto';
-import {
-  compile_sol,
-  compile_yul,
-  VerifierAbi,
-  verifierSolAbi,
-} from '../scripts/utils';
+import { compile_yul, VerifierAbi } from '../scripts/utils';
 
 describe('ORMakerDeposit', () => {
   let signers: SignerWithAddress[];
@@ -754,9 +747,6 @@ describe('ORMakerDeposit', () => {
     const makerRule: RuleStruct = createMakerRule(true);
     const chainId = makerRule.chainId0;
     const chainIdDest = makerRule.chainId1;
-    const freezeToken: string = constants.AddressZero;
-    const freeTokenDest: string = constants.AddressZero;
-    const instanceBytesLength = 2976;
 
     const getRawData = async (
       columnArray: columnArray,
@@ -807,44 +797,32 @@ describe('ORMakerDeposit', () => {
     };
 
     before(async function () {
-      const verifyBytesCode = await compile_yul(
-        'contracts/zkp/goerli_dest_verifier.yul',
+      const verifyDestBytesCode = await compile_yul(
+        'contracts/zkp/goerliDestSpvVerifier.yul',
       );
 
       const verifierDestFactory = new ethers.ContractFactory(
         VerifierAbi,
-        verifyBytesCode,
+        verifyDestBytesCode,
         mdcOwner,
       );
+
+      const verifySourceBytesCode = await compile_yul(
+        'contracts/zkp/goerliSourceSpvVerifier.yul',
+      );
+
+      const verifierSourceFactory = new ethers.ContractFactory(
+        VerifierAbi,
+        verifySourceBytesCode,
+        mdcOwner,
+      );
+
+      const spvSource: { address: PromiseOrValue<string> } =
+        await verifierSourceFactory.deploy();
 
       const spvDest: { address: PromiseOrValue<string> } =
         await verifierDestFactory.deploy();
 
-      const verfierP0 = await compile_sol('zkp/VerifierLogicPart0.sol');
-
-      const verfierP1 = await compile_sol('zkp/VerifierLogicPart1.sol');
-
-      const verifierP0Factory = new ethers.ContractFactory(
-        verifierSolAbi,
-        verfierP0,
-        mdcOwner,
-      );
-
-      const spvP0: { address: PromiseOrValue<string> } =
-        await verifierP0Factory.deploy();
-
-      const verifierP1Factory = new ethers.ContractFactory(
-        verifierSolAbi,
-        verfierP1,
-        mdcOwner,
-      );
-
-      const spvP1: { address: PromiseOrValue<string> } =
-        await verifierP1Factory.deploy();
-      const spvSource: VerifierRouter = await new VerifierRouter__factory(
-        mdcOwner,
-      ).deploy([await spvP0.address, await spvP1.address]);
-      await spvSource.deployed();
       spvTest = await new TestSpv__factory(mdcOwner).deploy(
         spvSource.address,
         ebc.address,
@@ -861,24 +839,17 @@ describe('ORMakerDeposit', () => {
       );
     });
 
-    it('test prase spv proof data', async function () {
+    it('calculate spv verify gas cost', async function () {
       return;
-      const fake_spvProof: BytesLike = utils.keccak256(mdcOwner.address);
       // eslint-disable-next-line prettier/prettier
       const spvProof: BytesLike = utils.arrayify(
         '0x' +
           fs
-            .readFileSync('test/example/spv.calldataV2', 'utf-8')
+            .readFileSync('test/example/spv.calldataV3', 'utf-8')
             .replace(/\t|\n|\v|\r|\f/g, ''),
       );
-
-      // const publicInputData: PublicInputDataStruct = (await spvTest.parsePublicInput(spvProof))
-      // console.log('publicInputData', publicInputData);
-      // expect(publicInputData).not.null;
-      const sourceChainId = 5;
-      const tx = await spv
-        .verifySourceTx(spvProof, sourceChainId)
-        .then((t: any) => t.wait());
+      console.log(await spvTest.parsePublicInput(spvProof));
+      const tx = await spv.verifySourceTx(spvProof).then((t: any) => t.wait());
       expect(tx.status).to.be.eq(1);
       await calculateTxGas(tx, 'spvVerifySourceTx');
     });
@@ -1126,12 +1097,13 @@ describe('ORMakerDeposit', () => {
         // eslint-disable-next-line prettier/prettier
         '0x' +
           fs
-            .readFileSync('test/example/spv.calldataV2', 'utf-8')
+            .readFileSync('test/example/spv.calldataV3', 'utf-8')
             .replace(/\t|\n|\v|\r|\f/g, ''),
       );
 
-      const publicInputData: PublicInputDataStruct =
-        await spvTest.parsePublicInputNew(spvProof);
+      const publicInputData: PublicInputData = await spvTest.parsePublicInput(
+        spvProof,
+      );
       // console.log('publicInputData', publicInputData);
       expect(publicInputData).not.null;
 
@@ -1179,26 +1151,24 @@ describe('ORMakerDeposit', () => {
 
       const encodeRule = await spvTest.createEncodeRule(makerRule);
 
-      const makerPublicInputData: PublicInputDataStruct = {
+      const makerPublicInputData: PublicInputData = {
         ...publicInputData,
         chain_id: makerRule.chainId0,
         mdc_contract_address: orMakerDeposit.address,
-        manager_contract_address: orManager.address,
+        manage_contract_address: orManager.address,
         token: constants.AddressZero,
-        // manage_pre_source_chain_info: verifyTimeMax,
-        manage_pre_source_chain_max_verify_challenge_dest_tx_second:
+        max_verify_challenge_dest_tx_second:
           BigNumber.from(99999999999999).toHexString(),
-        manage_pre_source_chain_max_verify_challenge_source_tx_second:
+        max_verify_challenge_src_tx_second:
           BigNumber.from(99999999999999).toHexString(),
-        manage_pre_source_chain_min_verify_challenge_dest_tx_second: 0,
-        manage_pre_source_chain_min_verify_challenge_source_tx_second: 0,
-        mdc_pre_column_array_hash: columnArrayHash,
+        min_verify_challenge_dest_tx_second: BigNumber.from(0).toHexString(),
+        min_verify_challenge_src_tx_second: BigNumber.from(0).toHexString(),
+        mdc_current_column_array_hash: columnArrayHash,
         amount: BigNumber.from(testFreezeAmount),
-        dest_chain_id: makerRule.chainId1,
         mdc_rule_root_slot: verifyInfo.slots[6].key,
         mdc_rule_version_slot: verifyInfo.slots[7].key,
-        mdc_rule_enable_time_slot: 0,
-        mdc_pre_rule_root: encodeRule.toHexString(),
+        mdc_rule_enable_time_slot: BigNumber.from(0).toHexString(),
+        mdc_current_rule_value_hash: encodeRule.toHexString(),
       };
 
       const challenge: challengeInputInfo = {
@@ -1241,17 +1211,16 @@ describe('ORMakerDeposit', () => {
       );
 
       const verifiedDataHashData: any[] = [
-        makerPublicInputData.manage_pre_source_chain_min_verify_challenge_dest_tx_second,
-        makerPublicInputData.manage_pre_source_chain_max_verify_challenge_dest_tx_second,
+        makerPublicInputData.min_verify_challenge_dest_tx_second,
+        makerPublicInputData.max_verify_challenge_dest_tx_second,
         makerPublicInputData.nonce,
-        makerPublicInputData.dest_chain_id,
-        makerPublicInputData.from,
         makerRule.chainId1,
+        makerPublicInputData.from,
+        makerRule.token1,
         destAmount,
-        makerPublicInputData.mdc_pre_response_makers_hash,
+        makerPublicInputData.mdc_current_response_makers_hash,
       ];
-      console.log('verifiedDataHashData', verifiedDataHashData);
-      const verifiedDataHash0 = keccak256(
+      const verifiedDataHash = keccak256(
         solidityPack(
           [
             'uint256',
@@ -1266,17 +1235,7 @@ describe('ORMakerDeposit', () => {
           verifiedDataHashData,
         ),
       );
-
-      // get verifiedDataHash0 from tx.args
-      const verifiedDataHash0FromArgs =
-        tx.events[0].args.result.verifiedDataHash0;
-
-      console.log(
-        'verifiedDataHash0',
-        verifiedDataHash0,
-        'verifiedDataHash0FromArgs',
-        verifiedDataHash0FromArgs,
-      );
+      expect(verifiedDataHash).eq(tx.events[0].args.result.verifiedDataHash0);
     });
   });
 });

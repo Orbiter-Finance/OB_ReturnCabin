@@ -13,7 +13,8 @@ interface IORChallengeSpv {
         VerifyInfoSlot[] slots;
     }
 
-    function verifySourceTx(bytes calldata zkProof, uint64 chainId) external returns (bool);
+    function verifySourceTx(bytes calldata zkProof) external returns (bool);
+
     function verifyDestTx(bytes calldata zkProof) external returns (bool);
 
     // function verifyChallenge(
