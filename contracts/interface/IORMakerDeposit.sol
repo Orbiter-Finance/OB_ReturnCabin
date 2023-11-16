@@ -43,6 +43,17 @@ interface IORMakerDeposit {
         address requestToken;
     }
 
+    struct verifiedDataInfo {
+        uint256 min_verify_challenge_dest_tx_second;
+        uint256 max_verify_challenge_dest_tx_second;
+        uint256 nonce;
+        uint256 destChainId;
+        uint256 from;
+        uint256 destToken;
+        uint256 destAmount;
+        uint256 mdc_current_response_makers_hash;
+    }
+
     event WithdrawRequested(uint256 requestAmount, uint64 requestTimestamp, address requestToken);
 
     event ColumnArrayUpdated(
@@ -134,12 +145,12 @@ interface IORMakerDeposit {
     //     bytes calldata rawDatas
     // ) external;
 
-    function verifyChallengeDest(
-        address challenger,
-        uint64 sourceChainId,
-        bytes32 sourceTxHash,
-        bytes calldata proof,
-        uint256[] calldata verifiedData0,
-        bytes calldata rawDatas
-    ) external;
+    // function verifyChallengeDest(
+    //     address challenger,
+    //     uint64 sourceChainId,
+    //     bytes32 sourceTxHash,
+    //     bytes calldata proof,
+    //     uint256[] calldata verifiedData0,
+    //     bytes calldata rawDatas
+    // ) external;
 }

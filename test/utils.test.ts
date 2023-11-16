@@ -236,9 +236,9 @@ export const getSecurityCode = (
   // console.log(
   //   `dealerIndex: ${dealerIndex}, ebcIndex: ${ebcIndex}, chainIdIndex: ${chainIdIndex}`,
   // );
-
+  const dealerIndexStr = dealerIndex.toString().padStart(2, '0');
   const securityCode = dealerIndex
-    .toString()
+    .toString().padStart(2, '0')
     .concat(ebcIndex.toString())
     .concat('0')
     .concat(chainIdIndex.toString());

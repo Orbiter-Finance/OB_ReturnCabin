@@ -1149,4 +1149,16 @@ contract testSpv {
             IOREventBinding(ebc_address).getResponseIntent(amount, ro)
         );
     }
+
+    function parseSourceProof(bytes calldata proofData) external pure returns (HelperLib.PublicInputDataSource memory) {
+        return proofData.parsePublicInputSource();
+    }
+
+    function parseDestProof(bytes calldata proofData) external pure returns (HelperLib.PublicInputDataDest memory) {
+        return proofData.parsePublicInputDest();
+    }
+
+    function encodeResponseMakers(uint256[] calldata responseMakers) external pure returns (bytes memory) {
+        return abi.encode(responseMakers);
+    }
 }

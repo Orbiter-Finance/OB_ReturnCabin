@@ -773,6 +773,10 @@ describe('ORMakerDeposit', () => {
     const chainId = makerRule.chainId0;
     const chainIdDest = makerRule.chainId1;
 
+    const spvProof: BytesLike = utils.arrayify('0x' + fs.readFileSync('test/example/spv.calldataV3', 'utf-8').replace(/\t|\n|\v|\r|\f/g, ''),);
+    const spvDestProof: BytesLike = utils.arrayify('0x' + fs.readFileSync('test/example/spv.calldata', 'utf-8').replace(/\t|\n|\v|\r|\f/g, ''),);
+
+
     const getRawData = async (
       columnArray: columnArray,
       ebc: string,
@@ -865,13 +869,18 @@ describe('ORMakerDeposit', () => {
     });
 
     it('calculate spv verify gas cost', async function () {
-      return;
       // eslint-disable-next-line prettier/prettier
-      const spvProof: BytesLike = utils.arrayify('0x' + fs.readFileSync('test/example/spv.calldataV3', 'utf-8').replace(/\t|\n|\v|\r|\f/g, ''),);
-      console.log(await spvTest.parsePublicInput(spvProof));
+      // console.log(await spvTest.parseSourceProof(spvProof));
       const tx = await spv.verifySourceTx(spvProof).then((t: any) => t.wait());
       expect(tx.status).to.be.eq(1);
       await calculateTxGas(tx, 'spvVerifySourceTx');
+      // console.log(await spvTest.parseDestProof(spvDestProof));
+      const txDest = await spv.verifyDestTx(spvDestProof).then((t: any) =>
+        t.wait(),
+      );
+      expect(txDest.status).to.be.eq(1);
+      await calculateTxGas(txDest, 'spvVerifyDestTx');
+
     });
 
     it('test function challenge _addChallengeNode', async function () {
@@ -1113,11 +1122,6 @@ describe('ORMakerDeposit', () => {
     });
 
     it('Challenge verifySourceTx', async function () {
-      const spvProof: BytesLike = utils.arrayify(
-        // eslint-disable-next-line prettier/prettier
-        '0x' + fs.readFileSync('test/example/spv.calldataV3', 'utf-8').replace(/\t|\n|\v|\r|\f/g, ''),
-      );
-
       const publicInputData: PublicInputData = await spvTest.parsePublicInput(
         spvProof,
       );
@@ -1146,8 +1150,7 @@ describe('ORMakerDeposit', () => {
         .sub(makerRule.minPrice0)
         .div(2)
         .toString()
-        .slice(0, -4);
-      console.log('price', price);
+        .slice(0, -5);
       const testFreezeAmount =
         price +
         getSecurityCode(
@@ -1156,7 +1159,6 @@ describe('ORMakerDeposit', () => {
           mdcOwner.address,
           parseInt(chainIdDest.toString()),
         );
-      console.log('testFreezeAmount', testFreezeAmount);
 
       const verifyinfoBase: VerifyinfoBase = {
         chainIdSource: makerRule.chainId0,
@@ -1176,6 +1178,9 @@ describe('ORMakerDeposit', () => {
       const encodeRule = await spvTest.createEncodeRule(makerRule);
       // console.log('encodeRule', encodeRule);
 
+      const responseMakersEncodeRaw = await spvTest.encodeResponseMakers([BigNumber.from(mdcOwner.address)]);
+      const responseMakersHash = keccak256(responseMakersEncodeRaw);
+
       // with replace reason
       const makerPublicInputData: PublicInputData = {
         ...publicInputData,
@@ -1192,9 +1197,10 @@ describe('ORMakerDeposit', () => {
         mdc_rule_root_slot: verifyInfo.slots[6].key, // ebc not same
         mdc_rule_version_slot: verifyInfo.slots[7].key, // ebc not same
         // mdc_current_rule_value_hash: encodeRule.toHexString(), // TODO: enable this replacement after circuit update abi.encode(rule)
+        mdc_current_response_makers_hash: responseMakersHash, // response maker not same
       };
 
-      // console.log('makerPublicInputData', makerPublicInputData);
+      // console.log("makerRule", makerRule);
 
       const challenge: challengeInputInfo = {
         sourceTxTime: BigNumber.from(
@@ -1233,7 +1239,7 @@ describe('ORMakerDeposit', () => {
         makerPublicInputData.amount,
       );
 
-      const verifiedDataHashData: any[] = [
+      const verifiedDataHashData: BigNumber[] = [
         makerPublicInputData.min_verify_challenge_dest_tx_second,
         makerPublicInputData.max_verify_challenge_dest_tx_second,
         makerPublicInputData.nonce,
@@ -1259,6 +1265,20 @@ describe('ORMakerDeposit', () => {
         ),
       );
       expect(verifiedDataHash).eq(tx.events[0].args.result.verifiedDataHash0);
+
+      await mineXTimes(2);
+
+      await expect(
+        orMakerDeposit.verifyChallengeDest(
+          mdcOwner.address,
+          challenge.sourceChainId,
+          challenge.sourceTxHash,
+          spvDestProof,
+          verifiedDataHashData,
+          responseMakersEncodeRaw
+        ),
+      ).to.revertedWith('DCID');
+
     });
   });
 });

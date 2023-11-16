@@ -16,6 +16,8 @@ import {BridgeLib} from "./library/BridgeLib.sol";
 import {VersionAndEnableTime} from "./VersionAndEnableTime.sol";
 import {IVerifierRouter} from "./zkp/IVerifierRouter.sol";
 
+// import "hardhat/console.sol";
+
 contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
     using HelperLib for uint256[];
     using HelperLib for address[];
@@ -483,12 +485,12 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
     function verifyChallengeSource(
         address challenger,
-        HelperLib.PublicInputData calldata publicInputData,
+        HelperLib.PublicInputDataSource calldata publicInputData,
         bytes calldata proof,
         bytes calldata rawDatas
     ) external {
         uint256 startGasNum = gasleft();
-        HelperLib.PublicInputData memory publicInputData2 = proof.parsePublicInput();
+        HelperLib.PublicInputDataSource memory publicInputData2 = proof.parsePublicInputSource();
         (publicInputData2);
         require(
             (publicInputData.manage_contract_address == _mdcFactory.manager()) &&
@@ -547,10 +549,8 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         {
             IOREventBinding.AmountParams memory ap = IOREventBinding(ebc).getAmountParams(publicInputData.amount);
             require(ebc == ebcs[ap.ebcIndex - 1], "ENE");
-
             require(ap.chainIdIndex <= chainIds.length, "COF");
             destChainId = chainIds[ap.chainIdIndex - 1];
-
             require(
                 uint160(statement.freezeToken) == uint160(publicInputData.manage_current_dest_chain_mainnet_token),
                 "DTV"
@@ -612,16 +612,16 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         // [minVerifyChallengeDestTxSecond, maxVerifyChallengeDestTxSecond, nonce, destChainId, destAddress, destToken, destAmount, responeMakersHash]
         result_s.verifiedDataHash0 = abi
             .encode(
-                [
-                    publicInputData.min_verify_challenge_dest_tx_second,
-                    publicInputData.max_verify_challenge_dest_tx_second,
-                    publicInputData.nonce,
-                    destChainId,
-                    publicInputData.from,
-                    ro.destToken,
-                    destAmount,
-                    publicInputData.mdc_current_response_makers_hash
-                ]
+                verifiedDataInfo({
+                    min_verify_challenge_dest_tx_second: publicInputData.min_verify_challenge_dest_tx_second,
+                    max_verify_challenge_dest_tx_second: publicInputData.max_verify_challenge_dest_tx_second,
+                    nonce: publicInputData.nonce,
+                    destChainId: destChainId,
+                    from: publicInputData.from,
+                    destToken: ro.destToken,
+                    destAmount: destAmount,
+                    mdc_current_response_makers_hash: publicInputData.mdc_current_response_makers_hash
+                })
             )
             .hash();
         emit ChallengeInfoUpdated({challengeId: challengeId, statement: statement_s, result: result_s});
@@ -632,50 +632,16 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             actualGasPrice;
     }
 
-    function _parsePublicInputDest(
-        bytes calldata proofData
-    ) private pure returns (HelperLib.PublicInputDataDest memory) {
-        uint256 ProofLength = 384;
-        uint256 splitStep = 32;
-        uint256 splitStart = ProofLength + 64; // 384 is proof length;64 is blockHash length
-        uint256 TrackBlockSplitStart = splitStart + splitStep * 12;
-        return
-            HelperLib.PublicInputDataDest({
-                txHash: bytes32(
-                    (uint256(bytes32(proofData[splitStart:splitStart + splitStep])) << 128) |
-                        uint256(bytes32(proofData[splitStart + splitStep:splitStart + splitStep * 2]))
-                ),
-                chainId: uint64(uint256(bytes32(proofData[splitStart + splitStep * 3:splitStart + splitStep * 4]))),
-                txIndex: uint256(bytes32(proofData[splitStart + splitStep * 2:splitStart + splitStep * 3])),
-                from: ((uint256(bytes32(proofData[splitStart + splitStep * 4:splitStart + splitStep * 5])))),
-                to: ((uint256(bytes32(proofData[splitStart + splitStep * 5:splitStart + splitStep * 6])))),
-                token: ((uint256(bytes32(proofData[splitStart + splitStep * 6:splitStart + splitStep * 7])))),
-                amount: uint256(bytes32(proofData[splitStart + splitStep * 7:splitStart + splitStep * 8])),
-                nonce: uint256(bytes32(proofData[splitStart + splitStep * 8:splitStart + splitStep * 9])),
-                timestamp: uint64(uint256(bytes32(proofData[splitStart + splitStep * 9:splitStart + splitStep * 10]))),
-                L1TXBlockHash: bytes32(
-                    (uint256(bytes32(proofData[TrackBlockSplitStart:TrackBlockSplitStart + splitStep])) << 128) |
-                        uint256(
-                            bytes32(proofData[TrackBlockSplitStart + splitStep:TrackBlockSplitStart + splitStep * 2])
-                        )
-                ),
-                L1TBlockNumber: uint256(
-                    bytes32(proofData[TrackBlockSplitStart + splitStep * 2:TrackBlockSplitStart + splitStep * 3])
-                )
-            });
-    }
-
     function verifyChallengeDest(
         address challenger,
         uint64 sourceChainId,
         bytes32 sourceTxHash,
-        // bytes calldata publicInput, // TODO: Enable this parameter after the circuit has finished hash-encoding the public input.
         bytes calldata proof,
-        uint256[] calldata verifiedData0,
+        verifiedDataInfo calldata verifiedData0,
         bytes calldata rawDatas
     ) external {
         // parse Public input
-        HelperLib.PublicInputDataDest memory publicInputData = _parsePublicInputDest(proof);
+        HelperLib.PublicInputDataDest memory publicInputData = proof.parsePublicInputDest();
         // get DestChainInfo
         BridgeLib.ChainInfo memory chainInfo = IORManager(_mdcFactory.manager()).getChainInfo(sourceChainId);
         require(IORChallengeSpv(chainInfo.spvs[chainInfo.spvs.length - 1]).verifyDestTx(proof), "VF");
@@ -697,14 +663,12 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             ),
             "NCCF"
         );
-
         // Parse rawDatas
         uint256[] memory responseMakers = abi.decode(rawDatas, (uint256[]));
 
         // Check verifiedData0
         require(abi.encode(verifiedData0).hash() == _challenges[challengeId].result.verifiedDataHash0, "VDH0");
-        require(abi.encode(responseMakers).hash() == bytes32(verifiedData0[7]), "RMH");
-
+        require(abi.encode(responseMakers).hash() == bytes32(verifiedData0.mdc_current_response_makers_hash), "RMH");
         // Check minVerifyChallengeDestTxSecond, maxVerifyChallengeDestTxSecond
         // TODO: make this public input
         {
@@ -712,21 +676,20 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             require(timeDiff >= uint64(chainInfo.minVerifyChallengeDestTxSecond), "MINTOF");
             require(timeDiff <= uint64(chainInfo.maxVerifyChallengeDestTxSecond), "MAXTOF");
         }
-
         // Check dest chainId
-        require(verifiedData0[3] == publicInputData.chainId, "DCID");
+        require(verifiedData0.destChainId == publicInputData.chainId, "DCID");
 
         // Check dest from address in responseMakers
         require(responseMakers.includes(publicInputData.from), "MIC");
 
         // Check dest address
-        require(verifiedData0[4] == publicInputData.to, "DADDR");
+        require(verifiedData0.from == publicInputData.to, "DADDR");
 
         // Check dest token
-        require(verifiedData0[5] == publicInputData.token, "DT");
+        require(verifiedData0.destToken == publicInputData.token, "DT");
 
         // Check dest amount (Warning: The nonce is at the end of the amount)
-        require(verifiedData0[6] - verifiedData0[2] == publicInputData.amount, "DT");
+        require(verifiedData0.destAmount - verifiedData0.nonce == publicInputData.amount, "DT");
 
         // TODO: check responseTime. Source tx timestamp may be more than dest tx timestamp.
 
