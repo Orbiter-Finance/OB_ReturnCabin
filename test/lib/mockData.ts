@@ -154,10 +154,10 @@ export const defaultChainInfoArray: BridgeLib.ChainInfoStruct[] =
     return {
       id: BigNumber.from(chainId),
       batchLimit: BigNumber.from(1000),
-      minVerifyChallengeSourceTxSecond: BigNumber.from(100),
-      maxVerifyChallengeSourceTxSecond: BigNumber.from(200),
-      minVerifyChallengeDestTxSecond: BigNumber.from(100),
-      maxVerifyChallengeDestTxSecond: BigNumber.from(200),
+      minVerifyChallengeSourceTxSecond: BigNumber.from(0),
+      maxVerifyChallengeSourceTxSecond: BigNumber.from(604800),
+      minVerifyChallengeDestTxSecond: BigNumber.from(0),
+      maxVerifyChallengeDestTxSecond: BigNumber.from(604800),
       nativeToken: BigNumber.from(
         chainIdsMockMainnetToken[chainIdsMock.indexOf(chainId)],
       ),

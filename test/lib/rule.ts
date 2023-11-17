@@ -86,6 +86,33 @@ export function createRandomRule(getNative: boolean) {
   ];
 }
 
+// conver RuleStruct--> rule: BigNumberish[]
+export const converRule = (rule: RuleStruct): BigNumberish[] => {
+  const formatRule: BigNumberish[] = [
+    rule.chainId0,
+    rule.chainId1,
+    rule.status0,
+    rule.status1,
+    rule.token0,
+    rule.token1,
+    rule.minPrice0,
+    rule.minPrice1,
+    rule.maxPrice0,
+    rule.maxPrice1,
+    rule.withholdingFee0,
+    rule.withholdingFee1,
+    rule.tradingFee0,
+    rule.tradingFee1,
+    rule.responseTime0,
+    rule.responseTime1,
+    rule.compensationRatio0,
+    rule.compensationRatio1,
+  ];
+
+  return formatRule;
+}
+
+
 export const formatRule = (rule: BigNumberish[]): RuleStruct => {
   const formatRule: RuleStruct = {
     chainId0: BigNumber.from(rule[0]).add(0),

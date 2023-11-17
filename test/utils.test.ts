@@ -6,6 +6,7 @@ import {
   BigNumberish,
   ContractReceipt,
   ContractTransaction,
+  constants,
   utils,
 } from 'ethers';
 import { ORMakerDeposit, ORManager, TestSpv } from '../typechain-types';
@@ -93,8 +94,8 @@ export function getMinEnableTime(currentEnableTime?: BigNumber) {
     const minEnableTime =
       currentEnableTime.toNumber() != 0
         ? currentEnableTime.add(MIN_ENABLE_DELAY)
-        : BigNumber.from(Date.now()).add(MIN_ENABLE_DELAY);
-    return minEnableTime.add(1);
+        : BigNumber.from((Date.now() / 1000).toFixed(0)).add(MIN_ENABLE_DELAY);
+    return minEnableTime.add(30);
   } else {
     const minEnableTime = BigNumber.from(
       Date.now() + MIN_ENABLE_DELAY * 1000,
@@ -191,13 +192,14 @@ export interface PublicInputData {
 }
 
 export const updateSpv = async (
-  challengeInputInfo: challengeInputInfo,
+  chainId: number,
   spvAddress: string,
   _orManager: ORManager,
 ) => {
+  // 去除spv结果中0值
   const currentSpvs: string[] = (
-    await _orManager.getChainInfo(challengeInputInfo.sourceChainId)
-  ).spvs.concat(spvAddress);
+    await _orManager.getChainInfo(chainId)
+  ).spvs.filter((v) => v != constants.AddressZero).concat(spvAddress);
 
   const enableTimeTime =
     // eslint-disable-next-line prettier/prettier
@@ -209,17 +211,20 @@ export const updateSpv = async (
   const { events } = await _orManager
     .updateChainSpvs(
       getMinEnableTime(BigNumber.from(enableTimeTime)),
-      challengeInputInfo.sourceChainId,
+      chainId,
       currentSpvs,
       [0],
       {
         gasLimit: 10e6,
       },
     )
-    .then((t) => t.wait());
+    .then((t) => t.wait(1));
+  const updatedSpvs = (await _orManager.getChainInfo(chainId)).spvs;
   expect(
-    (await _orManager.getChainInfo(challengeInputInfo.sourceChainId)).spvs,
+    updatedSpvs,
   ).to.deep.includes(spvAddress);
+
+  console.log(`chainId: ${chainId}, newSpvAddress: ${spvAddress}`);
 };
 
 export const getSecurityCode = (

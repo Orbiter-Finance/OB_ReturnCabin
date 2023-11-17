@@ -485,13 +485,12 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
     function verifyChallengeSource(
         address challenger,
-        HelperLib.PublicInputDataSource calldata publicInputData,
+        // HelperLib.PublicInputDataSource calldata publicInputData,
         bytes calldata proof,
         bytes calldata rawDatas
     ) external {
         uint256 startGasNum = gasleft();
-        HelperLib.PublicInputDataSource memory publicInputData2 = proof.parsePublicInputSource();
-        (publicInputData2);
+        HelperLib.PublicInputDataSource memory publicInputData = proof.parsePublicInputSource();
         require(
             (publicInputData.manage_contract_address == _mdcFactory.manager()) &&
                 (publicInputData.mdc_contract_address == address(this)),

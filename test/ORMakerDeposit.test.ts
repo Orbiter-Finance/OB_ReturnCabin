@@ -1219,7 +1219,7 @@ describe('ORMakerDeposit', () => {
       };
 
       // spv should be setting by manager
-      await updateSpv(challenge, spv.address, orManager);
+      await updateSpv(BigNumber.from(challenge.sourceChainId).toNumber(), spv.address, orManager);
       await createChallenge(orMakerDeposit, challenge);
 
       const tx = await orMakerDeposit
