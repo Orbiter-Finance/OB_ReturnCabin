@@ -11,7 +11,7 @@ import {
 } from 'ethers';
 import { ORMakerDeposit, ORManager, TestSpv } from '../typechain-types';
 import { callDataCost, getCurrentTime } from './lib/mockData';
-import { RuleStruct, encodeRuleStruct } from './lib/rule';
+import { RuleStruct, calculateRulesTree, converRule, createMakerRule, encodeRuleStruct } from './lib/rule';
 import {
   BytesLike,
   defaultAbiCoder,
@@ -924,3 +924,52 @@ export class challengeManager {
     return parentNodeNumOfTargetNode;
   }
 }
+
+export const updateMakerRule = async (
+  orMakerDeposit: ORMakerDeposit,
+  ebc: string,
+  rule?: RuleStruct
+) => {
+  const rules: any[] = [];
+  const defaultRule: RuleStruct = rule != undefined ? rule : createMakerRule(true);
+  const newRule: RuleStruct = {
+    ...defaultRule,
+    compensationRatio0: defaultRule.compensationRatio0 + 1,
+    compensationRatio1: defaultRule.compensationRatio1 + 1,
+  }
+
+  rules.push(converRule(newRule));
+
+
+  const tree = await calculateRulesTree(rules);
+  const root = utils.hexlify(tree.root);
+
+  const currentRootwithVersion = await orMakerDeposit.getVersionAndEnableTime();
+  console.log('currentRootwithVersion', currentRootwithVersion);
+  const version = (await orMakerDeposit.rulesRoot(ebc)).version + 1;
+
+  const rootWithVersion = { root, version };
+  const sourceChainIds = [1];
+  const pledgeAmounts = [utils.parseEther('0.000001')];
+  const statuses = await ethers.provider.getBlock('latest');
+  const oldTimeStamp = statuses.timestamp > currentRootwithVersion.enableTime.toNumber() ? statuses.timestamp : currentRootwithVersion.enableTime.toNumber();
+  const enableTime = getMinEnableTime(BigNumber.from(oldTimeStamp))
+
+  console.log(`update current timestamp: ${statuses.timestamp}, enableTime: ${enableTime}, currBlk:${statuses.number} predict enable block: ${(((enableTime.toNumber() - statuses.timestamp) / 12) + statuses.number).toFixed(0)}`);
+
+  const { events } = await orMakerDeposit
+    .updateRulesRoot(
+      enableTime,
+      ebc,
+      rules,
+      rootWithVersion,
+      sourceChainIds,
+      pledgeAmounts,
+      {
+        value: pledgeAmounts.reduce((pv, cv) => pv.add(cv)),
+      },
+    )
+    .then((t: any) => t.wait());
+  console.log("newRule:", newRule);
+}
+

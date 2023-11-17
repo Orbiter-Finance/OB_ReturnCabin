@@ -53,7 +53,7 @@ function getChainConfig(chain: keyof typeof chainIds): NetworkUserConfig {
       jsonRpcUrl = 'https://optimism-goerli.public.blastapi.io';
       break;
     case 'zkSync-Era-Testnet':
-      jsonRpcUrl = 'https://zksync-era-testnet.blockpi.network/v1/rpc/public';
+      jsonRpcUrl = 'https://testnet.era.zksync.dev';
       break;
     case 'ganache':
       jsonRpcUrl = 'http://127.0.0.1:7545';

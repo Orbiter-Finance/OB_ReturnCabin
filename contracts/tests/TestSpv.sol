@@ -1139,16 +1139,16 @@ contract testSpv {
         encodeRule = uint256(abi.encode(rule).hash());
     }
 
-    function calculateDestAmount(
-        RuleLib.Rule calldata rule,
-        uint64 chainId,
-        uint256 amount
-    ) external view returns (uint256 destAmount) {
-        RuleLib.RuleOneway memory ro = RuleLib.convertToOneway(rule, chainId);
-        destAmount = IOREventBinding(ebc_address).getResponseAmountFromIntent(
-            IOREventBinding(ebc_address).getResponseIntent(amount, ro)
-        );
-    }
+    // function calculateDestAmount(
+    //     RuleLib.Rule calldata rule,
+    //     uint64 chainId,
+    //     uint256 amount
+    // ) external view returns (uint256 destAmount) {
+    //     RuleLib.RuleOneway memory ro = RuleLib.convertToOneway(rule, chainId);
+    //     destAmount = IOREventBinding(ebc_address).getResponseAmountFromIntent(
+    //         IOREventBinding(ebc_address).getResponseIntent(amount, ro)
+    //     );
+    // }
 
     function parseSourceProof(bytes calldata proofData) external pure returns (HelperLib.PublicInputDataSource memory) {
         return proofData.parsePublicInputSource();
@@ -1160,5 +1160,17 @@ contract testSpv {
 
     function encodeResponseMakers(uint256[] calldata responseMakers) external pure returns (bytes memory) {
         return abi.encode(responseMakers);
+    }
+
+    function calculateDestAmount(
+        RuleLib.Rule calldata rule,
+        address ebc,
+        uint64 chain_id,
+        uint256 amount
+    ) external pure returns (uint256 destAmount) {
+        RuleLib.RuleOneway memory ro = RuleLib.convertToOneway(rule, chain_id);
+        destAmount = IOREventBinding(ebc).getResponseAmountFromIntent(
+            IOREventBinding(ebc).getResponseIntent(amount, ro)
+        );
     }
 }
