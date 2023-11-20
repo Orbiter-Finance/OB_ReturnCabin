@@ -67,6 +67,7 @@ import {
   chainIdsMock,
   dealersMock,
   defaultChainInfoArray,
+  defaultResponseTime,
   getCurrentTime,
   mineXTimes,
 } from './lib/mockData';
@@ -129,9 +130,9 @@ describe('MDC TEST ON GOERLI', () => {
         console.log('Address of ebc:', ebc.address);
       }
 
-      if (process.env["SPV_ADDRESS"] != undefined) {
+      if (process.env['SPV_ADDRESS'] != undefined) {
         spv = new ORChallengeSpv__factory(signers[0]).attach(
-          process.env["SPV_ADDRESS"]
+          process.env['SPV_ADDRESS'],
         );
         console.log('connect to spv contract', spv.address);
       } else {
@@ -161,9 +162,12 @@ describe('MDC TEST ON GOERLI', () => {
         const spvDest: { address: PromiseOrValue<string> } =
           await verifierDestFactory.deploy();
 
-        spv = await new ORChallengeSpv__factory(signers[0]).deploy(spvSource.address, spvDest.address);
+        spv = await new ORChallengeSpv__factory(signers[0]).deploy(
+          spvSource.address,
+          spvDest.address,
+        );
         await spv.deployed();
-        process.env["SPV_ADDRESS"] = spv.address;
+        process.env['SPV_ADDRESS'] = spv.address;
         console.log('Address of spv:', spv.address);
       }
 
@@ -173,7 +177,6 @@ describe('MDC TEST ON GOERLI', () => {
 
       ebcs = lodash.cloneDeep(orManagerEbcs);
 
-
       const predictMDCAddress = await orMDCFactory
         .connect(mdcOwner)
         .predictMDCAddress();
@@ -181,8 +184,10 @@ describe('MDC TEST ON GOERLI', () => {
         predictMDCAddress,
       );
 
-      if (process.env["OR_SPV_DATA_ADRESS"] != undefined) {
-        orSpvData = new ORSpvData__factory(signers[0]).attach(process.env["OR_SPV_DATA_ADRESS"]);
+      if (process.env['OR_SPV_DATA_ADRESS'] != undefined) {
+        orSpvData = new ORSpvData__factory(signers[0]).attach(
+          process.env['OR_SPV_DATA_ADRESS'],
+        );
         console.log('connect to orSpvData', orSpvData.address);
       } else {
         orSpvData = await new ORSpvData__factory(signers[0]).deploy(
@@ -190,18 +195,17 @@ describe('MDC TEST ON GOERLI', () => {
         );
         console.log('address of orSpvData:', orSpvData.address);
         await orSpvData.deployed();
-        process.env["OR_SPV_DATA_ADRESS"] = orSpvData.address;
+        process.env['OR_SPV_DATA_ADRESS'] = orSpvData.address;
       }
 
       // spvTest
-      if (process.env["SPV_TEST_ADDRESS"] != undefined) {
-        spvTest = new TestSpv__factory(signers[0]).attach(process.env["SPV_TEST_ADDRESS"]);
+      if (process.env['SPV_TEST_ADDRESS'] != undefined) {
+        spvTest = new TestSpv__factory(signers[0]).attach(
+          process.env['SPV_TEST_ADDRESS'],
+        );
         console.log('connect to spvTest', spvTest.address);
       } else {
-        spvTest = await new TestSpv__factory(mdcOwner).deploy(
-          spv.address,
-          ebc.address,
-        );
+        spvTest = await new TestSpv__factory(mdcOwner).deploy(spv.address);
       }
     }
     makerRule = {
@@ -219,19 +223,19 @@ describe('MDC TEST ON GOERLI', () => {
       withholdingFee1: BigNumber.from(ethers.utils.parseEther('0.00000002')),
       tradingFee0: 1,
       tradingFee1: 1,
-      responseTime0: 604800,
-      responseTime1: 604800,
+      responseTime0: defaultResponseTime,
+      responseTime1: defaultResponseTime,
       compensationRatio0: 31,
       compensationRatio1: 30,
-    }
+    };
 
     defaultRule = converRule(makerRule);
 
     columnArray = {
       dealers: ['0xaFcfbb382b28dae47B76224F24eE29BE2c823648'],
       ebcs: [process.env['EVENT_BINDING_CONTRACT']!],
-      chainIds: [5, 420, 421613, 280, 534351]
-    }
+      chainIds: [5, 420, 421613, 280, 534351],
+    };
   });
 
   describe.skip('part1 - update maker', function () {
@@ -247,7 +251,6 @@ describe('MDC TEST ON GOERLI', () => {
 
       expect(owner).eq(mdcOwner.address);
     });
-
 
     // it(
     //   'Function updateColumnArray should emit events and update hash',
@@ -467,13 +470,17 @@ describe('MDC TEST ON GOERLI', () => {
             minPrice1: BigNumber.from(ethers.utils.parseEther('0.00000001')),
             maxPrice0: BigNumber.from(ethers.utils.parseEther('100')),
             maxPrice1: BigNumber.from(ethers.utils.parseEther('100')),
-            withholdingFee0: BigNumber.from(ethers.utils.parseEther('0.00000001')),
-            withholdingFee1: BigNumber.from(ethers.utils.parseEther('0.00000002')),
+            withholdingFee0: BigNumber.from(
+              ethers.utils.parseEther('0.00000001'),
+            ),
+            withholdingFee1: BigNumber.from(
+              ethers.utils.parseEther('0.00000002'),
+            ),
             responseTime0: BigNumber.from(604800).toNumber(),
             responseTime1: BigNumber.from(604800).toNumber(),
           };
           rules.push(converRule(makerRule));
-          console.log(makerRule)
+          console.log(makerRule);
 
           const tree = await calculateRulesTree(rules);
           const root = utils.hexlify(tree.root);
@@ -532,13 +539,19 @@ describe('MDC TEST ON GOERLI', () => {
           );
           expect(v !== null).to.be.true;
 
-          await updateSpv(makerRule.chainId0.toNumber(), spv.address, orManager);
-          await updateSpv(makerRule.chainId1.toNumber(), spv.address, orManager);
+          await updateSpv(
+            makerRule.chainId0.toNumber(),
+            spv.address,
+            orManager,
+          );
+          await updateSpv(
+            makerRule.chainId1.toNumber(),
+            spv.address,
+            orManager,
+          );
         },
       ),
     );
-
-
 
     // it('Function withdraw should success', async function () {
     //   const bETHBefore = await mdcOwner.provider?.getBalance(mdcOwner.address);
@@ -607,49 +620,62 @@ describe('MDC TEST ON GOERLI', () => {
     //     orMakerDeposit.connect(signers[2]).withdraw(constants.AddressZero),
     //   );
     // });
-
-
   });
 
   describe('part2 - send ETH', function () {
-    const sendETH = async function (signer: SignerWithAddress, to: string, amount: BigNumberish) {
+    const sendETH = async function (
+      signer: SignerWithAddress,
+      to: string,
+      amount: BigNumberish,
+    ) {
       const statuses = await ethers.provider.getBlock('latest');
       const tx = await signer.sendTransaction({
         to: to,
-        value: amount
+        value: amount,
       });
-      console.log(`from:${signer.address} send ${utils.formatEther(amount)} ETH to:${to}`);
-      console.log(`txHash:${tx.hash}, chainId:${ethers.provider.network.chainId}, blockNumber:${statuses.number}, timestamp:${statuses.timestamp}`)
+      console.log(
+        `from:${signer.address} send ${utils.formatEther(amount)} ETH to:${to}`,
+      );
+      console.log(
+        `txHash:${tx.hash}, chainId:${ethers.provider.network.chainId}, blockNumber:${statuses.number}, timestamp:${statuses.timestamp}`,
+      );
       return tx;
-    }
+    };
 
-    const sendETHFail = async function (signer: SignerWithAddress, to: string, amount: BigNumberish, manulfail = false) {
+    const sendETHFail = async function (
+      signer: SignerWithAddress,
+      to: string,
+      amount: BigNumberish,
+      manulfail = false,
+    ) {
       try {
         const tx = await signer.sendTransaction({
           to: to,
           value: amount,
-          nonce: 99999999999999
+          nonce: 99999999999999,
         });
-        console.log(`fail! user:${signer.address} send ${utils.formatEther(amount)} ETH to maker:${to}`);
+        console.log(
+          `fail! user:${signer.address} send ${utils.formatEther(
+            amount,
+          )} ETH to maker:${to}`,
+        );
       } catch (error) {
-        console.log(`error: ${error}`)
+        console.log(`error: ${error}`);
       }
+    };
 
-
-    }
-
-    it("prepare: update maker rule", async function () {
+    it('prepare: update maker rule', async function () {
       return;
       await updateMakerRule(orMakerDeposit, ebc.address, makerRule);
     });
 
     let destAmount: BigNumber;
-    it("case1: send ETH to maker", async function () {
+    it('case1: send ETH to maker', async function () {
       return;
-      const balanceBefore = await mdcOwner.provider?.getBalance(mdcOwner.address);
-      const price = makerRule.minPrice0.mul(2)
-        .toString()
-        .slice(0, -5);
+      const balanceBefore = await mdcOwner.provider?.getBalance(
+        mdcOwner.address,
+      );
+      const price = makerRule.minPrice0.mul(2).toString().slice(0, -5);
       const testFreezeAmount =
         price +
         getSecurityCode(
@@ -663,35 +689,38 @@ describe('MDC TEST ON GOERLI', () => {
         converRule(makerRule),
         ebc.address,
         makerRule.chainId0.toNumber(),
-        testFreezeAmount
-      )
+        testFreezeAmount,
+      );
       console.log('destAmount', destAmount);
       await sendETH(signers[0], mdcOwner.address, testFreezeAmount);
-      expect(await mdcOwner.provider?.getBalance(mdcOwner.address))
-        .eq(balanceBefore?.add(testFreezeAmount));
+      expect(await mdcOwner.provider?.getBalance(mdcOwner.address)).eq(
+        balanceBefore?.add(testFreezeAmount),
+      );
     });
 
-    it("case2: ERA send ETH", async function () {
+    it('case2: ERA send ETH', async function () {
       if (networkId == 5) {
         return;
       }
       // const balanceBefore = await mdcOwner.provider?.getBalance(signers[0].address);
       // const destAmount = BigNumber.from(9999900000);
-      const nonce = await mdcOwner.provider?.getTransactionCount(mdcOwner.address);
-      const returnValue = BigNumber.from(nonce).add(destAmount)
+      const nonce = await mdcOwner.provider?.getTransactionCount(
+        mdcOwner.address,
+      );
+      const returnValue = BigNumber.from(nonce).add(destAmount);
       await sendETH(mdcOwner, signers[0].address, returnValue);
       // expect(await mdcOwner.provider?.getBalance(signers[0].address)).eql(balanceBefore?.add(returnValue));
     });
 
-    it("case3: ERA send ETH, but fail", async function () {
+    it('case3: ERA send ETH, but fail', async function () {
       if (networkId == 5) {
         return;
       }
-      const balanceBefore = await mdcOwner.provider?.getBalance(mdcOwner.address);
-      const price = makerRule.minPrice0.mul(2)
-        .toString()
-        .slice(0, -5);
-      const ebc = process.env['EVENT_BINDING_CONTRACT']!
+      const balanceBefore = await mdcOwner.provider?.getBalance(
+        mdcOwner.address,
+      );
+      const price = makerRule.minPrice0.mul(2).toString().slice(0, -5);
+      const ebc = process.env['EVENT_BINDING_CONTRACT']!;
       const testFreezeAmount =
         price +
         getSecurityCode(
@@ -705,7 +734,6 @@ describe('MDC TEST ON GOERLI', () => {
       // expect(await mdcOwner.provider?.getBalance(mdcOwner.address)).eq(balanceBefore);
     });
 
-
     const _calculateMerkleTree = async (
       startBlockNumber: BigNumberish,
       blockInterval: number,
@@ -715,7 +743,9 @@ describe('MDC TEST ON GOERLI', () => {
           .fill(undefined)
           .map((_, index) =>
             orSpvData.provider
-              .getBlock(BigNumber.from(startBlockNumber).add(index).toHexString())
+              .getBlock(
+                BigNumber.from(startBlockNumber).add(index).toHexString(),
+              )
               .then((b: any) => b.hash),
           ),
       );
@@ -757,7 +787,9 @@ describe('MDC TEST ON GOERLI', () => {
           );
 
           const blockHash = await orSpvData.getBlocksRoot(startBlockNumber);
-          console.log(`update blockHash: ${blockHash}, startBlockNumber: ${startBlockNumber}`)
+          console.log(
+            `update blockHash: ${blockHash}, startBlockNumber: ${startBlockNumber}`,
+          );
           expect(BigNumber.from(blockHash)).to.eq(
             BigNumber.from(merkleTree.getHexRoot()),
           );
@@ -765,11 +797,5 @@ describe('MDC TEST ON GOERLI', () => {
         }
       }
     });
-
-
   });
-
 });
-
-
-

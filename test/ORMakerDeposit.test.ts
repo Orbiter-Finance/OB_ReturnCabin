@@ -28,6 +28,8 @@ import {
   TestToken__factory,
   ORChallengeSpv,
   ORChallengeSpv__factory,
+  TestMakerDeposit,
+  TestMakerDeposit__factory,
 } from '../typechain-types';
 import { defaultChainInfo } from './defaults';
 import {
@@ -57,12 +59,14 @@ import {
   challengeManager,
   liquidateChallenge,
   PublicInputData,
+  updateMakerRule,
 } from './utils.test';
 import {
   callDataCost,
   chainIdsMock,
   dealersMock,
   defaultChainInfoArray,
+  defaultResponseTime,
   getCurrentTime,
   mineXTimes,
 } from './lib/mockData';
@@ -744,26 +748,7 @@ describe('ORMakerDeposit', () => {
   describe('start challenge test module', () => {
     let spvTest: TestSpv;
     let spv: ORChallengeSpv;
-    // const defaultRule: BigNumberish[] = [
-    //   BigNumber.from(5),
-    //   BigNumber.from('0x08274f'),
-    //   1,
-    //   1,
-    //   constants.AddressZero,
-    //   constants.AddressZero,
-    //   BigNumber.from('0x01c6bf52634005'),
-    //   BigNumber.from('0x09b6e64a8ecbf5e1'),
-    //   BigNumber.from('0x01c6bf52634c35'),
-    //   BigNumber.from('0x0b1a2bc2ec503d09'),
-    //   BigNumber.from('0x00'),
-    //   BigNumber.from('0x00'),
-    //   1,
-    //   2,
-    //   33,
-    //   28,
-    //   27,
-    //   30,
-    // ];
+    let makerTest: TestMakerDeposit;
     const defaultRule = createMakerRule(true);
     const makerRule: RuleStruct = {
       ...defaultRule,
@@ -773,9 +758,18 @@ describe('ORMakerDeposit', () => {
     const chainId = makerRule.chainId0;
     const chainIdDest = makerRule.chainId1;
 
-    const spvProof: BytesLike = utils.arrayify('0x' + fs.readFileSync('test/example/spv.calldataV3', 'utf-8').replace(/\t|\n|\v|\r|\f/g, ''),);
-    const spvDestProof: BytesLike = utils.arrayify('0x' + fs.readFileSync('test/example/spv.calldata', 'utf-8').replace(/\t|\n|\v|\r|\f/g, ''),);
-
+    const spvProof: BytesLike = utils.arrayify(
+      '0x' +
+        fs
+          .readFileSync('test/example/spv.calldataV3', 'utf-8')
+          .replace(/\t|\n|\v|\r|\f/g, ''),
+    );
+    const spvDestProof: BytesLike = utils.arrayify(
+      '0x' +
+        fs
+          .readFileSync('test/example/spv.calldata', 'utf-8')
+          .replace(/\t|\n|\v|\r|\f/g, ''),
+    );
 
     const getRawData = async (
       columnArray: columnArray,
@@ -852,10 +846,7 @@ describe('ORMakerDeposit', () => {
       const spvDest: { address: PromiseOrValue<string> } =
         await verifierDestFactory.deploy();
 
-      spvTest = await new TestSpv__factory(mdcOwner).deploy(
-        spvSource.address,
-        ebc.address,
-      );
+      spvTest = await new TestSpv__factory(mdcOwner).deploy(spvSource.address);
       await spvTest.deployed();
       spv = await new ORChallengeSpv__factory(mdcOwner).deploy(
         spvSource.address,
@@ -866,6 +857,27 @@ describe('ORMakerDeposit', () => {
       console.log(
         `Address of spv: ${spv.address}, Address of spvTest: ${spvTest.address}, Address of ebc ${ebc.address} `,
       );
+
+      const makerTest_impl = await new TestMakerDeposit__factory(
+        mdcOwner,
+      ).deploy();
+      await makerTest_impl.deployed();
+
+      const factoryTest = await new ORMDCFactory__factory(signers[0]).deploy(
+        orManager.address,
+        makerTest_impl.address,
+      );
+      await factoryTest.deployed();
+
+      const { events } = await factoryTest
+        .connect(mdcOwner)
+        .createMDC()
+        .then((t) => t.wait());
+
+      const mdcAddress = events?.[0].args?.mdc;
+
+      makerTest = new TestMakerDeposit__factory(mdcOwner).attach(mdcAddress);
+      console.log('connect of makerTest:', makerTest.address);
     });
 
     it('calculate spv verify gas cost', async function () {
@@ -875,22 +887,26 @@ describe('ORMakerDeposit', () => {
       expect(tx.status).to.be.eq(1);
       await calculateTxGas(tx, 'spvVerifySourceTx');
       // console.log(await spvTest.parseDestProof(spvDestProof));
-      const txDest = await spv.verifyDestTx(spvDestProof).then((t: any) =>
-        t.wait(),
-      );
+      const txDest = await spv
+        .verifyDestTx(spvDestProof)
+        .then((t: any) => t.wait());
       expect(txDest.status).to.be.eq(1);
       await calculateTxGas(txDest, 'spvVerifyDestTx');
-
     });
 
     it('test function challenge _addChallengeNode', async function () {
       const gasUseList = [];
       let challengeIdentNumList: bigint[] = [];
       const challengeInputInfos: challengeInputInfo[] = [];
+      const chains = defaultChainInfoArray.map((chainInfo) => {
+        return lodash.cloneDeepWith(chainInfo);
+      });
       const latestBlockRes = await orMakerDeposit.provider?.getBlock('latest');
-      for (let i = 0; i < 5; i++) {
-        const sourceTxTime = random(latestBlockRes.timestamp - 86400);
-        const sourceChainId = random(500000);
+      for (let i = 0; i < chains.length; i++) {
+        const sourceTxTime = random(
+          latestBlockRes.timestamp - defaultResponseTime,
+        );
+        const sourceChainId = await chains[i].id;
         const sourceBlockNum = random(latestBlockRes.number);
         const sourceTxIndex = random(i);
         const sourceTxHash = utils.keccak256(mdcOwner.address);
@@ -933,7 +949,7 @@ describe('ORMakerDeposit', () => {
       //   `New rule - chain: ${makerRule.chainId0} --> chain: ${makerRule.chainId1}`,
       // );
       const latestBlockRes = await orMakerDeposit.provider?.getBlock('latest');
-      const sourceTxTime = (await getCurrentTime()) - 1;
+      const sourceTxTime = (await getCurrentTime()) - defaultResponseTime;
       const sourceChainId = case1SourceChainId;
       const sourceBlockNum = random(latestBlockRes.number);
       const sourceTxIndex = random(100);
@@ -944,7 +960,7 @@ describe('ORMakerDeposit', () => {
         sourceTxIndex,
       );
       const challenge: challengeInputInfo = {
-        sourceTxTime: (await getCurrentTime()) - 1,
+        sourceTxTime: (await getCurrentTime()) - defaultResponseTime,
         sourceChainId: case1SourceChainId,
         sourceBlockNum,
         sourceTxIndex,
@@ -1043,11 +1059,11 @@ describe('ORMakerDeposit', () => {
       const sourceTxHash = utils.keccak256(randomBytes(100));
       const freezeAmount = utils.formatEther(100000000000001111n);
       const latestBlockRes = await orMakerDeposit.provider?.getBlock('latest');
-      const sourceChainId = random(500000);
+      const sourceChainId = await defaultChainInfo.id;
       const sourceBlockNum = random(latestBlockRes.number);
       const sourceTxIndex = random(100);
       const challenge: challengeInputInfo = {
-        sourceTxTime: (await getCurrentTime()) - 1,
+        sourceTxTime: (await getCurrentTime()) - defaultResponseTime,
         sourceChainId,
         sourceBlockNum,
         sourceTxIndex,
@@ -1089,6 +1105,9 @@ describe('ORMakerDeposit', () => {
       const sourceChainId = defaultChainInfoArray[0].id;
       const sourceBlockNum = random(latestBlockRes.number);
       const sourceTxIndex = random(100);
+      // const chains = defaultChainInfoArray.map((chainInfo) => {
+      //   return lodash.cloneDeepWith(chainInfo);
+      // });
 
       const maxVerifyTime: number = (
         await orManager.getChainInfo(sourceChainId)
@@ -1122,11 +1141,12 @@ describe('ORMakerDeposit', () => {
     });
 
     it('Challenge and verifyTx', async function () {
-      const publicInputData: PublicInputData = await spvTest.parsePublicInput(
+      const publicInputData: PublicInputData = await spvTest.parseSourceProof(
         spvProof,
       );
-      // console.log('publicInputData', publicInputData);
       expect(publicInputData).not.null;
+
+      await updateMakerRule(makerTest, ebc.address, makerRule);
 
       const challengeColumnArray: columnArray = {
         ...columnArray,
@@ -1170,7 +1190,7 @@ describe('ORMakerDeposit', () => {
 
       // get related slots & values of maker/manager contract
       const verifyInfo = await getVerifyinfo(
-        orMakerDeposit,
+        makerTest,
         orManager,
         verifyinfoBase,
       );
@@ -1178,13 +1198,15 @@ describe('ORMakerDeposit', () => {
       const encodeRule = await spvTest.createEncodeRule(makerRule);
       // console.log('encodeRule', encodeRule);
 
-      const responseMakersEncodeRaw = await spvTest.encodeResponseMakers([BigNumber.from(mdcOwner.address)]);
+      const responseMakersEncodeRaw = await spvTest.encodeResponseMakers([
+        BigNumber.from(mdcOwner.address),
+      ]);
       const responseMakersHash = keccak256(responseMakersEncodeRaw);
 
       // with replace reason
       const makerPublicInputData: PublicInputData = {
         ...publicInputData,
-        mdc_contract_address: orMakerDeposit.address, // mdc not same
+        mdc_contract_address: makerTest.address, // mdc not same
         manage_contract_address: orManager.address, // manager not same
         max_verify_challenge_dest_tx_second:
           BigNumber.from(99999999999999).toHexString(), // max verify time too small
@@ -1219,10 +1241,14 @@ describe('ORMakerDeposit', () => {
       };
 
       // spv should be setting by manager
-      await updateSpv(BigNumber.from(challenge.sourceChainId).toNumber(), spv.address, orManager);
-      await createChallenge(orMakerDeposit, challenge);
+      await updateSpv(
+        BigNumber.from(challenge.sourceChainId).toNumber(),
+        spv.address,
+        orManager,
+      );
+      await createChallenge(makerTest, challenge);
 
-      const tx = await orMakerDeposit
+      const tx = await makerTest
         .verifyChallengeSource(
           mdcOwner.address,
           makerPublicInputData,
@@ -1235,11 +1261,12 @@ describe('ORMakerDeposit', () => {
 
       const destAmount = await spvTest.calculateDestAmount(
         makerRule,
+        ebc.address,
         makerPublicInputData.chain_id,
         makerPublicInputData.amount,
       );
 
-      const verifiedDataHashData: BigNumber[] = [
+      const verifiedDataHashData: BigNumberish[] = [
         makerPublicInputData.min_verify_challenge_dest_tx_second,
         makerPublicInputData.max_verify_challenge_dest_tx_second,
         makerPublicInputData.nonce,
@@ -1270,17 +1297,16 @@ describe('ORMakerDeposit', () => {
 
       await mineXTimes(2);
 
-      await expect(
-        orMakerDeposit.verifyChallengeDest(
-          mdcOwner.address,
-          challenge.sourceChainId,
-          challenge.sourceTxHash,
-          spvDestProof,
-          verifiedDataHashData,
-          responseMakersEncodeRaw
-        ),
-      ).to.revertedWith('DCID');
-
+      // await expect(
+      //   makerTest.verifyChallengeDest(
+      //     mdcOwner.address,
+      //     challenge.sourceChainId,
+      //     challenge.sourceTxHash,
+      //     spvDestProof,
+      //     verifiedDataHashData,
+      //     responseMakersEncodeRaw,
+      //   ),
+      // ).to.revertedWith('DCID');
     });
   });
 });

@@ -9,9 +9,20 @@ import {
   constants,
   utils,
 } from 'ethers';
-import { ORMakerDeposit, ORManager, TestSpv } from '../typechain-types';
+import {
+  ORMakerDeposit,
+  ORManager,
+  TestMakerDeposit,
+  TestSpv,
+} from '../typechain-types';
 import { callDataCost, getCurrentTime } from './lib/mockData';
-import { RuleStruct, calculateRulesTree, converRule, createMakerRule, encodeRuleStruct } from './lib/rule';
+import {
+  RuleStruct,
+  calculateRulesTree,
+  converRule,
+  createMakerRule,
+  encodeRuleStruct,
+} from './lib/rule';
 import {
   BytesLike,
   defaultAbiCoder,
@@ -166,23 +177,23 @@ export interface PublicInputData {
   // l1_tx_block_number: BigNumberish;
   mdc_contract_address: string;
   manage_contract_address: string;
-  mdc_rule_root_slot: BytesLike;
-  mdc_rule_version_slot: BytesLike;
-  mdc_rule_enable_time_slot: BytesLike;
-  mdc_column_array_hash_slot: BytesLike;
-  mdc_response_makers_hash_slot: BytesLike;
-  manage_source_chain_info_slot: BytesLike;
+  mdc_rule_root_slot: BigNumberish;
+  mdc_rule_version_slot: BigNumberish;
+  mdc_rule_enable_time_slot: BigNumberish;
+  mdc_column_array_hash_slot: BigNumberish;
+  mdc_response_makers_hash_slot: BigNumberish;
+  manage_source_chain_info_slot: BigNumberish;
   min_verify_challenge_src_tx_second: BigNumberish;
   max_verify_challenge_src_tx_second: BigNumberish;
   min_verify_challenge_dest_tx_second: BigNumberish;
   max_verify_challenge_dest_tx_second: BigNumberish;
-  manage_source_chain_mainnet_token_info_slot: BytesLike;
-  manage_dest_chain_mainnet_token_slot: BytesLike;
-  manage_challenge_user_ratio_slot: BytesLike;
+  manage_source_chain_mainnet_token_info_slot: BigNumberish;
+  manage_dest_chain_mainnet_token_slot: BigNumberish;
+  manage_challenge_user_ratio_slot: BigNumberish;
   mdc_current_rule_root: BytesLike;
   mdc_current_rule_enable_time: BigNumberish;
   mdc_current_column_array_hash: BytesLike;
-  mdc_current_response_makers_hash: BytesLike;
+  mdc_current_response_makers_hash: BigNumberish;
   // manage_current_source_chain_info: BytesLike;
   manage_current_source_chain_mainnet_token: string;
   manage_current_dest_chain_mainnet_token: string;
@@ -197,14 +208,14 @@ export const updateSpv = async (
   _orManager: ORManager,
 ) => {
   // 去除spv结果中0值
-  const currentSpvs: string[] = (
-    await _orManager.getChainInfo(chainId)
-  ).spvs.filter((v) => v != constants.AddressZero).concat(spvAddress);
+  const currentSpvs: string[] = (await _orManager.getChainInfo(chainId)).spvs
+    .filter((v) => v != constants.AddressZero)
+    .concat(spvAddress);
 
   const enableTimeTime =
     // eslint-disable-next-line prettier/prettier
     (await getCurrentTime()) >
-      (await _orManager.getVersionAndEnableTime()).enableTime.toNumber()
+    (await _orManager.getVersionAndEnableTime()).enableTime.toNumber()
       ? await getCurrentTime()
       : (await _orManager.getVersionAndEnableTime()).enableTime;
 
@@ -220,9 +231,7 @@ export const updateSpv = async (
     )
     .then((t) => t.wait(1));
   const updatedSpvs = (await _orManager.getChainInfo(chainId)).spvs;
-  expect(
-    updatedSpvs,
-  ).to.deep.includes(spvAddress);
+  expect(updatedSpvs).to.deep.includes(spvAddress);
 
   console.log(`chainId: ${chainId}, newSpvAddress: ${spvAddress}`);
 };
@@ -243,7 +252,8 @@ export const getSecurityCode = (
   // );
   const dealerIndexStr = dealerIndex.toString().padStart(2, '0');
   const securityCode = dealerIndex
-    .toString().padStart(2, '0')
+    .toString()
+    .padStart(2, '0')
     .concat(ebcIndex.toString())
     .concat('0')
     .concat(chainIdIndex.toString());
@@ -261,7 +271,7 @@ export const getSecurityCode = (
  * @return {VerifyInfo[]} The parameters of verifyChallengeSource()
  */
 export const getVerifyinfo = async (
-  orMakerDeposit: ORMakerDeposit,
+  orMakerDeposit: ORMakerDeposit | TestMakerDeposit,
   orManager: ORManager,
   verifyinfoBase: VerifyinfoBase,
   challenge?: challengeInputInfo,
@@ -634,7 +644,7 @@ export const getVerifyinfo = async (
 };
 
 export const createChallenge = async (
-  orMakerDeposit: ORMakerDeposit,
+  orMakerDeposit: ORMakerDeposit | TestMakerDeposit,
   challenge: challengeInputInfo,
   revertReason?: string,
 ): Promise<
@@ -926,36 +936,48 @@ export class challengeManager {
 }
 
 export const updateMakerRule = async (
-  orMakerDeposit: ORMakerDeposit,
+  orMakerDeposit: ORMakerDeposit | TestMakerDeposit,
   ebc: string,
-  rule?: RuleStruct
+  rule?: RuleStruct,
 ) => {
   const rules: any[] = [];
-  const defaultRule: RuleStruct = rule != undefined ? rule : createMakerRule(true);
+  const defaultRule: RuleStruct =
+    rule != undefined ? rule : createMakerRule(true);
   const newRule: RuleStruct = {
     ...defaultRule,
     compensationRatio0: defaultRule.compensationRatio0 + 1,
     compensationRatio1: defaultRule.compensationRatio1 + 1,
-  }
+  };
 
   rules.push(converRule(newRule));
-
 
   const tree = await calculateRulesTree(rules);
   const root = utils.hexlify(tree.root);
 
   const currentRootwithVersion = await orMakerDeposit.getVersionAndEnableTime();
-  console.log('currentRootwithVersion', currentRootwithVersion);
+  // console.log('currentRootwithVersion', currentRootwithVersion);
   const version = (await orMakerDeposit.rulesRoot(ebc)).version + 1;
 
   const rootWithVersion = { root, version };
   const sourceChainIds = [1];
   const pledgeAmounts = [utils.parseEther('0.000001')];
   const statuses = await ethers.provider.getBlock('latest');
-  const oldTimeStamp = statuses.timestamp > currentRootwithVersion.enableTime.toNumber() ? statuses.timestamp : currentRootwithVersion.enableTime.toNumber();
-  const enableTime = getMinEnableTime(BigNumber.from(oldTimeStamp))
+  const oldTimeStamp =
+    statuses.timestamp > currentRootwithVersion.enableTime.toNumber()
+      ? statuses.timestamp
+      : currentRootwithVersion.enableTime.toNumber();
+  const enableTime = getMinEnableTime(BigNumber.from(oldTimeStamp));
 
-  console.log(`update current timestamp: ${statuses.timestamp}, enableTime: ${enableTime}, currBlk:${statuses.number} predict enable block: ${(((enableTime.toNumber() - statuses.timestamp) / 12) + statuses.number).toFixed(0)}`);
+  console.log(
+    `update current timestamp: ${
+      statuses.timestamp
+    }, enableTime: ${enableTime}, currBlk:${
+      statuses.number
+    } predict enable block: ${(
+      (enableTime.toNumber() - statuses.timestamp) / 12 +
+      statuses.number
+    ).toFixed(0)}`,
+  );
 
   const { events } = await orMakerDeposit
     .updateRulesRoot(
@@ -970,6 +992,5 @@ export const updateMakerRule = async (
       },
     )
     .then((t: any) => t.wait());
-  console.log("newRule:", newRule);
-}
-
+  console.log('newRule:', newRule);
+};

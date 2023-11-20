@@ -90,8 +90,8 @@ describe('Test ORManager', () => {
           process.env['OR_MANAGER_ADDRESS'] != undefined
             ? getMinEnableTime(BigNumber.from(await getCurrentTime()))
             : getMinEnableTime(
-              (await orManager.getVersionAndEnableTime()).enableTime,
-            );
+                (await orManager.getVersionAndEnableTime()).enableTime,
+              );
         const { events } = await orManager
           .registerChains(enableTime, chains, {
             gasLimit: 1e6,

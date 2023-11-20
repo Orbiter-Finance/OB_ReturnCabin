@@ -149,15 +149,17 @@ export const mockValue: SMTValue = {
 
 export const submitter2Mock = '0xD6Cec62CE67E09b240B84A3FB53cC1EbA05795d6';
 
+export const defaultResponseTime = 604800;
+
 export const defaultChainInfoArray: BridgeLib.ChainInfoStruct[] =
   chainIdsMock.map((chainId) => {
     return {
       id: BigNumber.from(chainId),
       batchLimit: BigNumber.from(1000),
       minVerifyChallengeSourceTxSecond: BigNumber.from(0),
-      maxVerifyChallengeSourceTxSecond: BigNumber.from(604800),
+      maxVerifyChallengeSourceTxSecond: BigNumber.from(defaultResponseTime),
       minVerifyChallengeDestTxSecond: BigNumber.from(0),
-      maxVerifyChallengeDestTxSecond: BigNumber.from(604800),
+      maxVerifyChallengeDestTxSecond: BigNumber.from(defaultResponseTime),
       nativeToken: BigNumber.from(
         chainIdsMockMainnetToken[chainIdsMock.indexOf(chainId)],
       ),
