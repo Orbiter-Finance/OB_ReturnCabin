@@ -3,29 +3,42 @@ pragma solidity ^0.8.17;
 
 import {HelperLib} from "./library/HelperLib.sol";
 import {IORSpvData} from "./interface/IORSpvData.sol";
-import {IORManager} from "./interface/IORManager.sol";
 
 contract ORSpvData is IORSpvData {
     using HelperLib for bytes;
 
-    IORManager private _manager;
+    address public manager;
+
     uint64 private _blockInterval = 192;
     address private _injectOwner;
-
     mapping(uint => bytes32) private _blocksRoots; // startBlockNumber => [start ..._blockInterval... end]'s blocks root
 
-    constructor(address manager_) {
+    constructor(address manager_, address injectOwner_) {
         require(manager_ != address(0), "MZ");
-        _manager = IORManager(manager_);
+        manager = manager_;
+
+        if (injectOwner_ != address(0)) {
+            _injectOwner = injectOwner_;
+            emit InjectOwnerUpdated(injectOwner_);
+        }
     }
 
     modifier onlyManager() {
-        require(msg.sender == address(_manager), "Forbidden: caller is not the manager");
+        require(msg.sender == manager, "Forbidden: caller is not the manager");
         _;
     }
 
-    function getBlocksRoot(uint startBlockNumber) external view returns (bytes32) {
-        return _blocksRoots[startBlockNumber];
+    function blockInterval() external view returns (uint64) {
+        return _blockInterval;
+    }
+
+    function updateBlockInterval(uint64 blockInterval_) external onlyManager {
+        require(blockInterval_ >= 2 && blockInterval_ <= 256, "IOF");
+        require(blockInterval_ % 2 == 0, "IV");
+
+        _blockInterval = blockInterval_;
+
+        emit BlockIntervalUpdated(blockInterval_);
     }
 
     // TODO: Not review
@@ -127,17 +140,8 @@ contract ORSpvData is IORSpvData {
         }
     }
 
-    function blockInterval() external view returns (uint64) {
-        return _blockInterval;
-    }
-
-    function updateBlockInterval(uint64 blockInterval_) external onlyManager {
-        require(blockInterval_ >= 2 && blockInterval_ <= 256, "IOF");
-        require(blockInterval_ % 2 == 0, "IV");
-
-        _blockInterval = blockInterval_;
-
-        emit BlockIntervalUpdated(blockInterval_);
+    function getBlocksRoot(uint startBlockNumber) external view returns (bytes32) {
+        return _blocksRoots[startBlockNumber];
     }
 
     function injectOwner() external view returns (address) {

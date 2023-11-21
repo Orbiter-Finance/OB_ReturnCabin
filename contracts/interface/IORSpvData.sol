@@ -11,13 +11,13 @@ interface IORSpvData {
     event InjectOwnerUpdated(address injectOwner);
     event HistoryBlocksRootSaved(uint indexed startBlockNumber, bytes32 blocksRoot, uint blockInterval);
 
-    function getBlocksRoot(uint startBlockNumber) external view returns (bytes32);
-
-    function saveHistoryBlocksRoots() external;
-
     function blockInterval() external view returns (uint64);
 
     function updateBlockInterval(uint64 blockInterval_) external;
+
+    function saveHistoryBlocksRoots() external;
+
+    function getBlocksRoot(uint startBlockNumber) external view returns (bytes32);
 
     function injectOwner() external view returns (address);
 

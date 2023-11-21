@@ -3,6 +3,9 @@ import { ethers } from 'hardhat';
 
 import { mine, mineUpTo } from '@nomicfoundation/hardhat-network-helpers';
 import { assert, expect } from 'chai';
+import { BigNumber, BigNumberish, constants } from 'ethers';
+import { defaultAbiCoder, id, keccak256 } from 'ethers/lib/utils';
+import { MerkleTree } from 'merkletreejs';
 import {
   IORSpvData,
   ORManager,
@@ -10,10 +13,7 @@ import {
   ORSpvData,
   ORSpvData__factory,
 } from '../typechain-types';
-import { BigNumber, BigNumberish } from 'ethers';
 import { testReverted, testRevertedOwner } from './utils.test';
-import { defaultAbiCoder, id, keccak256 } from 'ethers/lib/utils';
-import { MerkleTree } from 'merkletreejs';
 
 describe('ORSpvData', () => {
   let signers: SignerWithAddress[];
@@ -53,6 +53,7 @@ describe('ORSpvData', () => {
 
     orSpvData = await new ORSpvData__factory(signers[0]).deploy(
       envORManagerAddress,
+      constants.AddressZero,
     );
     console.log('orSpvData.address:', orSpvData.address);
 

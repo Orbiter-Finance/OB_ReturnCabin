@@ -1,3 +1,4 @@
+import { Wallet, constants } from 'ethers';
 import { ethers } from 'hardhat';
 import {
   OREventBinding__factory,
@@ -7,7 +8,6 @@ import {
   ORManager__factory,
   ORSpvData__factory,
 } from '../typechain-types';
-import { Wallet } from 'ethers';
 
 export async function deploy() {
   const signers = await ethers.getSigners();
@@ -34,6 +34,7 @@ export async function deploy() {
 
   const orSpvData = await new ORSpvData__factory(deployer).deploy(
     orManager.address,
+    process.env.OR_SPV_DATA_INJECT_OWNER || constants.AddressZero,
   );
   console.log(
     `Address of orSpvData: ${
