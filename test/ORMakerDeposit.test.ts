@@ -691,7 +691,7 @@ describe('ORMakerDeposit', () => {
     const M_ETH_Before = await ethers.provider.getBalance(
       orMakerDeposit.address,
     );
-    const firstRequestInfo = await orMakerDeposit?.getWithdrawRequestInfo(
+    const firstRequestInfo = await orMakerDeposit?.getWithdrawRequestList(
       constants.AddressZero,
     );
     expect(BigNumber.from(firstRequestInfo.requestTimestamp)).eq(0);
@@ -700,7 +700,7 @@ describe('ORMakerDeposit', () => {
     const requestReceipt = await orMakerDeposit
       .withdrawRequest(constants.AddressZero, amountETH)
       .then((t) => t.wait());
-    const secondRequestInfo = await orMakerDeposit?.getWithdrawRequestInfo(
+    const secondRequestInfo = await orMakerDeposit?.getWithdrawRequestList(
       constants.AddressZero,
     );
     expect(BigNumber.from(secondRequestInfo.requestTimestamp)).gt(0);
@@ -719,7 +719,7 @@ describe('ORMakerDeposit', () => {
     const withdrawReceipt = await orMakerDeposit
       .withdraw(constants.AddressZero)
       .then((t) => t.wait());
-    const thirdRequestInfo = await orMakerDeposit?.getWithdrawRequestInfo(
+    const thirdRequestInfo = await orMakerDeposit?.getWithdrawRequestList(
       constants.AddressZero,
     );
     expect(BigNumber.from(thirdRequestInfo.requestTimestamp)).eq(0);
@@ -1362,8 +1362,8 @@ describe('ORMakerDeposit', () => {
         ),
       };
 
-      expect(
-        await makerTest.verifyChallengeDest(
+      const txDest = await makerTest
+        .verifyChallengeDest(
           mdcOwner.address,
           challenge.sourceChainId,
           challenge.sourceTxHash,
@@ -1371,8 +1371,10 @@ describe('ORMakerDeposit', () => {
           verifiedDataInfo,
           responseMakersEncodeRaw,
           makerPublicInputDataDest,
-        ),
-      ).to.be.satisfy;
+        )
+        .then((t: any) => t.wait());
+      expect(txDest.status).to.be.eq(1);
+      await calculateTxGas(txDest, 'verifyChallengeDestTx ');
     });
   });
 });

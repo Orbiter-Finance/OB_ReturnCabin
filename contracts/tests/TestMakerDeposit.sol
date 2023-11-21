@@ -37,7 +37,7 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
     mapping(bytes32 => uint256) private _pledgeBalances; // hash(ebc, sourceChainId, sourceToken) => pledgeBalance
     mapping(address => uint256) private _freezeAssets; // token(ETH: 0) => freezeAmount
     mapping(bytes32 => ChallengeInfo) private _challenges; // hash(sourceChainId, transactionHash) => ChallengeInfo
-    mapping(address => WithdrawRequestInfo) private _withdrawRequestInfo;
+    mapping(address => WithdrawRequestList) private _withdrawRequestList;
     mapping(uint256 => ChallengeNode) private _challengeNodeList;
     uint256 private _challengeNodeHead;
 
@@ -47,14 +47,14 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
     }
 
     modifier onlyNoRequestTimestamp(address requestToken) {
-        require(_withdrawRequestInfo[requestToken].requestTimestamp == 0, "RHB");
+        require(_withdrawRequestList[requestToken].requestTimestamp == 0, "RHB");
         _;
     }
 
     modifier onlyRequestTimestampCheckPass(address requestToken) {
         require(
-            _withdrawRequestInfo[requestToken].requestTimestamp > 0 &&
-                block.timestamp >= _withdrawRequestInfo[requestToken].requestTimestamp,
+            _withdrawRequestList[requestToken].requestTimestamp > 0 &&
+                block.timestamp >= _withdrawRequestList[requestToken].requestTimestamp,
             "WTN"
         );
         _;
@@ -167,8 +167,8 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         }
     }
 
-    function getWithdrawRequestInfo(address targetToken) external view returns (WithdrawRequestInfo memory) {
-        return _withdrawRequestInfo[targetToken];
+    function getWithdrawRequestList(address targetToken) external view returns (WithdrawRequestList memory) {
+        return _withdrawRequestList[targetToken];
     }
 
     function withdrawRequest(
@@ -178,12 +178,12 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         uint64 requestTimestamp = uint64(
             block.timestamp + IORManager(_mdcFactory.manager()).getChallengeWithdrawDelay()
         );
-        _withdrawRequestInfo[requestToken] = WithdrawRequestInfo(requestAmount, requestTimestamp, requestToken);
+        _withdrawRequestList[requestToken] = WithdrawRequestList(requestAmount, requestTimestamp, requestToken);
         emit WithdrawRequested(requestAmount, requestTimestamp, requestToken);
     }
 
     function withdraw(address token) external onlyOwner onlyRequestTimestampCheckPass(token) {
-        WithdrawRequestInfo storage requestInfo = _withdrawRequestInfo[token];
+        WithdrawRequestList storage requestInfo = _withdrawRequestList[token];
         requestInfo.requestTimestamp = 0;
 
         uint256 balance;
@@ -410,7 +410,7 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         );
     }
 
-    function checkChallenge(uint64 sourceChainId, bytes32 sourceTxHash, address[] calldata challenger) external {
+    function checkChallenge(uint64 sourceChainId, bytes32 sourceTxHash, address[] calldata challengers) external {
         bytes32 challengeId = abi.encode(uint64(sourceChainId), sourceTxHash).hash();
         uint256 challengeIdentNum;
         ChallengeInfo storage challengeInfo = _challenges[challengeId];
@@ -420,7 +420,7 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         BridgeLib.ChainInfo memory chainInfo = manager.getChainInfo(sourceChainId);
 
         for (uint256 i = 0; ; ) {
-            ChallengeStatement memory challengeStatement = challengeInfo.statement[challenger[i]];
+            ChallengeStatement memory challengeStatement = challengeInfo.statement[challengers[i]];
 
             // Make sure the challenge exists
             require(challengeStatement.challengeTime > 0, "CNE");
@@ -451,7 +451,7 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
                     require(block.timestamp > chainInfo.maxVerifyChallengeDestTxSecond + result.verifiedTime0, "VCST");
                     _unFreezeToken(
                         challengeStatement.freezeToken,
-                        _makerFailed(challengeStatement, winnerStatement, result, challenger[i], sourceChainId)
+                        _makerFailed(challengeStatement, winnerStatement, result, challengers[i], sourceChainId)
                     );
                 } else {
                     // none challenger verify
@@ -466,15 +466,15 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
                 }
             }
 
-            challengeInfo.statement[challenger[i]].abortTime = uint64(block.timestamp);
+            challengeInfo.statement[challengers[i]].abortTime = uint64(block.timestamp);
 
             emit ChallengeInfoUpdated({
                 challengeId: challengeId,
-                statement: challengeInfo.statement[challenger[i]],
+                statement: challengeInfo.statement[challengers[i]],
                 result: result
             });
 
-            if (i == challenger.length - 1) {
+            if (i == challengers.length - 1) {
                 break;
             }
 

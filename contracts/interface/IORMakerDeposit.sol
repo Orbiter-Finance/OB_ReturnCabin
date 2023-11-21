@@ -37,7 +37,7 @@ interface IORMakerDeposit {
         bool challengeFinished;
     }
 
-    struct WithdrawRequestInfo {
+    struct WithdrawRequestList {
         uint256 requestAmount;
         uint64 requestTimestamp;
         address requestToken;
@@ -96,7 +96,7 @@ interface IORMakerDeposit {
 
     function deposit(address token, uint256 amount) external payable;
 
-    function getWithdrawRequestInfo(address targetToken) external view returns (WithdrawRequestInfo memory);
+    function getWithdrawRequestList(address targetToken) external view returns (WithdrawRequestList memory);
 
     function withdrawRequest(address requestToken, uint256 requestAmount) external;
 
@@ -136,7 +136,7 @@ interface IORMakerDeposit {
         uint256 parentNodeNumOfTargetNode
     ) external payable;
 
-    function checkChallenge(uint64 sourceChainId, bytes32 sourceTxHash, address[] calldata challenger) external;
+    function checkChallenge(uint64 sourceChainId, bytes32 sourceTxHash, address[] calldata challengers) external;
 
     // function verifyChallengeSource(
     //     address spvAddress,
