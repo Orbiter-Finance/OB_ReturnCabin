@@ -91,4 +91,6 @@ interface IORManager {
         uint64[] calldata chainIds,
         uint256[] calldata extraTransferContracts
     ) external;
+
+    function getDecoderRLP() external view returns (address);
 }

@@ -21,7 +21,10 @@ import {
   calculateRulesTree,
   converRule,
   createMakerRule,
+  encodeChallengeRawData,
+  encodeChallengeRawDataWORule,
   encodeRuleStruct,
+  formatRule,
 } from './lib/rule';
 import {
   BytesLike,
@@ -31,6 +34,7 @@ import {
 } from 'ethers/lib/utils';
 import { getMappingStructXSlot } from './lib/readStorage';
 import { assert } from 'console';
+import { string } from 'hardhat/internal/core/params/argumentTypes';
 
 export function hexToBuffer(hex: string) {
   return Buffer.from(utils.arrayify(hex));
@@ -200,6 +204,42 @@ export interface PublicInputData {
   manage_current_challenge_user_ratio: BigNumberish;
   mdc_next_rule_enable_time: BigNumberish;
   mdc_current_rule_value_hash: BytesLike;
+}
+
+export interface PublicInputDataDest {
+  // tx_hash: BytesLike;
+  chain_id: BigNumberish;
+  // index: BigNumberish;
+  from: BigNumberish;
+  to: BigNumberish;
+  token: BigNumberish;
+  amount: BigNumberish;
+  nonce: BigNumberish;
+  time_stamp: BigNumberish;
+}
+
+// struct verifiedDataInfo {
+//   uint256 minChallengeSecond;
+//   uint256 maxChallengeSecond;
+//   uint256 nonce;
+//   uint256 destChainId;
+//   uint256 from;
+//   uint256 destToken;
+//   uint256 destAmount;
+//   uint256 responseMakersHash;
+//   uint256 responseTime;
+// }
+
+export interface VerifiedDataInfo {
+  minChallengeSecond: BigNumberish;
+  maxChallengeSecond: BigNumberish;
+  nonce: BigNumberish;
+  destChainId: BigNumberish;
+  from: BigNumberish;
+  destToken: BigNumberish;
+  destAmount: BigNumberish;
+  responseMakersHash: BigNumberish;
+  responseTime: BigNumberish;
 }
 
 export const updateSpv = async (
@@ -939,14 +979,19 @@ export const updateMakerRule = async (
   orMakerDeposit: ORMakerDeposit | TestMakerDeposit,
   ebc: string,
   rule?: RuleStruct,
-) => {
+  modifyRule = false,
+): Promise<BigNumberish[]> => {
   const rules: any[] = [];
   const defaultRule: RuleStruct =
     rule != undefined ? rule : createMakerRule(true);
   const newRule: RuleStruct = {
     ...defaultRule,
-    compensationRatio0: defaultRule.compensationRatio0 + 1,
-    compensationRatio1: defaultRule.compensationRatio1 + 1,
+    compensationRatio0: modifyRule
+      ? defaultRule.compensationRatio0 + 1
+      : defaultRule.compensationRatio0,
+    compensationRatio1: modifyRule
+      ? defaultRule.compensationRatio1 + 1
+      : defaultRule.compensationRatio1,
   };
 
   rules.push(converRule(newRule));
@@ -993,4 +1038,39 @@ export const updateMakerRule = async (
     )
     .then((t: any) => t.wait());
   console.log('newRule:', newRule);
+
+  return converRule(newRule);
+};
+
+export const getRLPEncodeMakerRuleHash = (rule: BigNumberish[]) => {
+  const rlpRawdata = utils.RLP.encode(
+    rule.map((r) => utils.stripZeros(BigNumber.from(r).toHexString())),
+  );
+  const encodeHash = utils.keccak256(rlpRawdata);
+  return {
+    rlpRawdata: rlpRawdata,
+    encodeHash: encodeHash,
+  };
+};
+
+export const getRawDataNew = async (columnArray: columnArray, ebc: string) => {
+  const jsEncode = encodeChallengeRawDataWORule(
+    columnArray.dealers,
+    columnArray.ebcs,
+    columnArray.chainIds,
+    ebc,
+  );
+
+  const columnArrayHash = utils.keccak256(
+    utils.defaultAbiCoder.encode(
+      ['uint256[]', 'uint256[]', 'uint256[]'],
+      [columnArray.dealers, columnArray.ebcs, columnArray.chainIds],
+    ),
+  );
+  // expect(columnArrayHash).eql(await orMakerDeposit.columnArrayHash());
+
+  return {
+    rawData: utils.arrayify(jsEncode),
+    columnArrayHash: columnArrayHash,
+  };
 };

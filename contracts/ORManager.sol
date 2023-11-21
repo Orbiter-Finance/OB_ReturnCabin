@@ -5,6 +5,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import "./interface/IORManager.sol";
 import {VersionAndEnableTime} from "./VersionAndEnableTime.sol";
 import {HelperLib} from "./library/HelperLib.sol";
+import {IORDecoderRLP} from "./interface/IORDecoderRLP.sol";
 
 contract ORManager is IORManager, Ownable, VersionAndEnableTime {
     using HelperLib for bytes;
@@ -32,6 +33,8 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
     address private _spvDataContract;
 
     mapping(uint64 => uint256) private _extraTransferContracts; // Cross-address transfer contracts. chainId => contractAddress
+
+    IORDecoderRLP private _rlpDecoder;
 
     constructor(address owner_) {
         require(owner_ != address(0), "OZ");
@@ -251,5 +254,13 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
             _extraTransferContracts[chainIds[i]] = extraTransferContracts[i];
         }
         emit ExtraTransferContractsUpdated(chainIds, extraTransferContracts);
+    }
+
+    function updateDecoderRLP(address rlpDecoderAddress) external onlyOwner {
+        _rlpDecoder = IORDecoderRLP(rlpDecoderAddress);
+    }
+
+    function getDecoderRLP() external view returns (address) {
+        return address(_rlpDecoder);
     }
 }

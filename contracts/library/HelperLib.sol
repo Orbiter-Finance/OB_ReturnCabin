@@ -478,17 +478,13 @@ library HelperLib {
     }
 
     struct PublicInputDataDest {
-        bytes32 txHash;
-        uint64 chainId;
-        uint256 txIndex;
+        uint64 chain_id;
         uint256 from;
         uint256 to;
         uint256 token;
         uint256 amount;
         uint256 nonce;
-        uint64 timestamp;
-        bytes32 L1TXBlockHash;
-        uint256 L1TBlockNumber;
+        uint64 time_stamp;
     }
 
     function parsePublicInputDest(
@@ -497,30 +493,15 @@ library HelperLib {
         uint256 ProofLength = 384;
         uint256 splitStep = 32;
         uint256 splitStart = ProofLength + 64; // 384 is proof length;64 is blockHash length
-        uint256 TrackBlockSplitStart = splitStart + splitStep * 12;
         return
             HelperLib.PublicInputDataDest({
-                txHash: bytes32(
-                    (uint256(bytes32(proofData[splitStart:splitStart + splitStep])) << 128) |
-                        uint256(bytes32(proofData[splitStart + splitStep:splitStart + splitStep * 2]))
-                ),
-                chainId: uint64(uint256(bytes32(proofData[splitStart + splitStep * 3:splitStart + splitStep * 4]))),
-                txIndex: uint256(bytes32(proofData[splitStart + splitStep * 2:splitStart + splitStep * 3])),
+                chain_id: uint64(uint256(bytes32(proofData[splitStart + splitStep * 3:splitStart + splitStep * 4]))),
                 from: ((uint256(bytes32(proofData[splitStart + splitStep * 4:splitStart + splitStep * 5])))),
                 to: ((uint256(bytes32(proofData[splitStart + splitStep * 5:splitStart + splitStep * 6])))),
                 token: ((uint256(bytes32(proofData[splitStart + splitStep * 6:splitStart + splitStep * 7])))),
                 amount: uint256(bytes32(proofData[splitStart + splitStep * 7:splitStart + splitStep * 8])),
                 nonce: uint256(bytes32(proofData[splitStart + splitStep * 8:splitStart + splitStep * 9])),
-                timestamp: uint64(uint256(bytes32(proofData[splitStart + splitStep * 9:splitStart + splitStep * 10]))),
-                L1TXBlockHash: bytes32(
-                    (uint256(bytes32(proofData[TrackBlockSplitStart:TrackBlockSplitStart + splitStep])) << 128) |
-                        uint256(
-                            bytes32(proofData[TrackBlockSplitStart + splitStep:TrackBlockSplitStart + splitStep * 2])
-                        )
-                ),
-                L1TBlockNumber: uint256(
-                    bytes32(proofData[TrackBlockSplitStart + splitStep * 2:TrackBlockSplitStart + splitStep * 3])
-                )
+                time_stamp: uint64(uint256(bytes32(proofData[splitStart + splitStep * 9:splitStart + splitStep * 10])))
             });
     }
 }

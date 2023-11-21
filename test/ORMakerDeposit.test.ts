@@ -6,12 +6,13 @@ import fs from 'fs';
 
 import {
   BytesLike,
+  RLP,
   arrayify,
   defaultAbiCoder,
   keccak256,
   solidityPack,
 } from 'ethers/lib/utils';
-import lodash, { random } from 'lodash';
+import lodash, { get, random } from 'lodash';
 import { BaseTrie } from 'merkle-patricia-tree';
 import {
   OREventBinding,
@@ -30,15 +31,19 @@ import {
   ORChallengeSpv__factory,
   TestMakerDeposit,
   TestMakerDeposit__factory,
+  RLPDecoder,
+  RLPDecoder__factory,
 } from '../typechain-types';
 import { defaultChainInfo } from './defaults';
 import {
   RuleStruct,
   calculateRuleKey,
   calculateRulesTree,
+  converRule,
   createMakerRule,
   createRandomRule,
   encodeChallengeRawData,
+  formatRule,
   getRulesRootUpdatedLogs,
 } from './lib/rule';
 import {
@@ -60,6 +65,10 @@ import {
   liquidateChallenge,
   PublicInputData,
   updateMakerRule,
+  PublicInputDataDest,
+  VerifiedDataInfo,
+  getRLPEncodeMakerRuleHash,
+  getRawDataNew,
 } from './utils.test';
 import {
   callDataCost,
@@ -749,6 +758,7 @@ describe('ORMakerDeposit', () => {
     let spvTest: TestSpv;
     let spv: ORChallengeSpv;
     let makerTest: TestMakerDeposit;
+    let rlpDecoder: RLPDecoder;
     const defaultRule = createMakerRule(true);
     const makerRule: RuleStruct = {
       ...defaultRule,
@@ -846,13 +856,18 @@ describe('ORMakerDeposit', () => {
       const spvDest: { address: PromiseOrValue<string> } =
         await verifierDestFactory.deploy();
 
-      spvTest = await new TestSpv__factory(mdcOwner).deploy(spvSource.address);
+      spvTest = await new TestSpv__factory(mdcOwner).deploy();
       await spvTest.deployed();
       spv = await new ORChallengeSpv__factory(mdcOwner).deploy(
         spvSource.address,
         spvDest.address,
       );
       await spv.deployed();
+
+      rlpDecoder = await new RLPDecoder__factory(mdcOwner).deploy();
+      await rlpDecoder.deployed();
+
+      console.log('Address of rlpDecoder: ', rlpDecoder.address);
 
       console.log(
         `Address of spv: ${spv.address}, Address of spvTest: ${spvTest.address}, Address of ebc ${ebc.address} `,
@@ -1141,12 +1156,37 @@ describe('ORMakerDeposit', () => {
     });
 
     it('Challenge and verifyTx', async function () {
+      let defaultRule: BigNumberish[] = [
+        5,
+        BigNumber.from('0x08274f'),
+        1,
+        1,
+        constants.AddressZero,
+        constants.AddressZero,
+        BigNumber.from('0x01c6bf52634c35'),
+        BigNumber.from('0x09b6e64a8ecbf5e1'),
+        BigNumber.from('0x01c6bf52634005'),
+        BigNumber.from('0x0b1a2bc2ec503d09'),
+        BigNumber.from('0x038d7ea51bf300'),
+        BigNumber.from('0x038d7ea53d84c0'),
+        1,
+        2,
+        33,
+        28,
+        27,
+        30,
+      ];
+      await updateMakerRule(makerTest, ebc.address, formatRule(defaultRule));
+      await orManager.updateDecoderRLP(rlpDecoder.address);
+      expect(await orManager.getDecoderRLP()).eq(rlpDecoder.address);
       const publicInputData: PublicInputData = await spvTest.parseSourceProof(
         spvProof,
       );
-      expect(publicInputData).not.null;
-
-      await updateMakerRule(makerTest, ebc.address, makerRule);
+      {
+        const { encodeHash } = getRLPEncodeMakerRuleHash(defaultRule);
+        expect(publicInputData).not.null;
+        expect(encodeHash).eql(publicInputData.mdc_current_rule_value_hash);
+      }
 
       const challengeColumnArray: columnArray = {
         ...columnArray,
@@ -1160,10 +1200,9 @@ describe('ORMakerDeposit', () => {
         utils.hexZeroPad(BigNumber.from(8888888).toHexString(), 8).slice(2) +
         utils.hexZeroPad('0x00', 8).slice(2);
 
-      const { rawData, columnArrayHash } = await getRawData(
+      const { rawData, columnArrayHash } = await getRawDataNew(
         challengeColumnArray,
         ebc.address,
-        makerRule,
       );
 
       const price = makerRule.maxPrice0
@@ -1194,17 +1233,19 @@ describe('ORMakerDeposit', () => {
         orManager,
         verifyinfoBase,
       );
-
-      const encodeRule = await spvTest.createEncodeRule(makerRule);
-      // console.log('encodeRule', encodeRule);
-
+      // default rule not work in uint test , replace with new rule
+      const { rlpRawdata, encodeHash } = getRLPEncodeMakerRuleHash(
+        converRule(makerRule),
+      );
+      const RLPDecodeRule: RuleStruct = await rlpDecoder.decodeRule(rlpRawdata);
+      expect(converRule(RLPDecodeRule)).deep.equals(converRule(makerRule));
       const responseMakersEncodeRaw = await spvTest.encodeResponseMakers([
         BigNumber.from(mdcOwner.address),
       ]);
       const responseMakersHash = keccak256(responseMakersEncodeRaw);
 
-      // with replace reason
       const makerPublicInputData: PublicInputData = {
+        // with replace reason
         ...publicInputData,
         mdc_contract_address: makerTest.address, // mdc not same
         manage_contract_address: orManager.address, // manager not same
@@ -1218,11 +1259,9 @@ describe('ORMakerDeposit', () => {
         amount: BigNumber.from(testFreezeAmount), // security code base on ebc & dealer, they both changed
         mdc_rule_root_slot: verifyInfo.slots[6].key, // ebc not same
         mdc_rule_version_slot: verifyInfo.slots[7].key, // ebc not same
-        // mdc_current_rule_value_hash: encodeRule.toHexString(), // TODO: enable this replacement after circuit update abi.encode(rule)
+        mdc_current_rule_value_hash: encodeHash, // rule not compatible
         mdc_current_response_makers_hash: responseMakersHash, // response maker not same
       };
-
-      // console.log("makerRule", makerRule);
 
       const challenge: challengeInputInfo = {
         sourceTxTime: BigNumber.from(
@@ -1239,7 +1278,6 @@ describe('ORMakerDeposit', () => {
         freezeAmount: makerPublicInputData.amount,
         parentNodeNumOfTargetNode: 0,
       };
-
       // spv should be setting by manager
       await updateSpv(
         BigNumber.from(challenge.sourceChainId).toNumber(),
@@ -1254,11 +1292,11 @@ describe('ORMakerDeposit', () => {
           makerPublicInputData,
           spvProof,
           rawData,
+          rlpRawdata,
         )
         .then((t: any) => t.wait());
       expect(tx.status).to.be.eq(1);
       await calculateTxGas(tx, 'verifyChallengeSourceTx ');
-
       const destAmount = await spvTest.calculateDestAmount(
         makerRule,
         ebc.address,
@@ -1277,6 +1315,7 @@ describe('ORMakerDeposit', () => {
         makerPublicInputData.mdc_current_response_makers_hash,
         makerRule.responseTime0,
       ];
+
       const verifiedDataHash = keccak256(
         solidityPack(
           [
@@ -1297,16 +1336,43 @@ describe('ORMakerDeposit', () => {
 
       await mineXTimes(2);
 
-      // await expect(
-      //   makerTest.verifyChallengeDest(
-      //     mdcOwner.address,
-      //     challenge.sourceChainId,
-      //     challenge.sourceTxHash,
-      //     spvDestProof,
-      //     verifiedDataHashData,
-      //     responseMakersEncodeRaw,
-      //   ),
-      // ).to.revertedWith('DCID');
+      const publicInputDataDest: PublicInputDataDest =
+        await spvTest.parseDestProof(spvDestProof);
+
+      const verifiedDataInfo: VerifiedDataInfo = {
+        minChallengeSecond: verifiedDataHashData[0],
+        maxChallengeSecond: verifiedDataHashData[1],
+        nonce: verifiedDataHashData[2],
+        destChainId: verifiedDataHashData[3],
+        from: verifiedDataHashData[4],
+        destToken: verifiedDataHashData[5],
+        destAmount: verifiedDataHashData[6],
+        responseMakersHash: verifiedDataHashData[7],
+        responseTime: verifiedDataHashData[8],
+      };
+
+      const makerPublicInputDataDest: PublicInputDataDest = {
+        ...publicInputDataDest,
+        chain_id: makerRule.chainId1.toHexString(), // align with makerRule
+        token: makerRule.token0.toHexString(), // align with makerRule
+        from: makerPublicInputData.to,
+        to: makerPublicInputData.from,
+        amount: BigNumber.from(verifiedDataInfo.destAmount).add(
+          verifiedDataInfo.nonce,
+        ),
+      };
+
+      expect(
+        await makerTest.verifyChallengeDest(
+          mdcOwner.address,
+          challenge.sourceChainId,
+          challenge.sourceTxHash,
+          spvDestProof,
+          verifiedDataInfo,
+          responseMakersEncodeRaw,
+          makerPublicInputDataDest,
+        ),
+      ).to.be.satisfy;
     });
   });
 });

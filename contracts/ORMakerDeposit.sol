@@ -15,6 +15,7 @@ import {ConstantsLib} from "./library/ConstantsLib.sol";
 import {BridgeLib} from "./library/BridgeLib.sol";
 import {VersionAndEnableTime} from "./VersionAndEnableTime.sol";
 import {IVerifierRouter} from "./zkp/IVerifierRouter.sol";
+import {IORDecoderRLP} from "./interface/IORDecoderRLP.sol";
 
 // import "hardhat/console.sol";
 
@@ -487,7 +488,8 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         address challenger,
         // HelperLib.PublicInputDataSource calldata publicInputData,
         bytes calldata proof,
-        bytes calldata rawDatas
+        bytes calldata rawDatas,
+        bytes calldata rlpRuleBytes
     ) external {
         uint256 startGasNum = gasleft();
         HelperLib.PublicInputDataSource memory publicInputData = proof.parsePublicInputSource();
@@ -534,13 +536,14 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             require(timeDiff >= publicInputData.min_verify_challenge_src_tx_second, "MINTOF");
             require(timeDiff <= publicInputData.max_verify_challenge_src_tx_second, "MAXTOF");
         }
-        (
-            address[] memory dealers,
-            address[] memory ebcs,
-            uint64[] memory chainIds,
-            address ebc,
-            RuleLib.Rule memory rule
-        ) = abi.decode(rawDatas, (address[], address[], uint64[], address, RuleLib.Rule));
+        (address[] memory dealers, address[] memory ebcs, uint64[] memory chainIds, address ebc) = abi.decode(
+            rawDatas,
+            (address[], address[], uint64[], address)
+        );
+        require(rlpRuleBytes.hash() == publicInputData.mdc_current_rule_value_hash, "RLPE");
+        // address decoder = IORManager(publicInputData.manage_contract_address).getDecoderRLP();
+        RuleLib.Rule memory rule = IORDecoderRLP(IORManager(publicInputData.manage_contract_address).getDecoderRLP())
+            .decodeRule(rlpRuleBytes);
         // check _columnArrayHash
         require(abi.encode(dealers, ebcs, chainIds).hash() == publicInputData.mdc_current_column_array_hash, "CHE");
         // Check ebc address, destChainId, destToken
@@ -676,7 +679,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             require(timeDiff <= uint64(verifiedSourceTxData.maxChallengeSecond), "MAXTOF");
         }
         // Check dest chainId
-        require(verifiedSourceTxData.destChainId == publicInputData.chainId, "DCID");
+        require(verifiedSourceTxData.destChainId == publicInputData.chain_id, "DCID");
 
         // Check dest from address in responseMakers
         require(responseMakers.includes(publicInputData.from), "MIC");
@@ -688,12 +691,12 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         require(verifiedSourceTxData.destToken == publicInputData.token, "DT");
 
         // Check dest amount (Warning: The nonce is at the end of the amount)
-        require(verifiedSourceTxData.destAmount - verifiedSourceTxData.nonce == publicInputData.amount, "DT");
+        require(verifiedSourceTxData.destAmount + verifiedSourceTxData.nonce == publicInputData.amount, "DAT");
 
         // Check Response time
         require(
-            statement.sourceTxTime < publicInputData.timestamp &&
-                verifiedSourceTxData.responseTime < (publicInputData.timestamp - statement.sourceTxTime),
+            statement.sourceTxTime < publicInputData.time_stamp &&
+                verifiedSourceTxData.responseTime < (publicInputData.time_stamp - statement.sourceTxTime),
             "RST"
         );
 

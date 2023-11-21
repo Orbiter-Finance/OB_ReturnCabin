@@ -110,8 +110,7 @@ export const converRule = (rule: RuleStruct): BigNumberish[] => {
   ];
 
   return formatRule;
-}
-
+};
 
 export const formatRule = (rule: BigNumberish[]): RuleStruct => {
   const formatRule: RuleStruct = {
@@ -174,6 +173,18 @@ export const createMakerRule = (getNative: boolean): RuleStruct => {
     compensationRatio1: 2 ^ (29 - 1),
   };
   return rule;
+};
+
+export const encodeChallengeRawDataWORule = (
+  dealers: string[],
+  ebcs: string[],
+  chainIds: number[],
+  ebc: string,
+): string => {
+  return utils.defaultAbiCoder.encode(
+    ['address[]', 'address[]', 'uint64[]', 'address'],
+    [dealers, ebcs, chainIds, ebc],
+  );
 };
 
 export const encodeChallengeRawData = (
