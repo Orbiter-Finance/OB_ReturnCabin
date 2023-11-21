@@ -4,12 +4,7 @@ pragma solidity ^0.8.17;
 
 import {ConstantsLib} from "./ConstantsLib.sol";
 
-import {RLPReader} from "./RLPReader.sol";
-
 library RuleLib {
-    using RLPReader for RLPReader.RLPItem;
-    // // using RLPReader for RLPReader.Iterator;
-    using RLPReader for bytes;
     struct Rule {
         uint64 chainId0; // 59144
         uint64 chainId1; // 10
@@ -48,28 +43,6 @@ library RuleLib {
         uint32 tradingFee;
         uint32 responseTime;
         uint32 compensationRatio;
-    }
-
-    function decodeRule(bytes memory rlpBytes) internal pure returns (RuleLib.Rule memory rule) {
-        RLPReader.RLPItem[] memory ls = rlpBytes.toRlpItem().toList(); // must convert to an rlpItem first!
-        rule.chainId0 = uint64(ls[0].toUint());
-        rule.chainId1 = uint64(ls[1].toUint());
-        rule.status0 = uint8(ls[2].toUint());
-        rule.status1 = uint8(ls[3].toUint());
-        rule.token0 = ls[4].toUint();
-        rule.token1 = ls[5].toUint();
-        rule.minPrice0 = uint128(ls[6].toUint());
-        rule.minPrice1 = uint128(ls[7].toUint());
-        rule.maxPrice0 = uint128(ls[8].toUint());
-        rule.maxPrice1 = uint128(ls[9].toUint());
-        rule.withholdingFee0 = uint128(ls[10].toUint());
-        rule.withholdingFee1 = uint128(ls[11].toUint());
-        rule.tradingFee0 = uint32(ls[12].toUint());
-        rule.tradingFee1 = uint32(ls[13].toUint());
-        rule.responseTime0 = uint32(ls[14].toUint());
-        rule.responseTime1 = uint32(ls[15].toUint());
-        rule.compensationRatio0 = uint32(ls[16].toUint());
-        rule.compensationRatio1 = uint32(ls[17].toUint());
     }
 
     function checkChainIds(uint64 chainId0, uint64 chainId1) internal pure {
