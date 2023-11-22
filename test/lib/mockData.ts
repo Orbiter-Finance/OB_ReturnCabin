@@ -626,13 +626,13 @@ export function getRulesSetting(getNative: boolean) {
   }
   let chain0MinPrice = BigNumber.from(5)
     .pow(parseInt(Math.random() * 6 + ''))
-    .add(BigNumber.from('50000' + paddingString));
+    .add(BigNumber.from('5000' + paddingString));
   let chain0MaxPrice = BigNumber.from(5)
     .pow(parseInt(Math.random() * 9 + ''))
     .add(BigNumber.from('70000000' + paddingString));
   let chain1MinPrice = BigNumber.from(5)
     .pow(parseInt(Math.random() * 6 + ''))
-    .add(BigNumber.from('50000' + paddingString));
+    .add(BigNumber.from('5000' + paddingString));
   let chain1MaxPrice = BigNumber.from(5)
     .pow(parseInt(Math.random() * 9 + ''))
     .add(BigNumber.from('80000000' + paddingString));

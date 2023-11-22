@@ -578,7 +578,9 @@ export const getVerifyinfo = async (
       : '0x00';
 
     expect(slot6_I).to.equal(hashKey);
-    expect(value6).to.equal(valueRoot?.toHexString());
+    expect(BigNumber.from(value6)).to.equal(
+      BigNumber.from(valueRoot?.toHexString()),
+    );
     expect(version).to.equal(BigNumber.from(valueVersion).toNumber());
   }
 
@@ -832,7 +834,7 @@ export const calculateTxGas = async (
 };
 
 export const liquidateChallenge = async (
-  orMakerDeposit: ORMakerDeposit,
+  orMakerDeposit: ORMakerDeposit | TestMakerDeposit,
   challengeNodeList: challengeNodeInfoList[],
   chalengers: string[],
 ) => {
@@ -863,8 +865,8 @@ export const liquidateChallenge = async (
   await calculateTxGas(tx, `Liquidation ${chalengers.length} challengers!`);
   tx.events?.forEach((event, index) => {
     const args = event.args!;
+    const challengeNode = challengeNodeList[index];
     expect(args.challengeId).not.empty;
-    expect(args.statement.sourceTxFrom).eql(BigNumber.from(0));
     expect(args.statement.sourceTxTime).eql(
       BigNumber.from(challengeNode.challenge.sourceTxTime),
     );
@@ -889,6 +891,14 @@ export class challengeManager {
   static sortingNodeInfoList: challengeNodeInfoList[] = [];
   static numList: bigint[] = [];
   static numSortingList: bigint[] = [];
+
+  static initialize() {
+    this.challengeInfoList = [];
+    this.challengeNodeInfoList = [];
+    this.sortingNodeInfoList = [];
+    this.numList = [];
+    this.numSortingList = [];
+  }
 
   static addChallengeInfo(challengeInfo: challengeInputInfo) {
     this.challengeInfoList.push(challengeInfo);

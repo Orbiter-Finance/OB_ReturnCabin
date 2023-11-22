@@ -763,7 +763,9 @@ describe('ORMakerDeposit', () => {
     const makerRule: RuleStruct = {
       ...defaultRule,
       chainId0: BigNumber.from(5),
-      chainId1: BigNumber.from('0x08274f'),
+      chainId1: BigNumber.from(280),
+      withholdingFee0: BigNumber.from('3' + '0'.repeat(5)),
+      withholdingFee1: BigNumber.from('4' + '0'.repeat(5)),
     };
     const chainId = makerRule.chainId0;
     const chainIdDest = makerRule.chainId1;
@@ -1156,6 +1158,7 @@ describe('ORMakerDeposit', () => {
     });
 
     it('Challenge and verifyTx', async function () {
+      challengeManager.initialize();
       let defaultRule: BigNumberish[] = [
         5,
         BigNumber.from('0x08274f'),
@@ -1176,7 +1179,8 @@ describe('ORMakerDeposit', () => {
         27,
         30,
       ];
-      await updateMakerRule(makerTest, ebc.address, formatRule(defaultRule));
+      const formatDefaultRule = formatRule(defaultRule);
+      await updateMakerRule(makerTest, ebc.address, makerRule);
       await orManager.updateDecoderRLP(rlpDecoder.address);
       expect(await orManager.getDecoderRLP()).eq(rlpDecoder.address);
       const publicInputData: PublicInputData = await spvTest.parseSourceProof(
@@ -1205,11 +1209,7 @@ describe('ORMakerDeposit', () => {
         ebc.address,
       );
 
-      const price = makerRule.maxPrice0
-        .sub(makerRule.minPrice0)
-        .div(2)
-        .toString()
-        .slice(0, -5);
+      const price = makerRule.minPrice0.mul(2).toString().slice(0, -5);
       const testFreezeAmount =
         price +
         getSecurityCode(
@@ -1218,6 +1218,7 @@ describe('ORMakerDeposit', () => {
           mdcOwner.address,
           parseInt(chainIdDest.toString()),
         );
+      console.log('testFreezeAmount', utils.formatEther(testFreezeAmount));
 
       const verifyinfoBase: VerifyinfoBase = {
         chainIdSource: makerRule.chainId0,
@@ -1284,11 +1285,50 @@ describe('ORMakerDeposit', () => {
         spv.address,
         orManager,
       );
-      await createChallenge(makerTest, challenge);
+      const challengerList: string[] = [];
+      const balanceBeforeList: BigNumberish[] = [];
+      {
+        const makerTestChallenge0 = new TestMakerDeposit__factory(
+          signers[0],
+        ).attach(makerTest.address);
+        await createChallenge(makerTestChallenge0, challenge);
+        challengerList.push(signers[0].address);
+        balanceBeforeList.push(
+          await ethers.provider.getBalance(signers[0].address),
+        );
+
+        const challenge2: challengeInputInfo = {
+          ...challenge,
+          sourceTxIndex: challenge.sourceTxIndex + 1,
+        };
+
+        const makerTestChallenge2 = new TestMakerDeposit__factory(
+          signers[2],
+        ).attach(makerTest.address);
+        await createChallenge(makerTestChallenge2, challenge2);
+        challengerList.push(signers[2].address);
+        balanceBeforeList.push(
+          await ethers.provider.getBalance(signers[2].address),
+        );
+
+        const challenge1: challengeInputInfo = {
+          ...challenge,
+          sourceTxTime: challenge.sourceTxTime + 1,
+        };
+
+        const makerTestChallenge1 = new TestMakerDeposit__factory(
+          signers[1],
+        ).attach(makerTest.address);
+        await createChallenge(makerTestChallenge1, challenge1);
+        challengerList.push(signers[1].address);
+        balanceBeforeList.push(
+          await ethers.provider.getBalance(signers[1].address),
+        );
+      }
 
       const tx = await makerTest
         .verifyChallengeSource(
-          mdcOwner.address,
+          challengerList[0],
           makerPublicInputData,
           spvProof,
           rawData,
@@ -1364,7 +1404,7 @@ describe('ORMakerDeposit', () => {
 
       const txDest = await makerTest
         .verifyChallengeDest(
-          mdcOwner.address,
+          challengerList[0],
           challenge.sourceChainId,
           challenge.sourceTxHash,
           spvDestProof,
@@ -1375,6 +1415,22 @@ describe('ORMakerDeposit', () => {
         .then((t: any) => t.wait());
       expect(txDest.status).to.be.eq(1);
       await calculateTxGas(txDest, 'verifyChallengeDestTx ');
+
+      const challengeList = challengeManager.getChallengeInfoList();
+      await liquidateChallenge(makerTest, challengeList, challengerList);
+      expect(challengeManager.getChallengeInfoList().length).eq(0);
+
+      const balanceAfterList: bigint[] = await Promise.all(
+        challengerList.map((challenger) =>
+          ethers.provider
+            .getBalance(challenger)
+            .then((balance) => balance.toBigInt()),
+        ),
+      );
+
+      // challger lost, won't get reward
+      expect(balanceAfterList[0]).equal(balanceBeforeList[0]);
+      expect(balanceAfterList[1]).equal(balanceBeforeList[1]);
     });
   });
 });

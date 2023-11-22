@@ -30,8 +30,8 @@ import {
   ORChallengeSpv__factory,
   ORSpvData,
   ORSpvData__factory,
-} from '../typechain-types';
-import { defaultChainInfo } from './defaults';
+} from '../../typechain-types';
+import { defaultChainInfo } from '../defaults';
 import {
   RuleStruct,
   calculateRuleKey,
@@ -41,7 +41,7 @@ import {
   createRandomRule,
   encodeChallengeRawData,
   getRulesRootUpdatedLogs,
-} from './lib/rule';
+} from '../lib/rule';
 import {
   challengeInputInfo,
   columnArray,
@@ -61,7 +61,7 @@ import {
   liquidateChallenge,
   PublicInputData,
   updateMakerRule,
-} from './utils.test';
+} from '../utils.test';
 import {
   callDataCost,
   chainIdsMock,
@@ -70,10 +70,10 @@ import {
   defaultResponseTime,
   getCurrentTime,
   mineXTimes,
-} from './lib/mockData';
-import { PromiseOrValue } from '../typechain-types/common';
+} from '../lib/mockData';
+import { PromiseOrValue } from '../../typechain-types/common';
 import { randomBytes } from 'crypto';
-import { compile_yul, VerifierAbi } from '../scripts/utils';
+import { compile_yul, VerifierAbi } from '../../scripts/utils';
 import { MerkleTree } from 'merkletreejs';
 import { mine, mineUpTo } from '@nomicfoundation/hardhat-network-helpers';
 
