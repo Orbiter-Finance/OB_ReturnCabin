@@ -6,9 +6,9 @@ export const defaultChainInfo: BridgeLib.ChainInfoStruct = {
   id: BigNumber.from(5),
   batchLimit: BigNumber.from(1000),
   minVerifyChallengeSourceTxSecond: BigNumber.from(100),
-  maxVerifyChallengeSourceTxSecond: BigNumber.from(200),
+  maxVerifyChallengeSourceTxSecond: BigNumber.from(604800),
   minVerifyChallengeDestTxSecond: BigNumber.from(100),
-  maxVerifyChallengeDestTxSecond: BigNumber.from(200),
+  maxVerifyChallengeDestTxSecond: BigNumber.from(604800),
   spvs: [constants.AddressZero],
 };
 

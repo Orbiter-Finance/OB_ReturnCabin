@@ -666,7 +666,7 @@ describe('MDC TEST ON GOERLI', () => {
 
     it('prepare: update maker rule', async function () {
       return;
-      await updateMakerRule(orMakerDeposit, ebc.address, makerRule);
+      await updateMakerRule(orMakerDeposit, ebc.address, makerRule, true);
     });
 
     let destAmount: BigNumber;

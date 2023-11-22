@@ -1010,7 +1010,7 @@ export const updateMakerRule = async (
   const root = utils.hexlify(tree.root);
 
   const currentRootwithVersion = await orMakerDeposit.getVersionAndEnableTime();
-  // console.log('currentRootwithVersion', currentRootwithVersion);
+  console.log('currentRootwithVersion', currentRootwithVersion);
   const version = (await orMakerDeposit.rulesRoot(ebc)).version + 1;
 
   const rootWithVersion = { root, version };

@@ -22,3 +22,4 @@ artifacts
 # Idea
 .idea
 .vscode/
+scripts/lab/

@@ -81,7 +81,7 @@ import {
 } from './lib/mockData';
 import { PromiseOrValue } from '../typechain-types/common';
 import { randomBytes } from 'crypto';
-import { compile_yul, VerifierAbi } from '../scripts/utils';
+import { compile_yul, deploySPVs, VerifierAbi } from '../scripts/utils';
 
 describe('ORMakerDeposit', () => {
   let signers: SignerWithAddress[];
@@ -832,39 +832,12 @@ describe('ORMakerDeposit', () => {
     };
 
     before(async function () {
-      const verifyDestBytesCode = await compile_yul(
-        'contracts/zkp/goerliDestSpvVerifier.yul',
+      spv = new ORChallengeSpv__factory(mdcOwner).attach(
+        await deploySPVs(mdcOwner),
       );
-
-      const verifierDestFactory = new ethers.ContractFactory(
-        VerifierAbi,
-        verifyDestBytesCode,
-        mdcOwner,
-      );
-
-      const verifySourceBytesCode = await compile_yul(
-        'contracts/zkp/goerliSourceSpvVerifier.yul',
-      );
-
-      const verifierSourceFactory = new ethers.ContractFactory(
-        VerifierAbi,
-        verifySourceBytesCode,
-        mdcOwner,
-      );
-
-      const spvSource: { address: PromiseOrValue<string> } =
-        await verifierSourceFactory.deploy();
-
-      const spvDest: { address: PromiseOrValue<string> } =
-        await verifierDestFactory.deploy();
 
       spvTest = await new TestSpv__factory(mdcOwner).deploy();
       await spvTest.deployed();
-      spv = await new ORChallengeSpv__factory(mdcOwner).deploy(
-        spvSource.address,
-        spvDest.address,
-      );
-      await spv.deployed();
 
       rlpDecoder = await new RLPDecoder__factory(mdcOwner).deploy();
       await rlpDecoder.deployed();

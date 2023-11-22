@@ -12,6 +12,10 @@ contract testSpv {
     using RLPReader for bytes;
     address public v_address;
 
+    constructor(address _v) {
+        v_address = _v;
+    }
+
     function set_v(address _v) public {
         v_address = _v;
     }
