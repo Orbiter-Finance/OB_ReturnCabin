@@ -10,6 +10,10 @@ import {
   ORChallengeSpv,
   ORMakerDeposit,
   contracts,
+  ORMDCFactory__factory,
+  TestMakerDeposit,
+  ORMakerDeposit__factory,
+  TestMakerDeposit__factory,
 } from '../typechain-types';
 import { PromiseOrValue } from '../typechain-types/common';
 import { BigNumber } from 'ethers';
@@ -157,11 +161,11 @@ export const deploySPVs = async (
   ).deploy(spvSource.address, spvDest.address);
   await spv.deployed();
   process.env['SPV_ADDRESS'] = spv.address;
+
   return spv.address;
 };
 
 export const MIN_ENABLE_DELAY = 120; // Unit: second
-
 export const calculateEnableTime = async (
   contract: any,
 ): Promise<BigNumber> => {
@@ -172,4 +176,29 @@ export const calculateEnableTime = async (
       ? statuses.timestamp
       : currentRootwithVersion.enableTime.toNumber();
   return getMinEnableTime(BigNumber.from(oldTimeStamp));
+};
+
+export const deployMDC = async (
+  factoryOwner: SignerWithAddress,
+  mdcOwner: SignerWithAddress,
+  orManagerAddress: string,
+  orMakerDeposit_implAddress: string,
+) => {
+  let orMDCFactory;
+  orMDCFactory = await new ORMDCFactory__factory(factoryOwner).deploy(
+    orManagerAddress,
+    orMakerDeposit_implAddress,
+  );
+  await orMDCFactory.deployed();
+
+  const { events } = await orMDCFactory
+    .connect(mdcOwner)
+    .createMDC()
+    .then((t) => t.wait());
+  const mdcAddress = events?.[0].args?.mdc;
+  const factoryAddress = orMDCFactory.address;
+  return {
+    factoryAddress,
+    mdcAddress,
+  };
 };

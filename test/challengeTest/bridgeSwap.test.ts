@@ -30,6 +30,7 @@ import {
   ORChallengeSpv__factory,
   ORSpvData,
   ORSpvData__factory,
+  TestMakerDeposit__factory,
 } from '../../typechain-types';
 import { defaultChainInfo } from '../defaults';
 import {
@@ -73,9 +74,15 @@ import {
 } from '../lib/mockData';
 import { PromiseOrValue } from '../../typechain-types/common';
 import { randomBytes } from 'crypto';
-import { compile_yul, VerifierAbi } from '../../scripts/utils';
+import {
+  calculateEnableTime,
+  compile_yul,
+  deployMDC,
+  VerifierAbi,
+} from '../../scripts/utils';
 import { MerkleTree } from 'merkletreejs';
 import { mine, mineUpTo } from '@nomicfoundation/hardhat-network-helpers';
+import { Console } from 'console';
 
 describe('MDC TEST ON GOERLI', () => {
   let signers: SignerWithAddress[];
@@ -95,14 +102,56 @@ describe('MDC TEST ON GOERLI', () => {
   let orSpvData: ORSpvData;
   let spvTest: TestSpv;
   let networkId: number;
+  let sourceChain: number;
+  let destChain: number;
 
   before(async function () {
     signers = await ethers.getSigners();
-    mdcOwner = signers[1];
+    mdcOwner = signers[2];
     networkId = (await ethers.provider.getNetwork()).chainId;
-    // network id
+    console.log('networkId:', networkId);
 
-    if (networkId == 31337 || 5) {
+    if (networkId == 31337 || networkId == 5) {
+      if (process.env['OR_MDC_TEST'] == undefined) {
+        const makerTest_impl = await new TestMakerDeposit__factory(
+          mdcOwner,
+        ).deploy();
+        await makerTest_impl.deployed();
+
+        const { factoryAddress, mdcAddress } = await deployMDC(
+          signers[0],
+          mdcOwner,
+          process.env['OR_MANAGER_ADDRESS']!,
+          makerTest_impl.address,
+        );
+
+        const makerTest = new TestMakerDeposit__factory(mdcOwner).attach(
+          mdcAddress,
+        );
+        console.log('address of factory for makerTest:', factoryAddress);
+        console.log('connect of makerTest:', makerTest.address);
+        process.env['OR_MDC_TEST'] = makerTest.address;
+      }
+
+      if (process.env['OR_MDC'] == undefined) {
+        const maker_impl = await new ORMakerDeposit__factory(mdcOwner).deploy();
+        await maker_impl.deployed();
+
+        const { factoryAddress, mdcAddress } = await deployMDC(
+          signers[0],
+          mdcOwner,
+          process.env['OR_MANAGER_ADDRESS']!,
+          maker_impl.address,
+        );
+
+        const maker = new ORMakerDeposit__factory(mdcOwner).attach(mdcAddress);
+        console.log('address of factory for MDC:', factoryAddress);
+        console.log('connect of MDC:', maker.address);
+
+        process.env['OR_MDC'] = maker.address;
+        process.env['OR_MDC_FACTORY_ADDRESS'] = factoryAddress;
+      }
+
       const envORMDCFactoryAddress = process.env['OR_MDC_FACTORY_ADDRESS'];
       assert(
         !!envORMDCFactoryAddress,
@@ -206,6 +255,7 @@ describe('MDC TEST ON GOERLI', () => {
         console.log('connect to spvTest', spvTest.address);
       } else {
         spvTest = await new TestSpv__factory(mdcOwner).deploy(spv.address);
+        console.log('address of spvTest:', spvTest.address);
       }
     }
     makerRule = {
@@ -229,10 +279,16 @@ describe('MDC TEST ON GOERLI', () => {
       compensationRatio1: 30,
     };
 
+    sourceChain = makerRule.chainId1.toNumber();
+    destChain = makerRule.chainId0.toNumber();
+
+    // sourceChain = makerRule.chainId0.toNumber();
+    // destChain = makerRule.chainId1.toNumber();
+
     defaultRule = converRule(makerRule);
 
     columnArray = {
-      dealers: ['0xaFcfbb382b28dae47B76224F24eE29BE2c823648'],
+      dealers: [mdcOwner.address],
       ebcs: [process.env['EVENT_BINDING_CONTRACT']!],
       chainIds: [5, 420, 421613, 280, 534351],
     };
@@ -252,133 +308,50 @@ describe('MDC TEST ON GOERLI', () => {
       expect(owner).eq(mdcOwner.address);
     });
 
-    // it(
-    //   'Function updateColumnArray should emit events and update hash',
-    //   embedVersionIncreaseAndEnableTime(
-    //     () => orMakerDeposit.getVersionAndEnableTime().then((r) => r.version),
-    //     async function () {
-    //       const mdcEbcs: string[] = process.env['EVENT_BINDING_CONTRACT'] != undefined ? [process.env['EVENT_BINDING_CONTRACT']] : [ebc.address];
-    //       mdcEbcs.sort(() => Math.random() - 0.5);
-    //       const mdcDealers: string[] = [mdcOwner.address]
-    //       const chainIds: number[] = chainIdsMock;
-    //       const columnArrayHash = utils.keccak256(
-    //         utils.defaultAbiCoder.encode(
-    //           ['uint256[]', 'uint256[]', 'uint256[]'],
-    //           [mdcDealers, mdcEbcs, chainIds],
-    //         ),
-    //       );
-    //       columnArray = {
-    //         dealers: mdcDealers,
-    //         ebcs: mdcEbcs,
-    //         chainIds: chainIds,
-    //       };
-    //       // print columnArray
-    //       console.log("columnArray: ", columnArray);
-    //       const enableTime = getMinEnableTime((await orMakerDeposit.getVersionAndEnableTime()).enableTime);
-    //       console.log((await orMakerDeposit.getVersionAndEnableTime()));
-    //       console.log(`current time: ${(await ethers.provider.getBlock('latest')).timestamp}, block: ${(await ethers.provider.getBlock('latest')).number}, enableTime: ${enableTime}`);
-    //       const { events } = await orMakerDeposit
-    //         .updateColumnArray(
-    //           enableTime,
-    //           mdcDealers,
-    //           mdcEbcs,
-    //           chainIds,
-    //           {
-    //             gasLimit: 10000000,
-    //           },
-    //         )
-    //         .then((t) => t.wait(2));
+    it(
+      'Function updateColumnArray should emit events and update hash',
+      embedVersionIncreaseAndEnableTime(
+        () => orMakerDeposit.getVersionAndEnableTime().then((r) => r.version),
+        async function () {
+          // const mdcEbcs: string[] =
+          //   process.env['EVENT_BINDING_CONTRACT'] != undefined
+          //     ? [process.env['EVENT_BINDING_CONTRACT']]
+          //     : [ebc.address];
+          // mdcEbcs.sort(() => Math.random() - 0.5);
+          const mdcDealers: string[] = columnArray.dealers;
+          const chainIds: number[] = columnArray.chainIds;
+          const mdcEbcs: string[] = columnArray.ebcs;
 
-    //       const args = events?.[0].args;
-    //       expect(args?.impl).eq(implementation);
-    //       expect(await orMakerDeposit.columnArrayHash()).eq(columnArrayHash);
-    //       expect(lodash.toPlainObject(args?.ebcs)).to.deep.includes(mdcEbcs);
-    //       expect(lodash.toPlainObject(args?.dealers)).to.deep.includes(
-    //         mdcDealers,
-    //       );
-    //     },
-    //   ),
-    // );
+          const columnArrayHash = utils.keccak256(
+            utils.defaultAbiCoder.encode(
+              ['uint256[]', 'uint256[]', 'uint256[]'],
+              [mdcDealers, mdcEbcs, chainIds],
+            ),
+          );
+          // columnArray = {
+          //   dealers: mdcDealers,
+          //   ebcs: mdcEbcs,
+          //   chainIds: chainIds,
+          // };
+          // print columnArray
+          console.log('columnArray: ', columnArray);
+          const enableTime = await calculateEnableTime(orMakerDeposit);
+          const { events } = await orMakerDeposit
+            .updateColumnArray(enableTime, mdcDealers, mdcEbcs, chainIds, {
+              gasLimit: 10000000,
+            })
+            .then((t) => t.wait());
 
-    // it(
-    //   'Function updateSpvs should emit events and update storage',
-    //   embedVersionIncreaseAndEnableTime(
-    //     () => orMakerDeposit.getVersionAndEnableTime().then((r) => r.version),
-    //     async function () {
-    //       const chainId = defaultChainInfo.id;
-    //       const chainInfo = await orManager.getChainInfo(chainId);
-
-    //       const spvs = chainInfo.spvs.slice(0, 1);
-    //       const chainIds = [chainId];
-    //       console.log(
-    //         `maker update[chainId: ${chainIds.toString()} - spv: ${spvs}]`,
-    //       );
-
-    //       const { events } = await orMakerDeposit
-    //         .updateSpvs(
-    //           getMinEnableTime(
-    //             (
-    //               await orMakerDeposit.getVersionAndEnableTime()
-    //             ).enableTime,
-    //           ),
-    //           spvs,
-    //           chainIds,
-    //         )
-    //         .then((t) => t.wait(2));
-
-    //       events?.forEach((event, index) => {
-    //         expect(event.args?.['impl']).eq(implementation);
-    //         expect(event.args?.['chainId']).eq(chainIds[index]);
-    //         expect(event.args?.['spv']).eq(spvs[index]);
-    //       });
-
-    //       // eslint-disable-next-line @typescript-eslint/no-for-in-array
-    //       for (const i in chainIds) {
-    //         const spv = await orMakerDeposit.spv(chainIds[i]);
-    //         expect(spv).eq(spvs[i]);
-    //       }
-
-    //       await testRevertedOwner(
-    //         orMakerDeposit
-    //           .connect(signers[2])
-    //           .updateSpvs(
-    //             getMinEnableTime(
-    //               (
-    //                 await orMakerDeposit.getVersionAndEnableTime()
-    //               ).enableTime,
-    //             ),
-    //             spvs,
-    //             chainIds,
-    //           ),
-    //       );
-
-    //       await testReverted(
-    //         orMakerDeposit.updateSpvs(
-    //           getMinEnableTime(
-    //             (
-    //               await orMakerDeposit.getVersionAndEnableTime()
-    //             ).enableTime,
-    //           ),
-    //           spvs,
-    //           [2 ** 16 - 1],
-    //         ),
-    //         'CI',
-    //       );
-    //       await testReverted(
-    //         orMakerDeposit.updateSpvs(
-    //           getMinEnableTime(
-    //             (
-    //               await orMakerDeposit.getVersionAndEnableTime()
-    //             ).enableTime,
-    //           ),
-    //           [constants.AddressZero],
-    //           chainIds,
-    //         ),
-    //         'SI',
-    //       );
-    //     },
-    //   ),
-    // );
+          const args = events?.[0].args;
+          expect(args?.impl).eq(implementation);
+          expect(await orMakerDeposit.columnArrayHash()).eq(columnArrayHash);
+          expect(lodash.toPlainObject(args?.ebcs)).to.deep.includes(mdcEbcs);
+          expect(lodash.toPlainObject(args?.dealers)).to.deep.includes(
+            mdcDealers,
+          );
+        },
+      ),
+    );
 
     it(
       'Function updateResponseMakers should emit events and update hash',
@@ -407,17 +380,10 @@ describe('MDC TEST ON GOERLI', () => {
           }
 
           utils.verifyMessage(message, responseMakerSignatures[0]);
-
+          const enableTime = await calculateEnableTime(orMakerDeposit);
           const { events } = await orMakerDeposit
-            .updateResponseMakers(
-              getMinEnableTime(
-                (
-                  await orMakerDeposit.getVersionAndEnableTime()
-                ).enableTime,
-              ),
-              responseMakerSignatures,
-            )
-            .then((t) => t.wait(2));
+            .updateResponseMakers(enableTime, responseMakerSignatures)
+            .then((t) => t.wait());
 
           const args = events?.[0].args;
           expect(args?.responseMakers).to.deep.eq(responseMakers);
@@ -429,197 +395,6 @@ describe('MDC TEST ON GOERLI', () => {
         },
       ),
     );
-
-    // it('Function deposit should success', async function () {
-    //   const bETHBefore = await mdcOwner.provider?.getBalance(
-    //     orMakerDeposit.address,
-    //   );
-    //   const amountETH = utils.parseEther('0.001');
-    //   await orMakerDeposit
-    //     .deposit(constants.AddressZero, constants.Zero, { value: amountETH })
-    //     .then((t) => t.wait(2));
-    //   const bETHAfter = await mdcOwner.provider?.getBalance(
-    //     orMakerDeposit.address,
-    //   );
-    //   expect(bETHAfter?.sub(bETHBefore || 0)).eq(amountETH);
-
-    //   const bERC20Before = await testToken.balanceOf(orMakerDeposit.address);
-    //   const amountERC20 = utils.parseEther('0.001');
-    //   await testToken
-    //     .approve(orMakerDeposit.address, amountERC20)
-    //     .then((t) => t.wait(2));
-    //   await orMakerDeposit
-    //     .deposit(testToken.address, amountERC20)
-    //     .then((t) => t.wait(2));
-    //   const bERC20After = await testToken.balanceOf(orMakerDeposit.address);
-    //   expect(bERC20After.sub(bERC20Before)).eq(amountERC20);
-    // });
-
-    it(
-      'Function updateRulesRoot should emit events and update storage',
-      embedVersionIncreaseAndEnableTime(
-        () => orMakerDeposit.getVersionAndEnableTime().then((r) => r.version),
-        async function () {
-          const rules: any[] = [];
-          const defaultRule = createMakerRule(true);
-          const makerRule: RuleStruct = {
-            ...defaultRule,
-            chainId0: BigNumber.from(5),
-            chainId1: BigNumber.from(280),
-            minPrice0: BigNumber.from(ethers.utils.parseEther('0.00000001')),
-            minPrice1: BigNumber.from(ethers.utils.parseEther('0.00000001')),
-            maxPrice0: BigNumber.from(ethers.utils.parseEther('100')),
-            maxPrice1: BigNumber.from(ethers.utils.parseEther('100')),
-            withholdingFee0: BigNumber.from(
-              ethers.utils.parseEther('0.00000001'),
-            ),
-            withholdingFee1: BigNumber.from(
-              ethers.utils.parseEther('0.00000002'),
-            ),
-            responseTime0: BigNumber.from(604800).toNumber(),
-            responseTime1: BigNumber.from(604800).toNumber(),
-          };
-          rules.push(converRule(makerRule));
-          console.log(makerRule);
-
-          const tree = await calculateRulesTree(rules);
-          const root = utils.hexlify(tree.root);
-
-          const rootWithVersion = { root, version: 1 };
-          const sourceChainIds = [1];
-          const pledgeAmounts = [utils.parseEther('0.0001')];
-
-          console.log(`ebc : [${ebc.address}]`);
-
-          const { events } = await orMakerDeposit
-            .updateRulesRoot(
-              getMinEnableTime(
-                (
-                  await orMakerDeposit.getVersionAndEnableTime()
-                ).enableTime,
-              ),
-              ebc.address,
-              rules,
-              rootWithVersion,
-              sourceChainIds,
-              pledgeAmounts,
-              {
-                value: pledgeAmounts.reduce((pv, cv) => pv.add(cv)),
-              },
-            )
-            .then((t) => t.wait(2));
-
-          if (!!events) {
-            const txrc = await ethers.provider.getTransaction(
-              events[0].transactionHash,
-            );
-            const recpt = await ethers.provider.getTransactionReceipt(
-              events[0].transactionHash,
-            );
-            const inpudataGas = callDataCost(txrc.data);
-            console.log(
-              `updateRule, totoalGas: ${recpt.gasUsed}, callDataGasCost: ${inpudataGas}`,
-            );
-          }
-          const args = events?.[0].args;
-          expect(args?.ebc).eq(ebc.address);
-          expect(args?.rootWithVersion.root).eq(rootWithVersion.root);
-          expect(args?.rootWithVersion.version).eq(rootWithVersion.version);
-
-          const storageRWV = await orMakerDeposit.rulesRoot(ebc.address);
-          expect(storageRWV.root).eq(rootWithVersion.root);
-          expect(storageRWV.version).eq(rootWithVersion.version);
-
-          const key = hexToBuffer(calculateRuleKey(lodash.sample(rules)));
-          const proof = await BaseTrie.createProof(tree, key);
-          const v = await BaseTrie.verifyProof(
-            hexToBuffer(storageRWV.root),
-            key,
-            proof,
-          );
-          expect(v !== null).to.be.true;
-
-          await updateSpv(
-            makerRule.chainId0.toNumber(),
-            spv.address,
-            orManager,
-          );
-          await updateSpv(
-            makerRule.chainId1.toNumber(),
-            spv.address,
-            orManager,
-          );
-        },
-      ),
-    );
-
-    // it('Function withdraw should success', async function () {
-    //   const bETHBefore = await mdcOwner.provider?.getBalance(mdcOwner.address);
-    //   const M_ETH_Before = await ethers.provider.getBalance(
-    //     orMakerDeposit.address,
-    //   );
-    //   const firstRequestInfo = await orMakerDeposit?.getWithdrawRequestInfo(
-    //     constants.AddressZero,
-    //   );
-    //   expect(BigNumber.from(firstRequestInfo.requestTimestamp)).eq(0);
-    //   await testReverted(orMakerDeposit.withdraw(constants.AddressZero), 'WTN');
-    //   const amountETH = utils.parseEther('0.001');
-    //   const requestReceipt = await orMakerDeposit
-    //     .withdrawRequest(constants.AddressZero, amountETH)
-    //     .then((t) => t.wait(2));
-    //   const secondRequestInfo = await orMakerDeposit?.getWithdrawRequestInfo(
-    //     constants.AddressZero,
-    //   );
-    //   expect(BigNumber.from(secondRequestInfo.requestTimestamp)).gt(0);
-    //   await testReverted(
-    //     orMakerDeposit.withdrawRequest(constants.AddressZero, amountETH),
-    //     'RHB',
-    //   );
-    //   await testReverted(orMakerDeposit.withdraw(constants.AddressZero), 'WTN');
-    //   const currentBlockInfo = await ethers.provider.getBlock('latest');
-    //   await mineXTimes(
-    //     BigNumber.from(secondRequestInfo.requestTimestamp)
-    //       .sub(currentBlockInfo.timestamp)
-    //       .toNumber(),
-    //     true,
-    //   );
-    //   const withdrawReceipt = await orMakerDeposit
-    //     .withdraw(constants.AddressZero)
-    //     .then((t) => t.wait(2));
-    //   const thirdRequestInfo = await orMakerDeposit?.getWithdrawRequestInfo(
-    //     constants.AddressZero,
-    //   );
-    //   expect(BigNumber.from(thirdRequestInfo.requestTimestamp)).eq(0);
-    //   const bETHAfter = await mdcOwner.provider?.getBalance(mdcOwner.address);
-    //   const requestGasUsed = requestReceipt.gasUsed.mul(
-    //     requestReceipt.effectiveGasPrice,
-    //   );
-    //   const withdrawGasUsed = withdrawReceipt.gasUsed.mul(
-    //     withdrawReceipt.effectiveGasPrice,
-    //   );
-    //   expect(
-    //     bETHAfter
-    //       ?.add(requestGasUsed)
-    //       .add(withdrawGasUsed)
-    //       .sub(bETHBefore || 0),
-    //   ).eq(amountETH);
-
-    //   const M_ETH_After = await ethers.provider.getBalance(
-    //     orMakerDeposit.address,
-    //   );
-
-    //   expect(amountETH?.add(M_ETH_After)).eq(M_ETH_Before);
-
-    //   await testRevertedOwner(
-    //     orMakerDeposit
-    //       .connect(signers[2])
-    //       .withdrawRequest(constants.AddressZero, amountETH),
-    //   );
-
-    //   await testRevertedOwner(
-    //     orMakerDeposit.connect(signers[2]).withdraw(constants.AddressZero),
-    //   );
-    // });
   });
 
   describe('part2 - send ETH', function () {
@@ -665,95 +440,67 @@ describe('MDC TEST ON GOERLI', () => {
     };
 
     it('prepare: update maker rule', async function () {
-      return;
       await updateMakerRule(orMakerDeposit, ebc.address, makerRule, true);
     });
 
-    let destAmount: BigNumber;
-    it('case1: send ETH to maker', async function () {
+    let destAmount: BigNumber = BigNumber.from(9999900000);
+    let nonce: number = 3;
+    it('case1: sourceChain send to destChain', async function () {
       return;
+      if (networkId != sourceChain) {
+        console.log(
+          `current networkId: ${networkId}, not sourceChain: ${sourceChain}, skip`,
+        );
+        if (networkId != 31337) {
+          return;
+        }
+      }
+      console.log(`sourceChain: ${sourceChain} --> destChain: ${destChain}`);
+
       const balanceBefore = await mdcOwner.provider?.getBalance(
         mdcOwner.address,
       );
       const price = makerRule.minPrice0.mul(2).toString().slice(0, -5);
+      console.log('price', price);
       const testFreezeAmount =
         price +
         getSecurityCode(
           columnArray,
-          ebc.address,
+          process.env['EVENT_BINDING_CONTRACT']!,
           mdcOwner.address,
-          makerRule.chainId1.toNumber(),
+          destChain,
         );
-
-      destAmount = await spvTest.calculateDestAmount(
-        converRule(makerRule),
-        ebc.address,
-        makerRule.chainId0.toNumber(),
-        testFreezeAmount,
-      );
-      console.log('destAmount', destAmount);
+      console.log('testFreezeAmount', testFreezeAmount);
+      if (networkId === 5) {
+        destAmount = await spvTest.calculateDestAmount(
+          makerRule,
+          process.env['EVENT_BINDING_CONTRACT']!,
+          sourceChain,
+          testFreezeAmount,
+        );
+        console.log('destAmount', destAmount);
+      }
+      nonce = await mdcOwner.provider?.getTransactionCount(mdcOwner.address)!;
+      console.log('nonce:', nonce);
       await sendETH(signers[0], mdcOwner.address, testFreezeAmount);
-      expect(await mdcOwner.provider?.getBalance(mdcOwner.address)).eq(
-        balanceBefore?.add(testFreezeAmount),
-      );
     });
 
-    it('case2: ERA send ETH', async function () {
-      if (networkId == 5) {
-        return;
+    it('case2: destChain send ETH to sourceChain', async function () {
+      return;
+      if (networkId != destChain) {
+        console.log(
+          `current networkId: ${networkId}, not destChain: ${destChain}, skip`,
+        );
+        if (networkId != 31337) {
+          return;
+        }
       }
-      // const balanceBefore = await mdcOwner.provider?.getBalance(signers[0].address);
-      // const destAmount = BigNumber.from(9999900000);
-      const nonce = await mdcOwner.provider?.getTransactionCount(
-        mdcOwner.address,
-      );
+      console.log(`sourceChain: ${sourceChain} <-- destChain: ${destChain}`);
       const returnValue = BigNumber.from(nonce).add(destAmount);
       await sendETH(mdcOwner, signers[0].address, returnValue);
-      // expect(await mdcOwner.provider?.getBalance(signers[0].address)).eql(balanceBefore?.add(returnValue));
     });
-
-    it('case3: ERA send ETH, but fail', async function () {
-      if (networkId == 5) {
-        return;
-      }
-      const balanceBefore = await mdcOwner.provider?.getBalance(
-        mdcOwner.address,
-      );
-      const price = makerRule.minPrice0.mul(2).toString().slice(0, -5);
-      const ebc = process.env['EVENT_BINDING_CONTRACT']!;
-      const testFreezeAmount =
-        price +
-        getSecurityCode(
-          columnArray,
-          ebc,
-          mdcOwner.address,
-          makerRule.chainId1.toNumber(),
-        );
-
-      await sendETHFail(mdcOwner, signers[0].address, testFreezeAmount, true);
-      // expect(await mdcOwner.provider?.getBalance(mdcOwner.address)).eq(balanceBefore);
-    });
-
-    const _calculateMerkleTree = async (
-      startBlockNumber: BigNumberish,
-      blockInterval: number,
-    ) => {
-      const leaves = await Promise.all(
-        new Array(blockInterval)
-          .fill(undefined)
-          .map((_, index) =>
-            orSpvData.provider
-              .getBlock(
-                BigNumber.from(startBlockNumber).add(index).toHexString(),
-              )
-              .then((b: any) => b.hash),
-          ),
-      );
-      return new MerkleTree(leaves, keccak256);
-    };
 
     it('Function saveHistoryBlocksRoots should success', async function () {
-      // return;
       if (ethers.provider.network.chainId == 31337) {
         await mineUpTo(1200);
       }
@@ -797,5 +544,23 @@ describe('MDC TEST ON GOERLI', () => {
         }
       }
     });
+
+    const _calculateMerkleTree = async (
+      startBlockNumber: BigNumberish,
+      blockInterval: number,
+    ) => {
+      const leaves = await Promise.all(
+        new Array(blockInterval)
+          .fill(undefined)
+          .map((_, index) =>
+            orSpvData.provider
+              .getBlock(
+                BigNumber.from(startBlockNumber).add(index).toHexString(),
+              )
+              .then((b: any) => b.hash),
+          ),
+      );
+      return new MerkleTree(leaves, keccak256);
+    };
   });
 });

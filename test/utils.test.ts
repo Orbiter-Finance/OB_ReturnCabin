@@ -35,6 +35,7 @@ import {
 import { getMappingStructXSlot } from './lib/readStorage';
 import { assert } from 'console';
 import { string } from 'hardhat/internal/core/params/argumentTypes';
+import { random } from 'lodash';
 
 export function hexToBuffer(hex: string) {
   return Buffer.from(utils.arrayify(hex));
@@ -997,10 +998,10 @@ export const updateMakerRule = async (
   const newRule: RuleStruct = {
     ...defaultRule,
     compensationRatio0: modifyRule
-      ? defaultRule.compensationRatio0 + 1
+      ? defaultRule.compensationRatio0 + random(2, 10)
       : defaultRule.compensationRatio0,
     compensationRatio1: modifyRule
-      ? defaultRule.compensationRatio1 + 1
+      ? defaultRule.compensationRatio1 + random(2, 10)
       : defaultRule.compensationRatio1,
   };
 

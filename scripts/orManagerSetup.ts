@@ -34,7 +34,8 @@ export async function managerSetup() {
       console.log('connect to orManager:', process.env['OR_MANAGER_ADDRESS']!);
     }
     if (process.env['SPV_ADDRESS'] == undefined) {
-      await deploySPVs(deployer);
+      const spvaddress = await deploySPVs(deployer);
+      console.log('spv deployed to:', spvaddress);
     } else {
       console.log('connect to SPV:', process.env['SPV_ADDRESS']!);
     }
@@ -107,7 +108,7 @@ export async function managerSetup() {
   //   config.chains.map((chain) => chain),
   // );
   console.log('Hash of registerChains:', tx1.hash);
-  await tx1.wait(1);
+  await tx1.wait(3);
 
   const chainIds: BigNumberish[] = [];
   const tokens: BridgeLib.TokenInfoStruct[] = [];
@@ -129,7 +130,7 @@ export async function managerSetup() {
     tokens,
   );
   console.log('Hash of updateChainTokens:', tx2.hash);
-  await tx2.wait(1);
+  await tx2.wait(3);
 
   // updateEbcs
   if (config.ebcs.length === 0) {
@@ -139,7 +140,7 @@ export async function managerSetup() {
   const statuses = config.ebcs.map(() => true);
   const tx3 = await orManager.updateEbcs(config.ebcs, statuses);
   console.log('Hash of updateEbcs:', tx3.hash);
-  await tx3.wait(1);
+  await tx3.wait(3);
 
   if (isTestnet) {
     // updateRLPdecoder
@@ -147,7 +148,7 @@ export async function managerSetup() {
       envRlpDecoderAddress,
     );
     console.log('Hash of updateRLPdecoder:', txUpdateRLPdecoder.hash);
-    await txUpdateRLPdecoder.wait(1);
+    await txUpdateRLPdecoder.wait(3);
 
     // updateChallengeUserRatio
     const challengeUserRatio = 15;
@@ -155,14 +156,14 @@ export async function managerSetup() {
       await calculateEnableTime(orManager),
       challengeUserRatio,
     );
-    await txUpdateRatio.wait(1);
+    await txUpdateRatio.wait(3);
     console.log('Hash of updateChallengeUserRatio:', txUpdateRatio.hash);
 
     // updateSpvDataContract
     const txUpdateSpvDataContract = await orManager.updateSpvDataContract(
       envSpvDataAddress,
     );
-    await txUpdateSpvDataContract.wait(1);
+    await txUpdateSpvDataContract.wait(3);
     console.log('Hash of updateSpvDataContract:', txUpdateSpvDataContract.hash);
   }
 
@@ -176,7 +177,7 @@ export async function managerSetup() {
     config.submitter,
   );
   console.log('Hash of updateSubmitter:', tx4.hash);
-  await tx4.wait(1);
+  await tx4.wait(3);
 }
 
 async function main() {

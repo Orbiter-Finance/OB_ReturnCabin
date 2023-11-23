@@ -81,7 +81,12 @@ import {
 } from './lib/mockData';
 import { PromiseOrValue } from '../typechain-types/common';
 import { randomBytes } from 'crypto';
-import { compile_yul, deploySPVs, VerifierAbi } from '../scripts/utils';
+import {
+  compile_yul,
+  deployMDC,
+  deploySPVs,
+  VerifierAbi,
+} from '../scripts/utils';
 
 describe('ORMakerDeposit', () => {
   let signers: SignerWithAddress[];
@@ -836,7 +841,7 @@ describe('ORMakerDeposit', () => {
         await deploySPVs(mdcOwner),
       );
 
-      spvTest = await new TestSpv__factory(mdcOwner).deploy();
+      spvTest = await new TestSpv__factory(mdcOwner).deploy(spv.address);
       await spvTest.deployed();
 
       rlpDecoder = await new RLPDecoder__factory(mdcOwner).deploy();
@@ -853,18 +858,12 @@ describe('ORMakerDeposit', () => {
       ).deploy();
       await makerTest_impl.deployed();
 
-      const factoryTest = await new ORMDCFactory__factory(signers[0]).deploy(
+      const { mdcAddress } = await deployMDC(
+        signers[0],
+        mdcOwner,
         orManager.address,
         makerTest_impl.address,
       );
-      await factoryTest.deployed();
-
-      const { events } = await factoryTest
-        .connect(mdcOwner)
-        .createMDC()
-        .then((t) => t.wait());
-
-      const mdcAddress = events?.[0].args?.mdc;
 
       makerTest = new TestMakerDeposit__factory(mdcOwner).attach(mdcAddress);
       console.log('connect of makerTest:', makerTest.address);
