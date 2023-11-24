@@ -35,7 +35,10 @@ import {
 import { getMappingStructXSlot } from './lib/readStorage';
 import { assert } from 'console';
 import { string } from 'hardhat/internal/core/params/argumentTypes';
-import { random } from 'lodash';
+import { chain, random } from 'lodash';
+import { calculateEnableTime } from '../scripts/utils';
+import { BridgeLib } from '../typechain-types/contracts/ORManager';
+import { promises } from 'dns';
 
 export function hexToBuffer(hex: string) {
   return Buffer.from(utils.arrayify(hex));
@@ -215,7 +218,7 @@ export interface PublicInputDataDest {
   to: BigNumberish;
   token: BigNumberish;
   amount: BigNumberish;
-  nonce: BigNumberish;
+  // nonce: BigNumberish;
   time_stamp: BigNumberish;
 }
 
@@ -243,38 +246,61 @@ export interface VerifiedDataInfo {
   responseTime: BigNumberish;
 }
 
+export const updateChains = async (
+  orManager: ORManager,
+  chainsInfo: BridgeLib.ChainInfoStruct[],
+) => {
+  for (const chainInfo of chainsInfo) {
+    const updateChainId = chainInfo.id;
+    const exitChainId = (await orManager.getChainInfo(updateChainId)).id;
+    if (BigNumber.from(updateChainId).eq(exitChainId)) {
+      console.log('already exist chainId: ', chainInfo.id);
+      return promises;
+    }
+  }
+
+  console.log(
+    'registerChains: ',
+    chainsInfo.map((chain) => chain.id),
+  );
+
+  await orManager
+    .registerChains(await calculateEnableTime(orManager), chainsInfo)
+    .then((t) => t.wait(1));
+};
+
 export const updateSpv = async (
   chainId: number,
   spvAddress: string,
   _orManager: ORManager,
 ) => {
-  // 去除spv结果中0值
-  const currentSpvs: string[] = (await _orManager.getChainInfo(chainId)).spvs
-    .filter((v) => v != constants.AddressZero)
-    .concat(spvAddress);
+  let currentSpvs: string[] = (
+    await _orManager.getChainInfo(chainId)
+  ).spvs.filter((v) => v != constants.AddressZero);
 
-  const enableTimeTime =
-    // eslint-disable-next-line prettier/prettier
-    (await getCurrentTime()) >
-    (await _orManager.getVersionAndEnableTime()).enableTime.toNumber()
-      ? await getCurrentTime()
-      : (await _orManager.getVersionAndEnableTime()).enableTime;
+  if (currentSpvs.includes(spvAddress)) {
+    console.log(
+      `chainId: ${chainId}, no need to update spvAddress: ${spvAddress} is exist`,
+    );
+    return;
+  }
+  currentSpvs = currentSpvs.concat(spvAddress);
 
   const { events } = await _orManager
     .updateChainSpvs(
-      getMinEnableTime(BigNumber.from(enableTimeTime)),
+      await calculateEnableTime(_orManager),
       chainId,
       currentSpvs,
       [0],
       {
-        gasLimit: 10e6,
+        gasLimit: 1e6,
       },
     )
     .then((t) => t.wait(1));
   const updatedSpvs = (await _orManager.getChainInfo(chainId)).spvs;
   expect(updatedSpvs).to.deep.includes(spvAddress);
 
-  console.log(`chainId: ${chainId}, newSpvAddress: ${spvAddress}`);
+  console.log(`chainId: ${chainId}, update newSpvAddress: ${spvAddress}`);
 };
 
 export const getSecurityCode = (
@@ -698,7 +724,8 @@ export const createChallenge = async (
     revertReason: string;
   }>
 > => {
-  const minDeposit = utils.parseEther('0.005');
+  // const minDeposit = utils.parseEther('0.005');
+  const minDeposit = 0;
   if (revertReason == undefined) {
     const challengeIdentNum = challengeManager.getChallengeIdentNumSortList(
       challenge.sourceTxTime,
@@ -724,7 +751,7 @@ export const createChallenge = async (
         challenge.parentNodeNumOfTargetNode,
         { value: BigNumber.from(challenge.freezeAmount).add(minDeposit) },
       )
-      .then((t) => t.wait());
+      .then((t) => t.wait(1));
     const args = tx.events?.[0].args;
     const basefee = (await ethers.provider.getFeeData()).lastBaseFeePerGas;
     await calculateTxGas(tx, `Create challenge!`);
@@ -860,7 +887,7 @@ export const liquidateChallenge = async (
       challengeNode.sourceTxHash,
       chalengers,
     )
-    .then((t) => t.wait());
+    .then((t) => t.wait(1));
   const gasUsed = tx.gasUsed;
   const effectiveGasPrice = tx.effectiveGasPrice;
   await calculateTxGas(tx, `Liquidation ${chalengers.length} challengers!`);
@@ -1047,7 +1074,7 @@ export const updateMakerRule = async (
         value: pledgeAmounts.reduce((pv, cv) => pv.add(cv)),
       },
     )
-    .then((t: any) => t.wait());
+    .then((t: any) => t.wait(1));
   console.log('newRule:', newRule);
 
   return converRule(newRule);

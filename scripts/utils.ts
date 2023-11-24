@@ -14,11 +14,17 @@ import {
   TestMakerDeposit,
   ORMakerDeposit__factory,
   TestMakerDeposit__factory,
+  OREventBinding__factory,
+  ORManager__factory,
+  RLPDecoder__factory,
+  ORManager,
 } from '../typechain-types';
 import { PromiseOrValue } from '../typechain-types/common';
-import { BigNumber } from 'ethers';
-import { getMinEnableTime } from '../test/utils.test';
+import { BigNumber, constants, utils } from 'ethers';
+import { createChallenge, getMinEnableTime } from '../test/utils.test';
 import { promises } from 'dns';
+import { random } from 'lodash';
+import { defaultResponseTime } from '../test/lib/mockData';
 
 export function printContract(title: string, content?: string) {
   console.info(chalk.red(title, chalk.underline.green(content || '')));
@@ -183,13 +189,20 @@ export const deployMDC = async (
   mdcOwner: SignerWithAddress,
   orManagerAddress: string,
   orMakerDeposit_implAddress: string,
+  oldfactoryAddress?: string,
 ) => {
   let orMDCFactory;
-  orMDCFactory = await new ORMDCFactory__factory(factoryOwner).deploy(
-    orManagerAddress,
-    orMakerDeposit_implAddress,
-  );
-  await orMDCFactory.deployed();
+  if (oldfactoryAddress == undefined) {
+    orMDCFactory = await new ORMDCFactory__factory(factoryOwner).deploy(
+      orManagerAddress,
+      orMakerDeposit_implAddress,
+    );
+    await orMDCFactory.deployed();
+  } else {
+    orMDCFactory = new ORMDCFactory__factory(factoryOwner).attach(
+      oldfactoryAddress,
+    );
+  }
 
   const { events } = await orMDCFactory
     .connect(mdcOwner)
@@ -201,4 +214,104 @@ export const deployMDC = async (
     factoryAddress,
     mdcAddress,
   };
+};
+
+export const createRandomChallenge = async (
+  orMakerDeposit: ORMakerDeposit | TestMakerDeposit,
+  chainId: BigNumber,
+) => {
+  const latestBlockRes = await orMakerDeposit.provider?.getBlock('latest');
+  const sourceTxTime = random(latestBlockRes.timestamp - defaultResponseTime);
+  const sourceChainId = chainId;
+  const sourceBlockNum = random(latestBlockRes.number);
+  const sourceTxIndex = random(1000);
+  const sourceTxHash = utils.keccak256(await orMakerDeposit.owner());
+  const challengeInputInfo = {
+    sourceTxTime,
+    sourceChainId,
+    sourceBlockNum,
+    sourceTxIndex,
+    sourceTxHash,
+    from: await orMakerDeposit.owner(),
+    freezeToken: constants.AddressZero,
+    freezeAmount: utils.parseEther('0.000001'),
+    parentNodeNumOfTargetNode: 0,
+  };
+  await createChallenge(orMakerDeposit, challengeInputInfo);
+};
+
+export const deployContracts = async (
+  deployer: SignerWithAddress,
+  mdcOwner: SignerWithAddress,
+) => {
+  if (process.env['OR_MANAGER_ADDRESS'] == undefined) {
+    const orManager = await new ORManager__factory(deployer).deploy(
+      deployer.address,
+    );
+    await orManager.deployed();
+    console.log('orManager deployed to:', orManager.address);
+    process.env['OR_MANAGER_ADDRESS'] = orManager.address;
+  }
+
+  if (process.env['OR_MDC_TEST'] == undefined) {
+    const makerTest_impl = await new TestMakerDeposit__factory(
+      mdcOwner,
+    ).deploy();
+    await makerTest_impl.deployed();
+
+    const { factoryAddress, mdcAddress } = await deployMDC(
+      deployer,
+      mdcOwner,
+      process.env['OR_MANAGER_ADDRESS']!,
+      makerTest_impl.address,
+    );
+    process.env['OR_MDC_TEST'] = mdcAddress;
+    console.log('test factory deployed to:', factoryAddress);
+  }
+
+  if (process.env['EVENT_BINDING_CONTRACT'] == undefined) {
+    const ebc = await new OREventBinding__factory(deployer).deploy();
+    await ebc.deployed();
+    console.log('ebc deployed to:', ebc.address);
+    process.env['EVENT_BINDING_CONTRACT'] = ebc.address;
+  }
+
+  if (process.env['RLP_DECODER_ADDRESS'] == undefined) {
+    const rlpDecoder = await new RLPDecoder__factory(deployer).deploy();
+    await rlpDecoder.deployed();
+    console.log('rlpDecoder deployed to:', rlpDecoder.address);
+    process.env['RLP_DECODER_ADDRESS'] = rlpDecoder.address;
+  }
+
+  if (process.env['SPV_TEST_ADDRESS'] == undefined) {
+    const spvTest = await new TestSpv__factory(mdcOwner).deploy(
+      constants.AddressZero,
+    );
+    console.log('spvTest deployed to:', spvTest.address);
+    process.env['SPV_TEST_ADDRESS'] = spvTest.address;
+  }
+
+  if (process.env['SPV_ADDRESS'] == undefined) {
+    const spvaddress = await deploySPVs(deployer);
+    console.log('spv deployed to:', spvaddress);
+    process.env['SPV_ADDRESS'] = spvaddress;
+  }
+
+  return {
+    orManager: process.env['OR_MANAGER_ADDRESS']!,
+    orMDC: process.env['OR_MDC_TEST']!,
+    eventBinding: process.env['EVENT_BINDING_CONTRACT']!,
+    rlpDecoder: process.env['RLP_DECODER_ADDRESS']!,
+    spvTest: process.env['SPV_TEST_ADDRESS']!,
+    spv: process.env['SPV_ADDRESS']!,
+  };
+};
+
+export const managerUpdateEBC = async (orManager: ORManager, ebc: string) => {
+  if (await orManager.ebcIncludes(ebc)) {
+    console.log('ebc already included');
+    return;
+  } else {
+    await orManager.updateEbcs([ebc], [true]);
+  }
 };

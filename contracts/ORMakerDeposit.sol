@@ -14,7 +14,6 @@ import {RuleLib} from "./library/RuleLib.sol";
 import {ConstantsLib} from "./library/ConstantsLib.sol";
 import {BridgeLib} from "./library/BridgeLib.sol";
 import {VersionAndEnableTime} from "./VersionAndEnableTime.sol";
-import {IVerifierRouter} from "./zkp/IVerifierRouter.sol";
 import {IORDecoderRLP} from "./interface/IORDecoderRLP.sol";
 
 // import "hardhat/console.sol";
@@ -696,7 +695,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         // Check Response time
         require(
             statement.sourceTxTime < publicInputData.time_stamp &&
-                verifiedSourceTxData.responseTime < (publicInputData.time_stamp - statement.sourceTxTime),
+                verifiedSourceTxData.responseTime > (publicInputData.time_stamp - statement.sourceTxTime),
             "RST"
         );
 

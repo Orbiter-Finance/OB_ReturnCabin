@@ -483,7 +483,7 @@ library HelperLib {
         uint256 to;
         uint256 token;
         uint256 amount;
-        uint256 nonce;
+        // uint256 nonce;
         uint64 time_stamp;
     }
 
@@ -500,7 +500,7 @@ library HelperLib {
                 to: ((uint256(bytes32(proofData[splitStart + splitStep * 5:splitStart + splitStep * 6])))),
                 token: ((uint256(bytes32(proofData[splitStart + splitStep * 6:splitStart + splitStep * 7])))),
                 amount: uint256(bytes32(proofData[splitStart + splitStep * 7:splitStart + splitStep * 8])),
-                nonce: uint256(bytes32(proofData[splitStart + splitStep * 8:splitStart + splitStep * 9])),
+                // nonce: uint256(bytes32(proofData[splitStart + splitStep * 8:splitStart + splitStep * 9])),
                 time_stamp: uint64(uint256(bytes32(proofData[splitStart + splitStep * 9:splitStart + splitStep * 10])))
             });
     }

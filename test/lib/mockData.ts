@@ -693,6 +693,9 @@ export async function getCurrentTime() {
 }
 
 export async function mineXTimes(time: number, useSecond = false) {
+  if ((await ethers.provider.getNetwork()).chainId != 31337) {
+    return;
+  }
   const seconds = useSecond ? time : time * 60;
   const currentTime = await getCurrentTime();
   await ethers.provider.send('evm_increaseTime', [currentTime]);

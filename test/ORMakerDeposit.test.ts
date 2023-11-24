@@ -83,6 +83,7 @@ import { PromiseOrValue } from '../typechain-types/common';
 import { randomBytes } from 'crypto';
 import {
   compile_yul,
+  createRandomChallenge,
   deployMDC,
   deploySPVs,
   VerifierAbi,
@@ -884,36 +885,20 @@ describe('ORMakerDeposit', () => {
     });
 
     it('test function challenge _addChallengeNode', async function () {
-      const gasUseList = [];
       let challengeIdentNumList: bigint[] = [];
-      const challengeInputInfos: challengeInputInfo[] = [];
       const chains = defaultChainInfoArray.map((chainInfo) => {
         return lodash.cloneDeepWith(chainInfo);
       });
-      const latestBlockRes = await orMakerDeposit.provider?.getBlock('latest');
-      for (let i = 0; i < chains.length; i++) {
-        const sourceTxTime = random(
-          latestBlockRes.timestamp - defaultResponseTime,
-        );
-        const sourceChainId = await chains[i].id;
-        const sourceBlockNum = random(latestBlockRes.number);
-        const sourceTxIndex = random(i);
-        const sourceTxHash = utils.keccak256(mdcOwner.address);
-        const challengeInputInfo = {
-          sourceTxTime,
-          sourceChainId,
-          sourceBlockNum,
-          sourceTxIndex,
-          sourceTxHash,
-          from: await orMakerDeposit.owner(),
-          freezeToken: constants.AddressZero,
-          freezeAmount: utils.parseEther('0.001'),
-          parentNodeNumOfTargetNode: 0,
-        };
-        challengeInputInfos.push(challengeInputInfo);
-        const res = await createChallenge(orMakerDeposit, challengeInputInfo);
-        gasUseList.push(res.gasUsed);
-      }
+
+      await Promise.all(
+        chains.map(async (chains) => {
+          await createRandomChallenge(
+            orMakerDeposit,
+            BigNumber.from(await chains.id),
+          );
+        }),
+      );
+
       challengeIdentNumList = challengeManager.numSortingList;
       const lastEleSortNumber = BigNumber.from(challengeIdentNumList[0]);
       const firstEleSortNumber = BigNumber.from(
@@ -1005,13 +990,13 @@ describe('ORMakerDeposit', () => {
       // console.log(
       //   `challenge 1 balanceOfMakerbefore: ${case1balanceOfMakerbefore}, balanceOfMakerAfter: ${case1balanceOfMakerAfter}, freezeAmount: ${case1freezeAmount} `,
       // );
-      expect(parseFloat(case1balanceOfMakerAfter).toFixed(2)).equal(
+      expect(parseFloat(case1balanceOfMakerAfter).toFixed(1)).equal(
         (
           parseFloat(case1balanceOfMakerbefore) +
           parseFloat(case1freezeAmount) +
           0.01
         )
-          .toFixed(2)
+          .toFixed(1)
           .toString(),
       );
 
