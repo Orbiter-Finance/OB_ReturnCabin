@@ -128,6 +128,9 @@ library HelperLib {
         uint64 manage_current_challenge_user_ratio;
         uint256 mdc_next_rule_enable_time;
         bytes32 mdc_current_rule_value_hash;
+        bytes32 l1_tx_batch_blocks_merkle_root;
+        bytes32 ob_contracts_current_batch_blocks_merkle_root;
+        bytes32 ob_contracts_next_batch_blocks_merkle_root;
     }
 
     function parsePublicInputSource(bytes calldata proofData) internal pure returns (PublicInputDataSource memory) {
@@ -135,7 +138,7 @@ library HelperLib {
         uint256 SplitStep = 32;
         uint256 TransactionSplitStart = ProofLength + 64; // 384 is proof length;64 is blockHash length
         uint256 TrackBlockSplitStart = TransactionSplitStart + SplitStep * 12;
-        uint256 MdcContractSplitStart = TrackBlockSplitStart + SplitStep * 9;
+        uint256 MdcContractSplitStart = TrackBlockSplitStart + SplitStep * 12;
 
         return
             PublicInputDataSource({
@@ -473,6 +476,32 @@ library HelperLib {
                                 proofData[MdcContractSplitStart + SplitStep * 39:MdcContractSplitStart + SplitStep * 40]
                             )
                         )
+                ),
+                l1_tx_batch_blocks_merkle_root: bytes32(
+                    (uint256(bytes32(proofData[TrackBlockSplitStart:TrackBlockSplitStart + SplitStep])) << 128) |
+                        uint256(
+                            bytes32(proofData[TrackBlockSplitStart + SplitStep:TrackBlockSplitStart + SplitStep * 2])
+                        )
+                ),
+                ob_contracts_current_batch_blocks_merkle_root: bytes32(
+                    (uint256(
+                        bytes32(proofData[TrackBlockSplitStart + SplitStep * 4:TrackBlockSplitStart + SplitStep * 5])
+                    ) << 128) |
+                        uint256(
+                            bytes32(
+                                proofData[TrackBlockSplitStart + SplitStep * 5:TrackBlockSplitStart + SplitStep * 6]
+                            )
+                        )
+                ),
+                ob_contracts_next_batch_blocks_merkle_root: bytes32(
+                    (uint256(
+                        bytes32(proofData[TrackBlockSplitStart + SplitStep * 8:TrackBlockSplitStart + SplitStep * 9])
+                    ) << 128) |
+                        uint256(
+                            bytes32(
+                                proofData[TrackBlockSplitStart + SplitStep * 9:TrackBlockSplitStart + SplitStep * 10]
+                            )
+                        )
                 )
             });
     }
@@ -483,7 +512,6 @@ library HelperLib {
         uint256 to;
         uint256 token;
         uint256 amount;
-        // uint256 nonce;
         uint64 time_stamp;
     }
 
@@ -491,17 +519,54 @@ library HelperLib {
         bytes calldata proofData
     ) internal pure returns (HelperLib.PublicInputDataDest memory) {
         uint256 ProofLength = 384;
-        uint256 splitStep = 32;
-        uint256 splitStart = ProofLength + 64; // 384 is proof length;64 is blockHash length
+        uint256 SplitStep = 32;
+        uint256 CommitTxSplitStart = ProofLength;
+        uint256 TransactionSplitStart = CommitTxSplitStart + SplitStep * 14; // 384 is proof length, SplitStep*14 is L1 commit tx;
+        // uint256 TrackBlockSplitStart = TransactionSplitStart + SplitStep * 14;
         return
             HelperLib.PublicInputDataDest({
-                chain_id: uint64(uint256(bytes32(proofData[splitStart + splitStep * 3:splitStart + splitStep * 4]))),
-                from: ((uint256(bytes32(proofData[splitStart + splitStep * 4:splitStart + splitStep * 5])))),
-                to: ((uint256(bytes32(proofData[splitStart + splitStep * 5:splitStart + splitStep * 6])))),
-                token: ((uint256(bytes32(proofData[splitStart + splitStep * 6:splitStart + splitStep * 7])))),
-                amount: uint256(bytes32(proofData[splitStart + splitStep * 7:splitStart + splitStep * 8])),
-                // nonce: uint256(bytes32(proofData[splitStart + splitStep * 8:splitStart + splitStep * 9])),
-                time_stamp: uint64(uint256(bytes32(proofData[splitStart + splitStep * 9:splitStart + splitStep * 10])))
+                chain_id: uint64(
+                    uint256(
+                        bytes32(proofData[TransactionSplitStart + SplitStep * 4:TransactionSplitStart + SplitStep * 5])
+                    )
+                ),
+                from: (
+                    (
+                        uint256(
+                            bytes32(
+                                proofData[TransactionSplitStart + SplitStep * 6:TransactionSplitStart + SplitStep * 7]
+                            )
+                        )
+                    )
+                ),
+                to: (
+                    (
+                        uint256(
+                            bytes32(
+                                proofData[TransactionSplitStart + SplitStep * 7:TransactionSplitStart + SplitStep * 8]
+                            )
+                        )
+                    )
+                ),
+                token: (
+                    (
+                        uint256(
+                            bytes32(
+                                proofData[TransactionSplitStart + SplitStep * 8:TransactionSplitStart + SplitStep * 9]
+                            )
+                        )
+                    )
+                ),
+                amount: uint256(
+                    bytes32(proofData[TransactionSplitStart + SplitStep * 9:TransactionSplitStart + SplitStep * 10])
+                ),
+                time_stamp: uint64(
+                    uint256(
+                        bytes32(
+                            proofData[TransactionSplitStart + SplitStep * 11:TransactionSplitStart + SplitStep * 12]
+                        )
+                    )
+                )
             });
     }
 }

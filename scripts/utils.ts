@@ -269,6 +269,20 @@ export const deployContracts = async (
     console.log('test factory deployed to:', factoryAddress);
   }
 
+  if (process.env['OR_MDC'] == undefined) {
+    const mdc_impl = await new ORMakerDeposit__factory(mdcOwner).deploy();
+    await mdc_impl.deployed();
+
+    const { factoryAddress, mdcAddress } = await deployMDC(
+      deployer,
+      mdcOwner,
+      process.env['OR_MANAGER_ADDRESS']!,
+      mdc_impl.address,
+    );
+    process.env['OR_MDC'] = mdcAddress;
+    console.log('MDC deployed to:', factoryAddress);
+  }
+
   if (process.env['EVENT_BINDING_CONTRACT'] == undefined) {
     const ebc = await new OREventBinding__factory(deployer).deploy();
     await ebc.deployed();

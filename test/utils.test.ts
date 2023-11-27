@@ -278,20 +278,22 @@ export const updateSpv = async (
     await _orManager.getChainInfo(chainId)
   ).spvs.filter((v) => v != constants.AddressZero);
 
+  const indexArray = Array.from(Array(currentSpvs.length).keys());
+
   if (currentSpvs.includes(spvAddress)) {
     console.log(
       `chainId: ${chainId}, no need to update spvAddress: ${spvAddress} is exist`,
     );
     return;
   }
-  currentSpvs = currentSpvs.concat(spvAddress);
+  currentSpvs.push(spvAddress);
 
   const { events } = await _orManager
     .updateChainSpvs(
       await calculateEnableTime(_orManager),
       chainId,
       currentSpvs,
-      [0],
+      indexArray,
       {
         gasLimit: 1e6,
       },
@@ -300,7 +302,7 @@ export const updateSpv = async (
   const updatedSpvs = (await _orManager.getChainInfo(chainId)).spvs;
   expect(updatedSpvs).to.deep.includes(spvAddress);
 
-  console.log(`chainId: ${chainId}, update newSpvAddress: ${spvAddress}`);
+  console.log(`chainId: ${chainId}, newSpvAddress: ${spvAddress}`);
 };
 
 export const getSecurityCode = (

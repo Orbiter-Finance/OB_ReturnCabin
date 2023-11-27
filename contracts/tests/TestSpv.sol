@@ -7,6 +7,10 @@ import {IOREventBinding} from "../interface/IOREventBinding.sol";
 
 import {RLPReader} from "../library/RLPReader.sol";
 
+import {IORChallengeSpv} from "../interface/IORChallengeSpv.sol";
+
+// import "hardhat/console.sol";
+
 contract testSpv {
     using HelperLib for bytes;
     using RLPReader for bytes;
@@ -96,9 +100,15 @@ contract testSpv {
         );
     }
 
-    // function decodeRule(bytes memory rlpBytes) public view returns (RuleLib.Rule memory rule) {
-    // uint256 gas = gasleft();
-    // rule = rlpBytes.decodeRule();
-    // console.log("decodeRule gas used: %d", gas - gasleft());
-    // }
+    function verifySourceTx(bytes calldata zkProof, address spvAddress) external returns (bool) {
+        bool succeed = IORChallengeSpv(spvAddress).verifySourceTx(zkProof);
+        require(succeed, "verify fail");
+        return succeed;
+    }
+
+    function verifyDestTx(bytes calldata zkProof, address spvAddress) external returns (bool) {
+        bool succeed = IORChallengeSpv(spvAddress).verifyDestTx(zkProof);
+        require(succeed, "verify fail");
+        return succeed;
+    }
 }

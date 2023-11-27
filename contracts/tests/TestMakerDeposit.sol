@@ -485,25 +485,25 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
     function verifyChallengeSource(
         address challenger,
+        uint64 sourceChainId,
         HelperLib.PublicInputDataSource calldata publicInputData,
-        // bytes calldata proof,
+        bytes calldata proof,
         bytes calldata rawDatas,
         bytes calldata rlpRuleBytes
     ) external {
         uint256 startGasNum = gasleft();
-        // HelperLib.PublicInputDataSource memory publicInputData2 = proof.parsePublicInputSource();
-        // (publicInputData2);
+        BridgeLib.ChainInfo memory chainInfo = IORManager(_mdcFactory.manager()).getChainInfo(sourceChainId);
+        IORChallengeSpv challengeSpv = IORChallengeSpv(chainInfo.spvs[chainInfo.spvs.length - 1]);
+        require(challengeSpv.verifySourceTx(proof), "VF");
+        HelperLib.PublicInputDataSource memory publicInputData2 = challengeSpv.parseSourceTxProof(proof);
+        (publicInputData2);
         require(
             (publicInputData.manage_contract_address == _mdcFactory.manager()) &&
                 (publicInputData.mdc_contract_address == address(this)),
             "MCE"
         );
-        // BridgeLib.ChainInfo memory chainInfo = IORManager(publicInputData.manage_contract_address).getChainInfo(
-        //     publicInputData.chain_id
-        // );
-
-        // require(IORChallengeSpv(chainInfo.spvs[chainInfo.spvs.length - 1]).verifySourceTx(proof), "VF");
         // Check chainId, hash, timestamp
+        require(publicInputData.chain_id == sourceChainId, "CID");
         bytes32 challengeId = abi.encode(publicInputData.chain_id, publicInputData.tx_hash).hash();
         ChallengeStatement memory statement = _challenges[challengeId].statement[challenger];
         ChallengeResult memory result = _challenges[challengeId].result;
@@ -639,17 +639,18 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         address challenger,
         uint64 sourceChainId,
         bytes32 sourceTxHash,
-        // bytes calldata proof,
+        bytes calldata proof,
         verifiedDataInfo calldata verifiedSourceTxData,
         bytes calldata rawDatas,
         HelperLib.PublicInputDataDest calldata publicInputData
     ) external {
-        // parse Public input
-        // HelperLib.PublicInputDataDest memory publicInputData2 = proof.parsePublicInputDest();
-        // (publicInputData2);
+        BridgeLib.ChainInfo memory chainInfo = IORManager(_mdcFactory.manager()).getChainInfo(sourceChainId);
+        IORChallengeSpv challengeSpv = IORChallengeSpv(chainInfo.spvs[chainInfo.spvs.length - 1]);
         // get DestChainInfo
-        // BridgeLib.ChainInfo memory chainInfo = IORManager(_mdcFactory.manager()).getChainInfo(sourceChainId);
-        // require(IORChallengeSpv(chainInfo.spvs[chainInfo.spvs.length - 1]).verifyDestTx(proof), "VF");
+        require(challengeSpv.verifyDestTx(proof), "VF");
+        // parse Public input
+        HelperLib.PublicInputDataDest memory publicInputData2 = challengeSpv.parseDestTxProof(proof);
+        (publicInputData2);
         bytes32 challengeId = abi.encode(sourceChainId, sourceTxHash).hash();
         ChallengeStatement memory statement = _challenges[challengeId].statement[challenger];
         ChallengeResult memory result = _challenges[challengeId].result;

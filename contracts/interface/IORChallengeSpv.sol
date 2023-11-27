@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
+import {HelperLib} from "../library/HelperLib.sol";
+
 interface IORChallengeSpv {
     struct VerifyInfoSlot {
         address account; // Contract address
@@ -17,9 +19,7 @@ interface IORChallengeSpv {
 
     function verifyDestTx(bytes calldata zkProof) external returns (bool);
 
-    // function verifyChallenge(
-    //     bytes calldata proof,
-    //     bytes32[2] calldata spvBlockHashs,
-    //     bytes32 verifyInfoHash
-    // ) external view returns (bool);
+    function parseSourceTxProof(bytes calldata zkProof) external pure returns (HelperLib.PublicInputDataSource memory);
+
+    function parseDestTxProof(bytes calldata zkProof) external pure returns (HelperLib.PublicInputDataDest memory);
 }

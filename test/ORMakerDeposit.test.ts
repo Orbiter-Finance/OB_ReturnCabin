@@ -772,6 +772,8 @@ describe('ORMakerDeposit', () => {
       chainId1: BigNumber.from(280),
       withholdingFee0: BigNumber.from('3' + '0'.repeat(5)),
       withholdingFee1: BigNumber.from('4' + '0'.repeat(5)),
+      responseTime0: defaultResponseTime,
+      responseTime1: defaultResponseTime,
     };
     const chainId = makerRule.chainId0;
     const chainIdDest = makerRule.chainId1;
@@ -779,13 +781,13 @@ describe('ORMakerDeposit', () => {
     const spvProof: BytesLike = utils.arrayify(
       '0x' +
         fs
-          .readFileSync('test/example/spv.calldataV3', 'utf-8')
+          .readFileSync('test/example/spv.calldata.source', 'utf-8')
           .replace(/\t|\n|\v|\r|\f/g, ''),
     );
     const spvDestProof: BytesLike = utils.arrayify(
       '0x' +
         fs
-          .readFileSync('test/example/spv.calldata', 'utf-8')
+          .readFileSync('test/example/spv.calldata.dest', 'utf-8')
           .replace(/\t|\n|\v|\r|\f/g, ''),
     );
 
@@ -876,12 +878,14 @@ describe('ORMakerDeposit', () => {
       const tx = await spv.verifySourceTx(spvProof).then((t: any) => t.wait());
       expect(tx.status).to.be.eq(1);
       await calculateTxGas(tx, 'spvVerifySourceTx');
+      expect(await spvTest.verifySourceTx(spvProof, spv.address)).to.satisfy;
       // console.log(await spvTest.parseDestProof(spvDestProof));
       const txDest = await spv
         .verifyDestTx(spvDestProof)
         .then((t: any) => t.wait());
       expect(txDest.status).to.be.eq(1);
       await calculateTxGas(txDest, 'spvVerifyDestTx');
+      expect(await spvTest.verifyDestTx(spvDestProof, spv.address)).to.satisfy;
     });
 
     it('test function challenge _addChallengeNode', async function () {
@@ -1118,23 +1122,23 @@ describe('ORMakerDeposit', () => {
       challengeManager.initialize();
       let defaultRule: BigNumberish[] = [
         5,
-        BigNumber.from('0x08274f'),
+        280,
         1,
         1,
-        constants.AddressZero,
-        constants.AddressZero,
-        BigNumber.from('0x01c6bf52634c35'),
-        BigNumber.from('0x09b6e64a8ecbf5e1'),
-        BigNumber.from('0x01c6bf52634005'),
-        BigNumber.from('0x0b1a2bc2ec503d09'),
-        BigNumber.from('0x038d7ea51bf300'),
-        BigNumber.from('0x038d7ea53d84c0'),
+        0,
+        0,
+        10000000000,
+        10000000000,
+        BigNumber.from('100000000000000000000'),
+        BigNumber.from('100000000000000000000'),
+        10000000000,
+        20000000000,
         1,
-        2,
-        33,
-        28,
-        27,
-        30,
+        1,
+        604800,
+        604800,
+        32,
+        31,
       ];
       const formatDefaultRule = formatRule(defaultRule);
       await updateMakerRule(makerTest, ebc.address, makerRule);
@@ -1205,6 +1209,7 @@ describe('ORMakerDeposit', () => {
       const makerPublicInputData: PublicInputData = {
         // with replace reason
         ...publicInputData,
+        to: signers[1].address,
         mdc_contract_address: makerTest.address, // mdc not same
         manage_contract_address: orManager.address, // manager not same
         max_verify_challenge_dest_tx_second:
@@ -1228,9 +1233,10 @@ describe('ORMakerDeposit', () => {
         sourceChainId: BigNumber.from(makerPublicInputData.chain_id).toNumber(),
         sourceBlockNum: BigNumber.from(0).toNumber(),
         sourceTxIndex: BigNumber.from(makerPublicInputData.index).toNumber(),
-        sourceTxHash: BigNumber.from(
-          makerPublicInputData.tx_hash,
-        ).toHexString(),
+        sourceTxHash: utils.hexZeroPad(
+          BigNumber.from(makerPublicInputData.tx_hash).toHexString(),
+          32,
+        ),
         from: BigNumber.from(makerPublicInputData.from).toHexString(),
         freezeToken: makerPublicInputData.token,
         freezeAmount: makerPublicInputData.amount,
@@ -1286,6 +1292,7 @@ describe('ORMakerDeposit', () => {
       const tx = await makerTest
         .verifyChallengeSource(
           challengerList[0],
+          makerPublicInputData.chain_id,
           makerPublicInputData,
           spvProof,
           rawData,
