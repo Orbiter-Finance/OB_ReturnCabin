@@ -1,4 +1,4 @@
-/* eslint-disable prettier/prettier */
+import { Wallet, constants } from 'ethers';
 import { ethers } from 'hardhat';
 import {
   OREventBinding__factory,
@@ -6,12 +6,21 @@ import {
   ORMDCFactory__factory,
   ORMakerDeposit__factory,
   ORManager__factory,
+  ORSpvData__factory,
 } from '../typechain-types';
 
 export async function deploy() {
   const signers = await ethers.getSigners();
-  const deployer = signers[0];
-  console.log('deployer:', deployer.address);
+  const deployer = new Wallet(
+    process.env.DEPLOYER_PRIVATE_KEY || '',
+    signers[0].provider,
+  );
+  console.log(
+    'deployer:',
+    deployer.address,
+    ', chainId:',
+    await deployer.getChainId(),
+  );
 
   const orManager = await new ORManager__factory(deployer).deploy(
     deployer.address,
@@ -22,6 +31,17 @@ export async function deploy() {
     }, deployed blockNumber: ${await ethers.provider.getBlockNumber()} `,
   );
   await orManager.deployed();
+
+  const orSpvData = await new ORSpvData__factory(deployer).deploy(
+    orManager.address,
+    process.env.OR_SPV_DATA_INJECT_OWNER || constants.AddressZero,
+  );
+  console.log(
+    `Address of orSpvData: ${
+      orSpvData.address
+    }, deployed blockNumber: ${await ethers.provider.getBlockNumber()} `,
+  );
+  await orSpvData.deployed();
 
   const orMakerDeposit_impl = await new ORMakerDeposit__factory(
     deployer,

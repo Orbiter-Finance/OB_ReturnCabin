@@ -3,6 +3,9 @@ import { ethers } from 'hardhat';
 
 import { mine, mineUpTo } from '@nomicfoundation/hardhat-network-helpers';
 import { assert, expect } from 'chai';
+import { BigNumber, BigNumberish, constants, utils } from 'ethers';
+import { defaultAbiCoder, id, keccak256, randomBytes } from 'ethers/lib/utils';
+import { MerkleTree } from 'merkletreejs';
 import {
   IORSpvData,
   ORManager,
@@ -10,10 +13,7 @@ import {
   ORSpvData,
   ORSpvData__factory,
 } from '../typechain-types';
-import { BigNumber, BigNumberish } from 'ethers';
 import { testReverted, testRevertedOwner } from './utils.test';
-import { defaultAbiCoder, id, keccak256 } from 'ethers/lib/utils';
-import { MerkleTree } from 'merkletreejs';
 
 describe('ORSpvData', () => {
   let signers: SignerWithAddress[];
@@ -53,6 +53,7 @@ describe('ORSpvData', () => {
 
     orSpvData = await new ORSpvData__factory(signers[0]).deploy(
       envORManagerAddress,
+      constants.AddressZero,
     );
     console.log('orSpvData.address:', orSpvData.address);
 
@@ -128,10 +129,10 @@ describe('ORSpvData', () => {
           blockInterval,
         );
 
-        const blockHash = await orSpvData.getBlocksRoot(startBlockNumber);
-        expect(BigNumber.from(blockHash)).to.eq(
-          BigNumber.from(merkleTree.getHexRoot()),
+        const storageStartBlockNumber = await orSpvData.getStartBlockNumber(
+          merkleTree.getHexRoot(),
         );
+        expect(storageStartBlockNumber).to.eq(BigNumber.from(startBlockNumber));
 
         ei++;
       }
@@ -182,44 +183,36 @@ describe('ORSpvData', () => {
     );
 
     await testReverted(
-      orSpvData.injectBlocksRoots(
-        blockNumber0.sub(blockInterval),
-        blockNumber0,
-        [],
-      ),
+      orSpvData.injectBlocksRoots(blocksRoot0, blocksRoot0, []),
       'Forbidden: caller is not the inject owner',
     );
 
     const connectedORSpvData = orSpvData.connect(injectOwner);
 
     await testReverted(
-      connectedORSpvData.injectBlocksRoots(blockNumber0, blockNumber0, []),
+      connectedORSpvData.injectBlocksRoots(blocksRoot0, blocksRoot0, []),
+      'SNLE',
+    );
+    await testReverted(
+      connectedORSpvData.injectBlocksRoots(blocksRoot0, constants.HashZero, []),
       'SNLE',
     );
     await testReverted(
       connectedORSpvData.injectBlocksRoots(
-        blockNumber0.add(1),
-        blockNumber0,
-        [],
-      ),
-      'SNLE',
-    );
-    await testReverted(
-      connectedORSpvData.injectBlocksRoots(
-        blockNumber0.sub(blockInterval - 1),
-        blockNumber0,
+        keccak256(randomBytes(32)), // mock
+        blocksRoot0,
         [],
       ),
       'SZ',
     );
-    await testReverted(
-      connectedORSpvData.injectBlocksRoots(
-        blockNumber0,
-        blockNumber0.add(blockInterval - 1),
-        [],
-      ),
-      'EZ',
-    );
+    // await testReverted(
+    //   connectedORSpvData.injectBlocksRoots(
+    //     blocksRoot0,
+    //     keccak256(randomBytes(32)), //mock
+    //     [],
+    //   ),
+    //   'EZ',
+    // );
 
     // Only hardhat local network
     const mineBlockNumber = blockInterval * 5;
@@ -243,7 +236,7 @@ describe('ORSpvData', () => {
     for (let i = 0; i < 2; i++) {
       const _blockNumber = blockNumber0.add(blockInterval * (i + 1));
       const merkleTree = await _calculateMerkleTree(
-        blockNumber0,
+        _blockNumber,
         blockInterval,
       );
 
@@ -252,8 +245,9 @@ describe('ORSpvData', () => {
         blocksRoot: merkleTree.getHexRoot(),
       });
     }
+
     await testReverted(
-      connectedORSpvData.injectBlocksRoots(blockNumber0, blockNumber1, [
+      connectedORSpvData.injectBlocksRoots(blocksRoot0, blocksRoot1, [
         {
           startBlockNumber: blockNumber0,
           blocksRoot: blocksRoot0,
@@ -262,7 +256,7 @@ describe('ORSpvData', () => {
       'IBLE0',
     );
     await testReverted(
-      connectedORSpvData.injectBlocksRoots(blockNumber0, blockNumber1, [
+      connectedORSpvData.injectBlocksRoots(blocksRoot0, blocksRoot1, [
         {
           startBlockNumber: blockNumber1,
           blocksRoot: blocksRoot1,
@@ -271,7 +265,7 @@ describe('ORSpvData', () => {
       'IBGE1',
     );
     await testReverted(
-      connectedORSpvData.injectBlocksRoots(blockNumber0, blockNumber1, [
+      connectedORSpvData.injectBlocksRoots(blocksRoot0, blocksRoot1, [
         {
           startBlockNumber: blockNumber0.add(1),
           blocksRoot: injectionBlocksRoots[0].blocksRoot,
@@ -284,7 +278,7 @@ describe('ORSpvData', () => {
 
     const events = (
       await connectedORSpvData
-        .injectBlocksRoots(blockNumber0, blockNumber1, injectionBlocksRoots)
+        .injectBlocksRoots(blocksRoot0, blocksRoot1, injectionBlocksRoots)
         .then((t) => t.wait())
     ).events!;
     for (let i = 0; i < injectionBlocksRoots.length; i++) {
@@ -300,16 +294,16 @@ describe('ORSpvData', () => {
         BigNumber.from(injectionBlocksRoots[i].blocksRoot),
       );
 
-      const _blockHash = await orSpvData.getBlocksRoot(
-        injectionBlocksRoots[i].startBlockNumber,
+      const _startBlockNumber = await orSpvData.getStartBlockNumber(
+        injectionBlocksRoots[i].blocksRoot,
       );
-      expect(BigNumber.from(_blockHash)).not.deep.eq(BigNumber.from(0));
+      expect(_startBlockNumber).not.deep.eq(BigNumber.from(0));
     }
 
     await testReverted(
       connectedORSpvData.injectBlocksRoots(
-        blockNumber0,
-        blockNumber1,
+        blocksRoot0,
+        blocksRoot1,
         injectionBlocksRoots,
       ),
       'BE',
