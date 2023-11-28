@@ -11,7 +11,7 @@ contract ORSpvData is IORSpvData {
 
     uint64 private _blockInterval = 192;
     address private _injectOwner;
-    mapping(uint => bytes32) private _blocksRoots; // startBlockNumber => [start ..._blockInterval... end]'s blocks root
+    mapping(bytes32 => uint) private _blocksRoots; // [start ..._blockInterval... end]'s blocks root => startBlockNumber
 
     constructor(address manager_, address injectOwner_) {
         require(manager_ != address(0), "MZ");
@@ -41,7 +41,6 @@ contract ORSpvData is IORSpvData {
         emit BlockIntervalUpdated(blockInterval_);
     }
 
-    // TODO: Not review
     function _calculateRoot(uint startBlockNumber) internal view returns (bytes32) {
         uint len = _blockInterval / 2;
         bytes32 root;
@@ -128,8 +127,8 @@ contract ORSpvData is IORSpvData {
         for (uint i = 0; i < batchLen; ) {
             bytes32 root = _calculateRoot(startBlockNumber);
 
-            if (_blocksRoots[startBlockNumber] == bytes32(0) && root != bytes32(0)) {
-                _blocksRoots[startBlockNumber] = root;
+            if (_blocksRoots[root] == 0 && root != bytes32(0)) {
+                _blocksRoots[root] = startBlockNumber;
                 emit HistoryBlocksRootSaved(startBlockNumber, root, bi);
             }
 
@@ -140,8 +139,8 @@ contract ORSpvData is IORSpvData {
         }
     }
 
-    function getBlocksRoot(uint startBlockNumber) external view returns (bytes32) {
-        return _blocksRoots[startBlockNumber];
+    function getStartBlockNumber(bytes32 blocksRoot) external view returns (uint) {
+        return _blocksRoots[blocksRoot];
     }
 
     function injectOwner() external view returns (address) {
@@ -154,17 +153,20 @@ contract ORSpvData is IORSpvData {
     }
 
     function injectBlocksRoots(
-        uint blockNumber0,
-        uint blockNumber1,
+        bytes32 blocksRoot0,
+        bytes32 blocksRoot1,
         InjectionBlocksRoot[] calldata injectionBlocksRoots
     ) external {
         require(msg.sender == _injectOwner, "Forbidden: caller is not the inject owner");
 
+        uint blockNumber0 = _blocksRoots[blocksRoot0];
+        uint blockNumber1 = _blocksRoots[blocksRoot1];
+
         require(blockNumber0 < blockNumber1, "SNLE");
 
         // Make sure the blockNumber0 and blockNumber1 at storage
-        require(_blocksRoots[blockNumber0] != bytes32(0), "SZ");
-        require(_blocksRoots[blockNumber1] != bytes32(0), "EZ");
+        require(blockNumber0 != 0, "SZ");
+        require(blockNumber1 != 0, "EZ"); // This logic may never be false
 
         uint i = 0;
         uint ni = 0;
@@ -178,9 +180,9 @@ contract ORSpvData is IORSpvData {
             require(blockNumber0 < ibsr.startBlockNumber, "IBLE0");
             require(blockNumber1 > ibsr.startBlockNumber, "IBGE1");
             require(ibsr.startBlockNumber % _blockInterval == 0, "IIB");
-            require(_blocksRoots[ibsr.startBlockNumber] == bytes32(0), "BE");
+            require(_blocksRoots[ibsr.blocksRoot] == 0, "BE");
 
-            _blocksRoots[ibsr.startBlockNumber] = ibsr.blocksRoot;
+            _blocksRoots[ibsr.blocksRoot] = ibsr.startBlockNumber;
             emit HistoryBlocksRootSaved(ibsr.startBlockNumber, ibsr.blocksRoot, _blockInterval);
 
             i = ni;

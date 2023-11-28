@@ -17,15 +17,15 @@ interface IORSpvData {
 
     function saveHistoryBlocksRoots() external;
 
-    function getBlocksRoot(uint startBlockNumber) external view returns (bytes32);
+    function getStartBlockNumber(bytes32 blocksRoot) external view returns (uint);
 
     function injectOwner() external view returns (address);
 
     function updateInjectOwner(address injectOwner_) external;
 
     function injectBlocksRoots(
-        uint blockNumber0,
-        uint blockNumber1,
+        bytes32 blocksRoot0,
+        bytes32 blocksRoot1,
         InjectionBlocksRoot[] calldata injectionBlocksRoots
     ) external;
 }
