@@ -3,34 +3,46 @@ pragma solidity ^0.8.17;
 
 import {HelperLib} from "./library/HelperLib.sol";
 import {IORSpvData} from "./interface/IORSpvData.sol";
-import {IORManager} from "./interface/IORManager.sol";
 
 contract ORSpvData is IORSpvData {
     using HelperLib for bytes;
 
-    IORManager private _manager;
+    address public manager;
+
     uint64 private _blockInterval = 192;
     address private _injectOwner;
+    mapping(bytes32 => uint) private _blocksRoots; // [start ..._blockInterval... end]'s blocks root => startBlockNumber
 
-    mapping(uint256 => bytes32) private _blocksRoots; // startBlockNumber => [start ..._blockInterval... end]'s blocks root
-
-    constructor(address manager_) {
+    constructor(address manager_, address injectOwner_) {
         require(manager_ != address(0), "MZ");
-        _manager = IORManager(manager_);
+        manager = manager_;
+
+        if (injectOwner_ != address(0)) {
+            _injectOwner = injectOwner_;
+            emit InjectOwnerUpdated(injectOwner_);
+        }
     }
 
     modifier onlyManager() {
-        require(msg.sender == address(_manager), "Forbidden: caller is not the manager");
+        require(msg.sender == manager, "Forbidden: caller is not the manager");
         _;
     }
 
-    function getBlocksRoot(uint256 startBlockNumber) external view returns (bytes32) {
-        return _blocksRoots[startBlockNumber];
+    function blockInterval() external view returns (uint64) {
+        return _blockInterval;
     }
 
-    // TODO: Not review
-    function _calculateRoot(uint256 startBlockNumber) internal view returns (bytes32) {
-        uint256 len = _blockInterval / 2;
+    function updateBlockInterval(uint64 blockInterval_) external onlyManager {
+        require(blockInterval_ >= 2 && blockInterval_ <= 256, "IOF");
+        require(blockInterval_ % 2 == 0, "IV");
+
+        _blockInterval = blockInterval_;
+
+        emit BlockIntervalUpdated(blockInterval_);
+    }
+
+    function _calculateRoot(uint startBlockNumber) internal view returns (bytes32) {
+        uint len = _blockInterval / 2;
         bytes32 root;
         assembly {
             let leaves := mload(0x40)
@@ -115,8 +127,8 @@ contract ORSpvData is IORSpvData {
         for (uint256 i = 0; i < batchLen; ) {
             bytes32 root = _calculateRoot(startBlockNumber);
 
-            if (_blocksRoots[startBlockNumber] == bytes32(0) && root != bytes32(0)) {
-                _blocksRoots[startBlockNumber] = root;
+            if (_blocksRoots[root] == 0 && root != bytes32(0)) {
+                _blocksRoots[root] = startBlockNumber;
                 emit HistoryBlocksRootSaved(startBlockNumber, root, bi);
             }
 
@@ -127,17 +139,8 @@ contract ORSpvData is IORSpvData {
         }
     }
 
-    function blockInterval() external view returns (uint64) {
-        return _blockInterval;
-    }
-
-    function updateBlockInterval(uint64 blockInterval_) external onlyManager {
-        require(blockInterval_ >= 2 && blockInterval_ <= 256, "IOF");
-        require(blockInterval_ % 2 == 0, "IV");
-
-        _blockInterval = blockInterval_;
-
-        emit BlockIntervalUpdated(blockInterval_);
+    function getStartBlockNumber(bytes32 blocksRoot) external view returns (uint) {
+        return _blocksRoots[blocksRoot];
     }
 
     function injectOwner() external view returns (address) {
@@ -150,17 +153,20 @@ contract ORSpvData is IORSpvData {
     }
 
     function injectBlocksRoots(
-        uint256 blockNumber0,
-        uint256 blockNumber1,
+        bytes32 blocksRoot0,
+        bytes32 blocksRoot1,
         InjectionBlocksRoot[] calldata injectionBlocksRoots
     ) external {
         require(msg.sender == _injectOwner, "Forbidden: caller is not the inject owner");
 
+        uint blockNumber0 = _blocksRoots[blocksRoot0];
+        uint blockNumber1 = _blocksRoots[blocksRoot1];
+
         require(blockNumber0 < blockNumber1, "SNLE");
 
         // Make sure the blockNumber0 and blockNumber1 at storage
-        require(_blocksRoots[blockNumber0] != bytes32(0), "SZ");
-        require(_blocksRoots[blockNumber1] != bytes32(0), "EZ");
+        require(blockNumber0 != 0, "SZ");
+        require(blockNumber1 != 0, "EZ"); // This logic may never be false
 
         uint256 i = 0;
         uint256 ni = 0;
@@ -174,9 +180,9 @@ contract ORSpvData is IORSpvData {
             require(blockNumber0 < ibsr.startBlockNumber, "IBLE0");
             require(blockNumber1 > ibsr.startBlockNumber, "IBGE1");
             require(ibsr.startBlockNumber % _blockInterval == 0, "IIB");
-            require(_blocksRoots[ibsr.startBlockNumber] == bytes32(0), "BE");
+            require(_blocksRoots[ibsr.blocksRoot] == 0, "BE");
 
-            _blocksRoots[ibsr.startBlockNumber] = ibsr.blocksRoot;
+            _blocksRoots[ibsr.blocksRoot] = ibsr.startBlockNumber;
             emit HistoryBlocksRootSaved(ibsr.startBlockNumber, ibsr.blocksRoot, _blockInterval);
 
             i = ni;
