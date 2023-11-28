@@ -15,6 +15,7 @@ import {ConstantsLib} from "./library/ConstantsLib.sol";
 import {BridgeLib} from "./library/BridgeLib.sol";
 import {VersionAndEnableTime} from "./VersionAndEnableTime.sol";
 import {IORDecoderRLP} from "./interface/IORDecoderRLP.sol";
+import {IORSpvData} from "./interface/IORSpvData.sol";
 
 // import "hardhat/console.sol";
 
@@ -491,10 +492,18 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         bytes calldata rlpRuleBytes
     ) external {
         uint256 startGasNum = gasleft();
-        BridgeLib.ChainInfo memory chainInfo = IORManager(_mdcFactory.manager()).getChainInfo(sourceChainId);
+        IORManager manager = IORManager(_mdcFactory.manager());
+        BridgeLib.ChainInfo memory chainInfo = manager.getChainInfo(sourceChainId);
         IORChallengeSpv challengeSpv = IORChallengeSpv(chainInfo.spvs[chainInfo.spvs.length - 1]);
         require(challengeSpv.verifySourceTx(proof), "VF");
         HelperLib.PublicInputDataSource memory publicInputData = challengeSpv.parseSourceTxProof(proof);
+        for (uint i = 0; i < publicInputData.merkle_roots.length; i++) {
+            require(
+                IORSpvData(manager.spvDataContract()).getStartBlockNumber(publicInputData.merkle_roots[i]) !=
+                    0,
+                "IBL"
+            );
+        }
         require(
             (publicInputData.manage_contract_address == _mdcFactory.manager()) &&
                 (publicInputData.mdc_contract_address == address(this)),

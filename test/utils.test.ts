@@ -10,12 +10,14 @@ import {
   utils,
 } from 'ethers';
 import {
+  IORSpvData,
   ORMakerDeposit,
   ORManager,
+  ORSpvData,
   TestMakerDeposit,
   TestSpv,
 } from '../typechain-types';
-import { callDataCost, getCurrentTime } from './lib/mockData';
+import { callDataCost, getCurrentTime, mineXTimes } from './lib/mockData';
 import {
   RuleStruct,
   calculateRulesTree,
@@ -35,10 +37,11 @@ import {
 import { getMappingStructXSlot } from './lib/readStorage';
 import { assert } from 'console';
 import { string } from 'hardhat/internal/core/params/argumentTypes';
-import { chain, random } from 'lodash';
+import { chain, random, update } from 'lodash';
 import { calculateEnableTime } from '../scripts/utils';
 import { BridgeLib } from '../typechain-types/contracts/ORManager';
 import { promises } from 'dns';
+import { mineUpTo } from '@nomicfoundation/hardhat-network-helpers';
 
 export function hexToBuffer(hex: string) {
   return Buffer.from(utils.arrayify(hex));
@@ -206,6 +209,7 @@ export interface PublicInputData {
   manage_current_challenge_user_ratio: BigNumberish;
   mdc_next_rule_enable_time: BigNumberish;
   mdc_current_rule_value_hash: BytesLike;
+  merkle_roots: string[];
 }
 
 export interface PublicInputDataDest {
@@ -1111,4 +1115,47 @@ export const getRawDataNew = async (columnArray: columnArray, ebc: string) => {
     rawData: utils.arrayify(jsEncode),
     columnArrayHash: columnArrayHash,
   };
+};
+
+export const mockSpvData = async (
+  orSpvData: ORSpvData,
+  injectionBlocksRoots: string[],
+): Promise<void> => {
+  const _injectionBlocksRoots: IORSpvData.InjectionBlocksRootStruct[] = [];
+  await mineUpTo(1200);
+  const receipt1 = await orSpvData
+    .saveHistoryBlocksRoots()
+    .then((t) => t.wait());
+  const events1 = receipt1.events!;
+  const startBlock1 = BigNumber.from(events1[0].args?.['startBlockNumber']);
+  const blocksRoot1 = BigNumber.from(
+    events1[0].args?.['blocksRoot'],
+  ).toHexString();
+  await mineUpTo(10000);
+  const receipt2 = await orSpvData
+    .saveHistoryBlocksRoots()
+    .then((t) => t.wait());
+  const events2 = receipt2.events!;
+  const startBlock2 = BigNumber.from(
+    events2[events2.length - 1].args?.['startBlockNumber'],
+  );
+  const blocksRoot2 = BigNumber.from(
+    events2[events2.length - 1].args?.['blocksRoot'],
+  ).toHexString();
+  let currBlk = BigNumber.from(startBlock1);
+  for (let i = 0; i < injectionBlocksRoots.length; i++) {
+    currBlk = currBlk.add(192);
+    _injectionBlocksRoots.push({
+      startBlockNumber: currBlk,
+      blocksRoot: injectionBlocksRoots[i],
+    });
+  }
+
+  for (let i = 0; i < injectionBlocksRoots.length; i++) {
+    const receipt = await orSpvData
+      .injectBlocksRoots(blocksRoot1, blocksRoot2, [_injectionBlocksRoots[i]])
+      .then((t) => t.wait(1));
+    const events = receipt.events!;
+    mineXTimes(100);
+  }
 };

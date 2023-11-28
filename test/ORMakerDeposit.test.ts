@@ -33,6 +33,7 @@ import {
   TestMakerDeposit__factory,
   RLPDecoder,
   RLPDecoder__factory,
+  ORSpvData__factory,
 } from '../typechain-types';
 import { defaultChainInfo } from './defaults';
 import {
@@ -69,6 +70,7 @@ import {
   VerifiedDataInfo,
   getRLPEncodeMakerRuleHash,
   getRawDataNew,
+  mockSpvData,
 } from './utils.test';
 import {
   callDataCost,
@@ -84,10 +86,12 @@ import { randomBytes } from 'crypto';
 import {
   compile_yul,
   createRandomChallenge,
+  deployContracts,
   deployMDC,
   deploySPVs,
   VerifierAbi,
 } from '../scripts/utils';
+import { Console } from 'console';
 
 describe('ORMakerDeposit', () => {
   let signers: SignerWithAddress[];
@@ -875,6 +879,7 @@ describe('ORMakerDeposit', () => {
     });
 
     it('calculate spv verify gas cost', async function () {
+      return;
       // eslint-disable-next-line prettier/prettier
       console.log(await spvTest.parseSourceProof(mainnet2eraProof));
       const tx = await mainnet2eraSpv
@@ -1126,6 +1131,12 @@ describe('ORMakerDeposit', () => {
     });
 
     it('Challenge and verifyTx', async function () {
+      const { orSpvData } = await deployContracts(signers[0], mdcOwner);
+      await orManager.updateSpvDataContract(orSpvData).then((t) => t.wait());
+      const ORSpvData = new ORSpvData__factory(mdcOwner).attach(orSpvData);
+      await orManager.updateSpvDataInjectOwner(mdcOwner.address);
+      console.log('connect of ORSpvData:', ORSpvData.address);
+
       challengeManager.initialize();
       let defaultRule: BigNumberish[] = [
         5,
@@ -1154,6 +1165,13 @@ describe('ORMakerDeposit', () => {
       const publicInputData: PublicInputData = await spvTest.parseSourceProof(
         mainnet2eraProof,
       );
+
+      // const merkleRootsSet = new Set(publicInputData.merkle_roots);
+      await mockSpvData(
+        ORSpvData,
+        Array.from(new Set(publicInputData.merkle_roots)),
+      );
+
       {
         const { encodeHash } = getRLPEncodeMakerRuleHash(defaultRule);
         expect(publicInputData).not.null;

@@ -128,6 +128,7 @@ library HelperLib {
         uint64 manage_current_challenge_user_ratio;
         uint256 mdc_next_rule_enable_time;
         bytes32 mdc_current_rule_value_hash;
+        bytes32[] merkle_roots;
     }
 
     struct PublicInputDataDest {

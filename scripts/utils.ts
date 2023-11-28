@@ -18,6 +18,7 @@ import {
   ORManager__factory,
   RLPDecoder__factory,
   ORManager,
+  ORSpvData__factory,
 } from '../typechain-types';
 import { PromiseOrValue } from '../typechain-types/common';
 import { BigNumber, constants, utils } from 'ethers';
@@ -329,6 +330,16 @@ export const deployContracts = async (
     process.env['SPV_ADDRESS'] = spvaddress;
   }
 
+  // OR_SPV_DATA_ADRESS
+  if (process.env['OR_SPV_DATA_ADRESS'] == undefined) {
+    const orSpvData = await new ORSpvData__factory(deployer).deploy(
+      process.env['OR_MANAGER_ADDRESS']!,
+      constants.AddressZero,
+    );
+    console.log('orSpvData deployed to:', orSpvData.address);
+    process.env['OR_SPV_DATA_ADRESS'] = orSpvData.address;
+  }
+
   return {
     orManager: process.env['OR_MANAGER_ADDRESS']!,
     orMDC: process.env['OR_MDC_TEST']!,
@@ -336,6 +347,7 @@ export const deployContracts = async (
     rlpDecoder: process.env['RLP_DECODER_ADDRESS']!,
     spvTest: process.env['SPV_TEST_ADDRESS']!,
     spv: process.env['SPV_ADDRESS']!,
+    orSpvData: process.env['OR_SPV_DATA_ADRESS']!,
   };
 };
 
