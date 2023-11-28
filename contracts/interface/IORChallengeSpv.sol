@@ -4,16 +4,9 @@ pragma solidity ^0.8.17;
 import {HelperLib} from "../library/HelperLib.sol";
 
 interface IORChallengeSpv {
-    struct VerifyInfoSlot {
-        address account; // Contract address
-        bytes32 key;
-        uint256 value;
-    }
+    function setSpvVerifierAddr(address sourceTxVerifier, address destTxVerifier) external;
 
-    struct VerifyInfo {
-        uint256[] data;
-        VerifyInfoSlot[] slots;
-    }
+    function getSpvVerifierAddr() external view returns (address, address);
 
     function verifySourceTx(bytes calldata zkProof) external returns (bool);
 

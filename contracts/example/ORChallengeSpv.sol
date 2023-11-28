@@ -6,50 +6,81 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 import {HelperLib} from "../library/HelperLib.sol";
 
-contract ORChallengeSpv is IORChallengeSpv, Ownable {
-    using HelperLib for bytes;
-    address public sourceTxVerifier;
-    address public destTxVerifier;
+import {Mainnet2EraLib} from "../library/Mainnet2EraLib.sol";
 
-    function setSpvVerifierAddr(address _sourceTxVerifier, address _destTxVerifier) public onlyOwner {
-        sourceTxVerifier = _sourceTxVerifier;
-        destTxVerifier = _destTxVerifier;
+contract ORChallengeSpv is IORChallengeSpv, Ownable {
+    using Mainnet2EraLib for bytes;
+    address private _sourceTxVerifier;
+    address private _destTxVerifier;
+
+    constructor(address sourceTxVerifier, address destTxVerifier) {
+        _transferOwnership(msg.sender);
+        setSpvVerifierAddr(sourceTxVerifier, destTxVerifier);
     }
 
-    constructor(address _sourceTxVerifier, address _destTxVerifier) {
-        _transferOwnership(msg.sender);
-        setSpvVerifierAddr(_sourceTxVerifier, _destTxVerifier);
+    function setSpvVerifierAddr(address sourceTxVerifier, address destTxVerifier) public onlyOwner {
+        _sourceTxVerifier = sourceTxVerifier;
+        _destTxVerifier = destTxVerifier;
+    }
+
+    function getSpvVerifierAddr() external view override returns (address, address) {
+        return (_sourceTxVerifier, _destTxVerifier);
     }
 
     function verifySourceTx(bytes calldata zkProof) external returns (bool) {
         uint256 ProofLength = 384;
         uint256 SplitStep = 32;
-        uint256 TransactionSplitStart = ProofLength + 64; // 384 is proof length;64 is blockHash length
-        uint256 TrackBlockSplitStart = TransactionSplitStart + SplitStep * 12;
-        bool merkleRootMatch = ((uint256(bytes32(zkProof[TrackBlockSplitStart:TrackBlockSplitStart + SplitStep])) <<
-            128) | uint256(bytes32(zkProof[TrackBlockSplitStart + SplitStep:TrackBlockSplitStart + SplitStep * 2]))) ==
-            ((uint256(bytes32(zkProof[TrackBlockSplitStart + SplitStep * 8:TrackBlockSplitStart + SplitStep * 9])) <<
-                128) |
-                uint256(bytes32(zkProof[TrackBlockSplitStart + SplitStep * 9:TrackBlockSplitStart + SplitStep * 10])));
+        uint256 TransactionSplitStart = ProofLength;
+        uint256 TrackBlockSplitStart = TransactionSplitStart + SplitStep * 14;
+        uint256 MdcContractSplitStart = TrackBlockSplitStart + SplitStep * 12;
+        uint256 original_tx_block_hash = ((uint256(
+            bytes32(zkProof[TransactionSplitStart:TransactionSplitStart + SplitStep])
+        ) << 128) | uint256(bytes32(zkProof[TransactionSplitStart + SplitStep:TransactionSplitStart + SplitStep * 2])));
+        uint256 original_tx_batch_target_block_hash = ((uint256(
+            bytes32(zkProof[TrackBlockSplitStart + SplitStep * 2:TrackBlockSplitStart + SplitStep * 3])
+        ) << 128) |
+            uint256(bytes32(zkProof[TrackBlockSplitStart + SplitStep * 3:TrackBlockSplitStart + SplitStep * 4])));
 
-        (bool success, ) = sourceTxVerifier.call(zkProof);
-        return success && merkleRootMatch;
+        uint256 ob_contracts_current_block_hash = (uint256(
+            bytes32(zkProof[MdcContractSplitStart + SplitStep * 40:MdcContractSplitStart + SplitStep * 41])
+        ) << 128) |
+            uint256(bytes32(zkProof[MdcContractSplitStart + SplitStep * 41:MdcContractSplitStart + SplitStep * 42]));
+
+        uint256 ob_contracts_current_batch_target_block_hash = (uint256(
+            bytes32(zkProof[TrackBlockSplitStart + SplitStep * 6:TrackBlockSplitStart + SplitStep * 7])
+        ) << 128) |
+            uint256(bytes32(zkProof[TrackBlockSplitStart + SplitStep * 7:TrackBlockSplitStart + SplitStep * 8]));
+
+        uint256 ob_contracts_next_block_hash = (uint256(
+            bytes32(zkProof[MdcContractSplitStart + SplitStep * 42:MdcContractSplitStart + SplitStep * 43])
+        ) << 128) |
+            uint256(bytes32(zkProof[MdcContractSplitStart + SplitStep * 43:MdcContractSplitStart + SplitStep * 44]));
+        uint256 ob_contracts_next_batch_target_block_hash = (uint256(
+            bytes32(zkProof[TrackBlockSplitStart + SplitStep * 10:TrackBlockSplitStart + SplitStep * 11])
+        ) << 128) |
+            uint256(bytes32(zkProof[TrackBlockSplitStart + SplitStep * 11:TrackBlockSplitStart + SplitStep * 12]));
+
+        bool proofMatch = original_tx_block_hash == original_tx_batch_target_block_hash &&
+            ob_contracts_current_block_hash == ob_contracts_current_batch_target_block_hash &&
+            ob_contracts_next_block_hash == ob_contracts_next_batch_target_block_hash;
+        (bool success, ) = _sourceTxVerifier.call(zkProof);
+        return success && proofMatch;
     }
 
     function verifyDestTx(bytes calldata zkProof) external returns (bool) {
         uint256 ProofLength = 384;
         uint256 SplitStep = 32;
         uint256 CommitTxSplitStart = ProofLength;
-        uint256 TransactionSplitStart = CommitTxSplitStart + SplitStep * 14; // 384 is proof length, SplitStep*14 is L1 commit tx;
+        uint256 TransactionSplitStart = CommitTxSplitStart + SplitStep * 14;
         uint256 TrackBlockSplitStart = TransactionSplitStart + SplitStep * 14;
-        bool merkleRootMatch = ((uint256(bytes32(zkProof[CommitTxSplitStart:CommitTxSplitStart + SplitStep])) << 128) |
+        bool proofMatch = ((uint256(bytes32(zkProof[CommitTxSplitStart:CommitTxSplitStart + SplitStep])) << 128) |
             uint256(bytes32(zkProof[CommitTxSplitStart + SplitStep:CommitTxSplitStart + SplitStep * 2]))) ==
             ((uint256(bytes32(zkProof[TrackBlockSplitStart + SplitStep * 2:TrackBlockSplitStart + SplitStep * 3])) <<
                 128) |
                 uint256(bytes32(zkProof[TrackBlockSplitStart + SplitStep * 3:TrackBlockSplitStart + SplitStep * 4])));
 
-        (bool success, ) = destTxVerifier.call(zkProof);
-        return success;
+        (bool success, ) = _destTxVerifier.call(zkProof);
+        return success && proofMatch;
     }
 
     function parseSourceTxProof(bytes calldata zkProof) external pure returns (HelperLib.PublicInputDataSource memory) {

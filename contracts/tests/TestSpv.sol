@@ -4,15 +4,15 @@ import {RuleLib} from "../library/RuleLib.sol";
 import {HelperLib} from "../library/HelperLib.sol";
 import {IVerifierRouter} from "../zkp/IVerifierRouter.sol";
 import {IOREventBinding} from "../interface/IOREventBinding.sol";
-
 import {RLPReader} from "../library/RLPReader.sol";
-
 import {IORChallengeSpv} from "../interface/IORChallengeSpv.sol";
+import {Mainnet2EraLib} from "../library/Mainnet2EraLib.sol";
 
 // import "hardhat/console.sol";
 
 contract testSpv {
     using HelperLib for bytes;
+    using Mainnet2EraLib for bytes;
     using RLPReader for bytes;
     address public v_address;
 

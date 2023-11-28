@@ -132,27 +132,45 @@ export const verifierRouterAbi = [
   },
 ];
 
+export enum SPVTypeEnum {
+  mainnet2era = 0,
+  era2mainnet = 1,
+}
+
 export const deploySPVs = async (
   deployer: SignerWithAddress,
+  spvType: SPVTypeEnum = SPVTypeEnum.mainnet2era,
 ): Promise<string> => {
   const mdcOwner = deployer;
-  const verifyDestBytesCode = await compile_yul(
-    'contracts/zkp/goerliDestSpvVerifier.yul',
-  );
+  let verifyDestBytesCode;
+  let verifySourceBytesCode;
+  if (spvType == SPVTypeEnum.mainnet2era) {
+    verifyDestBytesCode = await compile_yul(
+      'contracts/zkp/goerliDestSpvVerifier.yul',
+    );
+
+    verifySourceBytesCode = await compile_yul(
+      'contracts/zkp/mainnet2eraSpvVerifier.yul',
+    );
+  } else if (spvType == SPVTypeEnum.era2mainnet) {
+    verifyDestBytesCode = await compile_yul(
+      'contracts/zkp/eraDestSpvVerifier.yul',
+    );
+
+    verifySourceBytesCode = await compile_yul(
+      'contracts/zkp/eraSourceSpvVerifier.yul',
+    );
+  }
 
   const verifierDestFactory = new ethers.ContractFactory(
     VerifierAbi,
-    verifyDestBytesCode,
+    verifyDestBytesCode!,
     mdcOwner,
-  );
-
-  const verifySourceBytesCode = await compile_yul(
-    'contracts/zkp/goerliSourceSpvVerifier.yul',
   );
 
   const verifierSourceFactory = new ethers.ContractFactory(
     VerifierAbi,
-    verifySourceBytesCode,
+    verifySourceBytesCode!,
     mdcOwner,
   );
 

@@ -762,7 +762,7 @@ describe('ORMakerDeposit', () => {
 
   describe('start challenge test module', () => {
     let spvTest: TestSpv;
-    let spv: ORChallengeSpv;
+    let mainnet2eraSpv: ORChallengeSpv;
     let makerTest: TestMakerDeposit;
     let rlpDecoder: RLPDecoder;
     const defaultRule = createMakerRule(true);
@@ -778,10 +778,10 @@ describe('ORMakerDeposit', () => {
     const chainId = makerRule.chainId0;
     const chainIdDest = makerRule.chainId1;
 
-    const spvProof: BytesLike = utils.arrayify(
+    const mainnet2eraProof: BytesLike = utils.arrayify(
       '0x' +
         fs
-          .readFileSync('test/example/spv.calldata.source', 'utf-8')
+          .readFileSync('test/example/mainnet2era.calldata.source', 'utf-8')
           .replace(/\t|\n|\v|\r|\f/g, ''),
     );
     const spvDestProof: BytesLike = utils.arrayify(
@@ -840,11 +840,13 @@ describe('ORMakerDeposit', () => {
     };
 
     before(async function () {
-      spv = new ORChallengeSpv__factory(mdcOwner).attach(
+      mainnet2eraSpv = new ORChallengeSpv__factory(mdcOwner).attach(
         await deploySPVs(mdcOwner),
       );
 
-      spvTest = await new TestSpv__factory(mdcOwner).deploy(spv.address);
+      spvTest = await new TestSpv__factory(mdcOwner).deploy(
+        mainnet2eraSpv.address,
+      );
       await spvTest.deployed();
 
       rlpDecoder = await new RLPDecoder__factory(mdcOwner).deploy();
@@ -853,7 +855,7 @@ describe('ORMakerDeposit', () => {
       console.log('Address of rlpDecoder: ', rlpDecoder.address);
 
       console.log(
-        `Address of spv: ${spv.address}, Address of spvTest: ${spvTest.address}, Address of ebc ${ebc.address} `,
+        `Address of mainnet2eraSpv: ${mainnet2eraSpv.address}, Address of spvTest: ${spvTest.address}, Address of ebc ${ebc.address} `,
       );
 
       const makerTest_impl = await new TestMakerDeposit__factory(
@@ -874,18 +876,23 @@ describe('ORMakerDeposit', () => {
 
     it('calculate spv verify gas cost', async function () {
       // eslint-disable-next-line prettier/prettier
-      // console.log(await spvTest.parseSourceProof(spvProof));
-      const tx = await spv.verifySourceTx(spvProof).then((t: any) => t.wait());
+      console.log(await spvTest.parseSourceProof(mainnet2eraProof));
+      const tx = await mainnet2eraSpv
+        .verifySourceTx(mainnet2eraProof)
+        .then((t: any) => t.wait());
       expect(tx.status).to.be.eq(1);
       await calculateTxGas(tx, 'spvVerifySourceTx');
-      expect(await spvTest.verifySourceTx(spvProof, spv.address)).to.satisfy;
+      expect(
+        await spvTest.verifySourceTx(mainnet2eraProof, mainnet2eraSpv.address),
+      ).to.satisfy;
       // console.log(await spvTest.parseDestProof(spvDestProof));
-      const txDest = await spv
+      const txDest = await mainnet2eraSpv
         .verifyDestTx(spvDestProof)
         .then((t: any) => t.wait());
       expect(txDest.status).to.be.eq(1);
       await calculateTxGas(txDest, 'spvVerifyDestTx');
-      expect(await spvTest.verifyDestTx(spvDestProof, spv.address)).to.satisfy;
+      expect(await spvTest.verifyDestTx(spvDestProof, mainnet2eraSpv.address))
+        .to.satisfy;
     });
 
     it('test function challenge _addChallengeNode', async function () {
@@ -1145,7 +1152,7 @@ describe('ORMakerDeposit', () => {
       await orManager.updateDecoderRLP(rlpDecoder.address);
       expect(await orManager.getDecoderRLP()).eq(rlpDecoder.address);
       const publicInputData: PublicInputData = await spvTest.parseSourceProof(
-        spvProof,
+        mainnet2eraProof,
       );
       {
         const { encodeHash } = getRLPEncodeMakerRuleHash(defaultRule);
@@ -1242,10 +1249,10 @@ describe('ORMakerDeposit', () => {
         freezeAmount: makerPublicInputData.amount,
         parentNodeNumOfTargetNode: 0,
       };
-      // spv should be setting by manager
+      // mainnet2eraSpv should be setting by manager
       await updateSpv(
         BigNumber.from(challenge.sourceChainId).toNumber(),
-        spv.address,
+        mainnet2eraSpv.address,
         orManager,
       );
       const challengerList: string[] = [];
@@ -1294,7 +1301,7 @@ describe('ORMakerDeposit', () => {
           challengerList[0],
           makerPublicInputData.chain_id,
           makerPublicInputData,
-          spvProof,
+          mainnet2eraProof,
           rawData,
           rlpRawdata,
         )

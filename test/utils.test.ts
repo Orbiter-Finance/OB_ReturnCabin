@@ -174,15 +174,13 @@ export interface PublicInputData {
   chain_id: BigNumberish;
   index: BigNumberish;
   from: BigNumberish;
-  to: string;
+  to: BigNumberish;
   token: string;
   amount: BigNumberish;
   nonce: BigNumberish;
   time_stamp: BigNumberish;
   dest: string;
   dest_token: string;
-  // l1_tx_block_hash: BytesLike;
-  // l1_tx_block_number: BigNumberish;
   mdc_contract_address: string;
   manage_contract_address: string;
   mdc_rule_root_slot: BigNumberish;
