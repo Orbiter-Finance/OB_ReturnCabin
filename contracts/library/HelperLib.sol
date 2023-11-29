@@ -138,5 +138,6 @@ library HelperLib {
         uint256 token;
         uint256 amount;
         uint64 time_stamp;
+        bytes32[] merkle_roots;
     }
 }

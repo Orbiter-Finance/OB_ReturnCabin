@@ -129,6 +129,7 @@ export function getMinEnableTime(currentEnableTime?: BigNumber) {
 export interface challengeInputInfo {
   sourceTxTime: number;
   sourceChainId: BigNumberish;
+  destChainId: BigNumberish;
   sourceBlockNum: number;
   sourceTxIndex: number;
   sourceTxHash: string;
@@ -222,19 +223,8 @@ export interface PublicInputDataDest {
   amount: BigNumberish;
   // nonce: BigNumberish;
   time_stamp: BigNumberish;
+  merkle_roots: string[];
 }
-
-// struct verifiedDataInfo {
-//   uint256 minChallengeSecond;
-//   uint256 maxChallengeSecond;
-//   uint256 nonce;
-//   uint256 destChainId;
-//   uint256 from;
-//   uint256 destToken;
-//   uint256 destAmount;
-//   uint256 responseMakersHash;
-//   uint256 responseTime;
-// }
 
 export interface VerifiedDataInfo {
   minChallengeSecond: BigNumberish;
@@ -747,10 +737,11 @@ export const createChallenge = async (
       .challenge(
         challenge.sourceTxTime,
         challenge.sourceChainId,
+        challenge.destChainId,
         challenge.sourceBlockNum,
         challenge.sourceTxIndex,
-        challenge.sourceTxHash.toString(),
         challenge.freezeToken,
+        challenge.sourceTxHash.toString(),
         challenge.freezeAmount,
         challenge.parentNodeNumOfTargetNode,
         { value: BigNumber.from(challenge.freezeAmount).add(minDeposit) },
@@ -759,6 +750,11 @@ export const createChallenge = async (
     const args = tx.events?.[0].args;
     const basefee = (await ethers.provider.getFeeData()).lastBaseFeePerGas;
     await calculateTxGas(tx, `Create challenge!`);
+
+    // console.log(
+    //   'input',
+    //   (await ethers.provider.getTransaction(tx.transactionHash)).data,
+    // );
 
     // console.log(
     //   // 'challenge input:',
@@ -807,10 +803,11 @@ export const createChallenge = async (
       orMakerDeposit.challenge(
         challenge.sourceTxTime,
         challenge.sourceChainId,
+        challenge.destChainId,
         challenge.sourceBlockNum,
         challenge.sourceTxIndex,
-        challenge.sourceTxHash.toString(),
         challenge.freezeToken,
+        challenge.sourceTxHash.toString(),
         challenge.freezeAmount,
         challenge.parentNodeNumOfTargetNode,
         { value: BigNumber.from(challenge.freezeAmount).add(minDeposit) },

@@ -1,6 +1,6 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { assert, expect } from 'chai';
-import { BigNumber, BigNumberish, constants, utils } from 'ethers';
+import { BigNumber, BigNumberish, Wallet, constants, utils } from 'ethers';
 import { ethers } from 'hardhat';
 import fs from 'fs';
 
@@ -785,13 +785,13 @@ describe('ORMakerDeposit', () => {
     const mainnet2eraProof: BytesLike = utils.arrayify(
       '0x' +
         fs
-          .readFileSync('test/example/mainnet2era.calldata.source', 'utf-8')
+          .readFileSync('test/example/mainnet2era.proof.source', 'utf-8')
           .replace(/\t|\n|\v|\r|\f/g, ''),
     );
     const spvDestProof: BytesLike = utils.arrayify(
       '0x' +
         fs
-          .readFileSync('test/example/spv.calldata.dest', 'utf-8')
+          .readFileSync('test/example/mainnet2era.proof.dest', 'utf-8')
           .replace(/\t|\n|\v|\r|\f/g, ''),
     );
 
@@ -879,9 +879,12 @@ describe('ORMakerDeposit', () => {
     });
 
     it('calculate spv verify gas cost', async function () {
-      return;
+      // return;
       // eslint-disable-next-line prettier/prettier
-      console.log(await spvTest.parseSourceProof(mainnet2eraProof));
+      // console.log(
+      //   'sourceProof',
+      //   await spvTest.parseSourceProof(mainnet2eraProof),
+      // );
       const tx = await mainnet2eraSpv
         .verifySourceTx(mainnet2eraProof)
         .then((t: any) => t.wait());
@@ -890,7 +893,7 @@ describe('ORMakerDeposit', () => {
       expect(
         await spvTest.verifySourceTx(mainnet2eraProof, mainnet2eraSpv.address),
       ).to.satisfy;
-      // console.log(await spvTest.parseDestProof(spvDestProof));
+      console.log('destProof', await spvTest.parseDestProof(spvDestProof));
       const txDest = await mainnet2eraSpv
         .verifyDestTx(spvDestProof)
         .then((t: any) => t.wait());
@@ -952,6 +955,7 @@ describe('ORMakerDeposit', () => {
       const challenge: challengeInputInfo = {
         sourceTxTime: (await getCurrentTime()) - defaultResponseTime,
         sourceChainId: case1SourceChainId,
+        destChainId: chainIdDest,
         sourceBlockNum,
         sourceTxIndex,
         sourceTxHash: case1SourceTxHash,
@@ -981,6 +985,7 @@ describe('ORMakerDeposit', () => {
       const challengeFake: challengeInputInfo = {
         sourceTxTime: (await getCurrentTime()) + 7800,
         sourceChainId: challenge.sourceChainId,
+        destChainId: challenge.destChainId,
         sourceBlockNum,
         sourceTxIndex,
         sourceTxHash: challenge.sourceTxHash,
@@ -1031,8 +1036,9 @@ describe('ORMakerDeposit', () => {
       const challenge2: challengeInputInfo = {
         sourceTxTime: (await getCurrentTime()) - 1,
         sourceChainId: challenge.sourceChainId,
-        sourceBlockNum,
-        sourceTxIndex,
+        destChainId: challenge.destChainId,
+        sourceBlockNum: sourceBlockNum,
+        sourceTxIndex: sourceTxIndex,
         sourceTxHash: challenge.sourceTxHash,
         from: await orMakerDeposit.owner(),
         freezeToken: challenge.freezeToken,
@@ -1054,10 +1060,11 @@ describe('ORMakerDeposit', () => {
       const sourceTxIndex = random(100);
       const challenge: challengeInputInfo = {
         sourceTxTime: (await getCurrentTime()) - defaultResponseTime,
-        sourceChainId,
-        sourceBlockNum,
-        sourceTxIndex,
-        sourceTxHash,
+        sourceChainId: sourceChainId,
+        destChainId: chainIdDest,
+        sourceBlockNum: sourceBlockNum,
+        sourceTxIndex: sourceTxIndex,
+        sourceTxHash: sourceTxHash,
         from: await orMakerDeposit.owner(),
         freezeToken: constants.AddressZero,
         freezeAmount: utils.parseEther(freezeAmount),
@@ -1114,9 +1121,10 @@ describe('ORMakerDeposit', () => {
         const challenge: challengeInputInfo = {
           sourceTxTime: currentTime - maxVerifyTime,
           sourceChainId: sourceChainId.toString(),
-          sourceBlockNum,
-          sourceTxIndex,
-          sourceTxHash,
+          destChainId: chainIdDest,
+          sourceBlockNum: sourceBlockNum,
+          sourceTxIndex: sourceTxIndex,
+          sourceTxHash: sourceTxHash,
           from: await orMakerDeposit.owner(),
           freezeToken: constants.AddressZero,
           freezeAmount: utils.parseEther(freezeAmount),
@@ -1256,6 +1264,7 @@ describe('ORMakerDeposit', () => {
           makerPublicInputData.time_stamp,
         ).toNumber(),
         sourceChainId: BigNumber.from(makerPublicInputData.chain_id).toNumber(),
+        destChainId: BigNumber.from(makerRule.chainId1).toNumber(),
         sourceBlockNum: BigNumber.from(0).toNumber(),
         sourceTxIndex: BigNumber.from(makerPublicInputData.index).toNumber(),
         sourceTxHash: utils.hexZeroPad(
@@ -1314,9 +1323,36 @@ describe('ORMakerDeposit', () => {
         );
       }
 
+      await testReverted(
+        makerTest.verifyChallengeSource(
+          challengerList[0],
+          Wallet.createRandom().address,
+          makerPublicInputData.chain_id,
+          makerPublicInputData,
+          mainnet2eraProof,
+          rawData,
+          rlpRawdata,
+        ),
+        'SPVI',
+      );
+
+      await testReverted(
+        makerTest.verifyChallengeSource(
+          challengerList[0],
+          mainnet2eraSpv.address,
+          makerPublicInputData.chain_id,
+          makerPublicInputData,
+          BigNumber.from(mainnet2eraProof).add(1).toHexString(),
+          rawData,
+          rlpRawdata,
+        ),
+        'VF',
+      );
+
       const tx = await makerTest
         .verifyChallengeSource(
           challengerList[0],
+          mainnet2eraSpv.address,
           makerPublicInputData.chain_id,
           makerPublicInputData,
           mainnet2eraProof,
@@ -1391,9 +1427,38 @@ describe('ORMakerDeposit', () => {
         ),
       };
 
+      await testReverted(
+        makerTest.verifyChallengeDest(
+          challengerList[0],
+          constants.AddressZero,
+          challenge.sourceChainId,
+          challenge.sourceTxHash,
+          spvDestProof,
+          verifiedDataInfo,
+          responseMakersEncodeRaw,
+          makerPublicInputDataDest,
+        ),
+        'SPVI',
+      );
+
+      await testReverted(
+        makerTest.verifyChallengeDest(
+          challengerList[0],
+          mainnet2eraSpv.address,
+          challenge.sourceChainId,
+          challenge.sourceTxHash,
+          BigNumber.from(spvDestProof).add(1).toHexString(),
+          verifiedDataInfo,
+          responseMakersEncodeRaw,
+          makerPublicInputDataDest,
+        ),
+        'VF',
+      );
+
       const txDest = await makerTest
         .verifyChallengeDest(
           challengerList[0],
+          mainnet2eraSpv.address,
           challenge.sourceChainId,
           challenge.sourceTxHash,
           spvDestProof,

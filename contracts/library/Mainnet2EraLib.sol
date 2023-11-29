@@ -335,56 +335,55 @@ library Mainnet2EraLib {
 
     function parsePublicInputDest(
         bytes calldata proofData
-    ) internal pure returns (HelperLib.PublicInputDataDest memory) {
+    ) internal pure returns (HelperLib.PublicInputDataDest memory publicInputDest) {
+        // uint256 ProofLength = 384;
+        // uint256 SplitStep = 32;
+        // uint256 CommitTxSplitStart = ProofLength;
+        // uint256 TransactionSplitStart = CommitTxSplitStart + SplitStep * 14; // 384 is proof length, SplitStep*14 is L1 commit tx;
+        // uint256 TrackBlockSplitStart = TransactionSplitStart + SplitStep * 14;
+
         uint256 ProofLength = 384;
         uint256 SplitStep = 32;
-        uint256 CommitTxSplitStart = ProofLength;
-        uint256 TransactionSplitStart = CommitTxSplitStart + SplitStep * 14; // 384 is proof length, SplitStep*14 is L1 commit tx;
-        // uint256 TrackBlockSplitStart = TransactionSplitStart + SplitStep * 14;
-        return
-            HelperLib.PublicInputDataDest({
-                chain_id: uint64(
+        uint256 TransactionSplitStart = ProofLength; // 384 is proof length
+        uint256 TrackBlockSplitStart = TransactionSplitStart + SplitStep * 17;
+        publicInputDest = HelperLib.PublicInputDataDest({
+            chain_id: uint64(
+                uint256(bytes32(proofData[TransactionSplitStart + SplitStep * 4:TransactionSplitStart + SplitStep * 5]))
+            ),
+            from: (
+                (
                     uint256(
-                        bytes32(proofData[TransactionSplitStart + SplitStep * 4:TransactionSplitStart + SplitStep * 5])
-                    )
-                ),
-                from: (
-                    (
-                        uint256(
-                            bytes32(
-                                proofData[TransactionSplitStart + SplitStep * 6:TransactionSplitStart + SplitStep * 7]
-                            )
-                        )
-                    )
-                ),
-                to: (
-                    (
-                        uint256(
-                            bytes32(
-                                proofData[TransactionSplitStart + SplitStep * 7:TransactionSplitStart + SplitStep * 8]
-                            )
-                        )
-                    )
-                ),
-                token: (
-                    (
-                        uint256(
-                            bytes32(
-                                proofData[TransactionSplitStart + SplitStep * 8:TransactionSplitStart + SplitStep * 9]
-                            )
-                        )
-                    )
-                ),
-                amount: uint256(
-                    bytes32(proofData[TransactionSplitStart + SplitStep * 9:TransactionSplitStart + SplitStep * 10])
-                ),
-                time_stamp: uint64(
-                    uint256(
-                        bytes32(
-                            proofData[TransactionSplitStart + SplitStep * 11:TransactionSplitStart + SplitStep * 12]
-                        )
+                        bytes32(proofData[TransactionSplitStart + SplitStep * 6:TransactionSplitStart + SplitStep * 7])
                     )
                 )
-            });
+            ),
+            to: (
+                (
+                    uint256(
+                        bytes32(proofData[TransactionSplitStart + SplitStep * 7:TransactionSplitStart + SplitStep * 8])
+                    )
+                )
+            ),
+            token: (
+                (
+                    uint256(
+                        bytes32(proofData[TransactionSplitStart + SplitStep * 8:TransactionSplitStart + SplitStep * 9])
+                    )
+                )
+            ),
+            amount: uint256(
+                bytes32(proofData[TransactionSplitStart + SplitStep * 9:TransactionSplitStart + SplitStep * 10])
+            ),
+            time_stamp: uint64(
+                uint256(
+                    bytes32(proofData[TransactionSplitStart + SplitStep * 11:TransactionSplitStart + SplitStep * 12])
+                )
+            ),
+            merkle_roots: new bytes32[](1)
+        });
+        publicInputDest.merkle_roots[0] = bytes32(
+            (uint256(bytes32(proofData[TrackBlockSplitStart:TrackBlockSplitStart + SplitStep])) << 128) |
+                uint256(bytes32(proofData[TrackBlockSplitStart + SplitStep:TrackBlockSplitStart + SplitStep * 2]))
+        );
     }
 }

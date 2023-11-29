@@ -70,11 +70,12 @@ contract ORChallengeSpv is IORChallengeSpv, Ownable {
     function verifyDestTx(bytes calldata zkProof) external returns (bool) {
         uint256 ProofLength = 384;
         uint256 SplitStep = 32;
-        uint256 CommitTxSplitStart = ProofLength;
-        uint256 TransactionSplitStart = CommitTxSplitStart + SplitStep * 14;
-        uint256 TrackBlockSplitStart = TransactionSplitStart + SplitStep * 14;
-        bool proofMatch = ((uint256(bytes32(zkProof[CommitTxSplitStart:CommitTxSplitStart + SplitStep])) << 128) |
-            uint256(bytes32(zkProof[CommitTxSplitStart + SplitStep:CommitTxSplitStart + SplitStep * 2]))) ==
+        uint256 TransactionSplitStart = ProofLength; // 384 is proof length
+        uint256 TrackBlockSplitStart = TransactionSplitStart + SplitStep * 17;
+        bool proofMatch = (uint256(
+            bytes32(zkProof[TransactionSplitStart + SplitStep * 14:TransactionSplitStart + SplitStep * 15])
+        ) << 128) |
+            uint256(bytes32(zkProof[TransactionSplitStart + SplitStep * 15:TransactionSplitStart + SplitStep * 16])) ==
             ((uint256(bytes32(zkProof[TrackBlockSplitStart + SplitStep * 2:TrackBlockSplitStart + SplitStep * 3])) <<
                 128) |
                 uint256(bytes32(zkProof[TrackBlockSplitStart + SplitStep * 3:TrackBlockSplitStart + SplitStep * 4])));

@@ -26,6 +26,7 @@ import { createChallenge, getMinEnableTime } from '../test/utils.test';
 import { promises } from 'dns';
 import { random } from 'lodash';
 import { defaultResponseTime } from '../test/lib/mockData';
+import { expect } from 'chai';
 
 export function printContract(title: string, content?: string) {
   console.info(chalk.red(title, chalk.underline.green(content || '')));
@@ -147,11 +148,11 @@ export const deploySPVs = async (
   let verifySourceBytesCode;
   if (spvType == SPVTypeEnum.mainnet2era) {
     verifyDestBytesCode = await compile_yul(
-      'contracts/zkp/goerliDestSpvVerifier.yul',
+      'contracts/zkp/mainnet2eraSpvVerifier.DestTx.yul',
     );
 
     verifySourceBytesCode = await compile_yul(
-      'contracts/zkp/mainnet2eraSpvVerifier.yul',
+      'contracts/zkp/mainnet2eraSpvVerifier.SourceTx.yul',
     );
   } else if (spvType == SPVTypeEnum.era2mainnet) {
     verifyDestBytesCode = await compile_yul(
@@ -246,11 +247,12 @@ export const createRandomChallenge = async (
   const sourceTxIndex = random(1000);
   const sourceTxHash = utils.keccak256(await orMakerDeposit.owner());
   const challengeInputInfo = {
-    sourceTxTime,
-    sourceChainId,
-    sourceBlockNum,
-    sourceTxIndex,
-    sourceTxHash,
+    sourceTxTime: sourceTxTime,
+    sourceChainId: sourceChainId,
+    destChainId: sourceChainId.add(1),
+    sourceBlockNum: sourceBlockNum,
+    sourceTxIndex: sourceTxIndex,
+    sourceTxHash: sourceTxHash,
     from: await orMakerDeposit.owner(),
     freezeToken: constants.AddressZero,
     freezeAmount: utils.parseEther('0.000001'),
@@ -358,4 +360,11 @@ export const managerUpdateEBC = async (orManager: ORManager, ebc: string) => {
   } else {
     await orManager.updateEbcs([ebc], [true]);
   }
+};
+
+export const testReverted = async (
+  val: any,
+  message: string,
+): Promise<void> => {
+  await expect(val).to.revertedWith(message);
 };
