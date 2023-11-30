@@ -7,8 +7,8 @@ import { promisify } from 'util';
 import fs from 'fs';
 import {
   TestSpv__factory,
-  ORChallengeSpv__factory,
-  ORChallengeSpv,
+  ORChallengeSpvMainnet2Era__factory,
+  ORChallengeSpvMainnet2Era,
   ORMakerDeposit,
   contracts,
   ORMDCFactory__factory,
@@ -20,6 +20,7 @@ import {
   RLPDecoder__factory,
   ORManager,
   ORSpvData__factory,
+  ORChallengeSpvEra2Mainnet__factory,
 } from '../typechain-types';
 import { PromiseOrValue } from '../typechain-types/common';
 import { BigNumber, BigNumberish, BytesLike, constants, utils } from 'ethers';
@@ -161,20 +162,14 @@ export const getSpvProof = (spvType: SPVTypeEnum = SPVTypeEnum.mainnet2era) => {
     verifySourceProof = utils.arrayify(
       '0x' +
         fs
-          .readFileSync(
-            'test/example/era2mainnetSpvVerifier.proof.source',
-            'utf-8',
-          )
+          .readFileSync('test/example/era2mainnet.proof.source', 'utf-8')
           .replace(/\t|\n|\v|\r|\f/g, ''),
     );
 
     verifyDestProof = utils.arrayify(
       '0x' +
         fs
-          .readFileSync(
-            'test/example/era2mainnetSpvVerifier.proof.dest',
-            'utf-8',
-          )
+          .readFileSync('test/example/era2mainnet.proof.dest', 'utf-8')
           .replace(/\t|\n|\v|\r|\f/g, ''),
     );
   }
@@ -191,7 +186,9 @@ export const deploySPVs = async (
   const mdcOwner = deployer;
   let verifyDestBytesCode;
   let verifySourceBytesCode;
+  let contractFactory;
   if (spvType == SPVTypeEnum.mainnet2era) {
+    contractFactory = ORChallengeSpvMainnet2Era__factory;
     verifyDestBytesCode = await compile_yul(
       'contracts/zkp/mainnet2eraSpvVerifier.DestTx.yul',
     );
@@ -200,6 +197,7 @@ export const deploySPVs = async (
       'contracts/zkp/mainnet2eraSpvVerifier.SourceTx.yul',
     );
   } else if (spvType == SPVTypeEnum.era2mainnet) {
+    contractFactory = ORChallengeSpvEra2Mainnet__factory;
     verifyDestBytesCode = await compile_yul(
       'contracts/zkp/era2mainnetSpvVerifier.DestTx.yul',
     );
@@ -227,12 +225,10 @@ export const deploySPVs = async (
   const spvDest: { address: PromiseOrValue<string> } =
     await verifierDestFactory.deploy();
 
-  const spv: ORChallengeSpv = await new ORChallengeSpv__factory(
+  const spv: ORChallengeSpvMainnet2Era = await new contractFactory!(
     mdcOwner,
   ).deploy(spvSource.address, spvDest.address);
   await spv.deployed();
-  process.env['SPV_ADDRESS'] = spv.address;
-
   return spv.address;
 };
 
@@ -338,6 +334,8 @@ export const deployContracts = async (
     await orManager.deployed();
     console.log('orManager deployed to:', orManager.address);
     process.env['OR_MANAGER_ADDRESS'] = orManager.address;
+  } else {
+    console.log('existing orManager:', process.env['OR_MANAGER_ADDRESS']!);
   }
 
   if (process.env['OR_MDC_TEST'] == undefined) {
@@ -353,7 +351,12 @@ export const deployContracts = async (
       makerTest_impl.address,
     );
     process.env['OR_MDC_TEST'] = mdcAddress;
+    process.env['OR_MDC_FACTORY_TEST'] = factoryAddress;
     console.log('test factory deployed to:', factoryAddress);
+    console.log('test MDC deployed to:', mdcAddress);
+  } else {
+    console.log('existing test MDC:', process.env['OR_MDC_TEST']!);
+    console.log('existing test factory:', process.env['OR_MDC_FACTORY_TEST']!);
   }
 
   if (process.env['OR_MDC'] == undefined) {
@@ -367,7 +370,12 @@ export const deployContracts = async (
       mdc_impl.address,
     );
     process.env['OR_MDC'] = mdcAddress;
-    console.log('MDC deployed to:', factoryAddress);
+    process.env['OR_MDC_FACTORY_ADDRESS'] = factoryAddress;
+    console.log('factory deployed to:', factoryAddress);
+    console.log('MDC deployed to:', mdcAddress);
+  } else {
+    console.log('existing MDC:', process.env['OR_MDC']!);
+    console.log('existing factory:', process.env['OR_MDC_FACTORY_ADDRESS']!);
   }
 
   if (process.env['EVENT_BINDING_CONTRACT'] == undefined) {
@@ -375,6 +383,8 @@ export const deployContracts = async (
     await ebc.deployed();
     console.log('ebc deployed to:', ebc.address);
     process.env['EVENT_BINDING_CONTRACT'] = ebc.address;
+  } else {
+    console.log('existing ebc:', process.env['EVENT_BINDING_CONTRACT']!);
   }
 
   if (process.env['RLP_DECODER_ADDRESS'] == undefined) {
@@ -382,6 +392,8 @@ export const deployContracts = async (
     await rlpDecoder.deployed();
     console.log('rlpDecoder deployed to:', rlpDecoder.address);
     process.env['RLP_DECODER_ADDRESS'] = rlpDecoder.address;
+  } else {
+    console.log('existing rlpDecoder:', process.env['RLP_DECODER_ADDRESS']!);
   }
 
   if (process.env['SPV_TEST_ADDRESS'] == undefined) {
@@ -390,12 +402,24 @@ export const deployContracts = async (
     );
     console.log('spvTest deployed to:', spvTest.address);
     process.env['SPV_TEST_ADDRESS'] = spvTest.address;
+  } else {
+    console.log('existing spvTest:', process.env['SPV_TEST_ADDRESS']!);
   }
 
   if (process.env['SPV_ADDRESS'] == undefined) {
     const spvaddress = await deploySPVs(deployer);
-    console.log('spv deployed to:', spvaddress);
+    console.log('spv(mainnet->era) deployed to:', spvaddress);
     process.env['SPV_ADDRESS'] = spvaddress;
+  } else {
+    console.log('existing spv:', process.env['SPV_ADDRESS']!);
+  }
+
+  if (process.env['SPV_ADDRESS_ERA'] == undefined) {
+    const spvaddress = await deploySPVs(deployer, SPVTypeEnum.era2mainnet);
+    console.log('spv(era->mainnet) deployed to:', spvaddress);
+    process.env['SPV_ADDRESS_ERA'] = spvaddress;
+  } else {
+    console.log('existing spv(era->mainnet):', process.env['SPV_ADDRESS_ERA']!);
   }
 
   // OR_SPV_DATA_ADRESS
@@ -406,6 +430,8 @@ export const deployContracts = async (
     );
     console.log('orSpvData deployed to:', orSpvData.address);
     process.env['OR_SPV_DATA_ADRESS'] = orSpvData.address;
+  } else {
+    console.log('existing orSpvData:', process.env['OR_SPV_DATA_ADRESS']!);
   }
 
   return {
@@ -415,6 +441,7 @@ export const deployContracts = async (
     rlpDecoder: process.env['RLP_DECODER_ADDRESS']!,
     spvTest: process.env['SPV_TEST_ADDRESS']!,
     spv: process.env['SPV_ADDRESS']!,
+    spvERA: process.env['SPV_ADDRESS_ERA']!,
     orSpvData: process.env['OR_SPV_DATA_ADRESS']!,
   };
 };

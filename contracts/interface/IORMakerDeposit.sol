@@ -128,12 +128,10 @@ interface IORMakerDeposit {
     function challenge(
         uint64 sourceTxTime,
         uint64 sourceChainId,
-        uint64 destChainId,
         uint64 sourceTxBlockNum,
         uint64 sourceTxIndex,
-        address freezeToken,
         bytes32 sourceTxHash,
-        bytes32 ruleKey,
+        address freezeToken,
         uint256 freezeAmount1,
         uint256 parentNodeNumOfTargetNode
     ) external payable;

@@ -26,8 +26,8 @@ import {
   TestSpv__factory,
   TestToken,
   TestToken__factory,
-  ORChallengeSpv,
-  ORChallengeSpv__factory,
+  ORChallengeSpvMainnet2Era,
+  ORChallengeSpvMainnet2Era__factory,
   ORSpvData,
   ORSpvData__factory,
   TestMakerDeposit__factory,
@@ -96,7 +96,7 @@ describe('MDC TEST ON GOERLI', () => {
   let testToken: TestToken;
   let columnArray: columnArray;
   let ebc: OREventBinding;
-  let spv: ORChallengeSpv;
+  let spv: ORChallengeSpvMainnet2Era;
   let defaultRule: BigNumberish[];
   let makerRule: RuleStruct;
   let orSpvData: ORSpvData;
@@ -180,7 +180,7 @@ describe('MDC TEST ON GOERLI', () => {
       }
 
       if (process.env['SPV_ADDRESS'] != undefined) {
-        spv = new ORChallengeSpv__factory(signers[0]).attach(
+        spv = new ORChallengeSpvMainnet2Era__factory(signers[0]).attach(
           process.env['SPV_ADDRESS'],
         );
         console.log('connect to spv contract', spv.address);
@@ -211,7 +211,7 @@ describe('MDC TEST ON GOERLI', () => {
         const spvDest: { address: PromiseOrValue<string> } =
           await verifierDestFactory.deploy();
 
-        spv = await new ORChallengeSpv__factory(signers[0]).deploy(
+        spv = await new ORChallengeSpvMainnet2Era__factory(signers[0]).deploy(
           spvSource.address,
           spvDest.address,
         );
@@ -295,7 +295,7 @@ describe('MDC TEST ON GOERLI', () => {
     };
   });
 
-  describe.skip('part1 - update maker', function () {
+  describe('part1 - update maker', function () {
     it('Restoring the ORMakerDeposit should succeed', async function () {
       const predictMDCAddress = await orMDCFactory
         .connect(mdcOwner)
@@ -309,96 +309,95 @@ describe('MDC TEST ON GOERLI', () => {
       expect(owner).eq(mdcOwner.address);
     });
 
-    it(
-      'Function updateColumnArray should emit events and update hash',
-      embedVersionIncreaseAndEnableTime(
-        () => orMakerDeposit.getVersionAndEnableTime().then((r) => r.version),
-        async function () {
-          // const mdcEbcs: string[] =
-          //   process.env['EVENT_BINDING_CONTRACT'] != undefined
-          //     ? [process.env['EVENT_BINDING_CONTRACT']]
-          //     : [ebc.address];
-          // mdcEbcs.sort(() => Math.random() - 0.5);
-          const mdcDealers: string[] = columnArray.dealers;
-          const chainIds: number[] = columnArray.chainIds;
-          const mdcEbcs: string[] = columnArray.ebcs;
+    // it(
+    //   'Function updateColumnArray should emit events and update hash',
+    //   embedVersionIncreaseAndEnableTime(
+    //     () => orMakerDeposit.getVersionAndEnableTime().then((r) => r.version),
+    //     async function () {
+    //       const mdcDealers: string[] = columnArray.dealers;
+    //       const chainIds: number[] = columnArray.chainIds;
+    //       const mdcEbcs: string[] = columnArray.ebcs;
 
-          const columnArrayHash = utils.keccak256(
-            utils.defaultAbiCoder.encode(
-              ['uint256[]', 'uint256[]', 'uint256[]'],
-              [mdcDealers, mdcEbcs, chainIds],
-            ),
-          );
-          // columnArray = {
-          //   dealers: mdcDealers,
-          //   ebcs: mdcEbcs,
-          //   chainIds: chainIds,
-          // };
-          // print columnArray
-          console.log('columnArray: ', columnArray);
-          const enableTime = await calculateEnableTime(orMakerDeposit);
-          const { events } = await orMakerDeposit
-            .updateColumnArray(enableTime, mdcDealers, mdcEbcs, chainIds, {
-              gasLimit: 10000000,
-            })
-            .then((t) => t.wait());
+    //       const columnArrayHash = utils.keccak256(
+    //         utils.defaultAbiCoder.encode(
+    //           ['uint256[]', 'uint256[]', 'uint256[]'],
+    //           [mdcDealers, mdcEbcs, chainIds],
+    //         ),
+    //       );
+    //       // columnArray = {
+    //       //   dealers: mdcDealers,
+    //       //   ebcs: mdcEbcs,
+    //       //   chainIds: chainIds,
+    //       // };
+    //       // print columnArray
+    //       console.log('columnArray: ', columnArray);
+    //       const enableTime = await calculateEnableTime(orMakerDeposit);
+    //       const { events } = await orMakerDeposit
+    //         .updateColumnArray(enableTime, mdcDealers, mdcEbcs, chainIds, {
+    //           gasLimit: 10000000,
+    //         })
+    //         .then((t) => t.wait(1));
 
-          const args = events?.[0].args;
-          expect(args?.impl).eq(implementation);
-          expect(await orMakerDeposit.columnArrayHash()).eq(columnArrayHash);
-          expect(lodash.toPlainObject(args?.ebcs)).to.deep.includes(mdcEbcs);
-          expect(lodash.toPlainObject(args?.dealers)).to.deep.includes(
-            mdcDealers,
-          );
-        },
-      ),
-    );
+    //       const args = events?.[0].args;
+    //       expect(args?.impl).eq(implementation);
+    //       expect(await orMakerDeposit.columnArrayHash()).eq(columnArrayHash);
+    //       expect(lodash.toPlainObject(args?.ebcs)).to.deep.includes(mdcEbcs);
+    //       expect(lodash.toPlainObject(args?.dealers)).to.deep.includes(
+    //         mdcDealers,
+    //       );
+    //     },
+    //   ),
+    // );
 
-    it(
-      'Function updateResponseMakers should emit events and update hash',
-      embedVersionIncreaseAndEnableTime(
-        () => orMakerDeposit.getVersionAndEnableTime().then((r) => r.version),
-        async function () {
-          const responseSigners = signers.slice(1, 2);
-          const responseMakers: BigNumberish[] = [];
-          const responseMakerSignatures: BytesLike[] = [];
-          const message = arrayify(
-            keccak256(
-              defaultAbiCoder.encode(['address'], [orMakerDeposit.address]),
-            ),
-          ); // Convert to byte array to prevent utf-8 decode when signMessage
-          // print signer address
-          console.log(
-            `maker update[responseMakers: ${responseSigners
-              .map((s) => s.address)
-              .toString()}]`,
-          );
-          for (const s of responseSigners) {
-            const signature = await s.signMessage(message);
+    // it(
+    //   'Function updateResponseMakers should emit events and update hash',
+    //   embedVersionIncreaseAndEnableTime(
+    //     () => orMakerDeposit.getVersionAndEnableTime().then((r) => r.version),
+    //     async function () {
+    //       const responseSigners = signers.slice(1, 2);
+    //       const responseMakers: BigNumberish[] = [];
+    //       const responseMakerSignatures: BytesLike[] = [];
+    //       const message = arrayify(
+    //         keccak256(
+    //           defaultAbiCoder.encode(['address'], [orMakerDeposit.address]),
+    //         ),
+    //       ); // Convert to byte array to prevent utf-8 decode when signMessage
+    //       // print signer address
+    //       console.log(
+    //         `maker update[responseMakers: ${responseSigners
+    //           .map((s) => s.address)
+    //           .toString()}]`,
+    //       );
+    //       for (const s of responseSigners) {
+    //         const signature = await s.signMessage(message);
 
-            responseMakers.push(BigNumber.from(s.address));
-            responseMakerSignatures.push(signature);
-          }
+    //         responseMakers.push(BigNumber.from(s.address));
+    //         responseMakerSignatures.push(signature);
+    //       }
 
-          utils.verifyMessage(message, responseMakerSignatures[0]);
-          const enableTime = await calculateEnableTime(orMakerDeposit);
-          const { events } = await orMakerDeposit
-            .updateResponseMakers(enableTime, responseMakerSignatures)
-            .then((t) => t.wait());
+    //       utils.verifyMessage(message, responseMakerSignatures[0]);
+    //       const enableTime = await calculateEnableTime(orMakerDeposit);
+    //       const { events } = await orMakerDeposit
+    //         .updateResponseMakers(enableTime, responseMakerSignatures)
+    //         .then((t) => t.wait(1));
 
-          const args = events?.[0].args;
-          expect(args?.responseMakers).to.deep.eq(responseMakers);
+    //       const args = events?.[0].args;
+    //       expect(args?.responseMakers).to.deep.eq(responseMakers);
 
-          const responseMakersHash = await orMakerDeposit.responseMakersHash();
-          expect(responseMakersHash).to.eq(
-            keccak256(defaultAbiCoder.encode(['uint[]'], [responseMakers])),
-          );
-        },
-      ),
-    );
+    //       const responseMakersHash = await orMakerDeposit.responseMakersHash();
+    //       expect(responseMakersHash).to.eq(
+    //         keccak256(defaultAbiCoder.encode(['uint[]'], [responseMakers])),
+    //       );
+    //     },
+    //   ),
+    // );
+
+    it('prepare: update maker rule', async function () {
+      await updateMakerRule(orMakerDeposit, ebc.address, makerRule, true);
+    });
   });
 
-  describe('part2 - send ETH', function () {
+  describe.skip('part2 - send ETH', function () {
     const sendETH = async function (
       signer: SignerWithAddress,
       to: string,

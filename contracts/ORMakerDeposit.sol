@@ -343,12 +343,10 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
     function challenge(
         uint64 sourceTxTime,
         uint64 sourceChainId,
-        uint64 destChainId,
         uint64 sourceTxBlockNum,
         uint64 sourceTxIndex,
-        address freezeToken,
         bytes32 sourceTxHash,
-        bytes32 ruleKey,
+        address freezeToken,
         uint256 freezeAmount1,
         uint256 parentNodeNumOfTargetNode
     ) external payable {
@@ -360,11 +358,6 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         require(uint64(block.timestamp) >= sourceTxTime, "STOF");
 
         require(_challenges[challengeId].statement[msg.sender].challengeTime == 0, "CT");
-
-        // require(destChainId != sourceChainId, "DCI");
-        (destChainId);
-        // require(ruleKey != bytes32(0), "RKZ");
-        (ruleKey);
 
         uint256 freezeAmount0 = freezeAmount1;
 

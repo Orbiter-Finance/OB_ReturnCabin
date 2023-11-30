@@ -27,13 +27,15 @@ import {
   TestSpv__factory,
   TestToken,
   TestToken__factory,
-  ORChallengeSpv,
-  ORChallengeSpv__factory,
+  ORChallengeSpvMainnet2Era,
+  ORChallengeSpvMainnet2Era__factory,
   TestMakerDeposit,
   TestMakerDeposit__factory,
   RLPDecoder,
   RLPDecoder__factory,
   ORSpvData__factory,
+  ORChallengeSpvEra2Mainnet,
+  ORChallengeSpvEra2Mainnet__factory,
 } from '../typechain-types';
 import { defaultChainInfo } from './defaults';
 import {
@@ -768,8 +770,8 @@ describe('ORMakerDeposit', () => {
 
   describe('start challenge test module', () => {
     let spvTest: TestSpv;
-    let mainnet2eraSpv: ORChallengeSpv;
-    let era2mainnetSpv: ORChallengeSpv;
+    let mainnet2eraSpv: ORChallengeSpvMainnet2Era;
+    let era2mainnetSpv: ORChallengeSpvEra2Mainnet;
     let makerTest: TestMakerDeposit;
     let rlpDecoder: RLPDecoder;
     const defaultRule = createMakerRule(true);
@@ -785,20 +787,16 @@ describe('ORMakerDeposit', () => {
     const chainId = makerRule.chainId0;
     const chainIdDest = makerRule.chainId1;
 
-    // const mainnet2eraProof: BytesLike = utils.arrayify(
-    //   '0x' +
-    //     fs
-    //       .readFileSync('test/example/mainnet2era.proof.source', 'utf-8')
-    //       .replace(/\t|\n|\v|\r|\f/g, ''),
-    // );
-    // const spvDestProof: BytesLike = utils.arrayify(
-    //   '0x' +
-    //     fs
-    //       .readFileSync('test/example/mainnet2era.proof.dest', 'utf-8')
-    //       .replace(/\t|\n|\v|\r|\f/g, ''),
-    // );
-    const mainnet2eraProof: BytesLike = getSpvProof().verifySourceProof;
-    const spvDestProof: BytesLike = getSpvProof().verifyDestProof;
+    const m2eSourceProof: BytesLike = getSpvProof().verifySourceProof;
+    const m2eDestProof: BytesLike = getSpvProof().verifyDestProof;
+
+    const e2mSourceProof: BytesLike = getSpvProof(
+      SPVTypeEnum.era2mainnet,
+    ).verifySourceProof;
+
+    const e2mDestProof: BytesLike = getSpvProof(
+      SPVTypeEnum.era2mainnet,
+    ).verifyDestProof;
 
     const getRawData = async (
       columnArray: columnArray,
@@ -849,13 +847,15 @@ describe('ORMakerDeposit', () => {
     };
 
     before(async function () {
-      mainnet2eraSpv = new ORChallengeSpv__factory(mdcOwner).attach(
+      mainnet2eraSpv = new ORChallengeSpvMainnet2Era__factory(mdcOwner).attach(
         await deploySPVs(mdcOwner),
       );
+      console.log('mainnet2eraSpv', mainnet2eraSpv.address);
 
-      era2mainnetSpv = new ORChallengeSpv__factory(mdcOwner).attach(
+      era2mainnetSpv = new ORChallengeSpvEra2Mainnet__factory(mdcOwner).attach(
         await deploySPVs(mdcOwner, SPVTypeEnum.era2mainnet),
       );
+      console.log('era2mainnetSpv', era2mainnetSpv.address);
 
       spvTest = await new TestSpv__factory(mdcOwner).deploy(
         mainnet2eraSpv.address,
@@ -892,23 +892,37 @@ describe('ORMakerDeposit', () => {
       // eslint-disable-next-line prettier/prettier
       // console.log(
       //   'sourceProof',
-      //   await spvTest.parseSourceProof(mainnet2eraProof),
+      //   await spvTest.parseSourceProof(m2eSourceProof),
       // );
       const tx = await mainnet2eraSpv
-        .verifySourceTx(mainnet2eraProof)
+        .verifySourceTx(m2eSourceProof)
         .then((t: any) => t.wait());
       expect(tx.status).to.be.eq(1);
       await calculateTxGas(tx, 'spvVerifySourceTx');
       expect(
-        await spvTest.verifySourceTx(mainnet2eraProof, mainnet2eraSpv.address),
+        await spvTest.verifySourceTx(m2eSourceProof, mainnet2eraSpv.address),
       ).to.satisfy;
-      // console.log('destProof', await spvTest.parseDestProof(spvDestProof));
+
+      // console.log(
+      //   'era2mainnet, paresSourcePoorf',
+      //   await era2mainnetSpv.parseSourceTxProof(e2mSourceProof),
+      // );
+      expect(
+        await spvTest.verifySourceTx(e2mSourceProof, era2mainnetSpv.address),
+      ).to.satisfy;
+      // console.log('destProof', await spvTest.parseDestProof(m2eDestProof));
       const txDest = await mainnet2eraSpv
-        .verifyDestTx(spvDestProof)
+        .verifyDestTx(m2eDestProof)
         .then((t: any) => t.wait());
       expect(txDest.status).to.be.eq(1);
       await calculateTxGas(txDest, 'spvVerifyDestTx');
-      expect(await spvTest.verifyDestTx(spvDestProof, mainnet2eraSpv.address))
+      expect(await spvTest.verifyDestTx(m2eDestProof, mainnet2eraSpv.address))
+        .to.satisfy;
+      // console.log(
+      //   'era2mainnet, pareseDestProof',
+      //   await era2mainnetSpv.parseDestTxProof(e2mDestProof),
+      // );
+      expect(await spvTest.verifyDestTx(e2mDestProof, era2mainnetSpv.address))
         .to.satisfy;
     });
 
@@ -1189,9 +1203,8 @@ describe('ORMakerDeposit', () => {
       await updateMakerRule(makerTest, ebc.address, makerRule);
       await orManager.updateDecoderRLP(rlpDecoder.address);
       expect(await orManager.getDecoderRLP()).eq(rlpDecoder.address);
-      const publicInputData: PublicInputData = await spvTest.parseSourceProof(
-        mainnet2eraProof,
-      );
+      const publicInputData: PublicInputData =
+        await mainnet2eraSpv.parseSourceTxProof(m2eSourceProof);
 
       // const merkleRootsSet = new Set(publicInputData.merkle_roots);
       await mockSpvData(
@@ -1373,7 +1386,7 @@ describe('ORMakerDeposit', () => {
       //     Wallet.createRandom().address,
       //     makerPublicInputData.chain_id,
       //     makerPublicInputData,
-      //     mainnet2eraProof,
+      //     m2eSourceProof,
       //     rawData,
       //     rlpRawdata,
       //   ),
@@ -1386,7 +1399,7 @@ describe('ORMakerDeposit', () => {
       //     mainnet2eraSpv.address,
       //     makerPublicInputData.chain_id,
       //     makerPublicInputData,
-      //     BigNumber.from(mainnet2eraProof).add(1).toHexString(),
+      //     BigNumber.from(m2eSourceProof).add(1).toHexString(),
       //     rawData,
       //     rlpRawdata,
       //   ),
@@ -1399,7 +1412,7 @@ describe('ORMakerDeposit', () => {
           mainnet2eraSpv.address,
           makerPublicInputData.chain_id,
           makerPublicInputData,
-          // mainnet2eraProof,
+          // m2eSourceProof,
           rawData,
           rlpRawdata,
         )
@@ -1446,7 +1459,7 @@ describe('ORMakerDeposit', () => {
       await mineXTimes(2);
 
       const publicInputDataDest: PublicInputDataDest =
-        await spvTest.parseDestProof(spvDestProof);
+        await mainnet2eraSpv.parseDestTxProof(m2eDestProof);
 
       const verifiedDataInfo: VerifiedDataInfo = {
         minChallengeSecond: verifiedDataHashData[0],
@@ -1477,7 +1490,7 @@ describe('ORMakerDeposit', () => {
       //     constants.AddressZero,
       //     challenge.sourceChainId,
       //     challenge.sourceTxHash,
-      //     spvDestProof,
+      //     m2eDestProof,
       //     verifiedDataInfo,
       //     responseMakersEncodeRaw,
       //     makerPublicInputDataDest,
@@ -1491,7 +1504,7 @@ describe('ORMakerDeposit', () => {
       //     mainnet2eraSpv.address,
       //     challenge.sourceChainId,
       //     challenge.sourceTxHash,
-      //     BigNumber.from(spvDestProof).add(1).toHexString(),
+      //     BigNumber.from(m2eDestProof).add(1).toHexString(),
       //     verifiedDataInfo,
       //     responseMakersEncodeRaw,
       //     makerPublicInputDataDest,
@@ -1505,7 +1518,7 @@ describe('ORMakerDeposit', () => {
           mainnet2eraSpv.address,
           challenge.sourceChainId,
           challenge.sourceTxHash,
-          // spvDestProof,
+          // m2eDestProof,
           verifiedDataInfo,
           responseMakersEncodeRaw,
           makerPublicInputDataDest,
