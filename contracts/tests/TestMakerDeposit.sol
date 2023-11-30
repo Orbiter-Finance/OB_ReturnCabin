@@ -348,6 +348,7 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         uint64 sourceTxIndex,
         address freezeToken,
         bytes32 sourceTxHash,
+        bytes32 ruleKey,
         uint256 freezeAmount1,
         uint256 parentNodeNumOfTargetNode
     ) external payable {
@@ -360,7 +361,10 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
         require(_challenges[challengeId].statement[msg.sender].challengeTime == 0, "CT");
 
-        require(destChainId != sourceChainId, "DCI");
+        // require(destChainId != sourceChainId, "DCI");
+        (destChainId);
+        // require(ruleKey != bytes32(0), "RKZ");
+        (ruleKey);
 
         uint256 freezeAmount0 = freezeAmount1;
 
@@ -388,8 +392,7 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         // TODO: Currently it is assumed that the pledged assets of the challenger and the owner are the same
 
         // Freeze mdc's owner assets and the assets in of challenger
-        uint128 challengeGasPrice = uint128(block.basefee + IORManager(_mdcFactory.manager()).getPriorityFee());
-
+        // uint128 challengeGasPrice = uint128(block.basefee + IORManager(_mdcFactory.manager()).getPriorityFee());
         _challenges[challengeId].statement[msg.sender] = ChallengeStatement({
             sourceTxFrom: 0,
             sourceTxTime: sourceTxTime,
@@ -401,7 +404,7 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             abortTime: 0,
             sourceTxBlockNum: sourceTxBlockNum,
             sourceTxIndex: sourceTxIndex,
-            challengerVerifyTransactionFee: challengeGasPrice
+            challengerVerifyTransactionFee: uint128(block.basefee)
         });
         emit ChallengeInfoUpdated({
             challengeId: challengeId,
@@ -492,7 +495,7 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         address spvAddress,
         uint64 sourceChainId,
         HelperLib.PublicInputDataSource calldata publicInputData,
-        bytes calldata proof,
+        // bytes calldata proof,
         bytes calldata rawDatas,
         bytes calldata rlpRuleBytes
     ) external {
@@ -500,12 +503,12 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         IORManager manager = IORManager(_mdcFactory.manager());
         BridgeLib.ChainInfo memory chainInfo = manager.getChainInfo(sourceChainId);
         require(chainInfo.spvs.includes(spvAddress), "SPVI");
-        IORChallengeSpv challengeSpv = IORChallengeSpv(spvAddress);
-        require(challengeSpv.verifySourceTx(proof), "VF");
-        HelperLib.PublicInputDataSource memory publicInputData2 = challengeSpv.parseSourceTxProof(proof);
-        for (uint i = 0; i < publicInputData2.merkle_roots.length; i++) {
+        // IORChallengeSpv challengeSpv = IORChallengeSpv(spvAddress);
+        // require(challengeSpv.verifySourceTx(proof), "VF");
+        // HelperLib.PublicInputDataSource memory publicInputData2 = challengeSpv.parseSourceTxProof(proof);
+        for (uint i = 0; i < publicInputData.merkle_roots.length; i++) {
             require(
-                IORSpvData(manager.spvDataContract()).getStartBlockNumber(publicInputData2.merkle_roots[i]) != 0,
+                IORSpvData(manager.spvDataContract()).getStartBlockNumber(publicInputData.merkle_roots[i]) != 0,
                 "IBL"
             );
         }
@@ -652,7 +655,7 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         address spvAddress,
         uint64 sourceChainId,
         bytes32 sourceTxHash,
-        bytes calldata proof,
+        // bytes calldata proof,
         verifiedDataInfo calldata verifiedSourceTxData,
         bytes calldata rawDatas,
         HelperLib.PublicInputDataDest calldata publicInputData
@@ -660,14 +663,14 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         IORManager manager = IORManager(_mdcFactory.manager());
         BridgeLib.ChainInfo memory chainInfo = manager.getChainInfo(sourceChainId);
         require(chainInfo.spvs.includes(spvAddress), "SPVI");
-        IORChallengeSpv challengeSpv = IORChallengeSpv(spvAddress);
+        // IORChallengeSpv challengeSpv = IORChallengeSpv(spvAddress);
         // get DestChainInfo
-        require(challengeSpv.verifyDestTx(proof), "VF");
+        // require(challengeSpv.verifyDestTx(proof), "VF");
         // parse Public input
-        HelperLib.PublicInputDataDest memory publicInputData2 = challengeSpv.parseDestTxProof(proof);
-        for (uint i = 0; i < publicInputData2.merkle_roots.length; i++) {
+        // HelperLib.PublicInputDataDest memory publicInputData2 = challengeSpv.parseDestTxProof(proof);
+        for (uint i = 0; i < publicInputData.merkle_roots.length; i++) {
             require(
-                IORSpvData(manager.spvDataContract()).getStartBlockNumber(publicInputData2.merkle_roots[i]) != 0,
+                IORSpvData(manager.spvDataContract()).getStartBlockNumber(publicInputData.merkle_roots[i]) != 0,
                 "IBL"
             );
         }

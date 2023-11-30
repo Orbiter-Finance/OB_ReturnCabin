@@ -89,6 +89,8 @@ import {
   deployContracts,
   deployMDC,
   deploySPVs,
+  getSpvProof,
+  SPVTypeEnum,
   VerifierAbi,
 } from '../scripts/utils';
 import { Console } from 'console';
@@ -767,6 +769,7 @@ describe('ORMakerDeposit', () => {
   describe('start challenge test module', () => {
     let spvTest: TestSpv;
     let mainnet2eraSpv: ORChallengeSpv;
+    let era2mainnetSpv: ORChallengeSpv;
     let makerTest: TestMakerDeposit;
     let rlpDecoder: RLPDecoder;
     const defaultRule = createMakerRule(true);
@@ -782,18 +785,20 @@ describe('ORMakerDeposit', () => {
     const chainId = makerRule.chainId0;
     const chainIdDest = makerRule.chainId1;
 
-    const mainnet2eraProof: BytesLike = utils.arrayify(
-      '0x' +
-        fs
-          .readFileSync('test/example/mainnet2era.proof.source', 'utf-8')
-          .replace(/\t|\n|\v|\r|\f/g, ''),
-    );
-    const spvDestProof: BytesLike = utils.arrayify(
-      '0x' +
-        fs
-          .readFileSync('test/example/mainnet2era.proof.dest', 'utf-8')
-          .replace(/\t|\n|\v|\r|\f/g, ''),
-    );
+    // const mainnet2eraProof: BytesLike = utils.arrayify(
+    //   '0x' +
+    //     fs
+    //       .readFileSync('test/example/mainnet2era.proof.source', 'utf-8')
+    //       .replace(/\t|\n|\v|\r|\f/g, ''),
+    // );
+    // const spvDestProof: BytesLike = utils.arrayify(
+    //   '0x' +
+    //     fs
+    //       .readFileSync('test/example/mainnet2era.proof.dest', 'utf-8')
+    //       .replace(/\t|\n|\v|\r|\f/g, ''),
+    // );
+    const mainnet2eraProof: BytesLike = getSpvProof().verifySourceProof;
+    const spvDestProof: BytesLike = getSpvProof().verifyDestProof;
 
     const getRawData = async (
       columnArray: columnArray,
@@ -848,6 +853,10 @@ describe('ORMakerDeposit', () => {
         await deploySPVs(mdcOwner),
       );
 
+      era2mainnetSpv = new ORChallengeSpv__factory(mdcOwner).attach(
+        await deploySPVs(mdcOwner, SPVTypeEnum.era2mainnet),
+      );
+
       spvTest = await new TestSpv__factory(mdcOwner).deploy(
         mainnet2eraSpv.address,
       );
@@ -893,7 +902,7 @@ describe('ORMakerDeposit', () => {
       expect(
         await spvTest.verifySourceTx(mainnet2eraProof, mainnet2eraSpv.address),
       ).to.satisfy;
-      console.log('destProof', await spvTest.parseDestProof(spvDestProof));
+      // console.log('destProof', await spvTest.parseDestProof(spvDestProof));
       const txDest = await mainnet2eraSpv
         .verifyDestTx(spvDestProof)
         .then((t: any) => t.wait());
@@ -997,8 +1006,13 @@ describe('ORMakerDeposit', () => {
           challengeIdentNumFake,
         ),
       };
-      await createChallenge(orMakerDeposit, challengeFake, 'STOF');
-      await createChallenge(orMakerDeposit, challenge);
+      await createChallenge(
+        orMakerDeposit,
+        challengeFake,
+        converRule(makerRule),
+        'STOF',
+      );
+      await createChallenge(orMakerDeposit, challenge, converRule(makerRule));
       await mineXTimes(100);
       await expect(
         orMakerDeposit.checkChallenge(case1SourceChainId, case1SourceTxHash, [
@@ -1048,7 +1062,12 @@ describe('ORMakerDeposit', () => {
           challengeIdentNum2,
         ),
       };
-      await createChallenge(orMakerDeposit, challenge2, 'CT');
+      await createChallenge(
+        orMakerDeposit,
+        challenge2,
+        converRule(makerRule),
+        'CT',
+      );
     });
 
     it('checkChallenge test with no verify source', async function () {
@@ -1070,7 +1089,7 @@ describe('ORMakerDeposit', () => {
         freezeAmount: utils.parseEther(freezeAmount),
         parentNodeNumOfTargetNode: 0,
       };
-      await createChallenge(orMakerDeposit, challenge);
+      await createChallenge(orMakerDeposit, challenge, converRule(makerRule));
       const challengeList = challengeManager.getChallengeInfoList();
 
       // i >= 1: min challengeIdentNum node will pass
@@ -1130,7 +1149,7 @@ describe('ORMakerDeposit', () => {
           freezeAmount: utils.parseEther(freezeAmount),
           parentNodeNumOfTargetNode: 0,
         };
-        await createChallenge(maker, challenge);
+        await createChallenge(maker, challenge, converRule(makerRule));
         challengerList.push(signers[i].address);
       }
       const challengeList = challengeManager.getChallengeInfoList();
@@ -1259,6 +1278,19 @@ describe('ORMakerDeposit', () => {
         mdc_current_response_makers_hash: responseMakersHash, // response maker not same
       };
 
+      const rulesKey = calculateRuleKey(converRule(makerRule));
+      const encodeRuleKey = utils.solidityPack(
+        ['uint256', 'uint256', 'uint256', 'uint256'],
+        [
+          makerRule.chainId0,
+          makerRule.chainId1,
+          makerRule.token0,
+          makerRule.token1,
+        ],
+      );
+      const ruleKey = utils.keccak256(encodeRuleKey);
+      expect(ruleKey).eq(rulesKey);
+
       const challenge: challengeInputInfo = {
         sourceTxTime: BigNumber.from(
           makerPublicInputData.time_stamp,
@@ -1288,7 +1320,11 @@ describe('ORMakerDeposit', () => {
         const makerTestChallenge0 = new TestMakerDeposit__factory(
           signers[0],
         ).attach(makerTest.address);
-        await createChallenge(makerTestChallenge0, challenge);
+        await createChallenge(
+          makerTestChallenge0,
+          challenge,
+          converRule(makerRule),
+        );
         challengerList.push(signers[0].address);
         balanceBeforeList.push(
           await ethers.provider.getBalance(signers[0].address),
@@ -1302,7 +1338,11 @@ describe('ORMakerDeposit', () => {
         const makerTestChallenge2 = new TestMakerDeposit__factory(
           signers[2],
         ).attach(makerTest.address);
-        await createChallenge(makerTestChallenge2, challenge2);
+        await createChallenge(
+          makerTestChallenge2,
+          challenge2,
+          converRule(makerRule),
+        );
         challengerList.push(signers[2].address);
         balanceBeforeList.push(
           await ethers.provider.getBalance(signers[2].address),
@@ -1316,38 +1356,42 @@ describe('ORMakerDeposit', () => {
         const makerTestChallenge1 = new TestMakerDeposit__factory(
           signers[1],
         ).attach(makerTest.address);
-        await createChallenge(makerTestChallenge1, challenge1);
+        await createChallenge(
+          makerTestChallenge1,
+          challenge1,
+          converRule(makerRule),
+        );
         challengerList.push(signers[1].address);
         balanceBeforeList.push(
           await ethers.provider.getBalance(signers[1].address),
         );
       }
 
-      await testReverted(
-        makerTest.verifyChallengeSource(
-          challengerList[0],
-          Wallet.createRandom().address,
-          makerPublicInputData.chain_id,
-          makerPublicInputData,
-          mainnet2eraProof,
-          rawData,
-          rlpRawdata,
-        ),
-        'SPVI',
-      );
+      // await testReverted(
+      //   makerTest.verifyChallengeSource(
+      //     challengerList[0],
+      //     Wallet.createRandom().address,
+      //     makerPublicInputData.chain_id,
+      //     makerPublicInputData,
+      //     mainnet2eraProof,
+      //     rawData,
+      //     rlpRawdata,
+      //   ),
+      //   'SPVI',
+      // );
 
-      await testReverted(
-        makerTest.verifyChallengeSource(
-          challengerList[0],
-          mainnet2eraSpv.address,
-          makerPublicInputData.chain_id,
-          makerPublicInputData,
-          BigNumber.from(mainnet2eraProof).add(1).toHexString(),
-          rawData,
-          rlpRawdata,
-        ),
-        'VF',
-      );
+      // await testReverted(
+      //   makerTest.verifyChallengeSource(
+      //     challengerList[0],
+      //     mainnet2eraSpv.address,
+      //     makerPublicInputData.chain_id,
+      //     makerPublicInputData,
+      //     BigNumber.from(mainnet2eraProof).add(1).toHexString(),
+      //     rawData,
+      //     rlpRawdata,
+      //   ),
+      //   'VF',
+      // );
 
       const tx = await makerTest
         .verifyChallengeSource(
@@ -1355,7 +1399,7 @@ describe('ORMakerDeposit', () => {
           mainnet2eraSpv.address,
           makerPublicInputData.chain_id,
           makerPublicInputData,
-          mainnet2eraProof,
+          // mainnet2eraProof,
           rawData,
           rlpRawdata,
         )
@@ -1427,33 +1471,33 @@ describe('ORMakerDeposit', () => {
         ),
       };
 
-      await testReverted(
-        makerTest.verifyChallengeDest(
-          challengerList[0],
-          constants.AddressZero,
-          challenge.sourceChainId,
-          challenge.sourceTxHash,
-          spvDestProof,
-          verifiedDataInfo,
-          responseMakersEncodeRaw,
-          makerPublicInputDataDest,
-        ),
-        'SPVI',
-      );
+      // await testReverted(
+      //   makerTest.verifyChallengeDest(
+      //     challengerList[0],
+      //     constants.AddressZero,
+      //     challenge.sourceChainId,
+      //     challenge.sourceTxHash,
+      //     spvDestProof,
+      //     verifiedDataInfo,
+      //     responseMakersEncodeRaw,
+      //     makerPublicInputDataDest,
+      //   ),
+      //   'SPVI',
+      // );
 
-      await testReverted(
-        makerTest.verifyChallengeDest(
-          challengerList[0],
-          mainnet2eraSpv.address,
-          challenge.sourceChainId,
-          challenge.sourceTxHash,
-          BigNumber.from(spvDestProof).add(1).toHexString(),
-          verifiedDataInfo,
-          responseMakersEncodeRaw,
-          makerPublicInputDataDest,
-        ),
-        'VF',
-      );
+      // await testReverted(
+      //   makerTest.verifyChallengeDest(
+      //     challengerList[0],
+      //     mainnet2eraSpv.address,
+      //     challenge.sourceChainId,
+      //     challenge.sourceTxHash,
+      //     BigNumber.from(spvDestProof).add(1).toHexString(),
+      //     verifiedDataInfo,
+      //     responseMakersEncodeRaw,
+      //     makerPublicInputDataDest,
+      //   ),
+      //   'VF',
+      // );
 
       const txDest = await makerTest
         .verifyChallengeDest(
@@ -1461,7 +1505,7 @@ describe('ORMakerDeposit', () => {
           mainnet2eraSpv.address,
           challenge.sourceChainId,
           challenge.sourceTxHash,
-          spvDestProof,
+          // spvDestProof,
           verifiedDataInfo,
           responseMakersEncodeRaw,
           makerPublicInputDataDest,

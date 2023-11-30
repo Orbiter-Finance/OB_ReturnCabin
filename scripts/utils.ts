@@ -4,6 +4,7 @@ import { ethers } from 'hardhat';
 import chalk from 'chalk';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import fs from 'fs';
 import {
   TestSpv__factory,
   ORChallengeSpv__factory,
@@ -21,7 +22,7 @@ import {
   ORSpvData__factory,
 } from '../typechain-types';
 import { PromiseOrValue } from '../typechain-types/common';
-import { BigNumber, constants, utils } from 'ethers';
+import { BigNumber, BigNumberish, BytesLike, constants, utils } from 'ethers';
 import { createChallenge, getMinEnableTime } from '../test/utils.test';
 import { promises } from 'dns';
 import { random } from 'lodash';
@@ -139,6 +140,50 @@ export enum SPVTypeEnum {
   era2mainnet = 1,
 }
 
+export const getSpvProof = (spvType: SPVTypeEnum = SPVTypeEnum.mainnet2era) => {
+  let verifySourceProof: BytesLike = '0x';
+  let verifyDestProof: BytesLike = '0x';
+  if (spvType == SPVTypeEnum.mainnet2era) {
+    verifySourceProof = utils.arrayify(
+      '0x' +
+        fs
+          .readFileSync('test/example/mainnet2era.proof.source', 'utf-8')
+          .replace(/\t|\n|\v|\r|\f/g, ''),
+    );
+
+    verifyDestProof = utils.arrayify(
+      '0x' +
+        fs
+          .readFileSync('test/example/mainnet2era.proof.dest', 'utf-8')
+          .replace(/\t|\n|\v|\r|\f/g, ''),
+    );
+  } else if (spvType == SPVTypeEnum.era2mainnet) {
+    verifySourceProof = utils.arrayify(
+      '0x' +
+        fs
+          .readFileSync(
+            'test/example/era2mainnetSpvVerifier.proof.source',
+            'utf-8',
+          )
+          .replace(/\t|\n|\v|\r|\f/g, ''),
+    );
+
+    verifyDestProof = utils.arrayify(
+      '0x' +
+        fs
+          .readFileSync(
+            'test/example/era2mainnetSpvVerifier.proof.dest',
+            'utf-8',
+          )
+          .replace(/\t|\n|\v|\r|\f/g, ''),
+    );
+  }
+  return {
+    verifySourceProof,
+    verifyDestProof,
+  };
+};
+
 export const deploySPVs = async (
   deployer: SignerWithAddress,
   spvType: SPVTypeEnum = SPVTypeEnum.mainnet2era,
@@ -156,11 +201,11 @@ export const deploySPVs = async (
     );
   } else if (spvType == SPVTypeEnum.era2mainnet) {
     verifyDestBytesCode = await compile_yul(
-      'contracts/zkp/eraDestSpvVerifier.yul',
+      'contracts/zkp/era2mainnetSpvVerifier.DestTx.yul',
     );
 
     verifySourceBytesCode = await compile_yul(
-      'contracts/zkp/eraSourceSpvVerifier.yul',
+      'contracts/zkp/era2mainnetSpvVerifier.SourceTx.yul',
     );
   }
 
@@ -258,7 +303,28 @@ export const createRandomChallenge = async (
     freezeAmount: utils.parseEther('0.000001'),
     parentNodeNumOfTargetNode: 0,
   };
-  await createChallenge(orMakerDeposit, challengeInputInfo);
+  const randomMakerRule: BigNumberish[] = [
+    5,
+    280,
+    1,
+    1,
+    0,
+    0,
+    10000000000,
+    10000000000,
+    BigNumber.from('100000000000000000000'),
+    BigNumber.from('100000000000000000000'),
+    10000000000,
+    20000000000,
+    1,
+    1,
+    604800,
+    604800,
+    32,
+    31,
+  ];
+
+  await createChallenge(orMakerDeposit, challengeInputInfo, randomMakerRule);
 };
 
 export const deployContracts = async (
@@ -336,7 +402,7 @@ export const deployContracts = async (
   if (process.env['OR_SPV_DATA_ADRESS'] == undefined) {
     const orSpvData = await new ORSpvData__factory(deployer).deploy(
       process.env['OR_MANAGER_ADDRESS']!,
-      constants.AddressZero,
+      deployer.address,
     );
     console.log('orSpvData deployed to:', orSpvData.address);
     process.env['OR_SPV_DATA_ADRESS'] = orSpvData.address;

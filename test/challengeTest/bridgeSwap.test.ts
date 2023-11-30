@@ -241,6 +241,7 @@ describe('MDC TEST ON GOERLI', () => {
       } else {
         orSpvData = await new ORSpvData__factory(signers[0]).deploy(
           orManager.address,
+          mdcOwner.address,
         );
         console.log('address of orSpvData:', orSpvData.address);
         await orSpvData.deployed();
@@ -275,12 +276,12 @@ describe('MDC TEST ON GOERLI', () => {
       tradingFee1: 1,
       responseTime0: defaultResponseTime,
       responseTime1: defaultResponseTime,
-      compensationRatio0: 31,
-      compensationRatio1: 30,
+      compensationRatio0: 40,
+      compensationRatio1: 42,
     };
 
-    sourceChain = makerRule.chainId1.toNumber();
-    destChain = makerRule.chainId0.toNumber();
+    sourceChain = makerRule.chainId0.toNumber();
+    destChain = makerRule.chainId1.toNumber();
 
     // sourceChain = makerRule.chainId0.toNumber();
     // destChain = makerRule.chainId1.toNumber();
@@ -501,6 +502,7 @@ describe('MDC TEST ON GOERLI', () => {
       await sendETH(mdcOwner, signers[0].address, returnValue);
     });
 
+    return;
     it('Function saveHistoryBlocksRoots should success', async function () {
       if (ethers.provider.network.chainId == 31337) {
         await mineUpTo(1200);

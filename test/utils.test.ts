@@ -20,6 +20,7 @@ import {
 import { callDataCost, getCurrentTime, mineXTimes } from './lib/mockData';
 import {
   RuleStruct,
+  calculateRuleKey,
   calculateRulesTree,
   converRule,
   createMakerRule,
@@ -709,6 +710,7 @@ export const getVerifyinfo = async (
 export const createChallenge = async (
   orMakerDeposit: ORMakerDeposit | TestMakerDeposit,
   challenge: challengeInputInfo,
+  rule: BigNumberish[],
   revertReason?: string,
 ): Promise<
   Partial<{
@@ -742,6 +744,7 @@ export const createChallenge = async (
         challenge.sourceTxIndex,
         challenge.freezeToken,
         challenge.sourceTxHash.toString(),
+        calculateRuleKey(rule),
         challenge.freezeAmount,
         challenge.parentNodeNumOfTargetNode,
         { value: BigNumber.from(challenge.freezeAmount).add(minDeposit) },
@@ -808,6 +811,7 @@ export const createChallenge = async (
         challenge.sourceTxIndex,
         challenge.freezeToken,
         challenge.sourceTxHash.toString(),
+        calculateRuleKey(rule),
         challenge.freezeAmount,
         challenge.parentNodeNumOfTargetNode,
         { value: BigNumber.from(challenge.freezeAmount).add(minDeposit) },
@@ -1039,7 +1043,7 @@ export const updateMakerRule = async (
   const root = utils.hexlify(tree.root);
 
   const currentRootwithVersion = await orMakerDeposit.getVersionAndEnableTime();
-  console.log('currentRootwithVersion', currentRootwithVersion);
+  // console.log('currentRootwithVersion', currentRootwithVersion);
   const version = (await orMakerDeposit.rulesRoot(ebc)).version + 1;
 
   const rootWithVersion = { root, version };

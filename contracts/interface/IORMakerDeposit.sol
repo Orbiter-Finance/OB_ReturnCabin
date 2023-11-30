@@ -133,6 +133,7 @@ interface IORMakerDeposit {
         uint64 sourceTxIndex,
         address freezeToken,
         bytes32 sourceTxHash,
+        bytes32 ruleKey,
         uint256 freezeAmount1,
         uint256 parentNodeNumOfTargetNode
     ) external payable;

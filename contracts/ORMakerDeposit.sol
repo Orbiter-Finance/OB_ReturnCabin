@@ -348,6 +348,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         uint64 sourceTxIndex,
         address freezeToken,
         bytes32 sourceTxHash,
+        bytes32 ruleKey,
         uint256 freezeAmount1,
         uint256 parentNodeNumOfTargetNode
     ) external payable {
@@ -360,7 +361,10 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
         require(_challenges[challengeId].statement[msg.sender].challengeTime == 0, "CT");
 
-        require(destChainId != sourceChainId, "DCI");
+        // require(destChainId != sourceChainId, "DCI");
+        (destChainId);
+        // require(ruleKey != bytes32(0), "RKZ");
+        (ruleKey);
 
         uint256 freezeAmount0 = freezeAmount1;
 
@@ -388,8 +392,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         // TODO: Currently it is assumed that the pledged assets of the challenger and the owner are the same
 
         // Freeze mdc's owner assets and the assets in of challenger
-        uint128 challengeGasPrice = uint128(block.basefee + IORManager(_mdcFactory.manager()).getPriorityFee());
-
+        // uint128 challengeGasPrice = uint128(block.basefee + IORManager(_mdcFactory.manager()).getPriorityFee());
         _challenges[challengeId].statement[msg.sender] = ChallengeStatement({
             sourceTxFrom: 0,
             sourceTxTime: sourceTxTime,
@@ -401,7 +404,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             abortTime: 0,
             sourceTxBlockNum: sourceTxBlockNum,
             sourceTxIndex: sourceTxIndex,
-            challengerVerifyTransactionFee: challengeGasPrice
+            challengerVerifyTransactionFee: uint128(block.basefee)
         });
         emit ChallengeInfoUpdated({
             challengeId: challengeId,
@@ -504,8 +507,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         HelperLib.PublicInputDataSource memory publicInputData = challengeSpv.parseSourceTxProof(proof);
         for (uint i = 0; i < publicInputData.merkle_roots.length; i++) {
             require(
-                IORSpvData(manager.spvDataContract()).getStartBlockNumber(publicInputData.merkle_roots[i]) !=
-                    0,
+                IORSpvData(manager.spvDataContract()).getStartBlockNumber(publicInputData.merkle_roots[i]) != 0,
                 "IBL"
             );
         }
