@@ -1417,6 +1417,19 @@ describe('ORMakerDeposit', () => {
           rlpRawdata,
         )
         .then((t: any) => t.wait());
+
+      // const tx2 = await orMakerDeposit
+      //   .verifyChallengeSource(
+      //     challengerList[0],
+      //     mainnet2eraSpv.address,
+      //     makerPublicInputData.chain_id,
+      //     // makerPublicInputData,
+      //     m2eSourceProof,
+      //     rawData,
+      //     rlpRawdata,
+      //   )
+      //   .then((t: any) => t.wait());
+
       expect(tx.status).to.be.eq(1);
       await calculateTxGas(tx, 'verifyChallengeSourceTx ');
       const destAmount = await spvTest.calculateDestAmount(

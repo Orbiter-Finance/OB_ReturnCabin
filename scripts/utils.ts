@@ -300,8 +300,8 @@ export const createRandomChallenge = async (
     parentNodeNumOfTargetNode: 0,
   };
   const randomMakerRule: BigNumberish[] = [
-    5,
-    280,
+    sourceChainId,
+    random(BigNumber.from(sourceChainId).toNumber() - 1),
     1,
     1,
     0,

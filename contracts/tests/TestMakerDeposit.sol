@@ -346,6 +346,7 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         uint64 sourceTxBlockNum,
         uint64 sourceTxIndex,
         bytes32 sourceTxHash,
+        bytes32 ruleKey,
         address freezeToken,
         uint256 freezeAmount1,
         uint256 parentNodeNumOfTargetNode
@@ -359,6 +360,7 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
         require(_challenges[challengeId].statement[msg.sender].challengeTime == 0, "CT");
 
+        (ruleKey);
         uint256 freezeAmount0 = freezeAmount1;
 
         if (freezeToken == address(0)) {
@@ -385,7 +387,7 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         // TODO: Currently it is assumed that the pledged assets of the challenger and the owner are the same
 
         // Freeze mdc's owner assets and the assets in of challenger
-        // uint128 challengeGasPrice = uint128(block.basefee + IORManager(_mdcFactory.manager()).getPriorityFee());
+        uint128 challengeGasPrice = uint128(block.basefee + IORManager(_mdcFactory.manager()).getPriorityFee());
         _challenges[challengeId].statement[msg.sender] = ChallengeStatement({
             sourceTxFrom: 0,
             sourceTxTime: sourceTxTime,
@@ -397,7 +399,7 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             abortTime: 0,
             sourceTxBlockNum: sourceTxBlockNum,
             sourceTxIndex: sourceTxIndex,
-            challengerVerifyTransactionFee: uint128(block.basefee)
+            challengerVerifyTransactionFee: challengeGasPrice
         });
         emit ChallengeInfoUpdated({
             challengeId: challengeId,

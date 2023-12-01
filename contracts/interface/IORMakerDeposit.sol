@@ -131,6 +131,7 @@ interface IORMakerDeposit {
         uint64 sourceTxBlockNum,
         uint64 sourceTxIndex,
         bytes32 sourceTxHash,
+        bytes32 ruleKeyHash,
         address freezeToken,
         uint256 freezeAmount1,
         uint256 parentNodeNumOfTargetNode

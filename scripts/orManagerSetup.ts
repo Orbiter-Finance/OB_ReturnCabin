@@ -26,54 +26,6 @@ export async function managerSetup() {
   const isTestnet = networkId === 31337 || networkId === 5;
   if (isTestnet) {
     await deployContracts(deployer, mdcOwner);
-    // if (process.env['OR_MANAGER_ADDRESS'] == undefined) {
-    //   const orManager = await new ORManager__factory(deployer).deploy(
-    //     deployer.address,
-    //   );
-    //   await orManager.deployed();
-    //   console.log('orManager deployed to:', orManager.address);
-    //   process.env['OR_MANAGER_ADDRESS'] = orManager.address;
-    // } else {
-    //   console.log('connect to orManager:', process.env['OR_MANAGER_ADDRESS']!);
-    // }
-    // if (process.env['SPV_ADDRESS'] == undefined) {
-    //   const spvaddress = await deploySPVs(deployer);
-    //   console.log('spv deployed to:', spvaddress);
-    // } else {
-    //   console.log('connect to SPV:', process.env['SPV_ADDRESS']!);
-    // }
-
-    // if (process.env['EVENT_BINDING_CONTRACT'] == undefined) {
-    //   const ebc = await new OREventBinding__factory(deployer).deploy();
-    //   await ebc.deployed();
-    //   console.log('ebc deployed to:', ebc.address);
-    //   process.env['EVENT_BINDING_CONTRACT'] = ebc.address;
-    // } else {
-    //   console.log('connect to ebc:', process.env['EVENT_BINDING_CONTRACT']!);
-    // }
-
-    // if (process.env['RLP_DECODER_ADDRESS'] == undefined) {
-    //   const rlpDecoder = await new RLPDecoder__factory(deployer).deploy();
-    //   await rlpDecoder.deployed();
-    //   console.log('rlpDecoder deployed to:', rlpDecoder.address);
-    //   process.env['RLP_DECODER_ADDRESS'] = rlpDecoder.address;
-    // } else {
-    //   console.log(
-    //     'connect to rlpDecoder:',
-    //     process.env['RLP_DECODER_ADDRESS']!,
-    //   );
-    // }
-
-    // if (process.env['OR_SPV_DATA_ADRESS'] == undefined) {
-    //   const spvData = await new ORSpvData__factory(deployer).deploy(
-    //     process.env['OR_MANAGER_ADDRESS']!,
-    //   );
-    //   await spvData.deployed();
-    //   console.log('spvData deployed to:', spvData.address);
-    //   process.env['OR_SPV_DATA_ADRESS'] = spvData.address;
-    // } else {
-    //   console.log('connect to spvData:', process.env['OR_SPV_DATA_ADRESS']!);
-    // }
   }
 
   const envORManagerAddress = process.env['OR_MANAGER_ADDRESS'];

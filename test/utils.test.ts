@@ -741,7 +741,8 @@ export const createChallenge = async (
         challenge.sourceChainId,
         challenge.sourceBlockNum,
         challenge.sourceTxIndex,
-        challenge.sourceTxHash.toString(),
+        challenge.sourceTxHash,
+        calculateRuleKey(rule),
         challenge.freezeToken,
         challenge.freezeAmount,
         challenge.parentNodeNumOfTargetNode,
@@ -806,7 +807,8 @@ export const createChallenge = async (
         challenge.sourceChainId,
         challenge.sourceBlockNum,
         challenge.sourceTxIndex,
-        challenge.sourceTxHash.toString(),
+        challenge.sourceTxHash,
+        calculateRuleKey(rule),
         challenge.freezeToken,
         challenge.freezeAmount,
         challenge.parentNodeNumOfTargetNode,
@@ -1118,6 +1120,11 @@ export const mockSpvData = async (
   orSpvData: ORSpvData,
   injectionBlocksRoots: string[],
 ): Promise<void> => {
+  const networkID = (await ethers.provider.getNetwork()).chainId;
+  if (networkID != 31337) {
+    console.log('not local network, skip mockSpvData');
+    return;
+  }
   const _injectionBlocksRoots: IORSpvData.InjectionBlocksRootStruct[] = [];
   await mineUpTo(1200);
   const receipt1 = await orSpvData
