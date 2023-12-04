@@ -27,13 +27,13 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
 
     uint64 private _maxMDCLimit = 2 ** 64 - 1;
     uint8 private _priorityFee = 1; // 1wei
-    uint24 private _challengeBasefee = 176000; // proof calldata 114000 + rule data 20000 + submit tx 21000 + verify source 21000
+    uint24 private _challengeBasefee = 94000; // createchallenge&verify sourceTx calldata 52000 + submit tx 21000 + verify source 21000
     uint32 private _challengeWithdrawDelay = 604800; // Unit: seconds of 7 days: Op Arb
     address private _spvDataContract;
 
     mapping(uint64 => uint256) private _extraTransferContracts; // Cross-address transfer contracts. chainId => contractAddress
 
-    address private _rlpDecoderAddress;
+    address private _decoderAddress;
 
     constructor(address owner_) {
         require(owner_ != address(0), "OZ");
@@ -255,11 +255,11 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
         emit ExtraTransferContractsUpdated(chainIds, extraTransferContracts);
     }
 
-    function updateDecoderRLP(address rlpDecoderAddress) external onlyOwner {
-        _rlpDecoderAddress = rlpDecoderAddress;
+    function updateDecoderAddress(address decoderAddress) external onlyOwner {
+        _decoderAddress = decoderAddress;
     }
 
-    function getDecoderRLP() external view returns (address) {
-        return _rlpDecoderAddress;
+    function getRulesDecoder() external view returns (address) {
+        return _decoderAddress;
     }
 }

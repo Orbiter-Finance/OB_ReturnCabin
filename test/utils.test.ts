@@ -751,28 +751,11 @@ export const createChallenge = async (
       .then((t) => t.wait(1));
     const args = tx.events?.[0].args;
     const basefee = (await ethers.provider.getFeeData()).lastBaseFeePerGas;
-    await calculateTxGas(tx, `Create challenge!`);
+    await calculateTxGas(tx, `Create challenge!`, true);
 
     // console.log(
     //   'input',
     //   (await ethers.provider.getTransaction(tx.transactionHash)).data,
-    // );
-
-    // console.log(
-    //   // 'challenge input:',
-    //   // (await ethers.provider.getTransaction(tx.transactionHash)).data,
-    //   // 'chailneId:',
-    //   // challenge.sourceChainId,
-    //   'Create challenge! gasUsed:',
-    //   tx.gasUsed.toNumber(),
-    //   'inputGasUsed',
-    //   callDataCost(
-    //     (await ethers.provider.getTransaction(tx.transactionHash)).data,
-    //   ),
-    //   // 'basefee',
-    //   // basefee?.toNumber(),
-    //   // 'challengerVerifyTransactionFee',
-    //   // args?.statement.challengerVerifyTransactionFee.div(basefee).toNumber(),
     // );
 
     expect(args).not.empty;
@@ -783,8 +766,12 @@ export const createChallenge = async (
         BigNumber.from(challenge.sourceTxTime),
       );
       expect(args.statement.freezeToken).eql(challenge.freezeToken);
-      expect(args.statement.freezeAmount0).eql(challenge.freezeAmount);
-      expect(args.statement.freezeAmount1).eql(challenge.freezeAmount);
+      expect(BigNumber.from(args.statement.freezeAmount0)).eql(
+        BigNumber.from(challenge.freezeAmount),
+      );
+      expect(BigNumber.from(args.statement.freezeAmount1)).eql(
+        BigNumber.from(challenge.freezeAmount),
+      );
     }
 
     challengeManager.addChallengeNodeInfo({
@@ -844,24 +831,50 @@ export const predictEnableBlock = async (
 export const calculateTxGas = async (
   tx: ContractReceipt,
   title?: string,
+  getTransactionfee = false,
   index?: number,
 ) => {
+  const basefee = (
+    await ethers.provider.getFeeData()
+  ).lastBaseFeePerGas!.toNumber();
   const gasUsed = tx.gasUsed.toNumber();
   const gasPrice = tx.effectiveGasPrice?.toNumber();
-  const gasFee = gasUsed * gasPrice;
+  const transactionfee = gasUsed * basefee;
   const inputGasUsed = callDataCost(
     (await ethers.provider.getTransaction(tx.transactionHash)).data,
   );
-  console.log(
-    title ? title : 'gasUsed',
-    index ? index : '',
-    'total_Gas:',
+  if (getTransactionfee) {
+    console.log(
+      title ? title : 'gasUsed',
+      index ? index : '',
+      'total_Gas:',
+      gasUsed,
+      'excution_Gas',
+      gasUsed - inputGasUsed - 21000,
+      'inputData_Gas:',
+      inputGasUsed,
+      'fee:',
+      transactionfee,
+      'basefee:',
+      basefee,
+    );
+  } else {
+    console.log(
+      title ? title : 'gasUsed',
+      index ? index : '',
+      'total_Gas:',
+      gasUsed,
+      'excution_Gas',
+      gasUsed - inputGasUsed - 21000,
+      'inputData_Gas:',
+      inputGasUsed,
+    );
+  }
+  return {
     gasUsed,
-    'excution_Gas',
-    gasUsed - inputGasUsed - 21000,
-    'inputData_Gas:',
-    inputGasUsed,
-  );
+    gasPrice,
+    transactionfee,
+  };
 };
 
 export const liquidateChallenge = async (
@@ -1041,7 +1054,7 @@ export const updateMakerRule = async (
   const root = utils.hexlify(tree.root);
 
   const currentRootwithVersion = await orMakerDeposit.getVersionAndEnableTime();
-  // console.log('currentRootwithVersion', currentRootwithVersion);
+  console.log('currentRootwithVersion', currentRootwithVersion);
   const version = (await orMakerDeposit.rulesRoot(ebc)).version + 1;
 
   const rootWithVersion = { root, version };

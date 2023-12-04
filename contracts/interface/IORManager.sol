@@ -92,5 +92,5 @@ interface IORManager {
         uint256[] calldata extraTransferContracts
     ) external;
 
-    function getDecoderRLP() external view returns (address);
+    function getRulesDecoder() external view returns (address);
 }

@@ -362,7 +362,7 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
         (ruleKey);
         uint256 freezeAmount0 = freezeAmount1;
-
+        // TODO: Currently it is assumed that the pledged assets of the challenger and the owner are the same
         if (freezeToken == address(0)) {
             require(msg.value == (freezeAmount1 + ConstantsLib.MIN_CHALLENGE_DEPOSIT_AMOUNT), "IF+MD");
             _freezeAssets[freezeToken] += freezeAmount0 + freezeAmount1 + ConstantsLib.MIN_CHALLENGE_DEPOSIT_AMOUNT;
@@ -384,10 +384,7 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             _addChallengeNode(parentNodeNumOfTargetNode, challengeIdentNum);
         }
 
-        // TODO: Currently it is assumed that the pledged assets of the challenger and the owner are the same
-
         // Freeze mdc's owner assets and the assets in of challenger
-        uint128 challengeGasPrice = uint128(block.basefee + IORManager(_mdcFactory.manager()).getPriorityFee());
         _challenges[challengeId].statement[msg.sender] = ChallengeStatement({
             sourceTxFrom: 0,
             sourceTxTime: sourceTxTime,
@@ -399,7 +396,7 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             abortTime: 0,
             sourceTxBlockNum: sourceTxBlockNum,
             sourceTxIndex: sourceTxIndex,
-            challengerVerifyTransactionFee: challengeGasPrice
+            challengerVerifyTransactionFee: uint128(block.basefee + IORManager(_mdcFactory.manager()).getPriorityFee())
         });
         emit ChallengeInfoUpdated({
             challengeId: challengeId,
@@ -417,8 +414,8 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         ChallengeInfo storage challengeInfo = _challenges[challengeId];
         ChallengeStatement memory winnerStatement = challengeInfo.statement[challengeInfo.result.winner];
         ChallengeResult memory result = challengeInfo.result;
-        IORManager manager = IORManager(_mdcFactory.manager());
-        BridgeLib.ChainInfo memory chainInfo = manager.getChainInfo(sourceChainId);
+        // IORManager manager = IORManager(_mdcFactory.manager());
+        BridgeLib.ChainInfo memory chainInfo = IORManager(_mdcFactory.manager()).getChainInfo(sourceChainId);
 
         for (uint256 i = 0; ; ) {
             ChallengeStatement memory challengeStatement = challengeInfo.statement[challengers[i]];
@@ -496,8 +493,8 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
     ) external {
         uint256 startGasNum = gasleft();
         IORManager manager = IORManager(_mdcFactory.manager());
-        BridgeLib.ChainInfo memory chainInfo = manager.getChainInfo(sourceChainId);
-        require(chainInfo.spvs.includes(spvAddress), "SPVI");
+        // BridgeLib.ChainInfo memory chainInfo = manager.getChainInfo(sourceChainId);
+        require(manager.getChainInfo(sourceChainId).spvs.includes(spvAddress), "SPVI");
         // IORChallengeSpv challengeSpv = IORChallengeSpv(spvAddress);
         // require(challengeSpv.verifySourceTx(proof), "VF");
         // HelperLib.PublicInputDataSource memory publicInputData2 = challengeSpv.parseSourceTxProof(proof);
@@ -516,9 +513,9 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         require(publicInputData.chain_id == sourceChainId, "CID");
         bytes32 challengeId = abi.encode(publicInputData.chain_id, publicInputData.tx_hash).hash();
         ChallengeStatement memory statement = _challenges[challengeId].statement[challenger];
-        ChallengeResult memory result = _challenges[challengeId].result;
+        // ChallengeResult memory result = _challenges[challengeId].result;
         require(statement.challengeTime > 0, "CTZ");
-        require(result.verifiedTime0 == 0, "VT0NZ");
+        require(_challenges[challengeId].result.verifiedTime0 == 0, "VT0NZ");
         // Check timestamp
         require(
             publicInputData.mdc_current_rule_enable_time <= publicInputData.time_stamp &&
@@ -551,8 +548,8 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             (address[], address[], uint64[], address)
         );
         require(rlpRuleBytes.hash() == publicInputData.mdc_current_rule_value_hash, "RLPE");
-        // address decoder = IORManager(publicInputData.manage_contract_address).getDecoderRLP();
-        RuleLib.Rule memory rule = IORDecoderRLP(IORManager(publicInputData.manage_contract_address).getDecoderRLP())
+        // address decoder = IORManager(publicInputData.manage_contract_address).getRulesDecoder();
+        RuleLib.Rule memory rule = IORDecoderRLP(IORManager(publicInputData.manage_contract_address).getRulesDecoder())
             .decodeRule(rlpRuleBytes);
         // check _columnArrayHash
         require(abi.encode(dealers, ebcs, chainIds).hash() == publicInputData.mdc_current_column_array_hash, "CHE");
@@ -656,8 +653,8 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         HelperLib.PublicInputDataDest calldata publicInputData
     ) external {
         IORManager manager = IORManager(_mdcFactory.manager());
-        BridgeLib.ChainInfo memory chainInfo = manager.getChainInfo(sourceChainId);
-        require(chainInfo.spvs.includes(spvAddress), "SPVI");
+        // BridgeLib.ChainInfo memory chainInfo = manager.getChainInfo(sourceChainId);
+        require(manager.getChainInfo(sourceChainId).spvs.includes(spvAddress), "SPVI");
         // IORChallengeSpv challengeSpv = IORChallengeSpv(spvAddress);
         // get DestChainInfo
         // require(challengeSpv.verifyDestTx(proof), "VF");

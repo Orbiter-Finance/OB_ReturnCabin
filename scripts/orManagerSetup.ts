@@ -101,7 +101,7 @@ export async function managerSetup() {
 
   if (isTestnet) {
     // updateRLPdecoder
-    const txUpdateRLPdecoder = await orManager.updateDecoderRLP(
+    const txUpdateRLPdecoder = await orManager.updateDecoderAddress(
       envRlpDecoderAddress,
     );
     console.log('Hash of updateRLPdecoder:', txUpdateRLPdecoder.hash);

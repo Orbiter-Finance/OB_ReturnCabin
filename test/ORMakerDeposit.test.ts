@@ -888,7 +888,7 @@ describe('ORMakerDeposit', () => {
     });
 
     it('calculate spv verify gas cost', async function () {
-      // return;
+      return;
       // eslint-disable-next-line prettier/prettier
       // console.log(
       //   'sourceProof',
@@ -1201,8 +1201,8 @@ describe('ORMakerDeposit', () => {
       ];
       const formatDefaultRule = formatRule(defaultRule);
       await updateMakerRule(makerTest, ebc.address, makerRule);
-      await orManager.updateDecoderRLP(rlpDecoder.address);
-      expect(await orManager.getDecoderRLP()).eq(rlpDecoder.address);
+      await orManager.updateDecoderAddress(rlpDecoder.address);
+      expect(await orManager.getRulesDecoder()).eq(rlpDecoder.address);
       const publicInputData: PublicInputData =
         await mainnet2eraSpv.parseSourceTxProof(m2eSourceProof);
 
@@ -1431,7 +1431,7 @@ describe('ORMakerDeposit', () => {
       //   .then((t: any) => t.wait());
 
       expect(tx.status).to.be.eq(1);
-      await calculateTxGas(tx, 'verifyChallengeSourceTx ');
+      await calculateTxGas(tx, 'verifyChallengeSourceTx ', true);
       const destAmount = await spvTest.calculateDestAmount(
         makerRule,
         ebc.address,

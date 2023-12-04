@@ -8,8 +8,6 @@ import {HelperLib} from "../library/HelperLib.sol";
 
 import {Mainnet2EraLib} from "../library/Mainnet2EraLib.sol";
 
-import "hardhat/console.sol";
-
 contract ORChallengeSpvMainnet2Era is IORChallengeSpv, Ownable {
     using Mainnet2EraLib for bytes;
     address private _sourceTxVerifier;
@@ -30,9 +28,7 @@ contract ORChallengeSpvMainnet2Era is IORChallengeSpv, Ownable {
     }
 
     function verifySourceTx(bytes calldata zkProof) external returns (bool) {
-        console.log("verifySourceTx start");
         (bool success, ) = _sourceTxVerifier.call(zkProof);
-        console.log("verifySourceTx end");
         return success && zkProof.checkSourceTxProof();
     }
 
@@ -42,7 +38,6 @@ contract ORChallengeSpvMainnet2Era is IORChallengeSpv, Ownable {
     }
 
     function parseSourceTxProof(bytes calldata zkProof) external pure returns (HelperLib.PublicInputDataSource memory) {
-        console.log("parseSourceTxProof start");
         return zkProof.parsePublicInputSource();
     }
 
