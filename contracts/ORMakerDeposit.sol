@@ -720,7 +720,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
         emit ChallengeInfoUpdated({
             challengeId: challengeId,
-            statement: _challenges[challengeId].statement[msg.sender],
+            statement: _challenges[challengeId].statement[challenger],
             result: _challenges[challengeId].result
         });
     }

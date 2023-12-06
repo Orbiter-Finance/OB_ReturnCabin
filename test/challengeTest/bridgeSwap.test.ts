@@ -121,12 +121,14 @@ describe('MDC TEST ON GOERLI', () => {
     // assert if OR_MDC is undefined
     assert(
       !!process.env['OR_MDC_TEST'] &&
+        !!process.env['OR_MDC'] &&
         !!process.env['EVENT_BINDING_CONTRACT'] &&
         !!process.env['OR_MANAGER_ADDRESS'] &&
         !!process.env['SPV_TEST_ADDRESS'],
       'Env miss [OR_MDC]',
     );
-    const orMakerDepositAddress = process.env['OR_MDC_TEST'];
+    const orMakerDepositTestAddress = process.env['OR_MDC_TEST'];
+    const orMakerDepositAddress = process.env['OR_MDC'];
     const orEBCAddress = process.env['EVENT_BINDING_CONTRACT'];
     const orManagerAddress = process.env['OR_MANAGER_ADDRESS'];
     const spvTestAddress = process.env['SPV_TEST_ADDRESS'];
@@ -134,10 +136,14 @@ describe('MDC TEST ON GOERLI', () => {
     orManager = new ORManager__factory(signers[0]).attach(orManagerAddress);
     console.log('connect to orManager', orManager.address);
 
-    orMakerDeposit = new TestMakerDeposit__factory(mdcOwner).attach(
+    // orMakerDeposit = new TestMakerDeposit__factory(mdcOwner).attach(
+    //   orMakerDepositTestAddress,
+    // );
+    // console.log('connect to makerTest', orMakerDeposit.address);
+
+    orMakerDeposit = new ORMakerDeposit__factory(mdcOwner).attach(
       orMakerDepositAddress,
     );
-    console.log('connect to makerTest', orMakerDeposit.address);
 
     ebc = new OREventBinding__factory(signers[0]).attach(orEBCAddress);
     console.log('connect to ebc', ebc.address);
@@ -169,8 +175,8 @@ describe('MDC TEST ON GOERLI', () => {
       tradingFee1: 1,
       responseTime0: defaultResponseTime,
       responseTime1: defaultResponseTime,
-      compensationRatio0: 40,
-      compensationRatio1: 42,
+      compensationRatio0: 42,
+      compensationRatio1: 49,
     };
 
     sourceChain = makerRule.chainId0.toNumber();
@@ -211,7 +217,7 @@ describe('MDC TEST ON GOERLI', () => {
             .updateColumnArray(enableTime, mdcDealers, mdcEbcs, chainIds, {
               gasLimit: 10000000,
             })
-            .then((t) => t.wait(1));
+            .then((t) => t.wait(3));
 
           // const args = events?.[0].args;
           // expect(args?.impl).eq(implementation);
@@ -254,7 +260,7 @@ describe('MDC TEST ON GOERLI', () => {
           const enableTime = await calculateEnableTime(orMakerDeposit);
           const { events } = await orMakerDeposit
             .updateResponseMakers(enableTime, responseMakerSignatures)
-            .then((t) => t.wait(1));
+            .then((t) => t.wait(3));
 
           const args = events?.[0].args;
           expect(args?.responseMakers).to.deep.eq(responseMakers);
@@ -284,7 +290,7 @@ describe('MDC TEST ON GOERLI', () => {
           to: to,
           value: amount,
         })
-        .then((t) => t.wait(1));
+        .then((t) => t.wait(3));
 
       console.log(
         `from:${signer.address} send ${utils.formatEther(amount)} ETH to:${to}`,
@@ -323,12 +329,12 @@ describe('MDC TEST ON GOERLI', () => {
     };
 
     it('prepare: update maker rule', async function () {
-      // return;
+      return;
       await updateMakerRule(orMakerDeposit, ebc.address, makerRule, true);
     });
 
     let destAmount: BigNumber = BigNumber.from(39989900000);
-    let nonce: number = 96;
+    let nonce: number = 115;
     it('case1: sourceChain send to destChain', async function () {
       // return;
       if (networkId != sourceChain) {

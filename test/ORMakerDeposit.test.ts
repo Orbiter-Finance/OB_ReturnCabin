@@ -1432,6 +1432,13 @@ describe('ORMakerDeposit', () => {
 
       expect(tx.status).to.be.eq(1);
       await calculateTxGas(tx, 'verifyChallengeSourceTx ', true);
+      // console.log(
+      //   '[Event-Source]TransactionFee:',
+      //   BigNumber.from(
+      //     tx.events?.[0].args.statement.challengerVerifyTransactionFee,
+      //   ).toString(),
+      // );
+
       const destAmount = await spvTest.calculateDestAmount(
         makerRule,
         ebc.address,
@@ -1539,6 +1546,14 @@ describe('ORMakerDeposit', () => {
         .then((t: any) => t.wait());
       expect(txDest.status).to.be.eq(1);
       await calculateTxGas(txDest, 'verifyChallengeDestTx ');
+      // console.log(
+      //   '[Event-Dest]TransactionFee:',
+      //   BigNumber.from(
+      //     txDest.events?.[0].args.statement.challengerVerifyTransactionFee,
+      //   ).toString(),
+      //   'event length',
+      //   txDest.events?.length,
+      // );
 
       const challengeList = challengeManager.getChallengeInfoList();
       await liquidateChallenge(makerTest, challengeList, challengerList);

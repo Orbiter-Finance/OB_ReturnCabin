@@ -722,7 +722,7 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
         emit ChallengeInfoUpdated({
             challengeId: challengeId,
-            statement: _challenges[challengeId].statement[msg.sender],
+            statement: statement,
             result: _challenges[challengeId].result
         });
     }

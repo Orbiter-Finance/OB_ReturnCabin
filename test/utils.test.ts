@@ -772,6 +772,12 @@ export const createChallenge = async (
       expect(BigNumber.from(args.statement.freezeAmount1)).eql(
         BigNumber.from(challenge.freezeAmount),
       );
+      // console.log(
+      //   'challengerVerifyTransactionFee:',
+      //   BigNumber.from(
+      //     args.statement.challengerVerifyTransactionFee,
+      //   ).toString(),
+      // );
     }
 
     challengeManager.addChallengeNodeInfo({
@@ -906,10 +912,15 @@ export const liquidateChallenge = async (
     .then((t) => t.wait(1));
   const gasUsed = tx.gasUsed;
   const effectiveGasPrice = tx.effectiveGasPrice;
+
   await calculateTxGas(tx, `Liquidation ${chalengers.length} challengers!`);
   tx.events?.forEach((event, index) => {
     const args = event.args!;
     const challengeNode = challengeNodeList[index];
+    // console.log(
+    //   '[Event-Liqud]TransactionFee:',
+    //   BigNumber.from(args.statement.challengerVerifyTransactionFee).toString(),
+    // );
     expect(args.challengeId).not.empty;
     expect(args.statement.sourceTxTime).eql(
       BigNumber.from(challengeNode.challenge.sourceTxTime),

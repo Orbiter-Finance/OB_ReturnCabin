@@ -343,6 +343,7 @@ export const deployContracts = async (
       mdcOwner,
     ).deploy();
     await makerTest_impl.deployed();
+    console.log('makerTest_impl deployed to:', makerTest_impl.address);
 
     const { factoryAddress, mdcAddress } = await deployMDC(
       deployer,
@@ -362,6 +363,7 @@ export const deployContracts = async (
   if (process.env['OR_MDC'] == undefined) {
     const mdc_impl = await new ORMakerDeposit__factory(mdcOwner).deploy();
     await mdc_impl.deployed();
+    console.log('mdc_impl deployed to:', mdc_impl.address);
 
     const { factoryAddress, mdcAddress } = await deployMDC(
       deployer,
