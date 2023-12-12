@@ -14,7 +14,7 @@ import {RuleLib} from "./library/RuleLib.sol";
 import {ConstantsLib} from "./library/ConstantsLib.sol";
 import {BridgeLib} from "./library/BridgeLib.sol";
 import {VersionAndEnableTime} from "./VersionAndEnableTime.sol";
-import {IORDecoderRLP} from "./interface/IORDecoderRLP.sol";
+import {IORRuleDecoder} from "./interface/IORRuleDecoder.sol";
 import {IORSpvData} from "./interface/IORSpvData.sol";
 
 // import "hardhat/console.sol";
@@ -356,7 +356,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         // Submit challenge before the winner is decided
         require(_challenges[challengeId].result.winner == address(0), "CE");
         // Make sure the source timestamp is before the challenge
-        require(uint64(block.timestamp) >= sourceTxTime, "STOF");
+        require(uint64(block.timestamp) > sourceTxTime, "STOF");
 
         require(_challenges[challengeId].statement[msg.sender].challengeTime == 0, "CT");
 
@@ -414,7 +414,6 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         ChallengeInfo storage challengeInfo = _challenges[challengeId];
         ChallengeStatement memory winnerStatement = challengeInfo.statement[challengeInfo.result.winner];
         ChallengeResult memory result = challengeInfo.result;
-        // IORManager manager = IORManager(_mdcFactory.manager());
         BridgeLib.ChainInfo memory chainInfo = IORManager(_mdcFactory.manager()).getChainInfo(sourceChainId);
 
         for (uint256 i = 0; ; ) {
@@ -492,7 +491,6 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
     ) external {
         uint256 startGasNum = gasleft();
         IORManager manager = IORManager(_mdcFactory.manager());
-        // BridgeLib.ChainInfo memory chainInfo = manager.getChainInfo(sourceChainId);
         require(manager.getChainInfo(sourceChainId).spvs.includes(spvAddress), "SPVI");
         IORChallengeSpv challengeSpv = IORChallengeSpv(spvAddress);
         require(challengeSpv.verifySourceTx(proof), "VF");
@@ -512,7 +510,6 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         require(publicInputData.chain_id == sourceChainId, "CID");
         bytes32 challengeId = abi.encode(publicInputData.chain_id, publicInputData.tx_hash).hash();
         ChallengeStatement memory statement = _challenges[challengeId].statement[challenger];
-        // ChallengeResult memory result = _challenges[challengeId].result;
         require(statement.challengeTime > 0, "CTZ");
         require(_challenges[challengeId].result.verifiedTime0 == 0, "VT0NZ");
         // Check timestamp
@@ -547,8 +544,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             (address[], address[], uint64[], address)
         );
         require(rlpRuleBytes.hash() == publicInputData.mdc_current_rule_value_hash, "RLPE");
-        // address decoder = IORManager(publicInputData.manage_contract_address).getRulesDecoder();
-        RuleLib.Rule memory rule = IORDecoderRLP(IORManager(publicInputData.manage_contract_address).getRulesDecoder())
+        RuleLib.Rule memory rule = IORRuleDecoder(IORManager(publicInputData.manage_contract_address).getRulesDecoder())
             .decodeRule(rlpRuleBytes);
         // check _columnArrayHash
         require(abi.encode(dealers, ebcs, chainIds).hash() == publicInputData.mdc_current_column_array_hash, "CHE");
@@ -578,9 +574,6 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             require(slot == publicInputData.mdc_rule_root_slot, "RRSE");
             require((slot + 1) == publicInputData.mdc_rule_version_slot, "RVSE");
             require(0 == publicInputData.mdc_rule_enable_time_slot, "RVSE");
-            // TODO : current circuit use RLP to encode rule, disable this check for now
-            // Check rule hash
-            // require((abi.encode(rule).hash()) == publicInputData.mdc_current_rule_value_hash, "RH");
         }
         require(3 == publicInputData.mdc_column_array_hash_slot, "CAS");
         require(5 == publicInputData.mdc_response_makers_hash_slot, "RMS");
@@ -596,13 +589,6 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
                 1;
             require(slot == publicInputData.manage_source_chain_mainnet_token_info_slot, "MTS");
         }
-
-        // {
-        //     // check destChain mainnet token slot
-        //     uint slot = uint(abi.encode(abi.encode(ro.destChainId, ro.destToken).hash(), 3).hash());
-        //     require(slot == publicInputData.manage_dest_chain_mainnet_token_slot, "MTS");
-        // }
-        require(6 == publicInputData.manage_challenge_user_ratio_slot, "CURS");
 
         ChallengeStatement storage statement_s = _challenges[challengeId].statement[challenger];
         ChallengeResult storage result_s = _challenges[challengeId].result;
@@ -651,7 +637,6 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         bytes calldata rawDatas
     ) external {
         IORManager manager = IORManager(_mdcFactory.manager());
-        // BridgeLib.ChainInfo memory chainInfo = manager.getChainInfo(sourceChainId);
         require(manager.getChainInfo(sourceChainId).spvs.includes(spvAddress), "SPVI");
         IORChallengeSpv challengeSpv = IORChallengeSpv(spvAddress);
         // get DestChainInfo
@@ -698,7 +683,10 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         require(verifiedSourceTxData.destChainId == publicInputData.chain_id, "DCID");
 
         // Check dest from address in responseMakers
-        require(responseMakers.includes(publicInputData.from), "MIC");
+        require(
+            responseMakers.includes(publicInputData.from) || (uint160(publicInputData.from) == uint160(_owner)),
+            "MIC"
+        );
 
         // Check dest address
         require(verifiedSourceTxData.from == publicInputData.to, "DADDR");

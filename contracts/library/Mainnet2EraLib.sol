@@ -391,12 +391,6 @@ library Mainnet2EraLib {
     function parsePublicInputDest(
         bytes calldata proofData
     ) internal pure returns (HelperLib.PublicInputDataDest memory publicInputDest) {
-        // uint256 ProofLength = 384;
-        // uint256 SplitStep = 32;
-        // uint256 CommitTxSplitStart = ProofLength;
-        // uint256 TransactionSplitStart = CommitTxSplitStart + SplitStep * 14; // 384 is proof length, SplitStep*14 is L1 commit tx;
-        // uint256 TrackBlockSplitStart = TransactionSplitStart + SplitStep * 14;
-
         uint256 ProofLength = 384;
         uint256 SplitStep = 32;
         uint256 TransactionSplitStart = ProofLength; // 384 is proof length

@@ -1267,7 +1267,7 @@ describe('ORMakerDeposit', () => {
       const RLPDecodeRule: RuleStruct = await rlpDecoder.decodeRule(rlpRawdata);
       expect(converRule(RLPDecodeRule)).deep.equals(converRule(makerRule));
       const responseMakersEncodeRaw = await spvTest.encodeResponseMakers([
-        BigNumber.from(mdcOwner.address),
+        constants.AddressZero,
       ]);
       const responseMakersHash = keccak256(responseMakersEncodeRaw);
 
@@ -1497,7 +1497,7 @@ describe('ORMakerDeposit', () => {
         ...publicInputDataDest,
         chain_id: makerRule.chainId1.toHexString(), // align with makerRule
         token: makerRule.token0.toHexString(), // align with makerRule
-        from: makerPublicInputData.to,
+        from: mdcOwner.address,
         to: makerPublicInputData.from,
         amount: BigNumber.from(verifiedDataInfo.destAmount).add(
           verifiedDataInfo.nonce,
