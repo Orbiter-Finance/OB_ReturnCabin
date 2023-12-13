@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import {IORChallengeSpv} from "./IORChallengeSpv.sol";
+import {IORChallengeSpv} from "../interface/IORChallengeSpv.sol";
 import {BridgeLib} from "../library/BridgeLib.sol";
 import {RuleLib} from "../library/RuleLib.sol";
 
@@ -139,22 +139,22 @@ interface IORMakerDeposit {
 
     function checkChallenge(uint64 sourceChainId, bytes32 sourceTxHash, address[] calldata challengers) external;
 
-    function verifyChallengeSource(
-        address challenger,
-        address spvAddress,
-        uint64 sourceChainId,
-        bytes calldata proof,
-        bytes calldata rawDatas,
-        bytes calldata rlpRuleBytes
-    ) external;
+    // function verifyChallengeSource(
+    //     address challenger,
+    //     address spvAddress,
+    //     uint64 sourceChainId,
+    //     bytes calldata proof,
+    //     bytes calldata rawDatas,
+    //     bytes calldata rlpRuleBytes
+    // ) external;
 
-    function verifyChallengeDest(
-        address challenger,
-        address spvAddress,
-        uint64 sourceChainId,
-        bytes32 sourceTxHash,
-        bytes calldata proof,
-        verifiedDataInfo calldata verifiedSourceTxData,
-        bytes calldata rawDatas
-    ) external;
+    // function verifyChallengeDest(
+    //     address challenger,
+    //     address spvAddress,
+    //     uint64 sourceChainId,
+    //     bytes32 sourceTxHash,
+    //     bytes calldata proof,
+    //     verifiedDataInfo calldata verifiedSourceTxData,
+    //     bytes calldata rawDatas
+    // ) external;
 }

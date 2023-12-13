@@ -7,7 +7,7 @@ import {RLPReader} from "../library/RLPReader.sol";
 contract RLPDecoder is IORRuleDecoder {
     using RLPReader for bytes;
 
-    function decodeRule(bytes memory rlpBytes) public pure returns (RuleLib.Rule memory rule) {
+    function decodeRule(bytes memory rlpBytes) public pure override returns (RuleLib.Rule memory rule) {
         rule = rlpBytes.decodeRule();
     }
 }

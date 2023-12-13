@@ -488,18 +488,26 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         bytes calldata proof,
         bytes calldata rawDatas,
         bytes calldata rlpRuleBytes
-    ) external {
+    ) external override {
         uint256 startGasNum = gasleft();
         IORManager manager = IORManager(_mdcFactory.manager());
         require(manager.getChainInfo(sourceChainId).spvs.includes(spvAddress), "SPVI");
         IORChallengeSpv challengeSpv = IORChallengeSpv(spvAddress);
         require(challengeSpv.verifySourceTx(proof), "VF");
         HelperLib.PublicInputDataSource memory publicInputData = challengeSpv.parseSourceTxProof(proof);
-        for (uint i = 0; i < publicInputData.merkle_roots.length; i++) {
+        for (uint256 i = 0; ; ) {
             require(
                 IORSpvData(manager.spvDataContract()).getStartBlockNumber(publicInputData.merkle_roots[i]) != 0,
                 "IBL"
             );
+
+            if (i == publicInputData.merkle_roots.length - 1) {
+                break;
+            }
+
+            unchecked {
+                i++;
+            }
         }
         require(
             (publicInputData.manage_contract_address == _mdcFactory.manager()) &&
@@ -635,7 +643,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         bytes calldata proof,
         verifiedDataInfo calldata verifiedSourceTxData,
         bytes calldata rawDatas
-    ) external {
+    ) external override {
         IORManager manager = IORManager(_mdcFactory.manager());
         require(manager.getChainInfo(sourceChainId).spvs.includes(spvAddress), "SPVI");
         IORChallengeSpv challengeSpv = IORChallengeSpv(spvAddress);
@@ -643,11 +651,19 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         require(challengeSpv.verifyDestTx(proof), "VF");
         // parse Public input
         HelperLib.PublicInputDataDest memory publicInputData = challengeSpv.parseDestTxProof(proof);
-        for (uint i = 0; i < publicInputData.merkle_roots.length; i++) {
+        for (uint256 i = 0; ; ) {
             require(
                 IORSpvData(manager.spvDataContract()).getStartBlockNumber(publicInputData.merkle_roots[i]) != 0,
                 "IBL"
             );
+
+            if (i == publicInputData.merkle_roots.length - 1) {
+                break;
+            }
+
+            unchecked {
+                i++;
+            }
         }
         bytes32 challengeId = abi.encode(sourceChainId, sourceTxHash).hash();
         ChallengeStatement memory statement = _challenges[challengeId].statement[challenger];

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import {IORMakerDeposit} from "../interface/IORMakerDeposit.sol";
+import {IORMakerDeposit} from "./IORTestMakerDeposit.sol";
 import {IORManager} from "../interface/IORManager.sol";
 import {IORMDCFactory} from "../interface/IORMDCFactory.sol";
 import {IORChallengeSpv} from "../interface/IORChallengeSpv.sol";
@@ -497,11 +497,19 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         // IORChallengeSpv challengeSpv = IORChallengeSpv(spvAddress);
         // require(challengeSpv.verifySourceTx(proof), "VF");
         // HelperLib.PublicInputDataSource memory publicInputData2 = challengeSpv.parseSourceTxProof(proof);
-        for (uint i = 0; i < publicInputData.merkle_roots.length; i++) {
+        for (uint256 i = 0; ; ) {
             require(
                 IORSpvData(manager.spvDataContract()).getStartBlockNumber(publicInputData.merkle_roots[i]) != 0,
                 "IBL"
             );
+
+            if (i == publicInputData.merkle_roots.length - 1) {
+                break;
+            }
+
+            unchecked {
+                i++;
+            }
         }
         require(
             (publicInputData.manage_contract_address == _mdcFactory.manager()) &&
@@ -647,11 +655,19 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         // require(challengeSpv.verifyDestTx(proof), "VF");
         // parse Public input
         // HelperLib.PublicInputDataDest memory publicInputData2 = challengeSpv.parseDestTxProof(proof);
-        for (uint i = 0; i < publicInputData.merkle_roots.length; i++) {
+        for (uint256 i = 0; ; ) {
             require(
                 IORSpvData(manager.spvDataContract()).getStartBlockNumber(publicInputData.merkle_roots[i]) != 0,
                 "IBL"
             );
+
+            if (i == publicInputData.merkle_roots.length - 1) {
+                break;
+            }
+
+            unchecked {
+                i++;
+            }
         }
         bytes32 challengeId = abi.encode(sourceChainId, sourceTxHash).hash();
         ChallengeStatement memory statement = _challenges[challengeId].statement[challenger];
