@@ -326,6 +326,7 @@ export const createRandomChallenge = async (
 export const deployContracts = async (
   deployer: SignerWithAddress,
   mdcOwner: SignerWithAddress,
+  deploeyTestContracts: boolean = false,
 ) => {
   if (process.env['OR_MANAGER_ADDRESS'] == undefined) {
     const orManager = await new ORManager__factory(deployer).deploy(
@@ -338,7 +339,7 @@ export const deployContracts = async (
     console.log('existing orManager:', process.env['OR_MANAGER_ADDRESS']!);
   }
 
-  if (process.env['OR_MDC_TEST'] == undefined) {
+  if (process.env['OR_MDC_TEST'] == undefined && deploeyTestContracts) {
     const makerTest_impl = await new TestMakerDeposit__factory(
       mdcOwner,
     ).deploy();
@@ -356,8 +357,13 @@ export const deployContracts = async (
     console.log('test factory deployed to:', factoryAddress);
     console.log('test MDC deployed to:', mdcAddress);
   } else {
-    console.log('existing test MDC:', process.env['OR_MDC_TEST']!);
-    console.log('existing test factory:', process.env['OR_MDC_FACTORY_TEST']!);
+    if (deploeyTestContracts) {
+      console.log('existing test MDC:', process.env['OR_MDC_TEST']!);
+      console.log(
+        'existing test factory:',
+        process.env['OR_MDC_FACTORY_TEST']!,
+      );
+    }
   }
 
   if (process.env['OR_MDC'] == undefined) {
@@ -398,14 +404,15 @@ export const deployContracts = async (
     console.log('existing rlpDecoder:', process.env['RLP_DECODER_ADDRESS']!);
   }
 
-  if (process.env['SPV_TEST_ADDRESS'] == undefined) {
+  if (process.env['SPV_TEST_ADDRESS'] == undefined && deploeyTestContracts) {
     const spvTest = await new TestSpv__factory(mdcOwner).deploy(
       constants.AddressZero,
     );
     console.log('spvTest deployed to:', spvTest.address);
     process.env['SPV_TEST_ADDRESS'] = spvTest.address;
   } else {
-    console.log('existing spvTest:', process.env['SPV_TEST_ADDRESS']!);
+    if (deploeyTestContracts)
+      console.log('existing spvTest:', process.env['SPV_TEST_ADDRESS']!);
   }
 
   if (process.env['SPV_ADDRESS'] == undefined) {
