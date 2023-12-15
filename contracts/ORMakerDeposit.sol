@@ -520,11 +520,14 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         ChallengeStatement memory statement = _challenges[challengeId].statement[challenger];
         require(statement.challengeTime > 0, "CTZ");
         require(_challenges[challengeId].result.verifiedTime0 == 0, "VT0NZ");
+
         // Check timestamp
         require(
-            publicInputData.mdc_current_rule_enable_time <= publicInputData.time_stamp &&
-                publicInputData.time_stamp == statement.sourceTxTime &&
-                statement.sourceTxTime < publicInputData.mdc_next_rule_enable_time,
+            ((publicInputData.mdc_current_rule_enable_time <= publicInputData.time_stamp &&
+                statement.sourceTxTime < publicInputData.mdc_next_rule_enable_time) ||
+                (publicInputData.mdc_current_rule_enable_time == publicInputData.mdc_next_rule_enable_time &&
+                    publicInputData.mdc_next_rule_enable_time < statement.sourceTxTime)) &&
+                publicInputData.time_stamp == statement.sourceTxTime,
             "ST"
         );
         //Chcek Tx Index

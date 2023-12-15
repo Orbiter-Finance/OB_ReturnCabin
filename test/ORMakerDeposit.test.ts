@@ -1186,18 +1186,18 @@ describe('ORMakerDeposit', () => {
         1,
         0,
         0,
-        10000000000,
-        10000000000,
-        BigNumber.from('100000000000000000000'),
-        BigNumber.from('100000000000000000000'),
-        10000000000,
         20000000000,
+        20000000000,
+        BigNumber.from('100000000000000000000'),
+        BigNumber.from('100000000000000000000'),
+        10000000,
+        20000000,
         1,
         1,
         604800,
         604800,
-        32,
-        31,
+        42,
+        49,
       ];
       const formatDefaultRule = formatRule(defaultRule);
       await updateMakerRule(makerTest, ebc.address, makerRule);
@@ -1205,11 +1205,20 @@ describe('ORMakerDeposit', () => {
       expect(await orManager.getRulesDecoder()).eq(rlpDecoder.address);
       const publicInputData: PublicInputData =
         await mainnet2eraSpv.parseSourceTxProof(m2eSourceProof);
+      console.log('publicInputData', publicInputData);
 
-      // const merkleRootsSet = new Set(publicInputData.merkle_roots);
+      const publicInputDataDest: PublicInputDataDest =
+        await mainnet2eraSpv.parseDestTxProof(m2eDestProof);
+
       await mockSpvData(
         ORSpvData,
-        Array.from(new Set(publicInputData.merkle_roots)),
+        Array.from(
+          new Set(
+            publicInputDataDest.merkle_roots.concat(
+              publicInputData.merkle_roots,
+            ),
+          ),
+        ),
       );
 
       {
@@ -1289,6 +1298,7 @@ describe('ORMakerDeposit', () => {
         mdc_rule_version_slot: verifyInfo.slots[7].key, // ebc not same
         mdc_current_rule_value_hash: encodeHash, // rule not compatible
         mdc_current_response_makers_hash: responseMakersHash, // response maker not same
+        // mdc_next_rule_enable_time: publicInputData.mdc_current_rule_enable_time,
       };
 
       const rulesKey = calculateRuleKey(converRule(makerRule));
@@ -1477,9 +1487,6 @@ describe('ORMakerDeposit', () => {
       expect(verifiedDataHash).eq(tx.events[0].args.result.verifiedDataHash0);
 
       await mineXTimes(2);
-
-      const publicInputDataDest: PublicInputDataDest =
-        await mainnet2eraSpv.parseDestTxProof(m2eDestProof);
 
       const verifiedDataInfo: VerifiedDataInfo = {
         minChallengeSecond: verifiedDataHashData[0],

@@ -189,7 +189,7 @@ describe('MDC TEST ON GOERLI', () => {
     };
   });
 
-  describe.skip('part1 - update maker', function () {
+  describe('part1 - update maker', function () {
     it(
       'Function updateColumnArray should emit events and update hash',
       embedVersionIncreaseAndEnableTime(
@@ -217,7 +217,7 @@ describe('MDC TEST ON GOERLI', () => {
             .updateColumnArray(enableTime, mdcDealers, mdcEbcs, chainIds, {
               gasLimit: 10000000,
             })
-            .then((t) => t.wait(3));
+            .then((t) => t.wait());
 
           // const args = events?.[0].args;
           // expect(args?.impl).eq(implementation);
@@ -260,7 +260,7 @@ describe('MDC TEST ON GOERLI', () => {
           const enableTime = await calculateEnableTime(orMakerDeposit);
           const { events } = await orMakerDeposit
             .updateResponseMakers(enableTime, responseMakerSignatures)
-            .then((t) => t.wait(3));
+            .then((t) => t.wait());
 
           const args = events?.[0].args;
           expect(args?.responseMakers).to.deep.eq(responseMakers);
@@ -274,11 +274,11 @@ describe('MDC TEST ON GOERLI', () => {
     );
 
     it('prepare: update maker rule', async function () {
-      await updateMakerRule(orMakerDeposit, ebc.address, makerRule, true);
+      await updateMakerRule(orMakerDeposit, ebc.address, makerRule, false);
     });
   });
 
-  describe('part2 - send ETH', function () {
+  describe.skip('part2 - send ETH', function () {
     const sendETH = async function (
       signer: SignerWithAddress,
       to: string,
@@ -290,7 +290,7 @@ describe('MDC TEST ON GOERLI', () => {
           to: to,
           value: amount,
         })
-        .then((t) => t.wait(3));
+        .then((t) => t.wait());
 
       console.log(
         `from:${signer.address} send ${utils.formatEther(amount)} ETH to:${to}`,
