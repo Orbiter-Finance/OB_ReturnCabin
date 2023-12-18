@@ -112,4 +112,20 @@ contract testSpv {
         require(succeed, "verify fail");
         return succeed;
     }
+
+    struct verifiedDataInfo {
+        uint256 minChallengeSecond;
+        uint256 maxChallengeSecond;
+        uint256 nonce;
+        uint256 destChainId;
+        uint256 from;
+        uint256 destToken;
+        uint256 destAmount;
+        uint256 responseMakersHash;
+        uint256 responseTime;
+    }
+
+    function encodeVerifiedData(verifiedDataInfo calldata verifiedSourceTxData) external pure returns (bytes32) {
+        return abi.encode(verifiedSourceTxData).hash();
+    }
 }

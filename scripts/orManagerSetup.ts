@@ -23,7 +23,9 @@ export async function managerSetup() {
   const mdcOwner = signers[2];
   console.log('deployer:', deployer.address);
   const networkId = (await ethers.provider.getNetwork()).chainId;
-  const isTestnet = networkId === 31337 || networkId === 5;
+  console.log('current networkId', networkId);
+  const isTestnet =
+    networkId === 31337 || networkId === 5 || networkId === 11155111;
   if (isTestnet) {
     await deployContracts(deployer, mdcOwner);
   }
@@ -55,31 +57,37 @@ export async function managerSetup() {
       })) as never)
     : config.chains;
 
-  const tx1 = await orManager.registerChains(
-    await calculateEnableTime(orManager),
-    config.chains,
-  );
   console.log(
     'chainInfo',
     config.chains.map((chain) => chain),
   );
+
+  const tx1 = await orManager.registerChains(
+    await calculateEnableTime(orManager),
+    config.chains,
+  );
+
   console.log('Hash of registerChains:', tx1.hash);
+
   await tx1.wait(3);
   config.ebcs.push(process.env['EVENT_BINDING_CONTRACT']! as never);
   const chainIds: BigNumberish[] = [];
   const tokens: BridgeLib.TokenInfoStruct[] = [];
+
   for (const chain of config.chains) {
     for (const token of chain.tokens) {
       chainIds.push(chain.id);
       tokens.push(token);
     }
   }
+  console.log('update tokens', tokens);
 
   // updateChainTokens
   if (tokens.length === 0) {
     console.error('Miss tokens');
     return;
   }
+
   const tx2 = await orManager.updateChainTokens(
     await calculateEnableTime(orManager),
     chainIds,
@@ -107,7 +115,7 @@ export async function managerSetup() {
     await txUpdateRLPdecoder.wait(3);
 
     // updateChallengeUserRatio
-    const challengeUserRatio = 15;
+    const challengeUserRatio = 1000;
     const txUpdateRatio = await orManager.updateChallengeUserRatio(
       await calculateEnableTime(orManager),
       challengeUserRatio,

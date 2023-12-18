@@ -887,43 +887,49 @@ describe('ORMakerDeposit', () => {
       console.log('connect of makerTest:', makerTest.address);
     });
 
+    const skipGasCostTest = false;
     it('calculate spv verify gas cost', async function () {
-      return;
-      // eslint-disable-next-line prettier/prettier
-      // console.log(
-      //   'sourceProof',
-      //   await spvTest.parseSourceProof(m2eSourceProof),
-      // );
-      const tx = await mainnet2eraSpv
-        .verifySourceTx(m2eSourceProof)
-        .then((t: any) => t.wait());
-      expect(tx.status).to.be.eq(1);
-      await calculateTxGas(tx, 'spvVerifySourceTx');
-      expect(
-        await spvTest.verifySourceTx(m2eSourceProof, mainnet2eraSpv.address),
-      ).to.satisfy;
+      if (!skipGasCostTest) {
+        const paresSourcePoorf: boolean = false;
+        const pareseDestProof: boolean = false;
+        const tx = await mainnet2eraSpv
+          .verifySourceTx(m2eSourceProof)
+          .then((t: any) => t.wait());
+        expect(tx.status).to.be.eq(1);
+        expect(
+          await spvTest.verifySourceTx(m2eSourceProof, mainnet2eraSpv.address),
+        ).to.satisfy;
+        console.log('mainnet2era sourceProof verify Pass');
+        await calculateTxGas(tx, 'spvVerifySourceTx');
+        if (paresSourcePoorf) {
+          console.log(
+            'era2mainnet, paresSourcePoorf',
+            await era2mainnetSpv.parseSourceTxProof(e2mSourceProof),
+          );
+        }
+        expect(
+          await spvTest.verifySourceTx(e2mSourceProof, era2mainnetSpv.address),
+        ).to.satisfy;
+        console.log('era2mainnet sourceProof verify Pass');
+        const txDest = await mainnet2eraSpv
+          .verifyDestTx(m2eDestProof)
+          .then((t: any) => t.wait());
+        expect(txDest.status).to.be.eq(1);
+        expect(await spvTest.verifyDestTx(m2eDestProof, mainnet2eraSpv.address))
+          .to.satisfy;
+        console.log('mainnet2era destProof verify Pass');
+        // await calculateTxGas(txDest, 'spvVerifyDestTx');
 
-      // console.log(
-      //   'era2mainnet, paresSourcePoorf',
-      //   await era2mainnetSpv.parseSourceTxProof(e2mSourceProof),
-      // );
-      expect(
-        await spvTest.verifySourceTx(e2mSourceProof, era2mainnetSpv.address),
-      ).to.satisfy;
-      // console.log('destProof', await spvTest.parseDestProof(m2eDestProof));
-      const txDest = await mainnet2eraSpv
-        .verifyDestTx(m2eDestProof)
-        .then((t: any) => t.wait());
-      expect(txDest.status).to.be.eq(1);
-      await calculateTxGas(txDest, 'spvVerifyDestTx');
-      expect(await spvTest.verifyDestTx(m2eDestProof, mainnet2eraSpv.address))
-        .to.satisfy;
-      // console.log(
-      //   'era2mainnet, pareseDestProof',
-      //   await era2mainnetSpv.parseDestTxProof(e2mDestProof),
-      // );
-      expect(await spvTest.verifyDestTx(e2mDestProof, era2mainnetSpv.address))
-        .to.satisfy;
+        if (pareseDestProof) {
+          console.log(
+            'era2mainnet, pareseDestProof',
+            await era2mainnetSpv.parseDestTxProof(e2mDestProof),
+          );
+        }
+        expect(await spvTest.verifyDestTx(e2mDestProof, era2mainnetSpv.address))
+          .to.satisfy;
+        console.log('era2mainnet destProof verify Pass');
+      }
     });
 
     it('test function challenge _addChallengeNode', async function () {
@@ -1179,6 +1185,7 @@ describe('ORMakerDeposit', () => {
       console.log('connect of ORSpvData:', ORSpvData.address);
 
       challengeManager.initialize();
+
       let defaultRule: BigNumberish[] = [
         5,
         280,
@@ -1205,7 +1212,6 @@ describe('ORMakerDeposit', () => {
       expect(await orManager.getRulesDecoder()).eq(rlpDecoder.address);
       const publicInputData: PublicInputData =
         await mainnet2eraSpv.parseSourceTxProof(m2eSourceProof);
-      console.log('publicInputData', publicInputData);
 
       const publicInputDataDest: PublicInputDataDest =
         await mainnet2eraSpv.parseDestTxProof(m2eDestProof);
@@ -1275,8 +1281,9 @@ describe('ORMakerDeposit', () => {
       );
       const RLPDecodeRule: RuleStruct = await rlpDecoder.decodeRule(rlpRawdata);
       expect(converRule(RLPDecodeRule)).deep.equals(converRule(makerRule));
+      const defaultRessponseMakers = mdcOwner.address;
       const responseMakersEncodeRaw = await spvTest.encodeResponseMakers([
-        constants.AddressZero,
+        defaultRessponseMakers,
       ]);
       const responseMakersHash = keccak256(responseMakersEncodeRaw);
 
@@ -1390,32 +1397,6 @@ describe('ORMakerDeposit', () => {
         );
       }
 
-      // await testReverted(
-      //   makerTest.verifyChallengeSource(
-      //     challengerList[0],
-      //     Wallet.createRandom().address,
-      //     makerPublicInputData.chain_id,
-      //     makerPublicInputData,
-      //     m2eSourceProof,
-      //     rawData,
-      //     rlpRawdata,
-      //   ),
-      //   'SPVI',
-      // );
-
-      // await testReverted(
-      //   makerTest.verifyChallengeSource(
-      //     challengerList[0],
-      //     mainnet2eraSpv.address,
-      //     makerPublicInputData.chain_id,
-      //     makerPublicInputData,
-      //     BigNumber.from(m2eSourceProof).add(1).toHexString(),
-      //     rawData,
-      //     rlpRawdata,
-      //   ),
-      //   'VF',
-      // );
-
       const tx = await makerTest
         .verifyChallengeSource(
           challengerList[0],
@@ -1427,18 +1408,6 @@ describe('ORMakerDeposit', () => {
           rlpRawdata,
         )
         .then((t: any) => t.wait());
-
-      // const tx2 = await orMakerDeposit
-      //   .verifyChallengeSource(
-      //     challengerList[0],
-      //     mainnet2eraSpv.address,
-      //     makerPublicInputData.chain_id,
-      //     // makerPublicInputData,
-      //     m2eSourceProof,
-      //     rawData,
-      //     rlpRawdata,
-      //   )
-      //   .then((t: any) => t.wait());
 
       expect(tx.status).to.be.eq(1);
       await calculateTxGas(tx, 'verifyChallengeSourceTx ', true);
@@ -1467,6 +1436,31 @@ describe('ORMakerDeposit', () => {
         makerPublicInputData.mdc_current_response_makers_hash,
         makerRule.responseTime0,
       ];
+
+      const destAmount2 = await spvTest.calculateDestAmount(
+        formatDefaultRule,
+        ebc.address,
+        makerPublicInputData.chain_id,
+        makerPublicInputData.amount,
+      );
+
+      const verifiedDataInfo2: VerifiedDataInfo = {
+        minChallengeSecond: publicInputData.min_verify_challenge_dest_tx_second,
+        maxChallengeSecond: publicInputData.max_verify_challenge_dest_tx_second,
+        nonce: publicInputData.nonce,
+        destChainId: verifiedDataHashData[3],
+        from: publicInputData.from,
+        destToken: verifiedDataHashData[5],
+        destAmount: BigNumber.from(99999900000000),
+        responseMakersHash: publicInputData.mdc_current_response_makers_hash,
+        responseTime: verifiedDataHashData[8],
+      };
+
+      const encodeVerifiedDataHash = await spvTest.encodeVerifiedData(
+        verifiedDataInfo2,
+      );
+      // console.log('verifiedDataInfo2', verifiedDataInfo2);
+      // console.log('encodeVerifiedDataHash', encodeVerifiedDataHash);
 
       const verifiedDataHash = keccak256(
         solidityPack(

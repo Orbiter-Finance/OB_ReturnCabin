@@ -112,44 +112,50 @@ describe('MDC TEST ON GOERLI', () => {
     signers = await ethers.getSigners();
     mdcOwner = signers[2];
     networkId = (await ethers.provider.getNetwork()).chainId;
+    const isTestnet =
+      networkId === 31337 || networkId === 5 || networkId === 11155111;
     console.log('networkId:', networkId);
 
-    if (networkId == 31337 || networkId == 5) {
+    if (isTestnet) {
       await deployContracts(signers[0], mdcOwner);
     }
 
     // assert if OR_MDC is undefined
     assert(
-      !!process.env['OR_MDC_TEST'] &&
-        !!process.env['OR_MDC'] &&
+      (!!process.env['OR_MDC_TEST'] || !!process.env['OR_MDC']) &&
         !!process.env['EVENT_BINDING_CONTRACT'] &&
-        !!process.env['OR_MANAGER_ADDRESS'] &&
-        !!process.env['SPV_TEST_ADDRESS'],
+        !!process.env['OR_MANAGER_ADDRESS'],
+      // &&!!process.env['SPV_TEST_ADDRESS'],
       'Env miss [OR_MDC]',
     );
     const orMakerDepositTestAddress = process.env['OR_MDC_TEST'];
     const orMakerDepositAddress = process.env['OR_MDC'];
     const orEBCAddress = process.env['EVENT_BINDING_CONTRACT'];
     const orManagerAddress = process.env['OR_MANAGER_ADDRESS'];
-    const spvTestAddress = process.env['SPV_TEST_ADDRESS'];
+    // const spvTestAddress = process.env['SPV_TEST_ADDRESS'];
 
     orManager = new ORManager__factory(signers[0]).attach(orManagerAddress);
     console.log('connect to orManager', orManager.address);
 
-    // orMakerDeposit = new TestMakerDeposit__factory(mdcOwner).attach(
-    //   orMakerDepositTestAddress,
-    // );
-    // console.log('connect to makerTest', orMakerDeposit.address);
+    if (orMakerDepositTestAddress != undefined) {
+      orMakerDeposit = new TestMakerDeposit__factory(mdcOwner).attach(
+        orMakerDepositTestAddress,
+      );
+      console.log('connect to makerTest', orMakerDeposit.address);
+    }
 
-    orMakerDeposit = new ORMakerDeposit__factory(mdcOwner).attach(
-      orMakerDepositAddress,
-    );
+    if (orMakerDepositAddress != undefined) {
+      orMakerDeposit = new ORMakerDeposit__factory(mdcOwner).attach(
+        orMakerDepositAddress,
+      );
+      console.log('connect to maker', orMakerDeposit.address);
+    }
 
     ebc = new OREventBinding__factory(signers[0]).attach(orEBCAddress);
     console.log('connect to ebc', ebc.address);
 
-    spvTest = new TestSpv__factory(signers[0]).attach(spvTestAddress);
-    console.log('connect to spvTest', spvTest.address);
+    // spvTest = new TestSpv__factory(signers[0]).attach(spvTestAddress);
+    // console.log('connect to spvTest', spvTest.address);
 
     // await managerUpdateEBC(orManager, ebc.address);
 
@@ -159,8 +165,8 @@ describe('MDC TEST ON GOERLI', () => {
 
     ebcs = lodash.cloneDeep(orManagerEbcs);
     makerRule = {
-      chainId0: BigNumber.from(5),
-      chainId1: BigNumber.from(280),
+      chainId0: BigNumber.from(300),
+      chainId1: BigNumber.from(11155111),
       status0: 1,
       status1: 1,
       token0: BigNumber.from(0),
@@ -175,17 +181,20 @@ describe('MDC TEST ON GOERLI', () => {
       tradingFee1: 1,
       responseTime0: defaultResponseTime,
       responseTime1: defaultResponseTime,
-      compensationRatio0: 42,
-      compensationRatio1: 49,
+      compensationRatio0: 100,
+      compensationRatio1: 120,
     };
 
     sourceChain = makerRule.chainId0.toNumber();
     destChain = makerRule.chainId1.toNumber();
     defaultRule = converRule(makerRule);
+    const chains = defaultChainInfoArray.map((chainInfo) => {
+      return lodash.cloneDeepWith(chainInfo);
+    });
     columnArray = {
       dealers: [mdcOwner.address],
       ebcs: [process.env['EVENT_BINDING_CONTRACT']!],
-      chainIds: [5, 420, 421613, 280, 534351],
+      chainIds: [],
     };
   });
 
@@ -217,7 +226,7 @@ describe('MDC TEST ON GOERLI', () => {
             .updateColumnArray(enableTime, mdcDealers, mdcEbcs, chainIds, {
               gasLimit: 10000000,
             })
-            .then((t) => t.wait());
+            .then((t) => t.wait(3));
 
           // const args = events?.[0].args;
           // expect(args?.impl).eq(implementation);
@@ -235,7 +244,7 @@ describe('MDC TEST ON GOERLI', () => {
       embedVersionIncreaseAndEnableTime(
         () => orMakerDeposit.getVersionAndEnableTime().then((r) => r.version),
         async function () {
-          const responseSigners = signers.slice(1, 2);
+          const responseSigners = signers.slice(0, 1);
           const responseMakers: BigNumberish[] = [];
           const responseMakerSignatures: BytesLike[] = [];
           const message = arrayify(
@@ -274,7 +283,7 @@ describe('MDC TEST ON GOERLI', () => {
     );
 
     it('prepare: update maker rule', async function () {
-      await updateMakerRule(orMakerDeposit, ebc.address, makerRule, false);
+      await updateMakerRule(orMakerDeposit, ebc.address, makerRule, true);
     });
   });
 

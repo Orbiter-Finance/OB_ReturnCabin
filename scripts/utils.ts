@@ -21,6 +21,7 @@ import {
   ORManager,
   ORSpvData__factory,
   ORChallengeSpvEra2Mainnet__factory,
+  ORChallengeSpvEra2Mainnet,
 } from '../typechain-types';
 import { PromiseOrValue } from '../typechain-types/common';
 import { BigNumber, BigNumberish, BytesLike, constants, utils } from 'ethers';
@@ -29,6 +30,7 @@ import { promises } from 'dns';
 import { random } from 'lodash';
 import { defaultResponseTime } from '../test/lib/mockData';
 import { expect } from 'chai';
+import { deploy } from './deploy';
 
 export function printContract(title: string, content?: string) {
   console.info(chalk.red(title, chalk.underline.green(content || '')));
@@ -179,6 +181,81 @@ export const getSpvProof = (spvType: SPVTypeEnum = SPVTypeEnum.mainnet2era) => {
   };
 };
 
+export interface updateSpvType {
+  sourceTx: boolean;
+  destTx: boolean;
+}
+
+export const deploySpvYul = async (
+  bytesCode: string,
+  deployer: SignerWithAddress,
+): Promise<string> => {
+  const verifierFactory = new ethers.ContractFactory(
+    VerifierAbi,
+    bytesCode!,
+    deployer,
+  );
+
+  const spvSource: { address: PromiseOrValue<string> } =
+    await verifierFactory.deploy();
+  return spvSource.address;
+};
+
+export const hotUpdateSpvVerifier = async (
+  spv: ORChallengeSpvMainnet2Era | ORChallengeSpvEra2Mainnet,
+  updateType: updateSpvType,
+  spvType: SPVTypeEnum = SPVTypeEnum.mainnet2era,
+  deployer: SignerWithAddress,
+): Promise<void> => {
+  let sourceTxVerifier: string;
+  let destTxVerifier: string;
+  await spv.getSpvVerifierAddr().then((currVerifier) => {
+    sourceTxVerifier = currVerifier[0];
+    destTxVerifier = currVerifier[1];
+    console.log(
+      'before update,',
+      'current sourceTxVerifier:',
+      currVerifier[0],
+      'destTxVerifier:',
+      currVerifier[1],
+    );
+  });
+  if (updateType.sourceTx == true) {
+    const verifySourceBytesCode =
+      spvType == SPVTypeEnum.mainnet2era
+        ? await compile_yul('contracts/zkp/mainnet2eraSpvVerifier.SourceTx.yul')
+        : await compile_yul(
+            'contracts/zkp/era2mainnetSpvVerifier.SourceTx.yul',
+          );
+
+    sourceTxVerifier = await deploySpvYul(verifySourceBytesCode!, deployer);
+    console.log('new sourceTxVerifier:', sourceTxVerifier);
+  }
+
+  if (updateType.destTx == true) {
+    const verifyDestBytesCode =
+      spvType == SPVTypeEnum.mainnet2era
+        ? await compile_yul('contracts/zkp/mainnet2eraSpvVerifier.DestTx.yul')
+        : await compile_yul('contracts/zkp/era2mainnetSpvVerifier.DestTx.yul');
+    destTxVerifier = await deploySpvYul(verifyDestBytesCode!, deployer);
+    console.log('new destTxVerifier:', destTxVerifier);
+  }
+
+  await spv.setSpvVerifierAddr(sourceTxVerifier!, destTxVerifier!).then((t) => {
+    t.wait(2);
+  });
+
+  await spv.getSpvVerifierAddr().then((currVerifier) => {
+    console.log(
+      'after update,',
+      'current sourceTxVerifier:',
+      currVerifier[0],
+      'destTxVerifier:',
+      currVerifier[1],
+    );
+  });
+};
+
 export const deploySPVs = async (
   deployer: SignerWithAddress,
   spvType: SPVTypeEnum = SPVTypeEnum.mainnet2era,
@@ -207,27 +284,13 @@ export const deploySPVs = async (
     );
   }
 
-  const verifierDestFactory = new ethers.ContractFactory(
-    VerifierAbi,
-    verifyDestBytesCode!,
-    mdcOwner,
-  );
-
-  const verifierSourceFactory = new ethers.ContractFactory(
-    VerifierAbi,
-    verifySourceBytesCode!,
-    mdcOwner,
-  );
-
-  const spvSource: { address: PromiseOrValue<string> } =
-    await verifierSourceFactory.deploy();
-
-  const spvDest: { address: PromiseOrValue<string> } =
-    await verifierDestFactory.deploy();
+  const spvSourceAddress = await deploySpvYul(verifySourceBytesCode!, mdcOwner);
+  const spvDestAddress = await deploySpvYul(verifyDestBytesCode!, mdcOwner);
 
   const spv: ORChallengeSpvMainnet2Era = await new contractFactory!(
     mdcOwner,
-  ).deploy(spvSource.address, spvDest.address);
+  ).deploy(spvSourceAddress, spvDestAddress);
+
   await spv.deployed();
   return spv.address;
 };
