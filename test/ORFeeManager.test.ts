@@ -17,18 +17,18 @@ import {
   submitterMock,
 } from './lib/mockData';
 
-describe('ORFeeManger', () => {
+describe('ORFeeManager', () => {
   let signers: SignerWithAddress[];
   let orManager: ORManager;
   let orFeeManager: ORFeeManager;
   let dealerSinger: SignerWithAddress;
-  let feeMangerOwner: string;
+  let feeManagerOwner: string;
 
   before(async function () {
     initTestToken();
     signers = await ethers.getSigners();
     dealerSinger = signers[2];
-    feeMangerOwner = signers[0].address;
+    feeManagerOwner = signers[0].address;
 
     const envORManagerAddress = process.env['OR_MANAGER_ADDRESS'];
     assert(
@@ -54,7 +54,8 @@ describe('ORFeeManger', () => {
 
     console.log(
       // eslint-disable-next-line prettier/prettier
-      `Address of orFeeManager: ${orFeeManager.address
+      `Address of orFeeManager: ${
+        orFeeManager.address
       }, deployed blockNumber: ${await ethers.provider.getBlockNumber()} `,
     );
     await orFeeManager.deployed();
@@ -64,6 +65,10 @@ describe('ORFeeManger', () => {
     for (const key in orFeeManager.functions) {
       expect(key.replace(/^_/, '')).eq(key);
     }
+  });
+
+  it("ORFeeManager's constructor should set owner", async function () {
+    expect(await orFeeManager.owner()).eq(feeManagerOwner);
   });
 
   it('Function updateDealer should emit events and update dealerInfo', async function () {

@@ -14,7 +14,6 @@ contract ORChallengeSpvMainnet2Era is IORChallengeSpv, Ownable {
     address private _destTxVerifier;
 
     constructor(address sourceTxVerifier, address destTxVerifier) {
-        _transferOwnership(msg.sender);
         setSpvVerifierAddr(sourceTxVerifier, destTxVerifier);
     }
 

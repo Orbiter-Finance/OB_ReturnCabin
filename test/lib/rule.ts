@@ -112,6 +112,31 @@ export const converRule = (rule: RuleStruct): BigNumberish[] => {
   return formatRule;
 };
 
+export const converRuleJson = (rule: any): BigNumberish[] => {
+  const formatRule: BigNumberish[] = [
+    rule.chain0,
+    rule.chain1,
+    rule.chain0Status,
+    rule.chain1Status,
+    rule.chain0Token,
+    rule.chain1Token,
+    rule.chain0minPrice,
+    rule.chain1minPrice,
+    rule.chain0maxPrice,
+    rule.chain1maxPrice,
+    rule.chain0WithholdingFee,
+    rule.chain1WithholdingFee,
+    rule.chain0TradeFee,
+    rule.chain1TradeFee,
+    rule.chain0ResponseTime,
+    rule.chain1ResponseTime,
+    rule.chain0CompensationRatio,
+    rule.chain1CompensationRatio,
+  ];
+
+  return formatRule;
+};
+
 export const formatRule = (rule: BigNumberish[]): RuleStruct => {
   const formatRule: RuleStruct = {
     chainId0: BigNumber.from(rule[0]).add(0),

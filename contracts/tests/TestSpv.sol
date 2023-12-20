@@ -2,7 +2,7 @@
 pragma solidity ^0.8.17;
 import {RuleLib} from "../library/RuleLib.sol";
 import {HelperLib} from "../library/HelperLib.sol";
-import {IVerifierRouter} from "../zkp/IVerifierRouter.sol";
+// import {IVerifierRouter} from "../zkp/IVerifierRouter.sol";
 import {IOREventBinding} from "../interface/IOREventBinding.sol";
 import {RLPReader} from "../library/RLPReader.sol";
 import {IORChallengeSpv} from "../interface/IORChallengeSpv.sol";
@@ -32,9 +32,9 @@ contract testSpv {
         return success;
     }
 
-    function verifyProofXinstance(bytes calldata input, uint256 instanceBytesLength) external view {
-        require(IVerifierRouter(v_address).verify(input, instanceBytesLength), "verify fail");
-    }
+    // function verifyProofXinstance(bytes calldata input, uint256 instanceBytesLength) external view {
+    //     require(IVerifierRouter(v_address).verify(input, instanceBytesLength), "verify fail");
+    // }
 
     function encodeRawDatas(
         address[] calldata dealers,

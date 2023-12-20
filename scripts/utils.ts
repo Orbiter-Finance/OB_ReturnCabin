@@ -479,7 +479,7 @@ export const deployContracts = async (
   }
 
   if (process.env['SPV_ADDRESS'] == undefined) {
-    const spvaddress = await deploySPVs(deployer);
+    const spvaddress = await deploySPVs(deployer, SPVTypeEnum.mainnet2era);
     console.log('spv(mainnet->era) deployed to:', spvaddress);
     process.env['SPV_ADDRESS'] = spvaddress;
   } else {

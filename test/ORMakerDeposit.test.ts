@@ -890,6 +890,9 @@ describe('ORMakerDeposit', () => {
     const skipGasCostTest = false;
     it('calculate spv verify gas cost', async function () {
       if (!skipGasCostTest) {
+        expect(await mainnet2eraSpv.owner()).eq(mdcOwner.address);
+        expect(await era2mainnetSpv.owner()).eq(mdcOwner.address);
+
         const paresSourcePoorf: boolean = false;
         const pareseDestProof: boolean = false;
         const tx = await mainnet2eraSpv

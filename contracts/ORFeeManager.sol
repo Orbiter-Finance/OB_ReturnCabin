@@ -56,7 +56,6 @@ contract ORFeeManager is IORFeeManager, Ownable, ReentrancyGuard {
         require(owner_ != address(0), "OZ");
         require(manager_ != address(0), "MZ");
 
-        _transferOwnership(owner_);
         _manager = IORManager(manager_);
     }
 
