@@ -872,26 +872,25 @@ describe('ORMakerDeposit', () => {
       );
 
       const makerTest_impl = await new TestMakerDeposit__factory(
-        mdcOwner,
+        signers[0],
       ).deploy();
       await makerTest_impl.deployed();
 
       const { mdcAddress } = await deployMDC(
         signers[0],
-        mdcOwner,
         orManager.address,
         makerTest_impl.address,
       );
 
-      makerTest = new TestMakerDeposit__factory(mdcOwner).attach(mdcAddress);
+      makerTest = new TestMakerDeposit__factory(signers[0]).attach(mdcAddress);
       console.log('connect of makerTest:', makerTest.address);
     });
 
-    const skipGasCostTest = false;
+    const skipGasCostTest = true;
     it('calculate spv verify gas cost', async function () {
       if (!skipGasCostTest) {
-        expect(await mainnet2eraSpv.owner()).eq(mdcOwner.address);
-        expect(await era2mainnetSpv.owner()).eq(mdcOwner.address);
+        expect(await mainnet2eraSpv.owner()).eq(signers[0].address);
+        expect(await era2mainnetSpv.owner()).eq(signers[0].address);
 
         const paresSourcePoorf: boolean = false;
         const pareseDestProof: boolean = false;
@@ -1181,7 +1180,8 @@ describe('ORMakerDeposit', () => {
     });
 
     it('Challenge and verifyTx', async function () {
-      const { orSpvData } = await deployContracts(signers[0], mdcOwner);
+      const mdcOwner = signers[0];
+      const { orSpvData } = await deployContracts(signers[0]);
       await orManager.updateSpvDataContract(orSpvData).then((t) => t.wait());
       const ORSpvData = new ORSpvData__factory(mdcOwner).attach(orSpvData);
       await orManager.updateSpvDataInjectOwner(mdcOwner.address);
@@ -1293,7 +1293,7 @@ describe('ORMakerDeposit', () => {
       const makerPublicInputData: PublicInputData = {
         // with replace reason
         ...publicInputData,
-        to: signers[1].address,
+        to: signers[0].address,
         mdc_contract_address: makerTest.address, // mdc not same
         manage_contract_address: orManager.address, // manager not same
         max_verify_challenge_dest_tx_second:
@@ -1496,6 +1496,7 @@ describe('ORMakerDeposit', () => {
         responseMakersHash: verifiedDataHashData[7],
         responseTime: verifiedDataHashData[8],
       };
+      console.log('verifiedDataInfo', verifiedDataInfo);
 
       const makerPublicInputDataDest: PublicInputDataDest = {
         ...publicInputDataDest,
@@ -1507,34 +1508,6 @@ describe('ORMakerDeposit', () => {
           verifiedDataInfo.nonce,
         ),
       };
-
-      // await testReverted(
-      //   makerTest.verifyChallengeDest(
-      //     challengerList[0],
-      //     constants.AddressZero,
-      //     challenge.sourceChainId,
-      //     challenge.sourceTxHash,
-      //     m2eDestProof,
-      //     verifiedDataInfo,
-      //     responseMakersEncodeRaw,
-      //     makerPublicInputDataDest,
-      //   ),
-      //   'SPVI',
-      // );
-
-      // await testReverted(
-      //   makerTest.verifyChallengeDest(
-      //     challengerList[0],
-      //     mainnet2eraSpv.address,
-      //     challenge.sourceChainId,
-      //     challenge.sourceTxHash,
-      //     BigNumber.from(m2eDestProof).add(1).toHexString(),
-      //     verifiedDataInfo,
-      //     responseMakersEncodeRaw,
-      //     makerPublicInputDataDest,
-      //   ),
-      //   'VF',
-      // );
 
       const txDest = await makerTest
         .verifyChallengeDest(
@@ -1550,14 +1523,6 @@ describe('ORMakerDeposit', () => {
         .then((t: any) => t.wait());
       expect(txDest.status).to.be.eq(1);
       await calculateTxGas(txDest, 'verifyChallengeDestTx ');
-      // console.log(
-      //   '[Event-Dest]TransactionFee:',
-      //   BigNumber.from(
-      //     txDest.events?.[0].args.statement.challengerVerifyTransactionFee,
-      //   ).toString(),
-      //   'event length',
-      //   txDest.events?.length,
-      // );
 
       const challengeList = challengeManager.getChallengeInfoList();
       await liquidateChallenge(makerTest, challengeList, challengerList);

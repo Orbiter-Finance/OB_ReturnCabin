@@ -717,11 +717,12 @@ export const createChallenge = async (
     challengeId: BigNumberish;
     challengeInfo: any;
     gasUsed: BigNumberish;
+    transactionfee: BigNumberish;
     revertReason: string;
   }>
 > => {
-  // const minDeposit = utils.parseEther('0.005');
-  const minDeposit = 0;
+  const minDeposit = utils.parseEther('0.005');
+  // const minDeposit = 0;
   if (revertReason == undefined) {
     const challengeIdentNum = challengeManager.getChallengeIdentNumSortList(
       challenge.sourceTxTime,
@@ -746,12 +747,19 @@ export const createChallenge = async (
         challenge.freezeToken,
         challenge.freezeAmount,
         challenge.parentNodeNumOfTargetNode,
-        { value: BigNumber.from(challenge.freezeAmount).add(minDeposit) },
+        {
+          value: BigNumber.from(challenge.freezeAmount).add(minDeposit),
+          maxPriorityFeePerGas: 1,
+        },
       )
       .then((t) => t.wait(1));
     const args = tx.events?.[0].args;
     const basefee = (await ethers.provider.getFeeData()).lastBaseFeePerGas;
-    await calculateTxGas(tx, `Create challenge!`, true);
+    const { transactionfee } = await calculateTxGas(
+      tx,
+      `Create challenge!`,
+      true,
+    );
 
     // console.log(
     //   'input',
@@ -792,6 +800,7 @@ export const createChallenge = async (
       challengeId: args?.challengeId,
       challengeInfo: args?.challengeInfo,
       gasUsed: tx.gasUsed,
+      transactionfee: transactionfee,
     };
   } else {
     await expect(
@@ -840,15 +849,17 @@ export const calculateTxGas = async (
   getTransactionfee = false,
   index?: number,
 ) => {
-  const basefee = (
-    await ethers.provider.getFeeData()
-  ).lastBaseFeePerGas!.toNumber();
+  const { lastBaseFeePerGas, maxPriorityFeePerGas } =
+    await ethers.provider.getFeeData();
+
+  const basefee = lastBaseFeePerGas!.toNumber();
   const gasUsed = tx.gasUsed.toNumber();
   const gasPrice = tx.effectiveGasPrice?.toNumber();
   const transactionfee = gasUsed * basefee;
   const inputGasUsed = callDataCost(
     (await ethers.provider.getTransaction(tx.transactionHash)).data,
   );
+  const priorityFee = tx.effectiveGasPrice?.sub(basefee).toNumber();
   if (getTransactionfee) {
     console.log(
       title ? title : 'gasUsed',

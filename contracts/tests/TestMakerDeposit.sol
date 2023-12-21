@@ -403,9 +403,9 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             statement: _challenges[challengeId].statement[msg.sender],
             result: _challenges[challengeId].result
         });
-        _challenges[challengeId].statement[msg.sender].challengerVerifyTransactionFee *= uint128(
+        _challenges[challengeId].statement[msg.sender].challengerVerifyTransactionFee *= (uint128(
             startGasNum - gasleft()
-        );
+        ) + 28160); // 21000(tx)+ 2160(calldata) + 5000(storege set)
     }
 
     function checkChallenge(uint64 sourceChainId, bytes32 sourceTxHash, address[] calldata challengers) external {
@@ -765,9 +765,9 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             challengeInfo.freezeAmount1 +
             ConstantsLib.MIN_CHALLENGE_DEPOSIT_AMOUNT;
         if (result.winner == challenger) {
-            uint256 challengeUserAmount = (challengeInfo.freezeAmount0 * challengeInfo.challengeUserRatio) /
+            uint256 challengeUserAmount = (challengeInfo.freezeAmount1 * challengeInfo.challengeUserRatio) /
                 ConstantsLib.RATIO_MULTIPLE;
-            require(challengeUserAmount <= challengeInfo.freezeAmount0, "UAOF");
+            require(challengeUserAmount <= challengeInfo.freezeAmount1, "UAOF");
 
             uint256 challengerAmount = unFreezeAmount - challengeUserAmount;
             _challengeNodeList[challengeIdentNum].challengeFinished = true;
@@ -781,9 +781,7 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
                 require(sent1, "ETH: SE1");
 
                 (bool sent2, ) = payable(result.winner).call{
-                    value: (challengerAmount +
-                        ConstantsLib.MIN_CHALLENGE_DEPOSIT_AMOUNT +
-                        challengeInfo.challengerVerifyTransactionFee)
+                    value: (challengerAmount + challengeInfo.challengerVerifyTransactionFee)
                 }("");
                 require(sent2, "ETH: SE2");
             } else {
@@ -793,28 +791,28 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
                 (bool sent3, ) = payable(result.winner).call{
                     value: ConstantsLib.MIN_CHALLENGE_DEPOSIT_AMOUNT +
                         challengeInfo.challengerVerifyTransactionFee +
-                        challengeInfo.freezeAmount0
+                        challengeInfo.freezeAmount1
                 }("");
                 require(sent3, "ETH: SE3");
             }
-        } else if (_compareChallengerStatementHash(challengeInfo, challengeInfoWinner) == true) {
+        } else if (_compareChallengerStatement(challengeInfo, challengeInfoWinner) == true) {
             (bool sent4, ) = payable(challenger).call{
                 value: ConstantsLib.MIN_CHALLENGE_DEPOSIT_AMOUNT +
                     challengeInfo.challengerVerifyTransactionFee +
-                    challengeInfo.freezeAmount0
+                    challengeInfo.freezeAmount1
             }("");
             require(sent4, "ETH: SE4");
         }
     }
 
-    function _compareChallengerStatementHash(
+    function _compareChallengerStatement(
         ChallengeStatement memory challengeInfo,
         ChallengeStatement memory winner
     ) internal pure returns (bool) {
-        return (challengeInfo.sourceTxFrom == winner.sourceTxFrom &&
-            challengeInfo.sourceTxTime == winner.sourceTxTime &&
+        return (challengeInfo.sourceTxTime == winner.sourceTxTime &&
             challengeInfo.freezeToken == winner.freezeToken &&
-            challengeInfo.challengeUserRatio == winner.challengeUserRatio &&
+            challengeInfo.sourceTxBlockNum == winner.sourceTxBlockNum &&
+            challengeInfo.sourceTxIndex == winner.sourceTxIndex &&
             challengeInfo.freezeAmount0 == winner.freezeAmount0);
     }
 }

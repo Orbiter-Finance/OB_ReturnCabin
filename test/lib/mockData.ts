@@ -23,11 +23,11 @@ export const chainIdsMock = [
   // 42161,
   // 10,
   // 324,
-  5, // goerli
-  420, // optimisim goerli testnet
-  421613, // arbitrum goerli testnet
-  280, // zk-sync Era testnet
-  534351, // Scroll Sepolia Testnet
+  // 5, // goerli
+  // 420, // optimisim goerli testnet
+  // 421613, // arbitrum goerli testnet
+  // 280, // zk-sync Era testnet
+  // 534351, // Scroll Sepolia Testnet
   11155111, //ethereum Sepolia Testnet
   300, // zk-sync Sepolia Testnet
 ];
@@ -161,9 +161,9 @@ export const defaultChainInfoArray: BridgeLib.ChainInfoStruct[] =
       id: BigNumber.from(chainId),
       batchLimit: BigNumber.from(1000),
       minVerifyChallengeSourceTxSecond: BigNumber.from(0),
-      maxVerifyChallengeSourceTxSecond: BigNumber.from(defaultResponseTime),
+      maxVerifyChallengeSourceTxSecond: BigNumber.from(172800),
       minVerifyChallengeDestTxSecond: BigNumber.from(0),
-      maxVerifyChallengeDestTxSecond: BigNumber.from(defaultResponseTime),
+      maxVerifyChallengeDestTxSecond: BigNumber.from(172800),
       nativeToken: BigNumber.from(
         chainIdsMockMainnetToken[chainIdsMock.indexOf(chainId)],
       ),

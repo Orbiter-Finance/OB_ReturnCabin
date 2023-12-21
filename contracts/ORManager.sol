@@ -26,7 +26,7 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
     uint64 private _feeTakeOnChallengeSecond;
 
     uint64 private _maxMDCLimit = 2 ** 64 - 1;
-    uint8 private _priorityFee = 1; // 1wei
+    uint24 private _priorityFee = 1; // 1wei
     uint24 private _challengeBasefee = 94000; // createchallenge&verify sourceTx calldata 52000 + submit tx 21000 + verify source 21000
     uint32 private _challengeWithdrawDelay = 604800; // Unit: seconds of 7 days: Op Arb
     address private _spvDataContract;
@@ -57,7 +57,7 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
         }
     }
 
-    function getPriorityFee() external view returns (uint8) {
+    function getPriorityFee() external view returns (uint24) {
         return _priorityFee;
     }
 
@@ -69,7 +69,7 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
         return _challengeWithdrawDelay;
     }
 
-    function updatePriorityFee(uint8 priorityFee) external onlyOwner {
+    function updatePriorityFee(uint24 priorityFee) external onlyOwner {
         _priorityFee = priorityFee;
     }
 

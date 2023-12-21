@@ -27,7 +27,7 @@ export async function managerSetup() {
   const isTestnet =
     networkId === 31337 || networkId === 5 || networkId === 11155111;
   if (isTestnet) {
-    await deployContracts(deployer, mdcOwner);
+    await deployContracts(deployer);
   }
 
   const envORManagerAddress = process.env['OR_MANAGER_ADDRESS'];
@@ -68,7 +68,7 @@ export async function managerSetup() {
   );
 
   console.log('Hash of registerChains:', tx1.hash);
-
+  return;
   await tx1.wait(3);
   config.ebcs.push(process.env['EVENT_BINDING_CONTRACT']! as never);
   const chainIds: BigNumberish[] = [];
@@ -94,6 +94,7 @@ export async function managerSetup() {
     tokens,
   );
   console.log('Hash of updateChainTokens:', tx2.hash);
+  return;
   await tx2.wait(3);
 
   // updateEbcs

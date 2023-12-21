@@ -22,9 +22,18 @@ import {
   ORSpvData__factory,
   ORChallengeSpvEra2Mainnet__factory,
   ORChallengeSpvEra2Mainnet,
+  ORFeeManager__factory,
 } from '../typechain-types';
 import { PromiseOrValue } from '../typechain-types/common';
-import { BigNumber, BigNumberish, BytesLike, constants, utils } from 'ethers';
+import {
+  BigNumber,
+  BigNumberish,
+  BytesLike,
+  Signer,
+  Wallet,
+  constants,
+  utils,
+} from 'ethers';
 import { createChallenge, getMinEnableTime } from '../test/utils.test';
 import { promises } from 'dns';
 import { random } from 'lodash';
@@ -188,7 +197,7 @@ export interface updateSpvType {
 
 export const deploySpvYul = async (
   bytesCode: string,
-  deployer: SignerWithAddress,
+  deployer: Wallet | SignerWithAddress,
 ): Promise<string> => {
   const verifierFactory = new ethers.ContractFactory(
     VerifierAbi,
@@ -257,10 +266,9 @@ export const hotUpdateSpvVerifier = async (
 };
 
 export const deploySPVs = async (
-  deployer: SignerWithAddress,
+  deployer: Wallet | SignerWithAddress,
   spvType: SPVTypeEnum = SPVTypeEnum.mainnet2era,
 ): Promise<string> => {
-  const mdcOwner = deployer;
   let verifyDestBytesCode;
   let verifySourceBytesCode;
   let contractFactory;
@@ -284,12 +292,18 @@ export const deploySPVs = async (
     );
   }
 
-  const spvSourceAddress = await deploySpvYul(verifySourceBytesCode!, mdcOwner);
-  const spvDestAddress = await deploySpvYul(verifyDestBytesCode!, mdcOwner);
+  const spvSourceAddress = await deploySpvYul(verifySourceBytesCode!, deployer);
+  const spvDestAddress = await deploySpvYul(verifyDestBytesCode!, deployer);
 
   const spv: ORChallengeSpvMainnet2Era = await new contractFactory!(
-    mdcOwner,
+    deployer,
   ).deploy(spvSourceAddress, spvDestAddress);
+  console.log(
+    'Address of sourceTxVerifier:',
+    spvSourceAddress,
+    'destTxVerifier:',
+    spvDestAddress,
+  );
 
   await spv.deployed();
   return spv.address;
@@ -309,8 +323,7 @@ export const calculateEnableTime = async (
 };
 
 export const deployMDC = async (
-  factoryOwner: SignerWithAddress,
-  mdcOwner: SignerWithAddress,
+  factoryOwner: Wallet | SignerWithAddress,
   orManagerAddress: string,
   orMakerDeposit_implAddress: string,
   oldfactoryAddress?: string,
@@ -329,7 +342,7 @@ export const deployMDC = async (
   }
 
   const { events } = await orMDCFactory
-    .connect(mdcOwner)
+    .connect(factoryOwner)
     .createMDC()
     .then((t) => t.wait());
   const mdcAddress = events?.[0].args?.mdc;
@@ -387,40 +400,42 @@ export const createRandomChallenge = async (
 };
 
 export const deployContracts = async (
-  deployer: SignerWithAddress,
-  mdcOwner: SignerWithAddress,
-  deploeyTestContracts: boolean = false,
+  deployer: Wallet | SignerWithAddress,
+  deployTestContracts: boolean = false,
 ) => {
+  let currBlk;
   if (process.env['OR_MANAGER_ADDRESS'] == undefined) {
+    currBlk = await ethers.provider.getBlockNumber();
     const orManager = await new ORManager__factory(deployer).deploy(
       deployer.address,
     );
     await orManager.deployed();
-    console.log('orManager deployed to:', orManager.address);
+    console.log(
+      `Address of orManager: ${orManager.address}, deployed blockNumber: ${currBlk} `,
+    );
     process.env['OR_MANAGER_ADDRESS'] = orManager.address;
   } else {
     console.log('existing orManager:', process.env['OR_MANAGER_ADDRESS']!);
   }
 
-  if (process.env['OR_MDC_TEST'] == undefined && deploeyTestContracts) {
+  if (process.env['OR_MDC_TEST'] == undefined && deployTestContracts) {
     const makerTest_impl = await new TestMakerDeposit__factory(
-      mdcOwner,
+      deployer,
     ).deploy();
     await makerTest_impl.deployed();
-    console.log('makerTest_impl deployed to:', makerTest_impl.address);
+    console.log('Address of makerTest_impl:', makerTest_impl.address);
 
     const { factoryAddress, mdcAddress } = await deployMDC(
       deployer,
-      mdcOwner,
       process.env['OR_MANAGER_ADDRESS']!,
       makerTest_impl.address,
     );
     process.env['OR_MDC_TEST'] = mdcAddress;
     process.env['OR_MDC_FACTORY_TEST'] = factoryAddress;
-    console.log('test factory deployed to:', factoryAddress);
-    console.log('test MDC deployed to:', mdcAddress);
+    console.log('Address of test factory:', factoryAddress);
+    console.log('Address of test MDC:', mdcAddress);
   } else {
-    if (deploeyTestContracts) {
+    if (deployTestContracts) {
       console.log('existing test MDC:', process.env['OR_MDC_TEST']!);
       console.log(
         'existing test factory:',
@@ -429,30 +444,44 @@ export const deployContracts = async (
     }
   }
 
-  if (process.env['OR_MDC'] == undefined) {
-    const mdc_impl = await new ORMakerDeposit__factory(mdcOwner).deploy();
+  if (process.env['OR_MDC_FACTORY_ADDRESS'] == undefined) {
+    currBlk = await ethers.provider.getBlockNumber();
+    const mdc_impl = await new ORMakerDeposit__factory(deployer).deploy();
     await mdc_impl.deployed();
-    console.log('mdc_impl deployed to:', mdc_impl.address);
+    process.env['OR_MDC_IMPL'] = mdc_impl.address;
+    console.log('Address of mdc_impl:', mdc_impl.address);
 
-    const { factoryAddress, mdcAddress } = await deployMDC(
-      deployer,
-      mdcOwner,
-      process.env['OR_MANAGER_ADDRESS']!,
+    const orMDCFactory = await new ORMDCFactory__factory(deployer).deploy(
+      process.env['OR_MANAGER_ADDRESS'],
       mdc_impl.address,
     );
-    process.env['OR_MDC'] = mdcAddress;
-    process.env['OR_MDC_FACTORY_ADDRESS'] = factoryAddress;
-    console.log('factory deployed to:', factoryAddress);
-    console.log('MDC deployed to:', mdcAddress);
+    await orMDCFactory.deployed();
+    if (deployTestContracts) {
+      const { mdcAddress } = await deployMDC(
+        deployer,
+        process.env['OR_MANAGER_ADDRESS']!,
+        mdc_impl.address,
+        orMDCFactory.address,
+      );
+      process.env['OR_MDC'] = mdcAddress;
+      console.log('Address of MDC:', mdcAddress);
+    }
+
+    process.env['OR_MDC_FACTORY_ADDRESS'] = orMDCFactory.address;
+    console.log(
+      `Address of orMDCFactory: ${orMDCFactory.address}, deployed blockNumber: ${currBlk} `,
+    );
   } else {
-    console.log('existing MDC:', process.env['OR_MDC']!);
+    if (deployTestContracts && process.env['OR_MDC'] != undefined) {
+      console.log('existing MDC:', process.env['OR_MDC']!);
+    }
     console.log('existing factory:', process.env['OR_MDC_FACTORY_ADDRESS']!);
   }
 
   if (process.env['EVENT_BINDING_CONTRACT'] == undefined) {
     const ebc = await new OREventBinding__factory(deployer).deploy();
     await ebc.deployed();
-    console.log('ebc deployed to:', ebc.address);
+    console.log('Address of ebc:', ebc.address);
     process.env['EVENT_BINDING_CONTRACT'] = ebc.address;
   } else {
     console.log('existing ebc:', process.env['EVENT_BINDING_CONTRACT']!);
@@ -461,26 +490,26 @@ export const deployContracts = async (
   if (process.env['RLP_DECODER_ADDRESS'] == undefined) {
     const rlpDecoder = await new RLPDecoder__factory(deployer).deploy();
     await rlpDecoder.deployed();
-    console.log('rlpDecoder deployed to:', rlpDecoder.address);
+    console.log('Address of rlpDecoder:', rlpDecoder.address);
     process.env['RLP_DECODER_ADDRESS'] = rlpDecoder.address;
   } else {
     console.log('existing rlpDecoder:', process.env['RLP_DECODER_ADDRESS']!);
   }
 
-  if (process.env['SPV_TEST_ADDRESS'] == undefined && deploeyTestContracts) {
-    const spvTest = await new TestSpv__factory(mdcOwner).deploy(
+  if (process.env['SPV_TEST_ADDRESS'] == undefined && deployTestContracts) {
+    const spvTest = await new TestSpv__factory(deployer).deploy(
       constants.AddressZero,
     );
-    console.log('spvTest deployed to:', spvTest.address);
+    console.log('Address of spvTest:', spvTest.address);
     process.env['SPV_TEST_ADDRESS'] = spvTest.address;
   } else {
-    if (deploeyTestContracts)
+    if (deployTestContracts)
       console.log('existing spvTest:', process.env['SPV_TEST_ADDRESS']!);
   }
 
   if (process.env['SPV_ADDRESS'] == undefined) {
     const spvaddress = await deploySPVs(deployer, SPVTypeEnum.mainnet2era);
-    console.log('spv(mainnet->era) deployed to:', spvaddress);
+    console.log('Address of spv(mainnet->era):', spvaddress);
     process.env['SPV_ADDRESS'] = spvaddress;
   } else {
     console.log('existing spv:', process.env['SPV_ADDRESS']!);
@@ -488,7 +517,7 @@ export const deployContracts = async (
 
   if (process.env['SPV_ADDRESS_ERA'] == undefined) {
     const spvaddress = await deploySPVs(deployer, SPVTypeEnum.era2mainnet);
-    console.log('spv(era->mainnet) deployed to:', spvaddress);
+    console.log('Address of spv(era->mainnet):', spvaddress);
     process.env['SPV_ADDRESS_ERA'] = spvaddress;
   } else {
     console.log('existing spv(era->mainnet):', process.env['SPV_ADDRESS_ERA']!);
@@ -496,18 +525,35 @@ export const deployContracts = async (
 
   // OR_SPV_DATA_ADRESS
   if (process.env['OR_SPV_DATA_ADRESS'] == undefined) {
+    currBlk = await ethers.provider.getBlockNumber();
     const orSpvData = await new ORSpvData__factory(deployer).deploy(
       process.env['OR_MANAGER_ADDRESS']!,
       deployer.address,
     );
-    console.log('orSpvData deployed to:', orSpvData.address);
+    console.log(
+      `Address of orSpvData: ${orSpvData.address}, deployed blockNumber: ${currBlk} `,
+    );
     process.env['OR_SPV_DATA_ADRESS'] = orSpvData.address;
   } else {
     console.log('existing orSpvData:', process.env['OR_SPV_DATA_ADRESS']!);
   }
 
+  if (process.env['OR_FEE_MANAGER_ADDRESS'] == undefined) {
+    currBlk = await ethers.provider.getBlockNumber();
+    const feeManager = await new ORFeeManager__factory(deployer).deploy(
+      deployer.address,
+      process.env['OR_MANAGER_ADDRESS'],
+    );
+    await feeManager.deployed();
+    console.log(
+      `Address of feeManager: ${feeManager.address}, deployed blockNumber: ${currBlk}`,
+    );
+  }
+
   return {
     orManager: process.env['OR_MANAGER_ADDRESS']!,
+    orMakerDeposit_impl: process.env['OR_MDC_IMPL']!,
+    orMDCFactory: process.env['OR_MDC_FACTORY_ADDRESS']!,
     orMDC: process.env['OR_MDC_TEST']!,
     eventBinding: process.env['EVENT_BINDING_CONTRACT']!,
     rlpDecoder: process.env['RLP_DECODER_ADDRESS']!,
