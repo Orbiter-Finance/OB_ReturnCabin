@@ -403,9 +403,9 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             statement: _challenges[challengeId].statement[msg.sender],
             result: _challenges[challengeId].result
         });
-        _challenges[challengeId].statement[msg.sender].challengerVerifyTransactionFee *= (uint128(
+        _challenges[challengeId].statement[msg.sender].challengerVerifyTransactionFee *= uint128(
             startGasNum - gasleft()
-        ) + 28160); // 21000(tx)+ 2160(calldata) + 5000(storege set)
+        );
     }
 
     function checkChallenge(uint64 sourceChainId, bytes32 sourceTxHash, address[] calldata challengers) external {
@@ -543,7 +543,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             "FTV"
         );
         // Check FreezeAmount
-        require(statement.freezeAmount1 == publicInputData.amount, "FALV");
+        require(statement.freezeAmount1 == publicInputData.amount << 1, "FALV");
         // Check manager's chainInfo.minVerifyChallengeSourceTxSecond,maxVerifyChallengeSourceTxSecond
         {
             uint timeDiff = block.timestamp - publicInputData.time_stamp;
@@ -761,9 +761,11 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             challengeInfo.freezeAmount1 +
             ConstantsLib.MIN_CHALLENGE_DEPOSIT_AMOUNT;
         if (result.winner == challenger) {
-            uint256 challengeUserAmount = (challengeInfo.freezeAmount1 * challengeInfo.challengeUserRatio) /
+            uint256 userLostAmount = challengeInfo.freezeAmount1 >> 1;
+            uint256 challengeUserAmount = (userLostAmount * challengeInfo.challengeUserRatio) /
                 ConstantsLib.RATIO_MULTIPLE;
             require(challengeUserAmount <= challengeInfo.freezeAmount1, "UAOF");
+            challengeUserAmount += userLostAmount;
 
             uint256 challengerAmount = unFreezeAmount - challengeUserAmount;
             _challengeNodeList[challengeIdentNum].challengeFinished = true;
@@ -793,9 +795,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             }
         } else if (_compareChallengerStatement(challengeInfo, challengeInfoWinner) == true) {
             (bool sent4, ) = payable(challenger).call{
-                value: ConstantsLib.MIN_CHALLENGE_DEPOSIT_AMOUNT +
-                    challengeInfo.challengerVerifyTransactionFee +
-                    challengeInfo.freezeAmount1
+                value: ConstantsLib.MIN_CHALLENGE_DEPOSIT_AMOUNT + challengeInfo.freezeAmount1
             }("");
             require(sent4, "ETH: SE4");
         }

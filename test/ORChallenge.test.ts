@@ -294,7 +294,8 @@ describe('start challenge test module', () => {
 
   it('Challenge and verifyTx', async function () {
     const victim = signers[4];
-    const challengerRatio = 1;
+    const challengerRatio100 = 1000000;
+    const challengerRatio = 1000000 / 2; // 1000000 = 100%
     console.log('victim:', victim.address);
     const amount = utils.parseEther('10');
     await deployer.sendTransaction({
@@ -381,7 +382,7 @@ describe('start challenge test module', () => {
     );
 
     const price = makerRule.minPrice0.mul(3).toString().slice(0, -5);
-    const testFreezeAmount =
+    const victimLostAmount =
       price +
       getSecurityCode(
         challengeColumnArray,
@@ -389,7 +390,7 @@ describe('start challenge test module', () => {
         mdcOwner.address,
         parseInt(chainIdDest.toString()),
       );
-    console.log('FreezeAmount', utils.formatEther(testFreezeAmount));
+    console.log('victimLostAmount', utils.formatEther(victimLostAmount));
 
     const verifyinfoBase: VerifyinfoBase = {
       chainIdSource: makerRule.chainId0,
@@ -431,12 +432,12 @@ describe('start challenge test module', () => {
       min_verify_challenge_dest_tx_second: BigNumber.from(0).toHexString(), // min verify time too long
       min_verify_challenge_src_tx_second: BigNumber.from(0).toHexString(), // min verify time too long
       mdc_current_column_array_hash: columnArrayHash, // dealer & ebc not same
-      amount: BigNumber.from(testFreezeAmount), // security code base on ebc & dealer, they both changed
+      amount: BigNumber.from(victimLostAmount), // security code base on ebc & dealer, they both changed
       mdc_rule_root_slot: verifyInfo.slots[6].key, // ebc not same
       mdc_rule_version_slot: verifyInfo.slots[7].key, // ebc not same
       mdc_current_rule_value_hash: encodeHash, // rule not compatible
       mdc_current_response_makers_hash: responseMakersHash, // response maker not same
-      manage_current_challenge_user_ratio: 1000000 / challengerRatio,
+      manage_current_challenge_user_ratio: challengerRatio,
       // mdc_next_rule_enable_time: publicInputData.mdc_current_rule_enable_time,
     };
 
@@ -467,7 +468,7 @@ describe('start challenge test module', () => {
       ),
       from: BigNumber.from(makerPublicInputData.from).toHexString(),
       freezeToken: makerPublicInputData.token,
-      freezeAmount: makerPublicInputData.amount,
+      freezeAmount: BigNumber.from(makerPublicInputData.amount).mul(2),
       parentNodeNumOfTargetNode: 0,
     };
     // mainnet2eraSpv should be setting by manager
@@ -480,6 +481,7 @@ describe('start challenge test module', () => {
       signers[0],
       signers[1],
       signers[2],
+      signers[3],
     ];
     const mdcBalanceBeforeCreateChallenge = await ethers.provider.getBalance(
       makerTest.address,
@@ -546,12 +548,12 @@ describe('start challenge test module', () => {
     );
 
     const makerVerifySource = new TestMakerDeposit__factory(
-      challengerList[0],
+      challengerList[1],
     ).attach(makerTest.address);
 
     const tx = await makerVerifySource
       .verifyChallengeSource(
-        challengerList[0].address,
+        challengerList[1].address,
         mainnet2eraSpv.address,
         makerPublicInputData.chain_id,
         makerPublicInputData,
@@ -564,10 +566,7 @@ describe('start challenge test module', () => {
       .then((t: any) => t.wait());
 
     expect(tx.status).to.be.eq(1);
-    // console.log(
-    //   '$_feeSpend',
-    //   $_feeSpend.map((b) => utils.formatEther(b)),
-    // );
+
     $_feeSpend[0] = $_feeSpend[0].add(
       BigNumber.from(
         (await calculateTxGas(tx, 'verifyChallengeSourceTx ', true))
@@ -618,23 +617,41 @@ describe('start challenge test module', () => {
       '$_returnToChallenger',
       $_returnToChallenger.map((b) => utils.formatEther(b)),
     );
-    // console.log(
-    //   'gasUsedList',
-    //   gasUsedList.map((b) => utils.formatEther(b)),
-    // );
+
+    const $_challengerProfit = $_returnToChallenger.map((balance, idx) =>
+      balance
+        .sub(challenge.freezeAmount)
+        .sub(BigNumber.from(utils.parseEther('0.005'))),
+    );
+    console.log(
+      '$_challengerProfit',
+      $_challengerProfit.map((b) => utils.formatEther(b)),
+    );
+
     const $_victimBalanceAfterChallenge = await ethers.provider.getBalance(
       victim.address,
     );
-    console.log(
-      "victim's balance before challenge:",
-      utils.formatEther(victimBalanceBeforeChallenge),
-      'after challenge:',
-      utils.formatEther($_victimBalanceAfterChallenge),
+
+    const $_victimGain = $_victimBalanceAfterChallenge.sub(
+      victimBalanceBeforeChallenge,
     );
+
+    const amountShouldGet = BigNumber.from(victimLostAmount)
+      .mul(challengerRatio)
+      .div(challengerRatio100);
+
+    console.log(
+      "victim's lost amount:",
+      utils.formatEther(victimLostAmount),
+      'challenger return amount:',
+      utils.formatEther($_victimGain),
+    );
+
+    expect($_challengerProfit[$_challengerProfit.length - 1]).eq(0);
+    expect($_challengerProfit[$_challengerProfit.length - 2]).eq(0);
     expect(
-      BigNumber.from(testFreezeAmount)
-        .div(challengerRatio)
-        .add(victimBalanceBeforeChallenge),
-    ).eq($_victimBalanceAfterChallenge);
+      $_challengerProfit[$_challengerProfit.length - 3],
+    ).greaterThanOrEqual(BigNumber.from(amountShouldGet));
+    expect(amountShouldGet).eq($_victimGain.sub(victimLostAmount));
   });
 });

@@ -4,6 +4,7 @@ pragma solidity ^0.8.17;
 import {IORChallengeSpv} from "../interface/IORChallengeSpv.sol";
 import {BridgeLib} from "../library/BridgeLib.sol";
 import {RuleLib} from "../library/RuleLib.sol";
+import {HelperLib} from "../library/HelperLib.sol";
 
 interface IORMakerDeposit {
     struct ChallengeStatement {
@@ -139,22 +140,24 @@ interface IORMakerDeposit {
 
     function checkChallenge(uint64 sourceChainId, bytes32 sourceTxHash, address[] calldata challengers) external;
 
-    // function verifyChallengeSource(
-    //     address challenger,
-    //     address spvAddress,
-    //     uint64 sourceChainId,
-    //     bytes calldata proof,
-    //     bytes calldata rawDatas,
-    //     bytes calldata rlpRuleBytes
-    // ) external;
+    function verifyChallengeSource(
+        address challenger,
+        address spvAddress,
+        uint64 sourceChainId,
+        HelperLib.PublicInputDataSource calldata publicInputData,
+        // bytes calldata proof,
+        bytes calldata rawDatas,
+        bytes calldata rlpRuleBytes
+    ) external;
 
-    // function verifyChallengeDest(
-    //     address challenger,
-    //     address spvAddress,
-    //     uint64 sourceChainId,
-    //     bytes32 sourceTxHash,
-    //     bytes calldata proof,
-    //     verifiedDataInfo calldata verifiedSourceTxData,
-    //     bytes calldata rawDatas
-    // ) external;
+    function verifyChallengeDest(
+        address challenger,
+        address spvAddress,
+        uint64 sourceChainId,
+        bytes32 sourceTxHash,
+        // bytes calldata proof,
+        verifiedDataInfo calldata verifiedSourceTxData,
+        bytes calldata rawDatas,
+        HelperLib.PublicInputDataDest calldata publicInputData
+    ) external;
 }
