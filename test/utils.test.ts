@@ -479,7 +479,7 @@ export const getVerifyinfo = async (
   // set Verifyinfo 3
   // ORMakerDeposit.sol - _columnArrayHash
   // slot: 3
-  const slot3 = BigNumber.from(3).toHexString();
+  const slot3 = BigNumber.from(4).toHexString();
   const value3: BytesLike = await orMakerDeposit.columnArrayHash();
   {
     const storageValue = await ethers.provider.getStorageAt(
@@ -553,7 +553,7 @@ export const getVerifyinfo = async (
   // set Verifyinfo 5
   // ORMakerDeposit.sol - responseMakersHash
   // slot 5
-  const slot5 = BigNumber.from(5).toHexString();
+  const slot5 = BigNumber.from(6).toHexString();
   const value5: BytesLike = await orMakerDeposit.responseMakersHash();
   {
     const storageValue = await ethers.provider.getStorageAt(
@@ -569,27 +569,27 @@ export const getVerifyinfo = async (
   // slot 6
   let slot6;
   let slot7;
-  const slot6_I = keccak256(solidityPack(['uint256', 'uint256'], [ebc, 6]));
+  const slot6_I = keccak256(solidityPack(['uint256', 'uint256'], [ebc, 7]));
   let value6;
   let value7;
   {
     const { root, version } = await orMakerDeposit.rulesRoot(ebc);
     // value6 = root;
     const hashKey = keccak256(
-      defaultAbiCoder.encode(['uint256', 'uint256'], [ebc, 6]),
+      defaultAbiCoder.encode(['uint256', 'uint256'], [ebc, 7]),
     );
     const valueRoot = (
-      await getMappingStructXSlot('0x6', makerAddress, ebc, 0, 'bytes')
+      await getMappingStructXSlot('0x7', makerAddress, ebc, 0, 'bytes')
     ).value;
     const valueVersion = (
-      await getMappingStructXSlot('0x6', makerAddress, ebc, 1, 'number')
+      await getMappingStructXSlot('0x7', makerAddress, ebc, 1, 'number')
     ).value;
 
     const valueRootitemSlot = (
-      await getMappingStructXSlot('0x6', makerAddress, ebc, 0, 'bytes')
+      await getMappingStructXSlot('0x7', makerAddress, ebc, 0, 'bytes')
     ).itemSlot;
     const valueVersionitemSlot = (
-      await getMappingStructXSlot('0x6', makerAddress, ebc, 1, 'number')
+      await getMappingStructXSlot('0x7', makerAddress, ebc, 1, 'number')
     ).itemSlot;
 
     slot6 = valueRootitemSlot;
@@ -603,6 +603,8 @@ export const getVerifyinfo = async (
     expect(BigNumber.from(value6)).to.equal(
       BigNumber.from(valueRoot?.toHexString()),
     );
+    console.log('valueVersion', valueVersion);
+    console.log('version', version);
     expect(version).to.equal(BigNumber.from(valueVersion).toNumber());
   }
 
@@ -703,7 +705,7 @@ export const getVerifyinfo = async (
     slots: slotValue,
   };
   // console.log(`mangerAddress: ${managerAddress}, makerAddress: ${makerAddress}, sourceChainId: ${chainId}, chainId_Dest: ${chainId_Dest}, freezeToken_Dest: ${freezeToken_Dest}, freezeToken: ${freezeToken}, ebc: ${ebc}`);
-  // console.log(VerifyInfo);
+  console.log(VerifyInfo);
   return VerifyInfo;
 };
 

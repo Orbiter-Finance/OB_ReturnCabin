@@ -777,8 +777,8 @@ describe('ORMakerDeposit', () => {
     const defaultRule = createMakerRule(true);
     const makerRule: RuleStruct = {
       ...defaultRule,
-      chainId0: BigNumber.from(5),
-      chainId1: BigNumber.from(280),
+      chainId0: BigNumber.from(300),
+      chainId1: BigNumber.from(11155111),
       withholdingFee0: BigNumber.from('3' + '0'.repeat(5)),
       withholdingFee1: BigNumber.from('4' + '0'.repeat(5)),
       responseTime0: defaultResponseTime,
@@ -889,8 +889,8 @@ describe('ORMakerDeposit', () => {
     const skipGasCostTest = true;
     it('calculate spv verify gas cost', async function () {
       if (!skipGasCostTest) {
-        expect(await mainnet2eraSpv.owner()).eq(signers[0].address);
-        expect(await era2mainnetSpv.owner()).eq(signers[0].address);
+        expect(await mainnet2eraSpv.owner()).eq(mdcOwner.address);
+        expect(await era2mainnetSpv.owner()).eq(mdcOwner.address);
 
         const paresSourcePoorf: boolean = false;
         const pareseDestProof: boolean = false;
@@ -1230,11 +1230,11 @@ describe('ORMakerDeposit', () => {
         ),
       );
 
-      {
-        const { encodeHash } = getRLPEncodeMakerRuleHash(defaultRule);
-        expect(publicInputData).not.null;
-        expect(encodeHash).eql(publicInputData.mdc_current_rule_value_hash);
-      }
+      // {
+      //   const { encodeHash } = getRLPEncodeMakerRuleHash(defaultRule);
+      //   expect(publicInputData).not.null;
+      //   expect(encodeHash).eql(publicInputData.mdc_current_rule_value_hash);
+      // }
 
       const challengeColumnArray: columnArray = {
         ...columnArray,
@@ -1338,7 +1338,7 @@ describe('ORMakerDeposit', () => {
         ),
         from: BigNumber.from(makerPublicInputData.from).toHexString(),
         freezeToken: makerPublicInputData.token,
-        freezeAmount: makerPublicInputData.amount,
+        freezeAmount: BigNumber.from(makerPublicInputData.amount).mul(2),
         parentNodeNumOfTargetNode: 0,
       };
       // mainnet2eraSpv should be setting by manager

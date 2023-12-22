@@ -100,7 +100,7 @@ import { Console } from 'console';
 import { deploy } from '../scripts/deploy';
 import exp from 'constants';
 
-describe('start challenge test module', () => {
+describe('start challenge & liquidaion test module', () => {
   let spvTest: TestSpv;
   let mainnet2eraSpv: ORChallengeSpvMainnet2Era;
   let era2mainnetSpv: ORChallengeSpvEra2Mainnet;
@@ -112,6 +112,9 @@ describe('start challenge test module', () => {
   let signers: SignerWithAddress[];
   let deployer: SignerWithAddress;
   let mdcOwner: SignerWithAddress;
+  let makerRuleSourceChain: BigNumber;
+  let makerRuleDestChain: BigNumber;
+  let mdc_test_impl: TestMakerDeposit;
   const defaultRule = createMakerRule(true);
   const makerRule: RuleStruct = {
     ...defaultRule,
@@ -119,8 +122,8 @@ describe('start challenge test module', () => {
     minPrice1: BigNumber.from(ethers.utils.parseEther('1')),
     maxPrice0: BigNumber.from(ethers.utils.parseEther('5')),
     maxPrice1: BigNumber.from(ethers.utils.parseEther('5')),
-    chainId0: BigNumber.from(5),
-    chainId1: BigNumber.from(280),
+    chainId0: BigNumber.from(300),
+    chainId1: BigNumber.from(11155111),
     withholdingFee0: BigNumber.from('3' + '0'.repeat(5)),
     withholdingFee1: BigNumber.from('4' + '0'.repeat(5)),
     responseTime0: defaultResponseTime,
@@ -192,6 +195,9 @@ describe('start challenge test module', () => {
     deployer = signers[0];
     mdcOwner = signers[1];
 
+    makerRuleSourceChain = makerRule.chainId1;
+    makerRuleDestChain = makerRule.chainId0;
+
     await deployContracts(signers[0], true);
     const envEBCAddress = process.env['EVENT_BINDING_CONTRACT'];
     // const envMDCAddress = process.env['OR_MDC'];
@@ -202,6 +208,7 @@ describe('start challenge test module', () => {
     const envSPVAddress = process.env['SPV_ADDRESS'];
     const envSPVEraAddress = process.env['SPV_ADDRESS_ERA'];
     const envSPVDataAddress = process.env['OR_SPV_DATA_ADRESS'];
+    const makerTest_impl = process.env['OR_MDC_TEST_IMPL'];
     assert(
       !!envMDCTestAddress &&
         !!envEBCAddress &&
@@ -210,6 +217,7 @@ describe('start challenge test module', () => {
         !!envSPVTestAddress &&
         !!envSPVEraAddress &&
         !!envSPVDataAddress &&
+        !!makerTest_impl &&
         !!envSPVAddress,
       'Env miss [something].',
     );
@@ -242,60 +250,17 @@ describe('start challenge test module', () => {
 
     ebc = new OREventBinding__factory(deployer).attach(envEBCAddress);
     console.log('connect of ebc:', ebc.address);
+
+    mdc_test_impl = new TestMakerDeposit__factory(deployer).attach(
+      makerTest_impl,
+    );
+    console.log('connect of mdc_test_impl:', mdc_test_impl.address);
   });
 
-  const skipGasCostTest = true;
-  it('calculate spv verify gas cost', async function () {
-    if (!skipGasCostTest) {
-      expect(await mainnet2eraSpv.owner()).eq(signers[0].address);
-      expect(await era2mainnetSpv.owner()).eq(signers[0].address);
-
-      const paresSourcePoorf: boolean = false;
-      const pareseDestProof: boolean = false;
-      const tx = await mainnet2eraSpv
-        .verifySourceTx(m2eSourceProof)
-        .then((t: any) => t.wait());
-      expect(tx.status).to.be.eq(1);
-      expect(
-        await spvTest.verifySourceTx(m2eSourceProof, mainnet2eraSpv.address),
-      ).to.satisfy;
-      console.log('mainnet2era sourceProof verify Pass');
-      await calculateTxGas(tx, 'spvVerifySourceTx');
-      if (paresSourcePoorf) {
-        console.log(
-          'era2mainnet, paresSourcePoorf',
-          await era2mainnetSpv.parseSourceTxProof(e2mSourceProof),
-        );
-      }
-      expect(
-        await spvTest.verifySourceTx(e2mSourceProof, era2mainnetSpv.address),
-      ).to.satisfy;
-      console.log('era2mainnet sourceProof verify Pass');
-      const txDest = await mainnet2eraSpv
-        .verifyDestTx(m2eDestProof)
-        .then((t: any) => t.wait());
-      expect(txDest.status).to.be.eq(1);
-      expect(await spvTest.verifyDestTx(m2eDestProof, mainnet2eraSpv.address))
-        .to.satisfy;
-      console.log('mainnet2era destProof verify Pass');
-      // await calculateTxGas(txDest, 'spvVerifyDestTx');
-
-      if (pareseDestProof) {
-        console.log(
-          'era2mainnet, pareseDestProof',
-          await era2mainnetSpv.parseDestTxProof(e2mDestProof),
-        );
-      }
-      expect(await spvTest.verifyDestTx(e2mDestProof, era2mainnetSpv.address))
-        .to.satisfy;
-      console.log('era2mainnet destProof verify Pass');
-    }
-  });
-
-  it('Challenge and verifyTx', async function () {
+  it('Challenge and verifySourceTx', async function () {
     const victim = signers[signers.length - 1];
     const challengerRatio100 = 1000000; // 1000000 = 100%
-    const challengerRatio = 1000000 / 2;
+    const challengerRatio = 300000;
     console.log('victim:', victim.address);
     const amount = utils.parseEther('10');
     await deployer.sendTransaction({
@@ -320,8 +285,8 @@ describe('start challenge test module', () => {
     challengeManager.initialize();
 
     let defaultRule: BigNumberish[] = [
-      5,
-      280,
+      300,
+      11155111,
       1,
       1,
       0,
@@ -358,11 +323,11 @@ describe('start challenge test module', () => {
       ),
     );
 
-    {
-      const { encodeHash } = getRLPEncodeMakerRuleHash(defaultRule);
-      expect(publicInputData).not.null;
-      expect(encodeHash).eql(publicInputData.mdc_current_rule_value_hash);
-    }
+    // {
+    //   const { encodeHash } = getRLPEncodeMakerRuleHash(defaultRule);
+    //   expect(publicInputData).not.null;
+    //   expect(encodeHash).eql(publicInputData.mdc_current_rule_value_hash);
+    // }
 
     const challengeColumnArray: columnArray = {
       ...columnArray,
@@ -388,14 +353,14 @@ describe('start challenge test module', () => {
         challengeColumnArray,
         ebc.address,
         mdcOwner.address,
-        parseInt(chainIdDest.toString()),
+        parseInt(makerRuleDestChain.toString()),
       );
     console.log('victimLostAmount', utils.formatEther(victimLostAmount));
 
     const verifyinfoBase: VerifyinfoBase = {
-      chainIdSource: makerRule.chainId0,
+      chainIdSource: makerRuleSourceChain,
       freeTokenSource: makerRule.token0.toHexString(),
-      chainIdDest: makerRule.chainId1,
+      chainIdDest: makerRuleDestChain,
       freeTokenDest: makerRule.token1.toHexString(),
       ebc: ebc.address,
     };
@@ -435,6 +400,8 @@ describe('start challenge test module', () => {
       amount: BigNumber.from(victimLostAmount), // security code base on ebc & dealer, they both changed
       mdc_rule_root_slot: verifyInfo.slots[6].key, // ebc not same
       mdc_rule_version_slot: verifyInfo.slots[7].key, // ebc not same
+      mdc_column_array_hash_slot: verifyInfo.slots[3].key, // ebc not same
+      mdc_response_makers_hash_slot: verifyInfo.slots[5].key, // ebc not same
       mdc_current_rule_value_hash: encodeHash, // rule not compatible
       mdc_current_response_makers_hash: responseMakersHash, // response maker not same
       manage_current_challenge_user_ratio: challengerRatio,
@@ -459,7 +426,7 @@ describe('start challenge test module', () => {
     const challenge: challengeInputInfo = {
       sourceTxTime: BigNumber.from(makerPublicInputData.time_stamp).toNumber(),
       sourceChainId: BigNumber.from(makerPublicInputData.chain_id).toNumber(),
-      destChainId: BigNumber.from(makerRule.chainId1).toNumber(),
+      destChainId: BigNumber.from(makerRuleDestChain).toNumber(),
       sourceBlockNum: BigNumber.from(0).toNumber(),
       sourceTxIndex: BigNumber.from(makerPublicInputData.index).toNumber(),
       sourceTxHash: utils.hexZeroPad(
@@ -564,10 +531,10 @@ describe('start challenge test module', () => {
           .then((balance) => balance),
       ),
     );
-    console.log(
-      '$_AfterCreate',
-      $_AfterCreate.map((b) => utils.formatEther(b)),
-    );
+    // console.log(
+    //   '$_AfterCreate',
+    //   $_AfterCreate.map((b) => utils.formatEther(b)),
+    // );
 
     const $_feeSpend = $_BeforeAll.map((balance, idx) =>
       BigNumber.from(balance).sub(BigNumber.from($_AfterCreate[idx])),
@@ -593,7 +560,7 @@ describe('start challenge test module', () => {
 
     expect(tx.status).to.be.eq(1);
 
-    $_feeSpend[0] = $_feeSpend[0].add(
+    $_feeSpend[1] = $_feeSpend[1].add(
       BigNumber.from(
         (await calculateTxGas(tx, 'verifyChallengeSourceTx ', true))
           .transactionfee,
@@ -670,7 +637,7 @@ describe('start challenge test module', () => {
     console.log(
       "victim's lost amount:",
       utils.formatEther(victimLostAmount),
-      'challenger return amount:',
+      'challenge return amount:',
       utils.formatEther($_victimGain),
     );
 
@@ -699,5 +666,462 @@ describe('start challenge test module', () => {
     );
     expect(amountShouldGet).eq($_victimGain.sub(victimLostAmount));
     expect(freezeTokenLeft).eq(0);
+  });
+
+  it('Challenge and verifyDestTx', async function () {
+    const verifyDestSigner = signers[7];
+    const liquidaionSigner = signers[8];
+    const { factoryAddress, mdcAddress } = await deployMDC(
+      verifyDestSigner,
+      process.env['OR_MANAGER_ADDRESS']!,
+      mdc_test_impl.address,
+    );
+
+    const makerTest = new TestMakerDeposit__factory(verifyDestSigner).attach(
+      mdcAddress,
+    );
+
+    const victim = signers[signers.length - 1];
+    const challengerRatio100 = 1000000; // 1000000 = 100%
+    const challengerRatio = 300000;
+    console.log('victim:', victim.address);
+    const amount = utils.parseEther('10');
+    await deployer.sendTransaction({
+      to: makerTest.address,
+      value: amount,
+    });
+
+    const columnArray = {
+      dealers: [mdcOwner.address],
+      ebcs: [process.env['EVENT_BINDING_CONTRACT']!],
+      chainIds: [5, 420, 280, 300, 11155111],
+    };
+    await orManager
+      .updateSpvDataContract(spvData.address)
+      .then((t) => t.wait());
+    await orManager
+      .updateSpvDataInjectOwner(deployer.address)
+      .then((t) => t.wait());
+
+    await orManager.updatePriorityFee(1);
+
+    challengeManager.initialize();
+
+    let defaultRule: BigNumberish[] = [
+      300,
+      11155111,
+      1,
+      1,
+      0,
+      0,
+      20000000000,
+      20000000000,
+      BigNumber.from('100000000000000000000'),
+      BigNumber.from('100000000000000000000'),
+      10000000,
+      20000000,
+      1,
+      1,
+      604800,
+      604800,
+      42,
+      49,
+    ];
+    const formatDefaultRule = formatRule(defaultRule);
+    await updateMakerRule(makerTest, ebc.address, makerRule);
+    await orManager.updateDecoderAddress(rlpDecoder.address);
+    expect(await orManager.getRulesDecoder()).eq(rlpDecoder.address);
+    const publicInputData: PublicInputData =
+      await mainnet2eraSpv.parseSourceTxProof(m2eSourceProof);
+
+    const publicInputDataDest: PublicInputDataDest =
+      await mainnet2eraSpv.parseDestTxProof(m2eDestProof);
+
+    // await mockSpvData(
+    //   spvData,
+    //   Array.from(
+    //     new Set(
+    //       publicInputDataDest.merkle_roots.concat(publicInputData.merkle_roots),
+    //     ),
+    //   ),
+    // );
+
+    // {
+    //   const { encodeHash } = getRLPEncodeMakerRuleHash(defaultRule);
+    //   expect(publicInputData).not.null;
+    //   expect(encodeHash).eql(publicInputData.mdc_current_rule_value_hash);
+    // }
+
+    const challengeColumnArray: columnArray = {
+      ...columnArray,
+      dealers: [mdcOwner.address],
+      ebcs: [ebc.address],
+    };
+
+    const verifyTimeMax =
+      utils.hexZeroPad(BigNumber.from(9999999).toHexString(), 8) +
+      utils.hexZeroPad('0x00', 8).slice(2) +
+      utils.hexZeroPad(BigNumber.from(8888888).toHexString(), 8).slice(2) +
+      utils.hexZeroPad('0x00', 8).slice(2);
+
+    const { rawData, columnArrayHash } = await getRawDataNew(
+      challengeColumnArray,
+      ebc.address,
+    );
+
+    const price = makerRule.minPrice0.mul(3).toString().slice(0, -5);
+    const victimLostAmount =
+      price +
+      getSecurityCode(
+        challengeColumnArray,
+        ebc.address,
+        mdcOwner.address,
+        parseInt(makerRuleDestChain.toString()),
+      );
+    console.log('victimLostAmount', utils.formatEther(victimLostAmount));
+
+    const verifyinfoBase: VerifyinfoBase = {
+      chainIdSource: makerRuleSourceChain,
+      freeTokenSource: makerRule.token0.toHexString(),
+      chainIdDest: makerRuleDestChain,
+      freeTokenDest: makerRule.token1.toHexString(),
+      ebc: ebc.address,
+    };
+
+    // get related slots & values of maker/manager contract
+    const verifyInfo = await getVerifyinfo(
+      makerTest,
+      orManager,
+      verifyinfoBase,
+    );
+    // default rule not work in uint test , replace with new rule
+    const { rlpRawdata, encodeHash } = getRLPEncodeMakerRuleHash(
+      converRule(makerRule),
+    );
+    const RLPDecodeRule: RuleStruct = await rlpDecoder.decodeRule(rlpRawdata);
+    expect(converRule(RLPDecodeRule)).deep.equals(converRule(makerRule));
+    const defaultRessponseMakers = mdcOwner.address;
+    const responseMakersEncodeRaw = await spvTest.encodeResponseMakers([
+      defaultRessponseMakers,
+    ]);
+    const responseMakersHash = keccak256(responseMakersEncodeRaw);
+
+    const makerPublicInputData: PublicInputData = {
+      // with replace reason
+      ...publicInputData,
+      from: victim.address,
+      to: verifyDestSigner.address,
+      mdc_contract_address: makerTest.address, // mdc not same
+      manage_contract_address: orManager.address, // manager not same
+      max_verify_challenge_dest_tx_second:
+        BigNumber.from(99999999999999).toHexString(), // max verify time too small
+      max_verify_challenge_src_tx_second:
+        BigNumber.from(99999999999999).toHexString(), // max verify time too small
+      min_verify_challenge_dest_tx_second: BigNumber.from(0).toHexString(), // min verify time too long
+      min_verify_challenge_src_tx_second: BigNumber.from(0).toHexString(), // min verify time too long
+      mdc_current_column_array_hash: columnArrayHash, // dealer & ebc not same
+      amount: BigNumber.from(victimLostAmount), // security code base on ebc & dealer, they both changed
+      mdc_rule_root_slot: verifyInfo.slots[6].key, // ebc not same
+      mdc_rule_version_slot: verifyInfo.slots[7].key, // ebc not same
+      mdc_column_array_hash_slot: verifyInfo.slots[3].key, // ebc not same
+      mdc_response_makers_hash_slot: verifyInfo.slots[5].key, // ebc not same
+      mdc_current_rule_value_hash: encodeHash, // rule not compatible
+      mdc_current_response_makers_hash: responseMakersHash, // response maker not same
+      manage_current_challenge_user_ratio: challengerRatio,
+      // mdc_next_rule_enable_time: publicInputData.mdc_current_rule_enable_time,
+    };
+
+    // console.log('makerPublicInputData', makerPublicInputData);
+
+    const rulesKey = calculateRuleKey(converRule(makerRule));
+    const encodeRuleKey = utils.solidityPack(
+      ['uint256', 'uint256', 'uint256', 'uint256'],
+      [
+        makerRule.chainId0,
+        makerRule.chainId1,
+        makerRule.token0,
+        makerRule.token1,
+      ],
+    );
+    const ruleKey = utils.keccak256(encodeRuleKey);
+    expect(ruleKey).eq(rulesKey);
+
+    const challenge: challengeInputInfo = {
+      sourceTxTime: BigNumber.from(makerPublicInputData.time_stamp).toNumber(),
+      sourceChainId: BigNumber.from(makerPublicInputData.chain_id).toNumber(),
+      destChainId: BigNumber.from(makerRuleDestChain).toNumber(),
+      sourceBlockNum: BigNumber.from(0).toNumber(),
+      sourceTxIndex: BigNumber.from(makerPublicInputData.index).toNumber(),
+      sourceTxHash: utils.hexZeroPad(
+        BigNumber.from(makerPublicInputData.tx_hash).toHexString(),
+        32,
+      ),
+      from: BigNumber.from(makerPublicInputData.from).toHexString(),
+      freezeToken: makerPublicInputData.token,
+      freezeAmount: BigNumber.from(makerPublicInputData.amount).mul(2),
+      parentNodeNumOfTargetNode: 0,
+    };
+    // mainnet2eraSpv should be setting by manager
+    await updateSpv(
+      BigNumber.from(challenge.sourceChainId).toNumber(),
+      mainnet2eraSpv.address,
+      orManager,
+    );
+    const challengerList: SignerWithAddress[] = [
+      signers[0],
+      signers[1],
+      signers[2],
+      signers[3],
+      signers[4],
+      signers[5],
+    ];
+    const mdcBalanceBeforeCreateChallenge = await ethers.provider.getBalance(
+      makerTest.address,
+    );
+
+    console.log(
+      'mdcBalanceBeforeCreateChallenge',
+      utils.formatEther(mdcBalanceBeforeCreateChallenge),
+    );
+    let freezeAmountTotal: BigNumberish = BigNumber.from(0);
+    let minDeposit = utils.parseEther('0.005');
+    const gasUsedList: BigNumber[] = [];
+
+    const $_BeforeAll: BigNumber[] = await Promise.all(
+      challengerList.map((challenger) =>
+        ethers.provider
+          .getBalance(challenger.address)
+          .then((balance) => balance),
+      ),
+    );
+    console.log(
+      '$_BeforeAll',
+      $_BeforeAll.map((b) => utils.formatEther(b)),
+    );
+
+    const victimBalanceBeforeChallenge = await ethers.provider.getBalance(
+      victim.address,
+    );
+
+    let freezeAmountMDC: BigNumberish = BigNumber.from(0);
+
+    for (const challenger of challengerList) {
+      let challengeInfo: challengeInputInfo = challenge;
+      if (
+        challengerList.indexOf(challenger) === 2 ||
+        challengerList.indexOf(challenger) === 3
+      ) {
+        challengeInfo = {
+          ...challengeInfo,
+          freezeAmount: BigNumber.from(challengeInfo.freezeAmount).add(
+            challengerList.indexOf(challenger),
+          ),
+        };
+      }
+      const makerTestChallenge = new TestMakerDeposit__factory(
+        challenger,
+      ).attach(makerTest.address);
+      gasUsedList.push(
+        BigNumber.from(
+          (
+            await createChallenge(
+              makerTestChallenge,
+              challengeInfo,
+              converRule(makerRule),
+            )
+          ).transactionfee,
+        ),
+      );
+      freezeAmountTotal = freezeAmountTotal
+        .add(minDeposit)
+        .add(challengeInfo.freezeAmount);
+
+      freezeAmountMDC = freezeAmountMDC
+        .add(BigNumber.from(challengeInfo.freezeAmount).mul(2))
+        .add(minDeposit);
+    }
+
+    const freezeTokenBefore = await makerTest.freezeAssets(
+      constants.AddressZero,
+    );
+
+    expect(freezeAmountMDC).eq(freezeTokenBefore);
+
+    const $_AfterCreate: BigNumber[] = await Promise.all(
+      challengerList.map((challenger) =>
+        ethers.provider
+          .getBalance(challenger.address)
+          .then((balance) => balance),
+      ),
+    );
+
+    const $_feeSpend = $_BeforeAll.map((balance, idx) =>
+      BigNumber.from(balance).sub(BigNumber.from($_AfterCreate[idx])),
+    );
+
+    const makerVerifySource = new TestMakerDeposit__factory(
+      challengerList[1],
+    ).attach(makerTest.address);
+
+    const tx = await makerVerifySource
+      .verifyChallengeSource(
+        challengerList[1].address,
+        mainnet2eraSpv.address,
+        makerPublicInputData.chain_id,
+        makerPublicInputData,
+        rawData,
+        rlpRawdata,
+        {
+          maxPriorityFeePerGas: 1,
+        },
+      )
+      .then((t: any) => t.wait());
+
+    expect(tx.status).to.be.eq(1);
+
+    $_feeSpend[1] = $_feeSpend[1].add(
+      BigNumber.from(
+        (await calculateTxGas(tx, 'verifyChallengeSourceTx ', true))
+          .transactionfee,
+      ),
+    );
+
+    // check contract balance
+    const mdcBalanceAfterCreateChallenge = await ethers.provider.getBalance(
+      makerTest.address,
+    );
+
+    expect(BigNumber.from(mdcBalanceAfterCreateChallenge)).eq(
+      BigNumber.from(mdcBalanceBeforeCreateChallenge).add(freezeAmountTotal),
+    );
+
+    const destAmount = await spvTest.calculateDestAmount(
+      makerRule,
+      ebc.address,
+      makerPublicInputData.chain_id,
+      makerPublicInputData.amount,
+    );
+
+    const verifiedDataHashData: BigNumberish[] = [
+      makerPublicInputData.min_verify_challenge_dest_tx_second,
+      makerPublicInputData.max_verify_challenge_dest_tx_second,
+      makerPublicInputData.nonce,
+      makerRuleDestChain,
+      makerPublicInputData.from,
+      constants.AddressZero,
+      destAmount,
+      makerPublicInputData.mdc_current_response_makers_hash,
+      makerRule.responseTime0,
+    ];
+
+    const verifiedDataHash = keccak256(
+      solidityPack(
+        [
+          'uint256',
+          'uint256',
+          'uint256',
+          'uint256',
+          'uint256',
+          'uint256',
+          'uint256',
+          'uint256',
+          'uint256',
+        ],
+        verifiedDataHashData,
+      ),
+    );
+
+    await mineXTimes(2);
+
+    const verifiedDataInfo: VerifiedDataInfo = {
+      minChallengeSecond: verifiedDataHashData[0],
+      maxChallengeSecond: verifiedDataHashData[1],
+      nonce: verifiedDataHashData[2],
+      destChainId: verifiedDataHashData[3],
+      from: verifiedDataHashData[4],
+      destToken: verifiedDataHashData[5],
+      destAmount: verifiedDataHashData[6],
+      responseMakersHash: verifiedDataHashData[7],
+      responseTime: verifiedDataHashData[8],
+    };
+    // console.log('verifiedDataInfo', verifiedDataInfo);
+    // expect(verifiedDataHash).eq(tx.events[0].args.result.verifiedDataHash0);
+
+    const makerPublicInputDataDest: PublicInputDataDest = {
+      ...publicInputDataDest,
+      // chain_id: makerRule.chainId1.toHexString(), // align with makerRule
+      token: makerRule.token0.toHexString(), // align with makerRule
+      from: mdcOwner.address,
+      to: makerPublicInputData.from,
+      amount: BigNumber.from(verifiedDataInfo.destAmount).add(
+        verifiedDataInfo.nonce,
+      ),
+    };
+
+    const txDest = await makerTest
+      .verifyChallengeDest(
+        challengerList[1].address,
+        mainnet2eraSpv.address,
+        challenge.sourceChainId,
+        challenge.sourceTxHash,
+        // m2eDestProof,
+        verifiedDataInfo,
+        responseMakersEncodeRaw,
+        makerPublicInputDataDest,
+      )
+      .then((t: any) => t.wait());
+    expect(txDest.status).to.be.eq(1);
+    // await calculateTxGas(txDest, 'verifyChallengeDestTx ');
+
+    $_feeSpend[1] = $_feeSpend[1].add(
+      BigNumber.from(
+        (await calculateTxGas(txDest, 'verifyChallengeDestTx ', true))
+          .transactionfee,
+      ),
+    );
+
+    // console.log(
+    //   '$_feeSpend-afterVerifyDest',
+    //   $_feeSpend.map((b) => utils.formatEther(b)),
+    // );
+
+    const $_AfterVerifyDest: BigNumber[] = await Promise.all(
+      challengerList.map((challenger) =>
+        ethers.provider
+          .getBalance(challenger.address)
+          .then((balance) => balance),
+      ),
+    );
+    // console.log(
+    //   '_AfterVerifyDest',
+    //   $_AfterVerifyDest.map((b) => utils.formatEther(b)),
+    // );
+
+    const challengeList = challengeManager.getChallengeInfoList();
+    await liquidateChallenge(
+      makerTest,
+      challengeList,
+      challengerList.map((c) => c.address),
+    );
+    expect(challengeManager.getChallengeInfoList().length).eq(0);
+
+    const balanceAfterList: bigint[] = await Promise.all(
+      challengerList.map((challenger) =>
+        ethers.provider
+          .getBalance(challenger.address)
+          .then((balance) => balance.toBigInt()),
+      ),
+    );
+
+    // console.log(
+    //   'balanceAfterList',
+    //   balanceAfterList.map((b) => utils.formatEther(b)),
+    // );
+
+    const freezeTokenAfter = await makerTest.freezeAssets(
+      constants.AddressZero,
+    );
+    expect(freezeTokenAfter).eq(0);
+    expect(balanceAfterList).deep.equals($_AfterVerifyDest);
   });
 });

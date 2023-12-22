@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
-
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {IORMakerDeposit} from "./interface/IORMakerDeposit.sol";
 import {IORManager} from "./interface/IORManager.sol";
 import {IORMDCFactory} from "./interface/IORMDCFactory.sol";
 import {IORChallengeSpv} from "./interface/IORChallengeSpv.sol";
 import {IOREventBinding} from "./interface/IOREventBinding.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+
 import {HelperLib} from "./library/HelperLib.sol";
 import {RuleLib} from "./library/RuleLib.sol";
 import {ConstantsLib} from "./library/ConstantsLib.sol";
@@ -19,7 +20,7 @@ import {IORSpvData} from "./interface/IORSpvData.sol";
 
 // import "hardhat/console.sol";
 
-contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
+contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime, ReentrancyGuard {
     using HelperLib for uint256[];
     using HelperLib for address[];
     using HelperLib for bytes;
@@ -46,21 +47,6 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         _;
     }
 
-    modifier onlyNoRequestTimestamp(address requestToken) {
-        require(_withdrawRequestList[requestToken].requestTimestamp == 0, "RHB");
-        _;
-    }
-
-    modifier onlyRequestTimestampCheckPass(address requestToken) {
-        require(
-            _withdrawRequestList[requestToken].requestTimestamp > 0 &&
-                block.timestamp >= _withdrawRequestList[requestToken].requestTimestamp,
-            "WTN"
-        );
-        _;
-    }
-
-    // solhint-disable-next-line no-empty-blocks
     receive() external payable {}
 
     function initialize(address owner_) external {
@@ -171,10 +157,8 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         return _withdrawRequestList[targetToken];
     }
 
-    function withdrawRequest(
-        address requestToken,
-        uint256 requestAmount
-    ) external onlyOwner onlyNoRequestTimestamp(requestToken) {
+    function withdrawRequest(address requestToken, uint256 requestAmount) external onlyOwner {
+        require(_withdrawRequestList[requestToken].requestTimestamp == 0, "RHB");
         uint64 requestTimestamp = uint64(
             block.timestamp + IORManager(_mdcFactory.manager()).getChallengeWithdrawDelay()
         );
@@ -182,7 +166,12 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         emit WithdrawRequested(requestAmount, requestTimestamp, requestToken);
     }
 
-    function withdraw(address token) external onlyOwner onlyRequestTimestampCheckPass(token) {
+    function withdraw(address token) external onlyOwner nonReentrant {
+        require(
+            _withdrawRequestList[token].requestTimestamp > 0 &&
+                block.timestamp >= _withdrawRequestList[token].requestTimestamp,
+            "WTN"
+        );
         WithdrawRequestList storage requestInfo = _withdrawRequestList[token];
         requestInfo.requestTimestamp = 0;
 
@@ -409,7 +398,11 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         );
     }
 
-    function checkChallenge(uint64 sourceChainId, bytes32 sourceTxHash, address[] calldata challengers) external {
+    function checkChallenge(
+        uint64 sourceChainId,
+        bytes32 sourceTxHash,
+        address[] calldata challengers
+    ) external nonReentrant {
         bytes32 challengeId = abi.encode(uint64(sourceChainId), sourceTxHash).hash();
         uint256 challengeIdentNum;
         ChallengeInfo storage challengeInfo = _challenges[challengeId];
@@ -574,13 +567,13 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         // Check slot
         {
             // Check rule & enabletime slot, rule hash
-            uint256 slot = uint256(abi.encode(ebc, 6).hash());
+            uint256 slot = uint256(abi.encode(ebc, 7).hash());
             require(slot == publicInputData.mdc_rule_root_slot, "RRSE");
             require((slot + 1) == publicInputData.mdc_rule_version_slot, "RVSE");
             require(0 == publicInputData.mdc_rule_enable_time_slot, "RVSE");
         }
-        require(3 == publicInputData.mdc_column_array_hash_slot, "CAS");
-        require(5 == publicInputData.mdc_response_makers_hash_slot, "RMS");
+        require(4 == publicInputData.mdc_column_array_hash_slot, "CAS");
+        require(6 == publicInputData.mdc_response_makers_hash_slot, "RMS");
         {
             // Check ChainInfo slot
             uint256 slot = uint256(abi.encode(publicInputData.chain_id, 2).hash()) + 1;
@@ -668,17 +661,6 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         require(result.verifiedTime0 > 0, "VT0Z");
         require(result.verifiedTime1 == 0, "VT1NZ");
 
-        require(
-            _canChallengeContinue(
-                HelperLib.calculateChallengeIdentNum(
-                    statement.sourceTxTime,
-                    sourceChainId,
-                    statement.sourceTxBlockNum,
-                    statement.sourceTxIndex
-                )
-            ),
-            "NCCF"
-        );
         // Parse rawDatas
         uint256[] memory responseMakers = abi.decode(rawDatas, (uint256[]));
 

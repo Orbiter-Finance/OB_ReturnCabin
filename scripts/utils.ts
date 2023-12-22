@@ -423,6 +423,7 @@ export const deployContracts = async (
       deployer,
     ).deploy();
     await makerTest_impl.deployed();
+    process.env['OR_MDC_TEST_IMPL'] = makerTest_impl.address;
     console.log('Address of makerTest_impl:', makerTest_impl.address);
 
     const { factoryAddress, mdcAddress } = await deployMDC(
