@@ -294,8 +294,8 @@ describe('start challenge test module', () => {
 
   it('Challenge and verifyTx', async function () {
     const victim = signers[4];
-    const challengerRatio100 = 1000000;
-    const challengerRatio = 1000000 / 2; // 1000000 = 100%
+    const challengerRatio100 = 1000000; // 1000000 = 100%
+    const challengerRatio = 1000000 / 2;
     console.log('victim:', victim.address);
     const amount = utils.parseEther('10');
     await deployer.sendTransaction({
@@ -511,6 +511,8 @@ describe('start challenge test module', () => {
       victim.address,
     );
 
+    let freezeAmountMDC: BigNumberish = BigNumber.from(0);
+
     for (const challenger of challengerList) {
       const makerTestChallenge = new TestMakerDeposit__factory(
         challenger,
@@ -529,7 +531,17 @@ describe('start challenge test module', () => {
       freezeAmountTotal = freezeAmountTotal
         .add(minDeposit)
         .add(challenge.freezeAmount);
+
+      freezeAmountMDC = freezeAmountMDC
+        .add(BigNumber.from(challenge.freezeAmount).mul(2))
+        .add(minDeposit);
     }
+
+    const freezeTokenBefore = await makerTest.freezeAssets(
+      constants.AddressZero,
+    );
+
+    expect(freezeAmountMDC).eq(freezeTokenBefore);
 
     const $_AfterCreate: BigNumber[] = await Promise.all(
       challengerList.map((challenger) =>
@@ -640,6 +652,7 @@ describe('start challenge test module', () => {
       .mul(challengerRatio)
       .div(challengerRatio100);
 
+    const freezeTokenLeft = await makerTest.freezeAssets(constants.AddressZero);
     console.log(
       "victim's lost amount:",
       utils.formatEther(victimLostAmount),
@@ -653,5 +666,6 @@ describe('start challenge test module', () => {
       $_challengerProfit[$_challengerProfit.length - 3],
     ).greaterThanOrEqual(BigNumber.from(amountShouldGet));
     expect(amountShouldGet).eq($_victimGain.sub(victimLostAmount));
+    expect(freezeTokenLeft).eq(0);
   });
 });

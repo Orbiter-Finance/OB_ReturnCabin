@@ -370,6 +370,7 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             require(msg.value == ConstantsLib.MIN_CHALLENGE_DEPOSIT_AMOUNT, "IF");
             IERC20(freezeToken).safeTransferFrom(msg.sender, address(this), freezeAmount1);
             _freezeAssets[freezeToken] += freezeAmount0 + freezeAmount1;
+            _freezeAssets[address(0)] += ConstantsLib.MIN_CHALLENGE_DEPOSIT_AMOUNT;
         }
 
         uint256 challengeIdentNum = HelperLib.calculateChallengeIdentNum(
@@ -438,30 +439,22 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
             if (result.verifiedTime1 > 0) {
                 // maker verified! all challenger fail
-                _unFreezeToken(
-                    challengeStatement.freezeToken,
-                    _challengerFailed(challengeStatement, challengeIdentNum)
-                );
+                _challengerFailed(challengeIdentNum);
             } else {
                 if (result.verifiedTime0 > 0) {
                     // challenger verified! maker over time, maker fail
                     require(block.timestamp > chainInfo.maxVerifyChallengeDestTxSecond + result.verifiedTime0, "VCST");
-                    _unFreezeToken(
-                        challengeStatement.freezeToken,
-                        _makerFailed(challengeStatement, winnerStatement, result, challengers[i], sourceChainId)
-                    );
+                    _makerFailed(challengeStatement, winnerStatement, result, challengers[i], sourceChainId);
                 } else {
                     // none challenger verify
                     require(
                         block.timestamp > chainInfo.maxVerifyChallengeSourceTxSecond + challengeStatement.sourceTxTime,
                         "VDST"
                     );
-                    _unFreezeToken(
-                        challengeStatement.freezeToken,
-                        _challengerFailed(challengeStatement, challengeIdentNum)
-                    );
+                    _challengerFailed(challengeIdentNum);
                 }
             }
+            _unFreezeToken(challengeStatement);
 
             challengeInfo.statement[challengers[i]].abortTime = uint64(block.timestamp);
 
@@ -736,20 +729,20 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         });
     }
 
-    function _challengerFailed(
-        ChallengeStatement memory challengeInfo,
-        uint256 challengeIdentNum
-    ) internal returns (uint256 unFreezeAmount) {
-        unFreezeAmount = (challengeInfo.freezeAmount0 +
-            challengeInfo.freezeAmount1 +
-            ConstantsLib.MIN_CHALLENGE_DEPOSIT_AMOUNT);
+    function _challengerFailed(uint256 challengeIdentNum) internal {
         _challengeNodeList[challengeIdentNum].challengeFinished = true;
     }
 
-    function _unFreezeToken(address freezeToken, uint256 unFreezeAmount) internal {
+    function _unFreezeToken(ChallengeStatement memory challengeInfo) internal {
         // Unfreeze
-        if (unFreezeAmount > 0) {
-            _freezeAssets[freezeToken] -= unFreezeAmount;
+        if (challengeInfo.freezeToken == address(0)) {
+            _freezeAssets[challengeInfo.freezeToken] -=
+                challengeInfo.freezeAmount0 +
+                challengeInfo.freezeAmount1 +
+                ConstantsLib.MIN_CHALLENGE_DEPOSIT_AMOUNT;
+        } else {
+            _freezeAssets[challengeInfo.freezeToken] -= challengeInfo.freezeAmount0 + challengeInfo.freezeAmount1;
+            _freezeAssets[address(0)] -= ConstantsLib.MIN_CHALLENGE_DEPOSIT_AMOUNT;
         }
     }
 
@@ -759,11 +752,7 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         ChallengeResult memory result,
         address challenger,
         uint256 challengeIdentNum
-    ) internal returns (uint256 unFreezeAmount) {
-        unFreezeAmount =
-            challengeInfo.freezeAmount0 +
-            challengeInfo.freezeAmount1 +
-            ConstantsLib.MIN_CHALLENGE_DEPOSIT_AMOUNT;
+    ) internal {
         if (result.winner == challenger) {
             uint256 userLostAmount = challengeInfo.freezeAmount1 >> 1;
             uint256 challengeUserAmount = (userLostAmount * challengeInfo.challengeUserRatio) /
@@ -771,7 +760,7 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             require(challengeUserAmount <= challengeInfo.freezeAmount1, "UAOF");
             challengeUserAmount += userLostAmount;
 
-            uint256 challengerAmount = unFreezeAmount - challengeUserAmount;
+            uint256 challengerAmount = challengeInfo.freezeAmount0 + challengeInfo.freezeAmount1 - challengeUserAmount;
             _challengeNodeList[challengeIdentNum].challengeFinished = true;
 
             // TODO: Not compatible with starknet network
@@ -783,7 +772,9 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
                 require(sent1, "ETH: SE1");
 
                 (bool sent2, ) = payable(result.winner).call{
-                    value: (challengerAmount + challengeInfo.challengerVerifyTransactionFee)
+                    value: (challengerAmount +
+                        challengeInfo.challengerVerifyTransactionFee +
+                        ConstantsLib.MIN_CHALLENGE_DEPOSIT_AMOUNT)
                 }("");
                 require(sent2, "ETH: SE2");
             } else {
