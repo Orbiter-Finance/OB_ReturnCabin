@@ -293,7 +293,7 @@ describe('start challenge test module', () => {
   });
 
   it('Challenge and verifyTx', async function () {
-    const victim = signers[4];
+    const victim = signers[signers.length - 1];
     const challengerRatio100 = 1000000; // 1000000 = 100%
     const challengerRatio = 1000000 / 2;
     console.log('victim:', victim.address);
@@ -482,6 +482,8 @@ describe('start challenge test module', () => {
       signers[1],
       signers[2],
       signers[3],
+      signers[4],
+      signers[5],
     ];
     const mdcBalanceBeforeCreateChallenge = await ethers.provider.getBalance(
       makerTest.address,
@@ -514,6 +516,18 @@ describe('start challenge test module', () => {
     let freezeAmountMDC: BigNumberish = BigNumber.from(0);
 
     for (const challenger of challengerList) {
+      let challengeInfo: challengeInputInfo = challenge;
+      if (
+        challengerList.indexOf(challenger) === 2 ||
+        challengerList.indexOf(challenger) === 3
+      ) {
+        challengeInfo = {
+          ...challengeInfo,
+          freezeAmount: BigNumber.from(challengeInfo.freezeAmount).add(
+            challengerList.indexOf(challenger),
+          ),
+        };
+      }
       const makerTestChallenge = new TestMakerDeposit__factory(
         challenger,
       ).attach(makerTest.address);
@@ -522,7 +536,7 @@ describe('start challenge test module', () => {
           (
             await createChallenge(
               makerTestChallenge,
-              challenge,
+              challengeInfo,
               converRule(makerRule),
             )
           ).transactionfee,
@@ -530,10 +544,10 @@ describe('start challenge test module', () => {
       );
       freezeAmountTotal = freezeAmountTotal
         .add(minDeposit)
-        .add(challenge.freezeAmount);
+        .add(challengeInfo.freezeAmount);
 
       freezeAmountMDC = freezeAmountMDC
-        .add(BigNumber.from(challenge.freezeAmount).mul(2))
+        .add(BigNumber.from(challengeInfo.freezeAmount).mul(2))
         .add(minDeposit);
     }
 
@@ -662,9 +676,27 @@ describe('start challenge test module', () => {
 
     expect($_challengerProfit[$_challengerProfit.length - 1]).eq(0);
     expect($_challengerProfit[$_challengerProfit.length - 2]).eq(0);
-    expect(
-      $_challengerProfit[$_challengerProfit.length - 3],
-    ).greaterThanOrEqual(BigNumber.from(amountShouldGet));
+    expect($_challengerProfit[$_challengerProfit.length - 3].toString()).eq(
+      BigNumber.from(0)
+        .sub(
+          BigNumber.from(victimLostAmount)
+            .mul(2)
+            .add(BigNumber.from(utils.parseEther('0.005'))),
+        )
+        .toString(),
+    );
+    expect($_challengerProfit[$_challengerProfit.length - 4].toString()).eq(
+      BigNumber.from(0)
+        .sub(
+          BigNumber.from(victimLostAmount)
+            .mul(2)
+            .add(BigNumber.from(utils.parseEther('0.005'))),
+        )
+        .toString(),
+    );
+    expect($_challengerProfit[1]).greaterThanOrEqual(
+      BigNumber.from(amountShouldGet),
+    );
     expect(amountShouldGet).eq($_victimGain.sub(victimLostAmount));
     expect(freezeTokenLeft).eq(0);
   });
