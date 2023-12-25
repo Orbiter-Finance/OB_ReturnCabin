@@ -118,6 +118,8 @@ describe('start challenge & liquidaion test module', () => {
   const defaultRule = createMakerRule(true);
   const makerRule: RuleStruct = {
     ...defaultRule,
+    token0: BigNumber.from(constants.AddressZero),
+    token1: BigNumber.from(constants.AddressZero),
     minPrice0: BigNumber.from(ethers.utils.parseEther('1')),
     minPrice1: BigNumber.from(ethers.utils.parseEther('1')),
     maxPrice0: BigNumber.from(ethers.utils.parseEther('5')),
@@ -400,8 +402,8 @@ describe('start challenge & liquidaion test module', () => {
       amount: BigNumber.from(victimLostAmount), // security code base on ebc & dealer, they both changed
       mdc_rule_root_slot: verifyInfo.slots[6].key, // ebc not same
       mdc_rule_version_slot: verifyInfo.slots[7].key, // ebc not same
-      mdc_column_array_hash_slot: verifyInfo.slots[3].key, // ebc not same
-      mdc_response_makers_hash_slot: verifyInfo.slots[5].key, // ebc not same
+      // mdc_column_array_hash_slot: verifyInfo.slots[3].key,
+      // mdc_response_makers_hash_slot: verifyInfo.slots[5].key,
       mdc_current_rule_value_hash: encodeHash, // rule not compatible
       mdc_current_response_makers_hash: responseMakersHash, // response maker not same
       manage_current_challenge_user_ratio: challengerRatio,
@@ -823,8 +825,8 @@ describe('start challenge & liquidaion test module', () => {
       amount: BigNumber.from(victimLostAmount), // security code base on ebc & dealer, they both changed
       mdc_rule_root_slot: verifyInfo.slots[6].key, // ebc not same
       mdc_rule_version_slot: verifyInfo.slots[7].key, // ebc not same
-      mdc_column_array_hash_slot: verifyInfo.slots[3].key, // ebc not same
-      mdc_response_makers_hash_slot: verifyInfo.slots[5].key, // ebc not same
+      // mdc_column_array_hash_slot: verifyInfo.slots[3].key,
+      // mdc_response_makers_hash_slot: verifyInfo.slots[5].key,
       mdc_current_rule_value_hash: encodeHash, // rule not compatible
       mdc_current_response_makers_hash: responseMakersHash, // response maker not same
       manage_current_challenge_user_ratio: challengerRatio,
@@ -1044,8 +1046,13 @@ describe('start challenge & liquidaion test module', () => {
       responseMakersHash: verifiedDataHashData[7],
       responseTime: verifiedDataHashData[8],
     };
-    // console.log('verifiedDataInfo', verifiedDataInfo);
-    // expect(verifiedDataHash).eq(tx.events[0].args.result.verifiedDataHash0);
+    // console.log(
+    //   'verifiedDataInfo',
+    //   verifiedDataInfo,
+    //   'hash:',
+    //   verifiedDataHash,
+    // );
+    expect(verifiedDataHash).eq(tx.events[0].args.result.verifiedDataHash0!);
 
     const makerPublicInputDataDest: PublicInputDataDest = {
       ...publicInputDataDest,

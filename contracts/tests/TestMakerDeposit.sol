@@ -3,7 +3,6 @@ pragma solidity ^0.8.17;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {IORMakerDeposit} from "./IORTestMakerDeposit.sol";
 import {IORManager} from "../interface/IORManager.sol";
 import {IORMDCFactory} from "../interface/IORMDCFactory.sol";
@@ -17,9 +16,7 @@ import {VersionAndEnableTime} from "../VersionAndEnableTime.sol";
 import {IORRuleDecoder} from "../interface/IORRuleDecoder.sol";
 import {IORSpvData} from "../interface/IORSpvData.sol";
 
-// import "hardhat/console.sol";
-
-contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime, ReentrancyGuard {
+contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
     using HelperLib for uint256[];
     using HelperLib for address[];
     using HelperLib for bytes;
@@ -165,7 +162,7 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime, ReentrancyGu
         emit WithdrawRequested(requestAmount, requestTimestamp, requestToken);
     }
 
-    function withdraw(address token) external onlyOwner nonReentrant {
+    function withdraw(address token) external onlyOwner {
         require(
             _withdrawRequestList[token].requestTimestamp > 0 &&
                 block.timestamp >= _withdrawRequestList[token].requestTimestamp,
@@ -397,11 +394,7 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime, ReentrancyGu
         );
     }
 
-    function checkChallenge(
-        uint64 sourceChainId,
-        bytes32 sourceTxHash,
-        address[] calldata challengers
-    ) external nonReentrant {
+    function checkChallenge(uint64 sourceChainId, bytes32 sourceTxHash, address[] calldata challengers) external {
         bytes32 challengeId = abi.encode(uint64(sourceChainId), sourceTxHash).hash();
         uint256 challengeIdentNum;
         ChallengeInfo storage challengeInfo = _challenges[challengeId];
@@ -416,6 +409,7 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime, ReentrancyGu
             require(challengeStatement.challengeTime > 0, "CNE");
 
             require(challengeStatement.abortTime == 0, "CA");
+            challengeInfo.statement[challengers[i]].abortTime = uint64(block.timestamp);
 
             challengeIdentNum = HelperLib.calculateChallengeIdentNum(
                 challengeStatement.sourceTxTime,
@@ -447,8 +441,6 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime, ReentrancyGu
                 }
             }
             _unFreezeToken(challengeStatement);
-
-            challengeInfo.statement[challengers[i]].abortTime = uint64(block.timestamp);
 
             emit ChallengeInfoUpdated({
                 challengeId: challengeId,
@@ -507,6 +499,10 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime, ReentrancyGu
         ChallengeStatement memory statement = _challenges[challengeId].statement[challenger];
         require(statement.challengeTime > 0, "CTZ");
         require(_challenges[challengeId].result.verifiedTime0 == 0, "VT0NZ");
+
+        ChallengeStatement storage statement_s = _challenges[challengeId].statement[challenger];
+        ChallengeResult storage result_s = _challenges[challengeId].result;
+        result_s.verifiedTime0 = uint64(block.timestamp);
 
         // Check timestamp
         require(
@@ -568,13 +564,13 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime, ReentrancyGu
         // Check slot
         {
             // Check rule & enabletime slot, rule hash
-            uint256 slot = uint256(abi.encode(ebc, 7).hash());
+            uint256 slot = uint256(abi.encode(ebc, 6).hash());
             require(slot == publicInputData.mdc_rule_root_slot, "RRSE");
             require((slot + 1) == publicInputData.mdc_rule_version_slot, "RVSE");
             require(0 == publicInputData.mdc_rule_enable_time_slot, "RVSE");
         }
-        require(4 == publicInputData.mdc_column_array_hash_slot, "CAS");
-        require(6 == publicInputData.mdc_response_makers_hash_slot, "RMS");
+        require(3 == publicInputData.mdc_column_array_hash_slot, "CAS");
+        require(5 == publicInputData.mdc_response_makers_hash_slot, "RMS");
         {
             // Check ChainInfo slot
             uint256 slot = uint256(abi.encode(publicInputData.chain_id, 2).hash()) + 1;
@@ -587,16 +583,9 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime, ReentrancyGu
                 1;
             require(slot == publicInputData.manage_source_chain_mainnet_token_info_slot, "MTS");
         }
-
-        ChallengeStatement storage statement_s = _challenges[challengeId].statement[challenger];
-        ChallengeResult storage result_s = _challenges[challengeId].result;
-
-        // Save tx'from address, and compensate tx'from on the mainnet when the maker failed
         statement_s.sourceTxFrom = publicInputData.from;
 
         statement_s.challengeUserRatio = publicInputData.manage_current_challenge_user_ratio;
-
-        result_s.verifiedTime0 = uint64(block.timestamp);
 
         result_s.winner = challenger;
 

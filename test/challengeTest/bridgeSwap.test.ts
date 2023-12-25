@@ -87,9 +87,10 @@ import { MerkleTree } from 'merkletreejs';
 import { mine, mineUpTo } from '@nomicfoundation/hardhat-network-helpers';
 import { Console } from 'console';
 
-describe('MDC TEST ON GOERLI', () => {
+describe('MDC Bridge test', () => {
   let signers: SignerWithAddress[];
   let mdcOwner: SignerWithAddress;
+  let deployer: SignerWithAddress;
   let orManager: ORManager;
   let orManagerEbcs: string[];
   let ebcs: string[];
@@ -110,6 +111,7 @@ describe('MDC TEST ON GOERLI', () => {
 
   before(async function () {
     signers = await ethers.getSigners();
+    deployer = signers[0];
     mdcOwner = signers[2];
     networkId = (await ethers.provider.getNetwork()).chainId;
     const isTestnet =
@@ -117,31 +119,41 @@ describe('MDC TEST ON GOERLI', () => {
     console.log('networkId:', networkId);
 
     if (isTestnet) {
-      await deployContracts(signers[0], mdcOwner);
+      await deployContracts(signers[0]);
     }
 
     // assert if OR_MDC is undefined
     assert(
       (!!process.env['OR_MDC_TEST'] || !!process.env['OR_MDC']) &&
         !!process.env['EVENT_BINDING_CONTRACT'] &&
-        !!process.env['OR_MANAGER_ADDRESS'],
+        !!process.env['OR_MANAGER_ADDRESS'] &&
+        !!process.env['OR_MDC_FACTORY_ADDRESS'],
       // &&!!process.env['SPV_TEST_ADDRESS'],
       'Env miss [OR_MDC]',
     );
+
     const orMakerDepositTestAddress = process.env['OR_MDC_TEST'];
-    const orMakerDepositAddress = process.env['OR_MDC'];
+    let orMakerDepositAddress = process.env['OR_MDC'];
     const orEBCAddress = process.env['EVENT_BINDING_CONTRACT'];
     const orManagerAddress = process.env['OR_MANAGER_ADDRESS'];
+    const orMDCFactoryAddress = process.env['OR_MDC_FACTORY_ADDRESS'];
     // const spvTestAddress = process.env['SPV_TEST_ADDRESS'];
 
     orManager = new ORManager__factory(signers[0]).attach(orManagerAddress);
     console.log('connect to orManager', orManager.address);
 
-    if (orMakerDepositTestAddress != undefined) {
-      orMakerDeposit = new TestMakerDeposit__factory(mdcOwner).attach(
-        orMakerDepositTestAddress,
+    orMDCFactory = new ORMDCFactory__factory(signers[0]).attach(
+      orMDCFactoryAddress,
+    );
+
+    if (orMakerDepositAddress == undefined) {
+      const { mdcAddress } = await deployMDC(
+        mdcOwner,
+        orManager.address,
+        await orMDCFactory.implementation(),
+        orMDCFactory.address,
       );
-      console.log('connect to makerTest', orMakerDeposit.address);
+      orMakerDepositAddress = mdcAddress;
     }
 
     if (orMakerDepositAddress != undefined) {
@@ -149,6 +161,11 @@ describe('MDC TEST ON GOERLI', () => {
         orMakerDepositAddress,
       );
       console.log('connect to maker', orMakerDeposit.address);
+    } else if (orMakerDepositTestAddress != undefined) {
+      orMakerDeposit = new TestMakerDeposit__factory(mdcOwner).attach(
+        orMakerDepositTestAddress,
+      );
+      console.log('connect to makerTest', orMakerDeposit.address);
     }
 
     ebc = new OREventBinding__factory(signers[0]).attach(orEBCAddress);
@@ -194,7 +211,7 @@ describe('MDC TEST ON GOERLI', () => {
     columnArray = {
       dealers: [mdcOwner.address],
       ebcs: [process.env['EVENT_BINDING_CONTRACT']!],
-      chainIds: [],
+      chainIds: [300, 11155111],
     };
   });
 
@@ -226,7 +243,7 @@ describe('MDC TEST ON GOERLI', () => {
             .updateColumnArray(enableTime, mdcDealers, mdcEbcs, chainIds, {
               gasLimit: 10000000,
             })
-            .then((t) => t.wait(3));
+            .then((t) => t.wait(2));
 
           // const args = events?.[0].args;
           // expect(args?.impl).eq(implementation);
@@ -269,7 +286,7 @@ describe('MDC TEST ON GOERLI', () => {
           const enableTime = await calculateEnableTime(orMakerDeposit);
           const { events } = await orMakerDeposit
             .updateResponseMakers(enableTime, responseMakerSignatures)
-            .then((t) => t.wait());
+            .then((t) => t.wait(2));
 
           const args = events?.[0].args;
           expect(args?.responseMakers).to.deep.eq(responseMakers);
