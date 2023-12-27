@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import {HelperLib} from "../library/HelperLib.sol";
+import {PublicInputParseLib} from "../library/ChallengeSpvLib.sol";
 
 interface IORChallengeSpv {
     function setSpvVerifierAddr(address sourceTxVerifier, address destTxVerifier) external;
@@ -12,7 +12,11 @@ interface IORChallengeSpv {
 
     function verifyDestTx(bytes calldata zkProof) external returns (bool);
 
-    function parseSourceTxProof(bytes calldata zkProof) external pure returns (HelperLib.PublicInputDataSource memory);
+    function parseSourceTxProof(
+        bytes calldata zkProof
+    ) external pure returns (PublicInputParseLib.PublicInputDataSource memory);
 
-    function parseDestTxProof(bytes calldata zkProof) external pure returns (HelperLib.PublicInputDataDest memory);
+    function parseDestTxProof(
+        bytes calldata zkProof
+    ) external pure returns (PublicInputParseLib.PublicInputDataDest memory);
 }

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /*
- * Modification by pis to adapt to the orbiter protocol. (20231121)
+ * Modified by pis to work with the orbiter protocol. (20231121)
  * @author Hamdi Allam hamdi.allam97@gmail.com
  */
 pragma solidity ^0.8.17;

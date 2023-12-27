@@ -1,15 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import {IORChallengeSpv} from "../interface/IORChallengeSpv.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-
-import {HelperLib} from "../library/HelperLib.sol";
-
-import {Mainnet2EraLib} from "../library/Mainnet2EraLib.sol";
+import {IORChallengeSpv} from "../interface/IORChallengeSpv.sol";
+import {Mainnet2EraLib, PublicInputParseLib} from "../library/ChallengeSpvLib.sol";
 
 contract ORChallengeSpvMainnet2Era is IORChallengeSpv, Ownable {
     using Mainnet2EraLib for bytes;
+    using PublicInputParseLib for bytes;
     address private _sourceTxVerifier;
     address private _destTxVerifier;
 
@@ -36,11 +34,15 @@ contract ORChallengeSpvMainnet2Era is IORChallengeSpv, Ownable {
         return success && zkProof.checkDestTxProof();
     }
 
-    function parseSourceTxProof(bytes calldata zkProof) external pure returns (HelperLib.PublicInputDataSource memory) {
+    function parseSourceTxProof(
+        bytes calldata zkProof
+    ) external pure returns (PublicInputParseLib.PublicInputDataSource memory) {
         return zkProof.parsePublicInputSource();
     }
 
-    function parseDestTxProof(bytes calldata zkProof) external pure returns (HelperLib.PublicInputDataDest memory) {
+    function parseDestTxProof(
+        bytes calldata zkProof
+    ) external pure returns (PublicInputParseLib.PublicInputDataDest memory) {
         return zkProof.parsePublicInputDest();
     }
 }

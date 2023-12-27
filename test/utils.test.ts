@@ -198,7 +198,7 @@ export interface PublicInputData {
   max_verify_challenge_src_tx_second: BigNumberish;
   min_verify_challenge_dest_tx_second: BigNumberish;
   max_verify_challenge_dest_tx_second: BigNumberish;
-  manage_source_chain_mainnet_token_info_slot: BigNumberish;
+  // manage_source_chain_mainnet_token_info_slot: BigNumberish;
   manage_dest_chain_mainnet_token_slot: BigNumberish;
   // manage_challenge_user_ratio_slot: BigNumberish;
   mdc_current_rule_root: BytesLike;

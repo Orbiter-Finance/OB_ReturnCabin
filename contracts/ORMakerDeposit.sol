@@ -12,6 +12,7 @@ import {HelperLib} from "./library/HelperLib.sol";
 import {RuleLib} from "./library/RuleLib.sol";
 import {ConstantsLib} from "./library/ConstantsLib.sol";
 import {BridgeLib} from "./library/BridgeLib.sol";
+import {PublicInputParseLib} from "./library/ChallengeSpvLib.sol";
 import {VersionAndEnableTime} from "./VersionAndEnableTime.sol";
 import {IORRuleDecoder} from "./interface/IORRuleDecoder.sol";
 import {IORSpvData} from "./interface/IORSpvData.sol";
@@ -475,7 +476,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         require(manager.getChainInfo(sourceChainId).spvs.includes(spvAddress), "SPVI");
         IORChallengeSpv challengeSpv = IORChallengeSpv(spvAddress);
         require(challengeSpv.verifySourceTx(proof), "VF");
-        HelperLib.PublicInputDataSource memory publicInputData = challengeSpv.parseSourceTxProof(proof);
+        PublicInputParseLib.PublicInputDataSource memory publicInputData = challengeSpv.parseSourceTxProof(proof);
         for (uint256 i = 0; ; ) {
             require(
                 IORSpvData(manager.spvDataContract()).getStartBlockNumber(publicInputData.merkle_roots[i]) != 0,
@@ -570,12 +571,12 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             require(slot == publicInputData.manage_source_chain_info_slot, "CIS");
         }
 
-        {
-            // check sourceChain mainnet token slot
-            uint slot = uint(abi.encode(abi.encode(publicInputData.chain_id, publicInputData.token).hash(), 3).hash()) +
-                1;
-            require(slot == publicInputData.manage_source_chain_mainnet_token_info_slot, "MTS");
-        }
+        // {
+        //     // check sourceChain mainnet token slot
+        //     uint slot = uint(abi.encode(abi.encode(publicInputData.chain_id, publicInputData.token).hash(), 3).hash()) +
+        //         1;
+        //     require(slot == publicInputData.manage_source_chain_mainnet_token_info_slot, "MTS");
+        // }
         statement_s.sourceTxFrom = publicInputData.from;
 
         statement_s.challengeUserRatio = publicInputData.manage_current_challenge_user_ratio;
@@ -621,7 +622,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         // get DestChainInfo
         require(challengeSpv.verifyDestTx(proof), "VF");
         // parse Public input
-        HelperLib.PublicInputDataDest memory publicInputData = challengeSpv.parseDestTxProof(proof);
+        PublicInputParseLib.PublicInputDataDest memory publicInputData = challengeSpv.parseDestTxProof(proof);
         for (uint256 i = 0; ; ) {
             require(
                 IORSpvData(manager.spvDataContract()).getStartBlockNumber(publicInputData.merkle_roots[i]) != 0,

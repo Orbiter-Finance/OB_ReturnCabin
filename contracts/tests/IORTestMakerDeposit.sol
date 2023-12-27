@@ -4,7 +4,7 @@ pragma solidity ^0.8.17;
 import {IORChallengeSpv} from "../interface/IORChallengeSpv.sol";
 import {BridgeLib} from "../library/BridgeLib.sol";
 import {RuleLib} from "../library/RuleLib.sol";
-import {HelperLib} from "../library/HelperLib.sol";
+import {PublicInputParseLib} from "../library/ChallengeSpvLib.sol";
 
 interface IORMakerDeposit {
     struct ChallengeStatement {
@@ -145,7 +145,7 @@ interface IORMakerDeposit {
         address challenger,
         address spvAddress,
         uint64 sourceChainId,
-        HelperLib.PublicInputDataSource calldata publicInputData,
+        PublicInputParseLib.PublicInputDataSource calldata publicInputData,
         // bytes calldata proof,
         bytes calldata rawDatas,
         bytes calldata rlpRuleBytes
@@ -159,6 +159,6 @@ interface IORMakerDeposit {
         // bytes calldata proof,
         verifiedDataInfo calldata verifiedSourceTxData,
         bytes calldata rawDatas,
-        HelperLib.PublicInputDataDest calldata publicInputData
+        PublicInputParseLib.PublicInputDataDest calldata publicInputData
     ) external;
 }
