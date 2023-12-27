@@ -346,7 +346,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
         require(_challenges[challengeId].statement[msg.sender].challengeTime == 0, "CT");
 
-        require(_challenges[challengeId].result.lastChallengeBlockNum < block.number, "LBN");
+        require(_challenges[challengeId].result.lastChallengeBlockNum < uint64(block.number), "LBN");
         _challenges[challengeId].result.lastChallengeBlockNum = uint64(block.number);
 
         (ruleKey);
@@ -571,12 +571,6 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             require(slot == publicInputData.manage_source_chain_info_slot, "CIS");
         }
 
-        // {
-        //     // check sourceChain mainnet token slot
-        //     uint slot = uint(abi.encode(abi.encode(publicInputData.chain_id, publicInputData.token).hash(), 3).hash()) +
-        //         1;
-        //     require(slot == publicInputData.manage_source_chain_mainnet_token_info_slot, "MTS");
-        // }
         statement_s.sourceTxFrom = publicInputData.from;
 
         statement_s.challengeUserRatio = publicInputData.manage_current_challenge_user_ratio;
@@ -765,6 +759,6 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             challengeInfo.freezeToken == winner.freezeToken &&
             challengeInfo.sourceTxBlockNum == winner.sourceTxBlockNum &&
             challengeInfo.sourceTxIndex == winner.sourceTxIndex &&
-            challengeInfo.freezeAmount0 == winner.freezeAmount0);
+            challengeInfo.freezeAmount1 == winner.freezeAmount1);
     }
 }

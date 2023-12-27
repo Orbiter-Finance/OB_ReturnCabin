@@ -3,13 +3,13 @@
 pragma solidity ^0.8.17;
 
 library Era2MainnetLib {
-    function checkSourceTxProof(bytes calldata zkProof) internal pure returns (bool proofMatch) {
-        uint256 ProofLength = 384;
-        uint256 SplitStep = 32;
-        uint256 TransactionSplitStart = ProofLength;
-        uint256 TrackBlockSplitStart = TransactionSplitStart + SplitStep * 14;
-        uint256 MdcContractSplitStart = TrackBlockSplitStart + SplitStep * 12;
+    uint256 constant ProofLength = 384;
+    uint256 constant SplitStep = 32;
+    uint256 constant TransactionSplitStart = ProofLength;
+    uint256 constant TrackBlockSplitStart = TransactionSplitStart + SplitStep * 14;
+    uint256 constant MdcContractSplitStart = TrackBlockSplitStart + SplitStep * 12;
 
+    function checkSourceTxProof(bytes calldata zkProof) internal pure returns (bool proofMatch) {
         uint256 ob_contracts_current_block_hash = ((uint256(
             bytes32(zkProof[MdcContractSplitStart + SplitStep * 40:MdcContractSplitStart + SplitStep * 41])
         ) << 128) |
@@ -103,10 +103,10 @@ library Era2MainnetLib {
     }
 
     function checkDestTxProof(bytes calldata zkProof) internal pure returns (bool proofMatch) {
-        uint256 ProofLength = 384;
-        uint256 SplitStep = 32;
-        uint256 TransactionSplitStart = ProofLength;
-        uint256 TrackBlockSplitStart = TransactionSplitStart + SplitStep * 14;
+        // uint256 ProofLength = 384;
+        // uint256 SplitStep = 32;
+        // uint256 TransactionSplitStart = ProofLength;
+        // uint256 TrackBlockSplitStart = TransactionSplitStart + SplitStep * 14;
         proofMatch =
             ((uint256(bytes32(zkProof[TransactionSplitStart:TransactionSplitStart + SplitStep])) << 128) |
                 uint256(bytes32(zkProof[TransactionSplitStart + SplitStep:TransactionSplitStart + SplitStep * 2]))) ==
@@ -118,12 +118,6 @@ library Era2MainnetLib {
     function parsePublicInputSource(
         bytes calldata zkProof
     ) internal pure returns (PublicInputParseLib.PublicInputDataSource memory publicInputSource) {
-        uint256 ProofLength = 384;
-        uint256 SplitStep = 32;
-        uint256 TransactionSplitStart = ProofLength;
-        uint256 TrackBlockSplitStart = TransactionSplitStart + SplitStep * 14;
-        uint256 MdcContractSplitStart = TrackBlockSplitStart + SplitStep * 12;
-
         publicInputSource = PublicInputParseLib.PublicInputDataSource({
             tx_hash: bytes32(
                 (uint256(
@@ -358,10 +352,6 @@ library Era2MainnetLib {
     function parsePublicInputDest(
         bytes calldata zkProof
     ) internal pure returns (PublicInputParseLib.PublicInputDataDest memory publicInputDest) {
-        uint256 ProofLength = 384;
-        uint256 SplitStep = 32;
-        uint256 TransactionSplitStart = ProofLength; // 384 is proof length
-        uint256 TrackBlockSplitStart = TransactionSplitStart + SplitStep * 14;
         publicInputDest = PublicInputParseLib.PublicInputDataDest({
             chain_id: uint64(
                 uint256(bytes32(zkProof[TransactionSplitStart + SplitStep * 4:TransactionSplitStart + SplitStep * 5]))
@@ -391,12 +381,14 @@ library Era2MainnetLib {
 }
 
 library Mainnet2EraLib {
+    uint256 constant ProofLength = 384;
+    uint256 constant SplitStep = 32;
+    uint256 constant TransactionSplitStart = ProofLength;
+    uint256 constant TrackBlockSplitStart = TransactionSplitStart + SplitStep * 14;
+    uint256 constant TrackBlockSplitStartDest = TransactionSplitStart + SplitStep * 17;
+    uint256 constant MdcContractSplitStart = TrackBlockSplitStart + SplitStep * 12;
+
     function checkSourceTxProof(bytes calldata zkProof) internal pure returns (bool proofMatch) {
-        uint256 ProofLength = 384;
-        uint256 SplitStep = 32;
-        uint256 TransactionSplitStart = ProofLength;
-        uint256 TrackBlockSplitStart = TransactionSplitStart + SplitStep * 14;
-        uint256 MdcContractSplitStart = TrackBlockSplitStart + SplitStep * 12;
         uint256 original_tx_block_hash = ((uint256(
             bytes32(zkProof[TransactionSplitStart:TransactionSplitStart + SplitStep])
         ) << 128) | uint256(bytes32(zkProof[TransactionSplitStart + SplitStep:TransactionSplitStart + SplitStep * 2])));
@@ -499,30 +491,23 @@ library Mainnet2EraLib {
     }
 
     function checkDestTxProof(bytes calldata zkProof) internal pure returns (bool proofMatch) {
-        uint256 ProofLength = 384;
-        uint256 SplitStep = 32;
-        uint256 TransactionSplitStart = ProofLength; // 384 is proof length
-        uint256 TrackBlockSplitStart = TransactionSplitStart + SplitStep * 17;
         proofMatch =
             (uint256(bytes32(zkProof[TransactionSplitStart + SplitStep * 14:TransactionSplitStart + SplitStep * 15])) <<
                 128) |
                 uint256(
                     bytes32(zkProof[TransactionSplitStart + SplitStep * 15:TransactionSplitStart + SplitStep * 16])
                 ) ==
-            ((uint256(bytes32(zkProof[TrackBlockSplitStart + SplitStep * 2:TrackBlockSplitStart + SplitStep * 3])) <<
-                128) |
-                uint256(bytes32(zkProof[TrackBlockSplitStart + SplitStep * 3:TrackBlockSplitStart + SplitStep * 4])));
+            ((uint256(
+                bytes32(zkProof[TrackBlockSplitStartDest + SplitStep * 2:TrackBlockSplitStartDest + SplitStep * 3])
+            ) << 128) |
+                uint256(
+                    bytes32(zkProof[TrackBlockSplitStartDest + SplitStep * 3:TrackBlockSplitStartDest + SplitStep * 4])
+                ));
     }
 
     function parsePublicInputSource(
         bytes calldata proofData
     ) internal pure returns (PublicInputParseLib.PublicInputDataSource memory publicInputSource) {
-        uint256 ProofLength = 384;
-        uint256 SplitStep = 32;
-        uint256 TransactionSplitStart = ProofLength;
-        uint256 TrackBlockSplitStart = TransactionSplitStart + SplitStep * 14;
-        uint256 MdcContractSplitStart = TrackBlockSplitStart + SplitStep * 12;
-
         publicInputSource = PublicInputParseLib.PublicInputDataSource({
             tx_hash: bytes32(
                 (uint256(
@@ -785,10 +770,6 @@ library Mainnet2EraLib {
     function parsePublicInputDest(
         bytes calldata proofData
     ) internal pure returns (PublicInputParseLib.PublicInputDataDest memory publicInputDest) {
-        uint256 ProofLength = 384;
-        uint256 SplitStep = 32;
-        uint256 TransactionSplitStart = ProofLength; // 384 is proof length
-        uint256 TrackBlockSplitStart = TransactionSplitStart + SplitStep * 17;
         publicInputDest = PublicInputParseLib.PublicInputDataDest({
             chain_id: uint64(
                 uint256(bytes32(proofData[TransactionSplitStart + SplitStep * 4:TransactionSplitStart + SplitStep * 5]))
@@ -825,8 +806,10 @@ library Mainnet2EraLib {
             merkle_roots: new bytes32[](1)
         });
         publicInputDest.merkle_roots[0] = bytes32(
-            (uint256(bytes32(proofData[TrackBlockSplitStart:TrackBlockSplitStart + SplitStep])) << 128) |
-                uint256(bytes32(proofData[TrackBlockSplitStart + SplitStep:TrackBlockSplitStart + SplitStep * 2]))
+            (uint256(bytes32(proofData[TrackBlockSplitStartDest:TrackBlockSplitStartDest + SplitStep])) << 128) |
+                uint256(
+                    bytes32(proofData[TrackBlockSplitStartDest + SplitStep:TrackBlockSplitStartDest + SplitStep * 2])
+                )
         );
     }
 }

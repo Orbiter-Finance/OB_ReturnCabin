@@ -91,47 +91,4 @@ library HelperLib {
         }
         return challengeIdentNum;
     }
-
-    // struct PublicInputDataSource {
-    //     bytes32 tx_hash;
-    //     uint64 chain_id;
-    //     uint256 index;
-    //     uint256 from;
-    //     uint256 to;
-    //     address token;
-    //     uint256 amount;
-    //     uint256 nonce;
-    //     uint256 time_stamp;
-    //     address dest;
-    //     address dest_token;
-    //     address mdc_contract_address;
-    //     address manage_contract_address;
-    //     uint256 mdc_rule_root_slot;
-    //     uint256 mdc_rule_version_slot;
-    //     uint256 mdc_rule_enable_time_slot;
-    //     uint256 manage_source_chain_info_slot;
-    //     uint256 manage_dest_chain_mainnet_token_slot;
-    //     bytes32 mdc_current_rule_root;
-    //     bytes32 mdc_current_column_array_hash;
-    //     uint256 mdc_current_response_makers_hash;
-    //     uint64 min_verify_challenge_src_tx_second;
-    //     uint64 max_verify_challenge_src_tx_second;
-    //     uint64 min_verify_challenge_dest_tx_second;
-    //     uint64 max_verify_challenge_dest_tx_second;
-    //     address manage_current_source_chain_mainnet_token;
-    //     address manage_current_dest_chain_mainnet_token;
-    //     uint64 manage_current_challenge_user_ratio;
-    //     bytes32 mdc_current_rule_value_hash;
-    //     bytes32[] merkle_roots;
-    // }
-
-    // struct PublicInputDataDest {
-    //     uint64 chain_id;
-    //     uint256 from;
-    //     uint256 to;
-    //     uint256 token;
-    //     uint256 amount;
-    //     uint64 time_stamp;
-    //     bytes32[] merkle_roots;
-    // }
 }
