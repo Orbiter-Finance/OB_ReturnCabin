@@ -25,6 +25,7 @@ interface IORMakerDeposit {
         address winner; //Challenger Address
         uint64 verifiedTime0; // Time of verifyChallengeSource. Greater than 0 means verification passed
         uint64 verifiedTime1; // Time of verifyChallengeDest. Greater than 0 means verification passed
+        uint64 lastChallengeBlockNum; // Last challenge block number
         bytes32 verifiedDataHash0; // Data's hash of verifyChallengeSource
     }
     struct ChallengeInfo {

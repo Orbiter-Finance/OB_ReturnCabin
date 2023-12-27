@@ -38,10 +38,60 @@ library Mainnet2EraLib {
         ) << 128) |
             uint256(bytes32(zkProof[TrackBlockSplitStart + SplitStep * 11:TrackBlockSplitStart + SplitStep * 12]));
 
+        bytes8 time_stamp = bytes8(
+            uint64(
+                uint256(bytes32(zkProof[TransactionSplitStart + SplitStep * 11:TransactionSplitStart + SplitStep * 12]))
+            )
+        );
+
+        bytes8 mdc_current_rule_enable_time = (
+            bytes8(
+                zkProof[MdcContractSplitStart + SplitStep * 22 + SplitStep / 2:MdcContractSplitStart +
+                    SplitStep *
+                    22 +
+                    SplitStep /
+                    2 +
+                    SplitStep /
+                    4]
+            )
+        );
+
+        bytes8 mdc_next_rule_enable_time = (
+            bytes8(
+                zkProof[MdcContractSplitStart + SplitStep * 36 + SplitStep / 2:MdcContractSplitStart +
+                    SplitStep *
+                    36 +
+                    SplitStep /
+                    2 +
+                    SplitStep /
+                    4]
+            )
+        );
+
+        uint256 mdc_column_array_hash_slot = ((uint256(
+            bytes32(zkProof[MdcContractSplitStart + SplitStep * 8:MdcContractSplitStart + SplitStep * 9])
+        ) << 128) |
+            uint256(bytes32(zkProof[MdcContractSplitStart + SplitStep * 9:MdcContractSplitStart + SplitStep * 10])));
+
+        uint256 mdc_response_makers_hash_slot = ((uint256(
+            bytes32(zkProof[MdcContractSplitStart + SplitStep * 10:MdcContractSplitStart + SplitStep * 11])
+        ) << 128) |
+            uint256(bytes32(zkProof[MdcContractSplitStart + SplitStep * 11:MdcContractSplitStart + SplitStep * 12])));
+
+        uint256 manage_challenge_user_ratio_slot = ((uint256(
+            bytes32(zkProof[MdcContractSplitStart + SplitStep * 18:MdcContractSplitStart + SplitStep * 19])
+        ) << 128) |
+            uint256(bytes32(zkProof[MdcContractSplitStart + SplitStep * 19:MdcContractSplitStart + SplitStep * 20])));
+
         proofMatch =
             original_tx_block_hash == original_tx_batch_target_block_hash &&
             ob_contracts_current_block_hash == ob_contracts_current_batch_target_block_hash &&
-            ob_contracts_next_block_hash == ob_contracts_next_batch_target_block_hash;
+            ob_contracts_next_block_hash == ob_contracts_next_batch_target_block_hash &&
+            mdc_column_array_hash_slot == 3 &&
+            mdc_response_makers_hash_slot == 5 &&
+            manage_challenge_user_ratio_slot == 6 &&
+            ((mdc_current_rule_enable_time <= time_stamp && time_stamp < mdc_next_rule_enable_time) ||
+                (mdc_current_rule_enable_time == mdc_next_rule_enable_time && mdc_next_rule_enable_time < time_stamp));
     }
 
     function checkDestTxProof(bytes calldata zkProof) internal pure returns (bool proofMatch) {
@@ -150,24 +200,6 @@ library Mainnet2EraLib {
                 uint256(
                     bytes32(proofData[MdcContractSplitStart + SplitStep * 7:MdcContractSplitStart + SplitStep * 8])
                 )),
-            mdc_column_array_hash_slot: uint8(
-                (uint256(
-                    bytes32(proofData[MdcContractSplitStart + SplitStep * 8:MdcContractSplitStart + SplitStep * 9])
-                ) << 128) |
-                    uint256(
-                        bytes32(proofData[MdcContractSplitStart + SplitStep * 9:MdcContractSplitStart + SplitStep * 10])
-                    )
-            ),
-            mdc_response_makers_hash_slot: uint8(
-                (uint256(
-                    bytes32(proofData[MdcContractSplitStart + SplitStep * 10:MdcContractSplitStart + SplitStep * 11])
-                ) << 128) |
-                    uint256(
-                        bytes32(
-                            proofData[MdcContractSplitStart + SplitStep * 11:MdcContractSplitStart + SplitStep * 12]
-                        )
-                    )
-            ),
             manage_source_chain_info_slot: uint256(
                 (uint256(
                     bytes32(proofData[MdcContractSplitStart + SplitStep * 12:MdcContractSplitStart + SplitStep * 13])
@@ -198,16 +230,6 @@ library Mainnet2EraLib {
                         )
                     )
             ),
-            manage_challenge_user_ratio_slot: uint8(
-                (uint256(
-                    bytes32(proofData[MdcContractSplitStart + SplitStep * 18:MdcContractSplitStart + SplitStep * 19])
-                ) << 128) |
-                    uint256(
-                        bytes32(
-                            proofData[MdcContractSplitStart + SplitStep * 19:MdcContractSplitStart + SplitStep * 20]
-                        )
-                    )
-            ),
             mdc_current_rule_root: bytes32(
                 (uint256(
                     bytes32(proofData[MdcContractSplitStart + SplitStep * 20:MdcContractSplitStart + SplitStep * 21])
@@ -217,17 +239,6 @@ library Mainnet2EraLib {
                             proofData[MdcContractSplitStart + SplitStep * 21:MdcContractSplitStart + SplitStep * 22]
                         )
                     )
-            ),
-            mdc_current_rule_enable_time: uint64(
-                bytes8(
-                    proofData[MdcContractSplitStart + SplitStep * 22 + SplitStep / 2:MdcContractSplitStart +
-                        SplitStep *
-                        22 +
-                        SplitStep /
-                        2 +
-                        SplitStep /
-                        4]
-                )
             ),
             mdc_current_column_array_hash: bytes32(
                 (uint256(
@@ -342,17 +353,6 @@ library Mainnet2EraLib {
                     proofData[MdcContractSplitStart + SplitStep * 35 + SplitStep / 2:MdcContractSplitStart +
                         SplitStep *
                         35 +
-                        SplitStep /
-                        2 +
-                        SplitStep /
-                        4]
-                )
-            ),
-            mdc_next_rule_enable_time: uint64(
-                bytes8(
-                    proofData[MdcContractSplitStart + SplitStep * 36 + SplitStep / 2:MdcContractSplitStart +
-                        SplitStep *
-                        36 +
                         SplitStep /
                         2 +
                         SplitStep /

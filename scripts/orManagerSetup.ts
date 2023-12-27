@@ -27,7 +27,7 @@ export async function managerSetup() {
   const isTestnet =
     networkId === 31337 || networkId === 5 || networkId === 11155111;
   if (isTestnet) {
-    await deployContracts(deployer);
+    // await deployContracts(deployer);
   }
 
   const envORManagerAddress = process.env['OR_MANAGER_ADDRESS'];

@@ -109,14 +109,10 @@ library HelperLib {
         uint256 mdc_rule_root_slot;
         uint256 mdc_rule_version_slot;
         uint256 mdc_rule_enable_time_slot;
-        uint8 mdc_column_array_hash_slot;
-        uint8 mdc_response_makers_hash_slot;
         uint256 manage_source_chain_info_slot;
         uint256 manage_source_chain_mainnet_token_info_slot;
         uint256 manage_dest_chain_mainnet_token_slot;
-        uint8 manage_challenge_user_ratio_slot;
         bytes32 mdc_current_rule_root;
-        uint256 mdc_current_rule_enable_time;
         bytes32 mdc_current_column_array_hash;
         uint256 mdc_current_response_makers_hash;
         uint64 min_verify_challenge_src_tx_second;
@@ -126,7 +122,6 @@ library HelperLib {
         address manage_current_source_chain_mainnet_token;
         address manage_current_dest_chain_mainnet_token;
         uint64 manage_current_challenge_user_ratio;
-        uint256 mdc_next_rule_enable_time;
         bytes32 mdc_current_rule_value_hash;
         bytes32[] merkle_roots;
     }

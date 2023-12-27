@@ -259,6 +259,54 @@ describe('start challenge & liquidaion test module', () => {
     console.log('connect of mdc_test_impl:', mdc_test_impl.address);
   });
 
+  const skipGasCostTest = false;
+  it('calculate spv verify gas cost', async function () {
+    if (!skipGasCostTest) {
+      expect(await mainnet2eraSpv.owner()).eq(deployer.address);
+      expect(await era2mainnetSpv.owner()).eq(deployer.address);
+
+      const paresSourcePoorf: boolean = false;
+      const pareseDestProof: boolean = false;
+      const tx = await mainnet2eraSpv
+        .verifySourceTx(m2eSourceProof)
+        .then((t: any) => t.wait());
+      expect(tx.status).to.be.eq(1);
+      expect(
+        await spvTest.verifySourceTx(m2eSourceProof, mainnet2eraSpv.address),
+      ).to.satisfy;
+      console.log('mainnet2era sourceProof verify Pass');
+      await calculateTxGas(tx, 'spvVerifySourceTx');
+      if (paresSourcePoorf) {
+        console.log(
+          'era2mainnet, paresSourcePoorf',
+          await era2mainnetSpv.parseSourceTxProof(e2mSourceProof),
+        );
+      }
+      expect(
+        await spvTest.verifySourceTx(e2mSourceProof, era2mainnetSpv.address),
+      ).to.satisfy;
+      console.log('era2mainnet sourceProof verify Pass');
+      const txDest = await mainnet2eraSpv
+        .verifyDestTx(m2eDestProof)
+        .then((t: any) => t.wait());
+      expect(txDest.status).to.be.eq(1);
+      expect(await spvTest.verifyDestTx(m2eDestProof, mainnet2eraSpv.address))
+        .to.satisfy;
+      console.log('mainnet2era destProof verify Pass');
+      // await calculateTxGas(txDest, 'spvVerifyDestTx');
+
+      if (pareseDestProof) {
+        console.log(
+          'era2mainnet, pareseDestProof',
+          await era2mainnetSpv.parseDestTxProof(e2mDestProof),
+        );
+      }
+      expect(await spvTest.verifyDestTx(e2mDestProof, era2mainnetSpv.address))
+        .to.satisfy;
+      console.log('era2mainnet destProof verify Pass');
+    }
+  });
+
   it('Challenge and verifySourceTx', async function () {
     const victim = signers[signers.length - 1];
     const challengerRatio100 = 1000000; // 1000000 = 100%
