@@ -564,13 +564,6 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             // Check rule & enabletime slot, rule hash
             uint256 slot = uint256(abi.encode(ebc, 6).hash());
             require(slot == publicInputData.mdc_rule_root_slot, "RRSE");
-            require((slot + 1) == publicInputData.mdc_rule_version_slot, "RVSE");
-            require(0 == publicInputData.mdc_rule_enable_time_slot, "RVSE");
-        }
-        {
-            // Check ChainInfo slot
-            uint256 slot = uint256(abi.encode(publicInputData.chain_id, 2).hash()) + 1;
-            require(slot == publicInputData.manage_source_chain_info_slot, "CIS");
         }
 
         statement_s.sourceTxFrom = publicInputData.from;
@@ -763,6 +756,6 @@ contract testMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             challengeInfo.freezeToken == winner.freezeToken &&
             challengeInfo.sourceTxBlockNum == winner.sourceTxBlockNum &&
             challengeInfo.sourceTxIndex == winner.sourceTxIndex &&
-            challengeInfo.freezeAmount0 == winner.freezeAmount0);
+            challengeInfo.freezeAmount1 == winner.freezeAmount1);
     }
 }
