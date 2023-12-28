@@ -15,6 +15,7 @@ import { BigNumberish, utils } from 'ethers';
 import { defaultChainInfoArray } from '../test/lib/mockData';
 import { calculateEnableTime, deployContracts, deploySPVs } from './utils';
 import { env } from 'process';
+import { indexOf } from 'lodash';
 
 export async function managerSetup() {
   let config = orManagerConfig;
@@ -52,7 +53,7 @@ export async function managerSetup() {
   config.chains = isTestnet
     ? (defaultChainInfoArray.map((chain) => ({
         ...chain,
-        spvs: envSPVAddressArray,
+        spvs: [envSPVAddressArray[indexOf(defaultChainInfoArray, chain)]],
         tokens: config.chains[0].tokens,
       })) as never)
     : config.chains;
@@ -61,6 +62,7 @@ export async function managerSetup() {
     'chainInfo',
     config.chains.map((chain) => chain),
   );
+  // return;
 
   const tx1 = await orManager.registerChains(
     await calculateEnableTime(orManager),

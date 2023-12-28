@@ -447,10 +447,17 @@ export const deployContracts = async (
 
   if (process.env['OR_MDC_FACTORY_ADDRESS'] == undefined) {
     currBlk = await ethers.provider.getBlockNumber();
-    const mdc_impl = await new ORMakerDeposit__factory(deployer).deploy();
-    await mdc_impl.deployed();
-    process.env['OR_MDC_IMPL'] = mdc_impl.address;
-    console.log('Address of mdc_impl:', mdc_impl.address);
+    let mdc_impl;
+    if (process.env['OR_MDC_IMPL'] == undefined) {
+      mdc_impl = await new ORMakerDeposit__factory(deployer).deploy();
+      await mdc_impl.deployed();
+      process.env['OR_MDC_IMPL'] = mdc_impl.address;
+      console.log('Address of mdc_impl:', mdc_impl.address);
+    } else {
+      mdc_impl = new ORMakerDeposit__factory(deployer).attach(
+        process.env['OR_MDC_IMPL']!,
+      );
+    }
 
     const orMDCFactory = await new ORMDCFactory__factory(deployer).deploy(
       process.env['OR_MANAGER_ADDRESS'],
@@ -473,6 +480,19 @@ export const deployContracts = async (
       `Address of orMDCFactory: ${orMDCFactory.address}, deployed blockNumber: ${currBlk} `,
     );
   } else {
+    const orMDCFactory = new ORMDCFactory__factory(deployer).attach(
+      process.env['OR_MDC_FACTORY_ADDRESS']!,
+    );
+    if (deployTestContracts && process.env['OR_MDC'] == undefined) {
+      const { mdcAddress } = await deployMDC(
+        deployer,
+        process.env['OR_MANAGER_ADDRESS']!,
+        await orMDCFactory.implementation(),
+        orMDCFactory.address,
+      );
+      process.env['OR_MDC'] = mdcAddress;
+      console.log('Address of MDC:', mdcAddress);
+    }
     if (deployTestContracts && process.env['OR_MDC'] != undefined) {
       console.log('existing MDC:', process.env['OR_MDC']!);
     }

@@ -563,11 +563,6 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             uint256 slot = uint256(abi.encode(ebc, 6).hash());
             require(slot == publicInputData.mdc_rule_root_slot, "RRSE");
         }
-        // {
-        //     // Check ChainInfo slot
-        //     uint256 slot = uint256(abi.encode(publicInputData.chain_id, 2).hash()) + 1;
-        //     require(slot == publicInputData.manage_source_chain_info_slot, "CIS");
-        // }
 
         statement_s.sourceTxFrom = publicInputData.from;
 

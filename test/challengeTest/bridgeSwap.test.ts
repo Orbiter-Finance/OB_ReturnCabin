@@ -119,7 +119,7 @@ describe('MDC Bridge test', () => {
     console.log('networkId:', networkId);
 
     if (isTestnet) {
-      await deployContracts(signers[0]);
+      await deployContracts(deployer, true);
     }
 
     // assert if OR_MDC is undefined
@@ -198,8 +198,8 @@ describe('MDC Bridge test', () => {
       tradingFee1: 1,
       responseTime0: defaultResponseTime,
       responseTime1: defaultResponseTime,
-      compensationRatio0: 100,
-      compensationRatio1: 120,
+      compensationRatio0: 123,
+      compensationRatio1: 654,
     };
 
     sourceChain = makerRule.chainId0.toNumber();
@@ -241,7 +241,7 @@ describe('MDC Bridge test', () => {
           const enableTime = await calculateEnableTime(orMakerDeposit);
           const { events } = await orMakerDeposit
             .updateColumnArray(enableTime, mdcDealers, mdcEbcs, chainIds, {
-              gasLimit: 10000000,
+              gasLimit: 300000,
             })
             .then((t) => t.wait(2));
 
