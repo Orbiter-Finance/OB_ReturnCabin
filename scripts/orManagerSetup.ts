@@ -25,11 +25,11 @@ export async function managerSetup() {
   console.log('deployer:', deployer.address);
   const networkId = (await ethers.provider.getNetwork()).chainId;
   console.log('current networkId', networkId);
-  const isTestnet =
-    networkId === 31337 || networkId === 5 || networkId === 11155111;
-  if (isTestnet) {
-    // await deployContracts(deployer);
-  }
+
+  /*
+  @notice: deployContracts will deploy all contracts needed for orbiter
+  */
+  // await deployContracts(deployer);
 
   const envORManagerAddress = process.env['OR_MANAGER_ADDRESS'];
   const envSPVAddress = process.env['SPV_ADDRESS'];
@@ -50,19 +50,16 @@ export async function managerSetup() {
     .connect(deployer)
     .attach(envORManagerAddress);
 
-  config.chains = isTestnet
-    ? (defaultChainInfoArray.map((chain) => ({
-        ...chain,
-        spvs: [envSPVAddressArray[indexOf(defaultChainInfoArray, chain)]],
-        tokens: config.chains[0].tokens,
-      })) as never)
-    : config.chains;
+  config.chains = defaultChainInfoArray.map((chain) => ({
+    ...chain,
+    spvs: [envSPVAddressArray[indexOf(defaultChainInfoArray, chain)]],
+    tokens: config.chains[0].tokens,
+  })) as never;
 
   console.log(
     'chainInfo',
     config.chains.map((chain) => chain),
   );
-  // return;
 
   const tx1 = await orManager.registerChains(
     await calculateEnableTime(orManager),
@@ -70,7 +67,6 @@ export async function managerSetup() {
   );
 
   console.log('Hash of registerChains:', tx1.hash);
-  return;
   await tx1.wait(3);
   config.ebcs.push(process.env['EVENT_BINDING_CONTRACT']! as never);
   const chainIds: BigNumberish[] = [];
@@ -96,7 +92,6 @@ export async function managerSetup() {
     tokens,
   );
   console.log('Hash of updateChainTokens:', tx2.hash);
-  return;
   await tx2.wait(3);
 
   // updateEbcs
@@ -109,30 +104,28 @@ export async function managerSetup() {
   console.log('Hash of updateEbcs:', tx3.hash);
   await tx3.wait(3);
 
-  if (isTestnet) {
-    // updateRLPdecoder
-    const txUpdateRLPdecoder = await orManager.updateDecoderAddress(
-      envRlpDecoderAddress,
-    );
-    console.log('Hash of updateRLPdecoder:', txUpdateRLPdecoder.hash);
-    await txUpdateRLPdecoder.wait(3);
+  // updateRLPdecoder
+  const txUpdateRLPdecoder = await orManager.updateDecoderAddress(
+    envRlpDecoderAddress,
+  );
+  console.log('Hash of updateRLPdecoder:', txUpdateRLPdecoder.hash);
+  await txUpdateRLPdecoder.wait(3);
 
-    // updateChallengeUserRatio
-    const challengeUserRatio = 1000;
-    const txUpdateRatio = await orManager.updateChallengeUserRatio(
-      await calculateEnableTime(orManager),
-      challengeUserRatio,
-    );
-    await txUpdateRatio.wait(3);
-    console.log('Hash of updateChallengeUserRatio:', txUpdateRatio.hash);
+  // updateChallengeUserRatio
+  const challengeUserRatio = 1000;
+  const txUpdateRatio = await orManager.updateChallengeUserRatio(
+    await calculateEnableTime(orManager),
+    challengeUserRatio,
+  );
+  await txUpdateRatio.wait(3);
+  console.log('Hash of updateChallengeUserRatio:', txUpdateRatio.hash);
 
-    // updateSpvDataContract
-    const txUpdateSpvDataContract = await orManager.updateSpvDataContract(
-      envSpvDataAddress,
-    );
-    await txUpdateSpvDataContract.wait(3);
-    console.log('Hash of updateSpvDataContract:', txUpdateSpvDataContract.hash);
-  }
+  // updateSpvDataContract
+  const txUpdateSpvDataContract = await orManager.updateSpvDataContract(
+    envSpvDataAddress,
+  );
+  await txUpdateSpvDataContract.wait(3);
+  console.log('Hash of updateSpvDataContract:', txUpdateSpvDataContract.hash);
 
   // updateSubmitter
   if (!config.submitter) {
