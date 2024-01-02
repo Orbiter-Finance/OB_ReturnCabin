@@ -182,12 +182,6 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
             require(sent, "ETH: SE");
         } else {
-            balance =
-                IERC20(requestInfo.requestToken).balanceOf(address(this)) -
-                _freezeAssets[requestInfo.requestToken];
-
-            require(balance >= requestInfo.requestAmount, "ERC20: IF");
-
             IERC20(requestInfo.requestToken).safeTransfer(msg.sender, requestInfo.requestAmount);
         }
     }
