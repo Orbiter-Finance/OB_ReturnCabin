@@ -26,8 +26,8 @@ import {
   TestSpv__factory,
   TestToken,
   TestToken__factory,
-  ORChallengeSpvMainnet2Era,
-  ORChallengeSpvMainnet2Era__factory,
+  ORChallengeSpvMainnet,
+  ORChallengeSpvMainnet__factory,
   ORSpvData,
   ORSpvData__factory,
   TestMakerDeposit__factory,
@@ -100,7 +100,7 @@ describe('MDC Bridge test', () => {
   let testToken: TestToken;
   let columnArray: columnArray;
   let ebc: OREventBinding;
-  let spv: ORChallengeSpvMainnet2Era;
+  let spv: ORChallengeSpvMainnet;
   let defaultRule: BigNumberish[];
   let makerRule: RuleStruct;
   let orSpvData: ORSpvData;

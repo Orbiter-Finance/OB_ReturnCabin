@@ -27,15 +27,15 @@ import {
   TestSpv__factory,
   TestToken,
   TestToken__factory,
-  ORChallengeSpvMainnet2Era,
-  ORChallengeSpvMainnet2Era__factory,
+  ORChallengeSpvMainnet,
+  ORChallengeSpvMainnet__factory,
   TestMakerDeposit,
   TestMakerDeposit__factory,
   RLPDecoder,
   RLPDecoder__factory,
   ORSpvData__factory,
-  ORChallengeSpvEra2Mainnet,
-  ORChallengeSpvEra2Mainnet__factory,
+  ORChallengeSpvEra,
+  ORChallengeSpvEra__factory,
   ORSpvData,
 } from '../typechain-types';
 import { defaultChainInfo } from './defaults';
@@ -102,8 +102,8 @@ import exp from 'constants';
 
 describe('start challenge & liquidaion test module', () => {
   let spvTest: TestSpv;
-  let mainnet2eraSpv: ORChallengeSpvMainnet2Era;
-  let era2mainnetSpv: ORChallengeSpvEra2Mainnet;
+  let mainnet2eraSpv: ORChallengeSpvMainnet;
+  let era2mainnetSpv: ORChallengeSpvEra;
   let makerTest: TestMakerDeposit;
   let rlpDecoder: RLPDecoder;
   let spvData: ORSpvData;
@@ -224,12 +224,12 @@ describe('start challenge & liquidaion test module', () => {
       'Env miss [something].',
     );
 
-    mainnet2eraSpv = new ORChallengeSpvMainnet2Era__factory(deployer).attach(
+    mainnet2eraSpv = new ORChallengeSpvMainnet__factory(deployer).attach(
       envSPVAddress,
     );
     console.log('connect of mainnet2eraSpv:', mainnet2eraSpv.address);
 
-    era2mainnetSpv = new ORChallengeSpvEra2Mainnet__factory(deployer).attach(
+    era2mainnetSpv = new ORChallengeSpvEra__factory(deployer).attach(
       envSPVEraAddress,
     );
     console.log('connect of era2mainnetSpv:', era2mainnetSpv.address);
@@ -312,8 +312,6 @@ describe('start challenge & liquidaion test module', () => {
       console.log('era2mainnet destProof verify Pass');
     }
   });
-
-  return;
 
   it('Challenge and verifySourceTx', async function () {
     const victim = signers[signers.length - 1];

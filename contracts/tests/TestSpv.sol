@@ -8,7 +8,7 @@ import {IORChallengeSpv} from "../interface/IORChallengeSpv.sol";
 
 contract testSpv {
     using HelperLib for bytes;
-    // using Mainnet2EraLib for bytes;
+    // using MainnetLib for bytes;
     using RLPReader for bytes;
     address public v_address;
 

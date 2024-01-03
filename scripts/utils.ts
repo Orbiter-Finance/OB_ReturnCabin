@@ -7,8 +7,8 @@ import { promisify } from 'util';
 import fs from 'fs';
 import {
   TestSpv__factory,
-  ORChallengeSpvMainnet2Era__factory,
-  ORChallengeSpvMainnet2Era,
+  ORChallengeSpvMainnet__factory,
+  ORChallengeSpvMainnet,
   ORMakerDeposit,
   contracts,
   ORMDCFactory__factory,
@@ -20,8 +20,8 @@ import {
   RLPDecoder__factory,
   ORManager,
   ORSpvData__factory,
-  ORChallengeSpvEra2Mainnet__factory,
-  ORChallengeSpvEra2Mainnet,
+  ORChallengeSpvEra__factory,
+  ORChallengeSpvEra,
   ORFeeManager__factory,
 } from '../typechain-types';
 import { PromiseOrValue } from '../typechain-types/common';
@@ -211,7 +211,7 @@ export const deploySpvYul = async (
 };
 
 export const hotUpdateSpvVerifier = async (
-  spv: ORChallengeSpvMainnet2Era | ORChallengeSpvEra2Mainnet,
+  spv: ORChallengeSpvMainnet | ORChallengeSpvEra,
   updateType: updateSpvType,
   spvType: SPVTypeEnum = SPVTypeEnum.mainnet2era,
   deployer: SignerWithAddress,
@@ -273,7 +273,7 @@ export const deploySPVs = async (
   let verifySourceBytesCode;
   let contractFactory;
   if (spvType == SPVTypeEnum.mainnet2era) {
-    contractFactory = ORChallengeSpvMainnet2Era__factory;
+    contractFactory = ORChallengeSpvMainnet__factory;
     verifyDestBytesCode = await compile_yul(
       'contracts/zkp/mainnet2eraSpvVerifier.DestTx.yul',
     );
@@ -282,7 +282,7 @@ export const deploySPVs = async (
       'contracts/zkp/mainnet2eraSpvVerifier.SourceTx.yul',
     );
   } else if (spvType == SPVTypeEnum.era2mainnet) {
-    contractFactory = ORChallengeSpvEra2Mainnet__factory;
+    contractFactory = ORChallengeSpvEra__factory;
     verifyDestBytesCode = await compile_yul(
       'contracts/zkp/era2mainnetSpvVerifier.DestTx.yul',
     );
@@ -295,7 +295,7 @@ export const deploySPVs = async (
   const spvSourceAddress = await deploySpvYul(verifySourceBytesCode!, deployer);
   const spvDestAddress = await deploySpvYul(verifyDestBytesCode!, deployer);
 
-  const spv: ORChallengeSpvMainnet2Era = await new contractFactory!(
+  const spv: ORChallengeSpvMainnet = await new contractFactory!(
     deployer,
   ).deploy(spvSourceAddress, spvDestAddress);
   console.log(

@@ -27,15 +27,15 @@ import {
   TestSpv__factory,
   TestToken,
   TestToken__factory,
-  ORChallengeSpvMainnet2Era,
-  ORChallengeSpvMainnet2Era__factory,
+  ORChallengeSpvMainnet,
+  ORChallengeSpvMainnet__factory,
   TestMakerDeposit,
   TestMakerDeposit__factory,
   RLPDecoder,
   RLPDecoder__factory,
   ORSpvData__factory,
-  ORChallengeSpvEra2Mainnet,
-  ORChallengeSpvEra2Mainnet__factory,
+  ORChallengeSpvEra,
+  ORChallengeSpvEra__factory,
 } from '../typechain-types';
 import { defaultChainInfo } from './defaults';
 import {
@@ -770,8 +770,8 @@ describe('ORMakerDeposit', () => {
 
   describe('start challenge test module', () => {
     let spvTest: TestSpv;
-    let mainnet2eraSpv: ORChallengeSpvMainnet2Era;
-    let era2mainnetSpv: ORChallengeSpvEra2Mainnet;
+    let mainnet2eraSpv: ORChallengeSpvMainnet;
+    let era2mainnetSpv: ORChallengeSpvEra;
     let makerTest: TestMakerDeposit;
     let rlpDecoder: RLPDecoder;
     const defaultRule = createMakerRule(true);
@@ -847,12 +847,12 @@ describe('ORMakerDeposit', () => {
     };
 
     before(async function () {
-      mainnet2eraSpv = new ORChallengeSpvMainnet2Era__factory(mdcOwner).attach(
+      mainnet2eraSpv = new ORChallengeSpvMainnet__factory(mdcOwner).attach(
         await deploySPVs(mdcOwner),
       );
       console.log('mainnet2eraSpv', mainnet2eraSpv.address);
 
-      era2mainnetSpv = new ORChallengeSpvEra2Mainnet__factory(mdcOwner).attach(
+      era2mainnetSpv = new ORChallengeSpvEra__factory(mdcOwner).attach(
         await deploySPVs(mdcOwner, SPVTypeEnum.era2mainnet),
       );
       console.log('era2mainnetSpv', era2mainnetSpv.address);

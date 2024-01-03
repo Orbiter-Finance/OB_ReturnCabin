@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.17;
 
-library Era2MainnetLib {
+library EraLib {
     uint256 constant ProofLength = 384;
     uint256 constant SplitStep = 32;
     uint256 constant TransactionSplitStart = ProofLength;
@@ -436,7 +436,7 @@ library Era2MainnetLib {
     }
 }
 
-library Mainnet2EraLib {
+library MainnetLib {
     uint256 constant ProofLength = 384;
     uint256 constant SplitStep = 32;
     uint256 constant TransactionSplitStart = ProofLength;
