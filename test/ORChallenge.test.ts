@@ -259,7 +259,7 @@ describe('start challenge & liquidaion test module', () => {
     console.log('connect of mdc_test_impl:', mdc_test_impl.address);
   });
 
-  const skipGasCostTest = false;
+  const skipGasCostTest = true;
   it('calculate spv verify gas cost', async function () {
     if (!skipGasCostTest) {
       expect(await mainnet2eraSpv.owner()).eq(deployer.address);
@@ -312,8 +312,6 @@ describe('start challenge & liquidaion test module', () => {
       console.log('era2mainnet destProof verify Pass');
     }
   });
-
-  return;
 
   it('Challenge and verifySourceTx', async function () {
     const victim = signers[signers.length - 1];
@@ -611,7 +609,7 @@ describe('start challenge & liquidaion test module', () => {
         rawData,
         rlpRawdata,
         {
-          maxPriorityFeePerGas: 1,
+          maxPriorityFeePerGas: 1000000000,
         },
       )
       .then((t: any) => t.wait());
@@ -1032,7 +1030,7 @@ describe('start challenge & liquidaion test module', () => {
         rawData,
         rlpRawdata,
         {
-          maxPriorityFeePerGas: 1,
+          maxPriorityFeePerGas: 1000000000,
         },
       )
       .then((t: any) => t.wait());

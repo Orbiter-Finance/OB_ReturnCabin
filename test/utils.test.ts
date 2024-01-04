@@ -751,7 +751,7 @@ export const createChallenge = async (
         challenge.parentNodeNumOfTargetNode,
         {
           value: BigNumber.from(challenge.freezeAmount).add(minDeposit),
-          maxPriorityFeePerGas: 1,
+          maxPriorityFeePerGas: 1000000000,
         },
       )
       .then((t) => t.wait(1));
