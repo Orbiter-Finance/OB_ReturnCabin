@@ -205,8 +205,8 @@ export const deploySpvYul = async (
     deployer,
   );
 
-  const spvSource: { address: PromiseOrValue<string> } =
-    await verifierFactory.deploy();
+  const spvSource = await verifierFactory.deploy();
+  await spvSource.deployed();
   return spvSource.address;
 };
 
