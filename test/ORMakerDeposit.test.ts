@@ -865,7 +865,7 @@ describe('ORMakerDeposit', () => {
       rlpDecoder = await new RLPDecoder__factory(mdcOwner).deploy();
       await rlpDecoder.deployed();
 
-      console.log('Address of rlpDecoder: ', rlpDecoder.address);
+      console.log('Address of ruleDecoder: ', rlpDecoder.address);
 
       console.log(
         `Address of mainnet2eraSpv: ${mainnet2eraSpv.address}, Address of spvTest: ${spvTest.address}, Address of ebc ${ebc.address} `,
