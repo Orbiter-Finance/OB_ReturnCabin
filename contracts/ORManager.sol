@@ -20,8 +20,9 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
     address private _submitter;
     uint64 private _protocolFee;
 
-    uint64 private _minChallengeRatio = 20000; // 10,000 percent
-    uint64 private _challengeUserRatio; // 10,000 percent
+    uint64 private _minChallengeRatio = 20000;
+    /// @notice Divisor for challenge fee ratio, 1,000,000 means 100%
+    uint64 private _challengeUserRatio = 300000;
     uint64 private _feeChallengeSecond;
     uint64 private _feeTakeOnChallengeSecond;
 

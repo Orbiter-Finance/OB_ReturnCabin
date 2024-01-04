@@ -511,7 +511,7 @@ export const deployContracts = async (
   if (process.env['RLP_DECODER_ADDRESS'] == undefined) {
     const rlpDecoder = await new RLPDecoder__factory(deployer).deploy();
     await rlpDecoder.deployed();
-    console.log('Address of rlpDecoder:', rlpDecoder.address);
+    console.log('Address of ruleDecoder:', rlpDecoder.address);
     process.env['RLP_DECODER_ADDRESS'] = rlpDecoder.address;
   } else {
     console.log('existing rlpDecoder:', process.env['RLP_DECODER_ADDRESS']!);
