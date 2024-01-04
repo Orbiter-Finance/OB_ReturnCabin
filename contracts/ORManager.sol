@@ -27,8 +27,9 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
     uint64 private _feeTakeOnChallengeSecond;
 
     uint64 private _maxMDCLimit = 2 ** 64 - 1;
-    uint24 private _priorityFee = 1; // 1wei
-    uint24 private _challengeBasefee = 94000; // createchallenge&verify sourceTx calldata 52000 + submit tx 21000 + verify source 21000
+    /// @notice uint: wei
+    uint64 private _priorityFee = 1 gwei;
+    uint32 private _challengeBasefee = 94000; // createchallenge&verify sourceTx calldata 52000 + submit tx 21000 + verify source 21000
     uint32 private _challengeWithdrawDelay = 604800; // Unit: seconds of 7 days: Op Arb
     address private _spvDataContract;
 
@@ -58,11 +59,11 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
         }
     }
 
-    function getPriorityFee() external view returns (uint24) {
+    function getPriorityFee() external view returns (uint64) {
         return _priorityFee;
     }
 
-    function getChallengeGasUsed() external view returns (uint24) {
+    function getChallengeGasUsed() external view returns (uint32) {
         return _challengeBasefee;
     }
 
@@ -70,11 +71,11 @@ contract ORManager is IORManager, Ownable, VersionAndEnableTime {
         return _challengeWithdrawDelay;
     }
 
-    function updatePriorityFee(uint24 priorityFee) external onlyOwner {
+    function updatePriorityFee(uint64 priorityFee) external onlyOwner {
         _priorityFee = priorityFee;
     }
 
-    function updateChallengeBasefee(uint24 challengeBasefee) external onlyOwner {
+    function updateChallengeBasefee(uint32 challengeBasefee) external onlyOwner {
         _challengeBasefee = challengeBasefee;
     }
 

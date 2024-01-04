@@ -20,15 +20,15 @@ interface IORManager {
 
     function registerChains(uint64 enableTime, BridgeLib.ChainInfo[] calldata chains_) external;
 
-    function getPriorityFee() external view returns (uint24);
+    function getPriorityFee() external view returns (uint64);
 
-    function getChallengeGasUsed() external view returns (uint24);
+    function getChallengeGasUsed() external view returns (uint32);
 
     function getChallengeWithdrawDelay() external view returns (uint32);
 
-    function updatePriorityFee(uint24 priorityFee) external;
+    function updatePriorityFee(uint64 priorityFee) external;
 
-    function updateChallengeBasefee(uint24 challengeBasefee) external;
+    function updateChallengeBasefee(uint32 challengeBasefee) external;
 
     function updateChallengeWithdrawDelay(uint32 challengeWithdrawDelay) external;
 
