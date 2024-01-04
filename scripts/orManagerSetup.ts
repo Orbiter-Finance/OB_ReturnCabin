@@ -111,14 +111,14 @@ export async function managerSetup() {
   console.log('Hash of updateRLPdecoder:', txUpdateRLPdecoder.hash);
   await txUpdateRLPdecoder.wait(3);
 
-  // updateChallengeUserRatio
-  const challengeUserRatio = 1000;
-  const txUpdateRatio = await orManager.updateChallengeUserRatio(
-    await calculateEnableTime(orManager),
-    challengeUserRatio,
-  );
-  await txUpdateRatio.wait(3);
-  console.log('Hash of updateChallengeUserRatio:', txUpdateRatio.hash);
+  // // updateChallengeUserRatio
+  // const challengeUserRatio = 1000;
+  // const txUpdateRatio = await orManager.updateChallengeUserRatio(
+  //   await calculateEnableTime(orManager),
+  //   challengeUserRatio,
+  // );
+  // await txUpdateRatio.wait(3);
+  // console.log('Hash of updateChallengeUserRatio:', txUpdateRatio.hash);
 
   // updateSpvDataContract
   const txUpdateSpvDataContract = await orManager.updateSpvDataContract(
