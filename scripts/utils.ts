@@ -253,16 +253,6 @@ export const hotUpdateSpvVerifier = async (
   await spv.setSpvVerifierAddr(sourceTxVerifier!, destTxVerifier!).then((t) => {
     t.wait(2);
   });
-
-  await spv.getSpvVerifierAddr().then((currVerifier) => {
-    console.log(
-      'after update,',
-      'current sourceTxVerifier:',
-      currVerifier[0],
-      'destTxVerifier:',
-      currVerifier[1],
-    );
-  });
 };
 
 export const deploySPVs = async (
