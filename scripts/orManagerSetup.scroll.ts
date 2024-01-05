@@ -39,7 +39,7 @@ export async function managerSetupScroll() {
   console.log('Hash of registerChains:', tx1.hash);
   await tx1.wait();
 
-  const chainIds: BigNumberish[] = [];
+  const chainIds: BigNumberish[] = [534352];
   const tokens: BridgeLib.TokenInfoStruct[] = [tokenDefault];
 
   // updateChainTokens
