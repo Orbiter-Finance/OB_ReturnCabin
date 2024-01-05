@@ -4,22 +4,53 @@ import { chainIdsMockMainnetToken, chainIdsMock } from '../test/lib/mockData';
 
 export const chainIdList = [
   1, // mainnet
+  10, // Optimism
+  42161, //Arbitrum one
   324, // zkSync-Era
 ];
 
-export const deploymentChainInfoArray: BridgeLib.ChainInfoStruct[] =
-  chainIdList.map((chainId) => {
-    return {
-      id: BigNumber.from(chainId),
-      batchLimit: BigNumber.from(100),
-      minVerifyChallengeSourceTxSecond: BigNumber.from(129600), //1.5 Days
-      maxVerifyChallengeSourceTxSecond: BigNumber.from(259200), //3 Days
-      minVerifyChallengeDestTxSecond: BigNumber.from(259200), //3 Days
-      maxVerifyChallengeDestTxSecond: BigNumber.from(388800), // 4.5 Days
-      nativeToken: constants.AddressZero,
-      spvs: [],
-    };
-  });
+export const deploymentChainInfoArray: BridgeLib.ChainInfoStruct[] = [
+  {
+    id: BigNumber.from(1),
+    batchLimit: BigNumber.from(100),
+    minVerifyChallengeSourceTxSecond: BigNumber.from(129600), //1.5 Days
+    maxVerifyChallengeSourceTxSecond: BigNumber.from(259200), //3 Days
+    minVerifyChallengeDestTxSecond: BigNumber.from(259200), //3 Days
+    maxVerifyChallengeDestTxSecond: BigNumber.from(388800), // 4.5 Days
+    nativeToken: constants.AddressZero,
+    spvs: [],
+  },
+  {
+    id: BigNumber.from(10),
+    batchLimit: BigNumber.from(100),
+    minVerifyChallengeSourceTxSecond: BigNumber.from(129600), //1.5 Days
+    maxVerifyChallengeSourceTxSecond: BigNumber.from(259200), //3 Days
+    minVerifyChallengeDestTxSecond: BigNumber.from(259200), //3 Days
+    maxVerifyChallengeDestTxSecond: BigNumber.from(388800), // 4.5 Days
+    nativeToken: constants.AddressZero,
+    spvs: [],
+  },
+  {
+    id: BigNumber.from(42161),
+    batchLimit: BigNumber.from(100),
+    minVerifyChallengeSourceTxSecond: BigNumber.from(129600), //1.5 Days
+    maxVerifyChallengeSourceTxSecond: BigNumber.from(259200), //3 Days
+    minVerifyChallengeDestTxSecond: BigNumber.from(259200), //3 Days
+    maxVerifyChallengeDestTxSecond: BigNumber.from(388800), // 4.5 Days
+    nativeToken: constants.AddressZero,
+    spvs: [],
+  },
+  {
+    id: BigNumber.from(324),
+    batchLimit: BigNumber.from(100),
+    minVerifyChallengeSourceTxSecond: BigNumber.from(129600), //1.5 Days
+    maxVerifyChallengeSourceTxSecond: BigNumber.from(259200), //3 Days
+    minVerifyChallengeDestTxSecond: BigNumber.from(259200), //3 Days
+    maxVerifyChallengeDestTxSecond: BigNumber.from(388800), // 4.5 Days
+    nativeToken: constants.AddressZero,
+    spvs: [],
+  },
+];
 
 export const tokenDefault: BridgeLib.TokenInfoStruct = {
   token: constants.AddressZero,

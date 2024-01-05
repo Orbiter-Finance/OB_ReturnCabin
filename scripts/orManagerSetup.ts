@@ -53,7 +53,6 @@ export async function managerSetup() {
       !!envSpvDataAddress,
     'Env miss [XXXX]. You may need to deploy all the contracts first!',
   );
-  const envSPVAddressArray: string[] = [envSPVAddress, envSPVERAAddress];
 
   const orManager = new ORManager__factory()
     .connect(deployer)
@@ -61,11 +60,14 @@ export async function managerSetup() {
 
   let chainInfo = deploymentChainInfoArray.map((chainInfo) => {
     let chaininfoTmp = lodash.cloneDeepWith(chainInfo);
-    chaininfoTmp.spvs = [
-      envSPVAddressArray[indexOf(deploymentChainInfoArray, chainInfo)],
-    ];
+    if (chaininfoTmp.id == 1) {
+      chaininfoTmp.spvs = [envSPVAddress];
+    } else if (chaininfoTmp.id == 324) {
+      chaininfoTmp.spvs = [envSPVERAAddress];
+    }
     return chaininfoTmp;
   });
+  console.log('chainInfo', chainInfo);
 
   const tx1 = await orManager.registerChains(
     await calculateEnableTime(orManager),
@@ -109,15 +111,6 @@ export async function managerSetup() {
   );
   console.log('Hash of updateRLPdecoder:', txUpdateRLPdecoder.hash);
   await txUpdateRLPdecoder.wait(2);
-
-  // // updateChallengeUserRatio
-  // const challengeUserRatio = 1000;
-  // const txUpdateRatio = await orManager.updateChallengeUserRatio(
-  //   await calculateEnableTime(orManager),
-  //   challengeUserRatio,
-  // );
-  // await txUpdateRatio.wait(2);
-  // console.log('Hash of updateChallengeUserRatio:', txUpdateRatio.hash);
 
   // updateSpvDataContract
   const txUpdateSpvDataContract = await orManager.updateSpvDataContract(
