@@ -214,7 +214,7 @@ export const hotUpdateSpvVerifier = async (
   spv: ORChallengeSpvMainnet2Era | ORChallengeSpvEra2Mainnet,
   updateType: updateSpvType,
   spvType: SPVTypeEnum = SPVTypeEnum.mainnet2era,
-  deployer: SignerWithAddress,
+  deployer: SignerWithAddress | Wallet,
 ): Promise<void> => {
   let sourceTxVerifier: string;
   let destTxVerifier: string;
