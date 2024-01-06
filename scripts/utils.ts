@@ -218,7 +218,7 @@ export const hotUpdateSpvVerifier = async (
 ): Promise<void> => {
   let sourceTxVerifier: string;
   let destTxVerifier: string;
-  await spv.getSpvVerifierAddr().then((currVerifier) => {
+  await spv.getSpvVerifierAddr().then(async (currVerifier) => {
     sourceTxVerifier = currVerifier[0];
     destTxVerifier = currVerifier[1];
     console.log(
@@ -228,30 +228,45 @@ export const hotUpdateSpvVerifier = async (
       'destTxVerifier:',
       currVerifier[1],
     );
-  });
-  if (updateType.sourceTx == true) {
-    const verifySourceBytesCode =
-      spvType == SPVTypeEnum.mainnet2era
-        ? await compile_yul('contracts/zkp/mainnet2eraSpvVerifier.SourceTx.yul')
-        : await compile_yul(
-            'contracts/zkp/era2mainnetSpvVerifier.SourceTx.yul',
+
+    if (updateType.sourceTx == true) {
+      const verifySourceBytesCode =
+        spvType == SPVTypeEnum.mainnet2era
+          ? await compile_yul(
+              'contracts/zkp/mainnet2eraSpvVerifier.SourceTx.yul',
+            )
+          : await compile_yul(
+              'contracts/zkp/era2mainnetSpvVerifier.SourceTx.yul',
+            );
+
+      sourceTxVerifier = await deploySpvYul(verifySourceBytesCode!, deployer);
+      console.log('new sourceTxVerifier:', sourceTxVerifier);
+    }
+
+    if (updateType.destTx == true) {
+      const verifyDestBytesCode =
+        spvType == SPVTypeEnum.mainnet2era
+          ? await compile_yul('contracts/zkp/mainnet2eraSpvVerifier.DestTx.yul')
+          : await compile_yul(
+              'contracts/zkp/era2mainnetSpvVerifier.DestTx.yul',
+            );
+      destTxVerifier = await deploySpvYul(verifyDestBytesCode!, deployer);
+      console.log('new destTxVerifier:', destTxVerifier);
+    }
+
+    await spv
+      .setSpvVerifierAddr(sourceTxVerifier, destTxVerifier)
+      .then(async () => {
+        await spv.getSpvVerifierAddr().then((currVerifier) => {
+          console.log(
+            'after update,',
+            'current sourceTxVerifier:',
+            currVerifier[0],
+            'destTxVerifier:',
+            currVerifier[1],
           );
-
-    sourceTxVerifier = await deploySpvYul(verifySourceBytesCode!, deployer);
-    console.log('new sourceTxVerifier:', sourceTxVerifier);
-  }
-
-  if (updateType.destTx == true) {
-    const verifyDestBytesCode =
-      spvType == SPVTypeEnum.mainnet2era
-        ? await compile_yul('contracts/zkp/mainnet2eraSpvVerifier.DestTx.yul')
-        : await compile_yul('contracts/zkp/era2mainnetSpvVerifier.DestTx.yul');
-    destTxVerifier = await deploySpvYul(verifyDestBytesCode!, deployer);
-    console.log('new destTxVerifier:', destTxVerifier);
-  }
-
-  await spv.setSpvVerifierAddr(sourceTxVerifier!, destTxVerifier!).then((t) => {
-    t.wait(2);
+        });
+      });
   });
 };
 

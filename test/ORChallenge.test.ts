@@ -259,7 +259,7 @@ describe('start challenge & liquidaion test module', () => {
     console.log('connect of mdc_test_impl:', mdc_test_impl.address);
   });
 
-  const skipGasCostTest = true;
+  const skipGasCostTest = false;
   it('calculate spv verify gas cost', async function () {
     if (!skipGasCostTest) {
       expect(await mainnet2eraSpv.owner()).eq(deployer.address);
@@ -455,7 +455,7 @@ describe('start challenge & liquidaion test module', () => {
       mdc_current_column_array_hash: columnArrayHash, // dealer & ebc not same
       amount: BigNumber.from(victimLostAmount), // security code base on ebc & dealer, they both changed
       mdc_rule_root_slot: verifyInfo.slots[6].key, // ebc not same
-      mdc_rule_version_slot: verifyInfo.slots[7].key, // ebc not same
+      // mdc_rule_version_slot: verifyInfo.slots[7].key, // ebc not same
       // mdc_column_array_hash_slot: verifyInfo.slots[3].key,
       // mdc_response_makers_hash_slot: verifyInfo.slots[5].key,
       mdc_current_rule_value_hash: encodeHash, // rule not compatible
@@ -880,7 +880,7 @@ describe('start challenge & liquidaion test module', () => {
       mdc_current_column_array_hash: columnArrayHash, // dealer & ebc not same
       amount: BigNumber.from(victimLostAmount), // security code base on ebc & dealer, they both changed
       mdc_rule_root_slot: verifyInfo.slots[6].key, // ebc not same
-      mdc_rule_version_slot: verifyInfo.slots[7].key, // ebc not same
+      // mdc_rule_version_slot: verifyInfo.slots[7].key, // ebc not same
       // mdc_column_array_hash_slot: verifyInfo.slots[3].key,
       // mdc_response_makers_hash_slot: verifyInfo.slots[5].key,
       mdc_current_rule_value_hash: encodeHash, // rule not compatible
