@@ -6,6 +6,8 @@ import axios from 'axios';
 import fs from 'fs';
 
 export const chainNames = {
+  1: 'mainnet',
+  324: 'zk-sync Era',
   5: 'goerli',
   420: 'optimisim goerli',
   421613: 'arbitrum goerli',
@@ -19,10 +21,10 @@ export const chainNames = {
  * @return none
  */
 export const chainIdsMock = [
-  // 1,
+  1,
   // 42161,
   // 10,
-  // 324,
+  324,
   5, // goerli
   420, // optimisim goerli testnet
   421613, // arbitrum goerli testnet
@@ -33,10 +35,10 @@ export const chainIdsMock = [
 ];
 
 export const chainIdsMockMainnetToken = [
-  // 1,
+  '0x0000000000000000000000000000000000000000', // 1,
   // 42161,
   // 10,
-  // 324,
+  '0x0000000000000000000000000000000000000000', // 324,
   '0x0000000000000000000000000000000000000000', // 5        //goerli
   '0x0000000000000000000000000000000000000000', // 420      //optimisim goerli testnet
   '0x0000000000000000000000000000000000000000', // 421613  //arbitrum goerli testnet

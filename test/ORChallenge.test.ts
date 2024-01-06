@@ -118,21 +118,21 @@ describe('start challenge & liquidaion test module', () => {
   const defaultRule = createMakerRule(true);
   const makerRule: RuleStruct = {
     ...defaultRule,
+    chainId0: BigNumber.from(1),
+    chainId1: BigNumber.from(324),
     token0: BigNumber.from(constants.AddressZero),
     token1: BigNumber.from(constants.AddressZero),
     minPrice0: BigNumber.from(ethers.utils.parseEther('1')),
     minPrice1: BigNumber.from(ethers.utils.parseEther('1')),
     maxPrice0: BigNumber.from(ethers.utils.parseEther('5')),
     maxPrice1: BigNumber.from(ethers.utils.parseEther('5')),
-    chainId0: BigNumber.from(300),
-    chainId1: BigNumber.from(11155111),
     withholdingFee0: BigNumber.from('3' + '0'.repeat(5)),
     withholdingFee1: BigNumber.from('4' + '0'.repeat(5)),
     responseTime0: defaultResponseTime,
     responseTime1: defaultResponseTime,
   };
-  const chainId = makerRule.chainId0;
-  const chainIdDest = makerRule.chainId1;
+  // const chainId = makerRule.chainId0;
+  // const chainIdDest = makerRule.chainId1;
 
   const m2eSourceProof: BytesLike = getSpvProof().verifySourceProof;
   const m2eDestProof: BytesLike = getSpvProof().verifyDestProof;
@@ -197,8 +197,8 @@ describe('start challenge & liquidaion test module', () => {
     deployer = signers[0];
     mdcOwner = signers[1];
 
-    makerRuleSourceChain = makerRule.chainId1;
-    makerRuleDestChain = makerRule.chainId0;
+    makerRuleSourceChain = makerRule.chainId0;
+    makerRuleDestChain = makerRule.chainId1;
 
     await deployContracts(signers[0], true);
     const envEBCAddress = process.env['EVENT_BINDING_CONTRACT'];
@@ -259,7 +259,7 @@ describe('start challenge & liquidaion test module', () => {
     console.log('connect of mdc_test_impl:', mdc_test_impl.address);
   });
 
-  const skipGasCostTest = false;
+  const skipGasCostTest = true;
   it('calculate spv verify gas cost', async function () {
     if (!skipGasCostTest) {
       expect(await mainnet2eraSpv.owner()).eq(deployer.address);
@@ -326,8 +326,14 @@ describe('start challenge & liquidaion test module', () => {
 
     const columnArray = {
       dealers: [mdcOwner.address],
-      ebcs: [process.env['EVENT_BINDING_CONTRACT']!],
-      chainIds: [5, 420, 280, 300, 11155111],
+      ebcs: [
+        process.env['EVENT_BINDING_CONTRACT']!,
+        process.env['EVENT_BINDING_CONTRACT']!,
+        process.env['EVENT_BINDING_CONTRACT']!,
+        process.env['EVENT_BINDING_CONTRACT']!,
+        process.env['EVENT_BINDING_CONTRACT']!,
+      ],
+      chainIds: [1, 324, 5, 420, 280, 300, 11155111],
     };
     await orManager
       .updateSpvDataContract(spvData.address)
@@ -340,32 +346,12 @@ describe('start challenge & liquidaion test module', () => {
 
     challengeManager.initialize();
 
-    let defaultRule: BigNumberish[] = [
-      300,
-      11155111,
-      1,
-      1,
-      0,
-      0,
-      20000000000,
-      20000000000,
-      BigNumber.from('100000000000000000000'),
-      BigNumber.from('100000000000000000000'),
-      10000000,
-      20000000,
-      1,
-      1,
-      604800,
-      604800,
-      42,
-      49,
-    ];
-    const formatDefaultRule = formatRule(defaultRule);
     await updateMakerRule(makerTest, ebc.address, makerRule);
     await orManager.updateDecoderAddress(rlpDecoder.address);
     expect(await orManager.getRulesDecoder()).eq(rlpDecoder.address);
     const publicInputData: PublicInputData =
       await mainnet2eraSpv.parseSourceTxProof(m2eSourceProof);
+    // console.log('publicInputData', publicInputData);
 
     const publicInputDataDest: PublicInputDataDest =
       await mainnet2eraSpv.parseDestTxProof(m2eDestProof);
@@ -385,12 +371,6 @@ describe('start challenge & liquidaion test module', () => {
     //   expect(encodeHash).eql(publicInputData.mdc_current_rule_value_hash);
     // }
 
-    const challengeColumnArray: columnArray = {
-      ...columnArray,
-      dealers: [mdcOwner.address],
-      ebcs: [ebc.address],
-    };
-
     const verifyTimeMax =
       utils.hexZeroPad(BigNumber.from(9999999).toHexString(), 8) +
       utils.hexZeroPad('0x00', 8).slice(2) +
@@ -398,7 +378,7 @@ describe('start challenge & liquidaion test module', () => {
       utils.hexZeroPad('0x00', 8).slice(2);
 
     const { rawData, columnArrayHash } = await getRawDataNew(
-      challengeColumnArray,
+      columnArray,
       ebc.address,
     );
 
@@ -406,12 +386,11 @@ describe('start challenge & liquidaion test module', () => {
     const victimLostAmount =
       price +
       getSecurityCode(
-        challengeColumnArray,
+        columnArray,
         ebc.address,
         mdcOwner.address,
         parseInt(makerRuleDestChain.toString()),
       );
-    console.log('victimLostAmount', utils.formatEther(victimLostAmount));
 
     const verifyinfoBase: VerifyinfoBase = {
       chainIdSource: makerRuleSourceChain,
@@ -438,10 +417,10 @@ describe('start challenge & liquidaion test module', () => {
       defaultRessponseMakers,
     ]);
     const responseMakersHash = keccak256(responseMakersEncodeRaw);
-
     const makerPublicInputData: PublicInputData = {
       // with replace reason
       ...publicInputData,
+
       from: victim.address,
       to: signers[0].address,
       mdc_contract_address: makerTest.address, // mdc not same
@@ -724,8 +703,6 @@ describe('start challenge & liquidaion test module', () => {
     expect(freezeTokenLeft).eq(0);
   });
 
-  return;
-
   it('Challenge and verifyDestTx', async function () {
     const verifyDestSigner = signers[7];
     const liquidaionSigner = signers[8];
@@ -752,7 +729,7 @@ describe('start challenge & liquidaion test module', () => {
     const columnArray = {
       dealers: [mdcOwner.address],
       ebcs: [process.env['EVENT_BINDING_CONTRACT']!],
-      chainIds: [5, 420, 280, 300, 11155111],
+      chainIds: [1, 324, 5, 420, 280, 300, 11155111],
     };
     await orManager
       .updateSpvDataContract(spvData.address)
@@ -765,27 +742,6 @@ describe('start challenge & liquidaion test module', () => {
 
     challengeManager.initialize();
 
-    let defaultRule: BigNumberish[] = [
-      300,
-      11155111,
-      1,
-      1,
-      0,
-      0,
-      20000000000,
-      20000000000,
-      BigNumber.from('100000000000000000000'),
-      BigNumber.from('100000000000000000000'),
-      10000000,
-      20000000,
-      1,
-      1,
-      604800,
-      604800,
-      42,
-      49,
-    ];
-    const formatDefaultRule = formatRule(defaultRule);
     await updateMakerRule(makerTest, ebc.address, makerRule);
     await orManager.updateDecoderAddress(rlpDecoder.address);
     expect(await orManager.getRulesDecoder()).eq(rlpDecoder.address);
@@ -795,27 +751,6 @@ describe('start challenge & liquidaion test module', () => {
     const publicInputDataDest: PublicInputDataDest =
       await mainnet2eraSpv.parseDestTxProof(m2eDestProof);
 
-    // await mockSpvData(
-    //   spvData,
-    //   Array.from(
-    //     new Set(
-    //       publicInputDataDest.merkle_roots.concat(publicInputData.merkle_roots),
-    //     ),
-    //   ),
-    // );
-
-    // {
-    //   const { encodeHash } = getRLPEncodeMakerRuleHash(defaultRule);
-    //   expect(publicInputData).not.null;
-    //   expect(encodeHash).eql(publicInputData.mdc_current_rule_value_hash);
-    // }
-
-    const challengeColumnArray: columnArray = {
-      ...columnArray,
-      dealers: [mdcOwner.address],
-      ebcs: [ebc.address],
-    };
-
     const verifyTimeMax =
       utils.hexZeroPad(BigNumber.from(9999999).toHexString(), 8) +
       utils.hexZeroPad('0x00', 8).slice(2) +
@@ -823,7 +758,7 @@ describe('start challenge & liquidaion test module', () => {
       utils.hexZeroPad('0x00', 8).slice(2);
 
     const { rawData, columnArrayHash } = await getRawDataNew(
-      challengeColumnArray,
+      columnArray,
       ebc.address,
     );
 
@@ -831,12 +766,11 @@ describe('start challenge & liquidaion test module', () => {
     const victimLostAmount =
       price +
       getSecurityCode(
-        challengeColumnArray,
+        columnArray,
         ebc.address,
         mdcOwner.address,
         parseInt(makerRuleDestChain.toString()),
       );
-    console.log('victimLostAmount', utils.formatEther(victimLostAmount));
 
     const verifyinfoBase: VerifyinfoBase = {
       chainIdSource: makerRuleSourceChain,
