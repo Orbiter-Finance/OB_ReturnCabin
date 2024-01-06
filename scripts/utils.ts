@@ -254,19 +254,18 @@ export const hotUpdateSpvVerifier = async (
       console.log('new destTxVerifier:', destTxVerifier);
     }
 
-    await spv
-      .setSpvVerifierAddr(sourceTxVerifier, destTxVerifier)
-      .then(async () => {
-        await spv.getSpvVerifierAddr().then((currVerifier) => {
-          console.log(
-            'after update,',
-            'current sourceTxVerifier:',
-            currVerifier[0],
-            'destTxVerifier:',
-            currVerifier[1],
-          );
-        });
-      });
+    const tx = await spv.setSpvVerifierAddr(sourceTxVerifier, destTxVerifier);
+    await tx.wait(2);
+
+    await spv.getSpvVerifierAddr().then((currVerifier) => {
+      console.log(
+        'after update,',
+        'current sourceTxVerifier:',
+        currVerifier[0],
+        'destTxVerifier:',
+        currVerifier[1],
+      );
+    });
   });
 };
 
