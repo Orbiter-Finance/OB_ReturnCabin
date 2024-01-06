@@ -259,7 +259,7 @@ describe('start challenge & liquidaion test module', () => {
     console.log('connect of mdc_test_impl:', mdc_test_impl.address);
   });
 
-  const skipGasCostTest = true;
+  const skipGasCostTest = false;
   it('calculate spv verify gas cost', async function () {
     if (!skipGasCostTest) {
       expect(await mainnet2eraSpv.owner()).eq(deployer.address);
@@ -823,8 +823,6 @@ describe('start challenge & liquidaion test module', () => {
       // mdc_next_rule_enable_time: publicInputData.mdc_current_rule_enable_time,
     };
 
-    // console.log('makerPublicInputData', makerPublicInputData);
-
     const rulesKey = calculateRuleKey(converRule(makerRule));
     const encodeRuleKey = utils.solidityPack(
       ['uint256', 'uint256', 'uint256', 'uint256'],
@@ -886,10 +884,10 @@ describe('start challenge & liquidaion test module', () => {
           .then((balance) => balance),
       ),
     );
-    console.log(
-      '$_BeforeAll',
-      $_BeforeAll.map((b) => utils.formatEther(b)),
-    );
+    // console.log(
+    //   '$_BeforeAll',
+    //   $_BeforeAll.map((b) => utils.formatEther(b)),
+    // );
 
     const victimBalanceBeforeChallenge = await ethers.provider.getBalance(
       victim.address,
