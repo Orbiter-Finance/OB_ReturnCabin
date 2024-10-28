@@ -19,7 +19,7 @@ contract VersionAndEnableTime {
     //     _enableTime = enableTime;
     // }
 
-    function versionIncreaseAndEnableTime(uint64 enableTime) public {
+    function versionIncreaseAndEnableTime(uint64 enableTime) internal {
         require(
             (enableTime >= ConstantsLib.MIN_ENABLE_DELAY + block.timestamp) &&
                 (enableTime <= ConstantsLib.MAX_ENABLE_DELAY + block.timestamp) &&

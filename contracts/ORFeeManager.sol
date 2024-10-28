@@ -23,7 +23,7 @@ contract ORFeeManager is IORFeeManager, Ownable, ReentrancyGuard {
 
     mapping(address => DealerInfo) private _dealers;
     mapping(address => uint256) public submitter;
-    mapping(address => uint64) public withdrawLock;
+    mapping(address => mapping(bytes32 => uint256)) public withdrawLock;
 
     modifier isChallengerQualified() {
         require(address(msg.sender).balance >= address(IORManager(_manager).submitter()).balance, "NF");
@@ -44,8 +44,12 @@ contract ORFeeManager is IORFeeManager, Ownable, ReentrancyGuard {
         }
     }
 
-    function withdrawLockCheck(address withdrawUser) external view returns (bool) {
-        return withdrawLock[withdrawUser] < submissions.submitTimestamp ? false : true;
+    function withdrawLockCheck(
+        address withdrawUser,
+        MerkleTreeLib.SMTLeaf calldata smtLeaves
+    ) external view returns (bool) {
+        return
+            withdrawLock[withdrawUser][keccak256(abi.encode(smtLeaves))] < submissions.submitTimestamp ? false : true;
     }
 
     receive() external payable {
@@ -69,9 +73,10 @@ contract ORFeeManager is IORFeeManager, Ownable, ReentrancyGuard {
     ) external nonReentrant {
         require(durationCheck() == FeeMangerDuration.withdraw, "WE");
         require(challengeStatus == ChallengeStatus.none, "WDC");
-        require(withdrawLock[msg.sender] < submissions.submitTimestamp, "WL");
-        withdrawLock[msg.sender] = submissions.submitTimestamp;
         for (uint256 i = 0; i < smtLeaves.length; ) {
+            bytes32 key = keccak256(abi.encode(smtLeaves[0]));
+            require(withdrawLock[msg.sender][key] < submissions.submitTimestamp, "WL");
+            withdrawLock[msg.sender][key] = submissions.submitTimestamp;
             address token = smtLeaves[i].token;
             address user = smtLeaves[i].user;
             uint64 chainId = smtLeaves[i].chainId;
@@ -140,6 +145,7 @@ contract ORFeeManager is IORFeeManager, Ownable, ReentrancyGuard {
         emit SubmitterRegistered(_submitter, marginAmount);
     }
 
+    /*
     function getCurrentBlockInfo() external view override returns (Submission memory) {}
 
     function startChallenge(
@@ -158,4 +164,5 @@ contract ORFeeManager is IORFeeManager, Ownable, ReentrancyGuard {
     function endChallenge() internal nonReentrant {
         challengeStatus = ChallengeStatus.none;
     }
+    */
 }

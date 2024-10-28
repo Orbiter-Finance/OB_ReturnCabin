@@ -205,8 +205,8 @@ export const deploySpvYul = async (
     deployer,
   );
 
-  const spvSource: { address: PromiseOrValue<string> } =
-    await verifierFactory.deploy();
+  const spvSource = await verifierFactory.deploy();
+  await spvSource.deployed();
   return spvSource.address;
 };
 
@@ -214,11 +214,11 @@ export const hotUpdateSpvVerifier = async (
   spv: ORChallengeSpvMainnet | ORChallengeSpvEra,
   updateType: updateSpvType,
   spvType: SPVTypeEnum = SPVTypeEnum.mainnet2era,
-  deployer: SignerWithAddress,
+  deployer: SignerWithAddress | Wallet,
 ): Promise<void> => {
   let sourceTxVerifier: string;
   let destTxVerifier: string;
-  await spv.getSpvVerifierAddr().then((currVerifier) => {
+  await spv.getSpvVerifierAddr().then(async (currVerifier) => {
     sourceTxVerifier = currVerifier[0];
     destTxVerifier = currVerifier[1];
     console.log(
@@ -228,40 +228,44 @@ export const hotUpdateSpvVerifier = async (
       'destTxVerifier:',
       currVerifier[1],
     );
-  });
-  if (updateType.sourceTx == true) {
-    const verifySourceBytesCode =
-      spvType == SPVTypeEnum.mainnet2era
-        ? await compile_yul('contracts/zkp/mainnet2eraSpvVerifier.SourceTx.yul')
-        : await compile_yul(
-            'contracts/zkp/era2mainnetSpvVerifier.SourceTx.yul',
-          );
 
-    sourceTxVerifier = await deploySpvYul(verifySourceBytesCode!, deployer);
-    console.log('new sourceTxVerifier:', sourceTxVerifier);
-  }
+    if (updateType.sourceTx == true) {
+      const verifySourceBytesCode =
+        spvType == SPVTypeEnum.mainnet2era
+          ? await compile_yul(
+              'contracts/zkp/mainnet2eraSpvVerifier.SourceTx.yul',
+            )
+          : await compile_yul(
+              'contracts/zkp/era2mainnetSpvVerifier.SourceTx.yul',
+            );
 
-  if (updateType.destTx == true) {
-    const verifyDestBytesCode =
-      spvType == SPVTypeEnum.mainnet2era
-        ? await compile_yul('contracts/zkp/mainnet2eraSpvVerifier.DestTx.yul')
-        : await compile_yul('contracts/zkp/era2mainnetSpvVerifier.DestTx.yul');
-    destTxVerifier = await deploySpvYul(verifyDestBytesCode!, deployer);
-    console.log('new destTxVerifier:', destTxVerifier);
-  }
+      sourceTxVerifier = await deploySpvYul(verifySourceBytesCode!, deployer);
+      console.log('new sourceTxVerifier:', sourceTxVerifier);
+    }
 
-  await spv.setSpvVerifierAddr(sourceTxVerifier!, destTxVerifier!).then((t) => {
-    t.wait(2);
-  });
+    if (updateType.destTx == true) {
+      const verifyDestBytesCode =
+        spvType == SPVTypeEnum.mainnet2era
+          ? await compile_yul('contracts/zkp/mainnet2eraSpvVerifier.DestTx.yul')
+          : await compile_yul(
+              'contracts/zkp/era2mainnetSpvVerifier.DestTx.yul',
+            );
+      destTxVerifier = await deploySpvYul(verifyDestBytesCode!, deployer);
+      console.log('new destTxVerifier:', destTxVerifier);
+    }
 
-  await spv.getSpvVerifierAddr().then((currVerifier) => {
-    console.log(
-      'after update,',
-      'current sourceTxVerifier:',
-      currVerifier[0],
-      'destTxVerifier:',
-      currVerifier[1],
-    );
+    const tx = await spv.setSpvVerifierAddr(sourceTxVerifier, destTxVerifier);
+    await tx.wait(2);
+
+    await spv.getSpvVerifierAddr().then((currVerifier) => {
+      console.log(
+        'after update,',
+        'current sourceTxVerifier:',
+        currVerifier[0],
+        'destTxVerifier:',
+        currVerifier[1],
+      );
+    });
   });
 };
 
@@ -329,7 +333,7 @@ export const deployMDC = async (
   oldfactoryAddress?: string,
 ) => {
   let orMDCFactory;
-  if (oldfactoryAddress == undefined) {
+  if (!oldfactoryAddress) {
     orMDCFactory = await new ORMDCFactory__factory(factoryOwner).deploy(
       orManagerAddress,
       orMakerDeposit_implAddress,
@@ -404,7 +408,7 @@ export const deployContracts = async (
   deployTestContracts: boolean = false,
 ) => {
   let currBlk;
-  if (process.env['OR_MANAGER_ADDRESS'] == undefined) {
+  if (!process.env['OR_MANAGER_ADDRESS']) {
     currBlk = await ethers.provider.getBlockNumber();
     const orManager = await new ORManager__factory(deployer).deploy(
       deployer.address,
@@ -418,7 +422,7 @@ export const deployContracts = async (
     console.log('existing orManager:', process.env['OR_MANAGER_ADDRESS']!);
   }
 
-  if (process.env['OR_MDC_TEST'] == undefined && deployTestContracts) {
+  if (!process.env['OR_MDC_TEST'] && deployTestContracts) {
     const makerTest_impl = await new TestMakerDeposit__factory(
       deployer,
     ).deploy();
@@ -445,10 +449,10 @@ export const deployContracts = async (
     }
   }
 
-  if (process.env['OR_MDC_FACTORY_ADDRESS'] == undefined) {
+  if (!process.env['OR_MDC_FACTORY_ADDRESS']) {
     currBlk = await ethers.provider.getBlockNumber();
     let mdc_impl;
-    if (process.env['OR_MDC_IMPL'] == undefined) {
+    if (!process.env['OR_MDC_IMPL']) {
       mdc_impl = await new ORMakerDeposit__factory(deployer).deploy();
       await mdc_impl.deployed();
       process.env['OR_MDC_IMPL'] = mdc_impl.address;
@@ -483,7 +487,7 @@ export const deployContracts = async (
     const orMDCFactory = new ORMDCFactory__factory(deployer).attach(
       process.env['OR_MDC_FACTORY_ADDRESS']!,
     );
-    if (deployTestContracts && process.env['OR_MDC'] == undefined) {
+    if (deployTestContracts && !process.env['OR_MDC']) {
       const { mdcAddress } = await deployMDC(
         deployer,
         process.env['OR_MANAGER_ADDRESS']!,
@@ -493,13 +497,13 @@ export const deployContracts = async (
       process.env['OR_MDC'] = mdcAddress;
       console.log('Address of MDC:', mdcAddress);
     }
-    if (deployTestContracts && process.env['OR_MDC'] != undefined) {
+    if (deployTestContracts && !process.env['OR_MDC']) {
       console.log('existing MDC:', process.env['OR_MDC']!);
     }
     console.log('existing factory:', process.env['OR_MDC_FACTORY_ADDRESS']!);
   }
 
-  if (process.env['EVENT_BINDING_CONTRACT'] == undefined) {
+  if (!process.env['EVENT_BINDING_CONTRACT']) {
     const ebc = await new OREventBinding__factory(deployer).deploy();
     await ebc.deployed();
     console.log('Address of ebc:', ebc.address);
@@ -508,7 +512,7 @@ export const deployContracts = async (
     console.log('existing ebc:', process.env['EVENT_BINDING_CONTRACT']!);
   }
 
-  if (process.env['RLP_DECODER_ADDRESS'] == undefined) {
+  if (!process.env['RLP_DECODER_ADDRESS']) {
     const rlpDecoder = await new RLPDecoder__factory(deployer).deploy();
     await rlpDecoder.deployed();
     console.log('Address of ruleDecoder:', rlpDecoder.address);
@@ -517,7 +521,7 @@ export const deployContracts = async (
     console.log('existing rlpDecoder:', process.env['RLP_DECODER_ADDRESS']!);
   }
 
-  if (process.env['SPV_TEST_ADDRESS'] == undefined && deployTestContracts) {
+  if (!process.env['SPV_TEST_ADDRESS'] && deployTestContracts) {
     const spvTest = await new TestSpv__factory(deployer).deploy(
       constants.AddressZero,
     );
@@ -528,7 +532,7 @@ export const deployContracts = async (
       console.log('existing spvTest:', process.env['SPV_TEST_ADDRESS']!);
   }
 
-  if (process.env['SPV_ADDRESS'] == undefined) {
+  if (!process.env['SPV_ADDRESS']) {
     const spvaddress = await deploySPVs(deployer, SPVTypeEnum.mainnet2era);
     console.log('Address of spv(mainnet->era):', spvaddress);
     process.env['SPV_ADDRESS'] = spvaddress;
@@ -536,7 +540,7 @@ export const deployContracts = async (
     console.log('existing spv:', process.env['SPV_ADDRESS']!);
   }
 
-  if (process.env['SPV_ADDRESS_ERA'] == undefined) {
+  if (!process.env['SPV_ADDRESS_ERA']) {
     const spvaddress = await deploySPVs(deployer, SPVTypeEnum.era2mainnet);
     console.log('Address of spv(era->mainnet):', spvaddress);
     process.env['SPV_ADDRESS_ERA'] = spvaddress;
@@ -545,7 +549,7 @@ export const deployContracts = async (
   }
 
   // OR_SPV_DATA_ADRESS
-  if (process.env['OR_SPV_DATA_ADRESS'] == undefined) {
+  if (!process.env['OR_SPV_DATA_ADRESS']) {
     currBlk = await ethers.provider.getBlockNumber();
     const orSpvData = await new ORSpvData__factory(deployer).deploy(
       process.env['OR_MANAGER_ADDRESS']!,
@@ -559,7 +563,7 @@ export const deployContracts = async (
     console.log('existing orSpvData:', process.env['OR_SPV_DATA_ADRESS']!);
   }
 
-  if (process.env['OR_FEE_MANAGER_ADDRESS'] == undefined) {
+  if (!process.env['OR_FEE_MANAGER_ADDRESS']) {
     currBlk = await ethers.provider.getBlockNumber();
     const feeManager = await new ORFeeManager__factory(deployer).deploy(
       deployer.address,

@@ -49,9 +49,11 @@ interface IORFeeManager {
 
     function submit(uint64 startBlock, uint64 endBlock, bytes32 profitRoot, bytes32 stateTransTreeRoot) external;
 
+    /*
     function startChallenge(uint256 marginAmount, address challenger) external;
 
     function responsePositioning(bytes calldata response) external;
 
     function getCurrentBlockInfo() external view returns (Submission memory);
+    */
 }
