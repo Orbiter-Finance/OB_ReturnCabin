@@ -3,10 +3,10 @@ pragma solidity ^0.8.17;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IORChallengeSpv} from "../interface/IORChallengeSpv.sol";
-import {Mainnet2EraLib, PublicInputParseLib} from "../library/ChallengeSpvLib.sol";
+import {EraLib, PublicInputParseLib} from "../library/ChallengeSpvLib.sol";
 
-contract ORChallengeSpvMainnet2Era is IORChallengeSpv, Ownable {
-    using Mainnet2EraLib for bytes;
+contract ORChallengeSpvEra is IORChallengeSpv, Ownable {
+    using EraLib for bytes;
     using PublicInputParseLib for bytes;
     address private _sourceTxVerifier;
     address private _destTxVerifier;
