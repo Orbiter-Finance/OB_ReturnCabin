@@ -74,7 +74,7 @@ contract ORFeeManager is IORFeeManager, Ownable, ReentrancyGuard {
         require(durationCheck() == FeeMangerDuration.withdraw, "WE");
         require(challengeStatus == ChallengeStatus.none, "WDC");
         for (uint256 i = 0; i < smtLeaves.length; ) {
-            bytes32 key = keccak256(abi.encode(smtLeaves[0]));
+            bytes32 key = keccak256(abi.encode(smtLeaves[i]));
             require(withdrawLock[msg.sender][key] < submissions.submitTimestamp, "WL");
             withdrawLock[msg.sender][key] = submissions.submitTimestamp;
             address token = smtLeaves[i].token;

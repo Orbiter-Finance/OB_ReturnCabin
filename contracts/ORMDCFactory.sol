@@ -34,6 +34,10 @@ contract ORMDCFactory is IORMDCFactory {
         return _mdcCreatedTotal;
     }
 
+    /*
+     * /// @notice: We recommend using a multi-signature wallet as the
+     * /// administrator to ensure the security of your mdc
+     */
     function createMDC() external {
         require(_mdcCreatedTotal < _manager.maxMDCLimit(), "MML");
         address mdcAddress = Clones.cloneDeterministic(_implementation, abi.encode(address(this), msg.sender).hash());

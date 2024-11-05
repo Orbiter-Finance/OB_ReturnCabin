@@ -146,7 +146,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         // ETH received by default
         // ERC20 calls safeTransferFrom, can also call `transfer` send assets to address(this)
         if (token != address(0)) {
-            IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+            require(false, "NI");
         }
     }
 
@@ -182,7 +182,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
 
             require(sent, "ETH: SE");
         } else {
-            IERC20(requestInfo.requestToken).safeTransfer(msg.sender, requestInfo.requestAmount);
+            require(false, "NI");
         }
     }
 
@@ -234,23 +234,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
         uint256[] calldata pledgeAmounts,
         address token
     ) external onlyOwner {
-        versionIncreaseAndEnableTime(enableTime);
-
-        _updateRulesRoot(ebc, rules, rootWithVersion);
-
-        require(sourceChainIds.length == pledgeAmounts.length, "SPL");
-
-        for (uint256 i = 0; i < sourceChainIds.length; ) {
-            bytes32 k = abi.encode(ebc, sourceChainIds[i], token).hash();
-
-            if (pledgeAmounts[i] > _pledgeBalances[k]) {
-                IERC20(token).safeTransferFrom(msg.sender, address(this), pledgeAmounts[i] - _pledgeBalances[k]);
-            }
-
-            unchecked {
-                i++;
-            }
-        }
+        require(false, "NI");
     }
 
     function _updateRulesRoot(
@@ -350,10 +334,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
             require(msg.value == (freezeAmount1 + ConstantsLib.MIN_CHALLENGE_DEPOSIT_AMOUNT), "IF+MD");
             _freezeAssets[freezeToken] += freezeAmount0 + freezeAmount1 + ConstantsLib.MIN_CHALLENGE_DEPOSIT_AMOUNT;
         } else {
-            require(msg.value == ConstantsLib.MIN_CHALLENGE_DEPOSIT_AMOUNT, "IF");
-            IERC20(freezeToken).safeTransferFrom(msg.sender, address(this), freezeAmount1);
-            _freezeAssets[freezeToken] += freezeAmount0 + freezeAmount1;
-            _freezeAssets[address(0)] += ConstantsLib.MIN_CHALLENGE_DEPOSIT_AMOUNT;
+            require(false, "NI");
         }
 
         uint256 challengeIdentNum = HelperLib.calculateChallengeIdentNum(
@@ -683,8 +664,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
                 challengeInfo.freezeAmount1 +
                 ConstantsLib.MIN_CHALLENGE_DEPOSIT_AMOUNT;
         } else {
-            _freezeAssets[challengeInfo.freezeToken] -= challengeInfo.freezeAmount0 + challengeInfo.freezeAmount1;
-            _freezeAssets[address(0)] -= ConstantsLib.MIN_CHALLENGE_DEPOSIT_AMOUNT;
+            require(false, "NI");
         }
     }
 
@@ -720,15 +700,7 @@ contract ORMakerDeposit is IORMakerDeposit, VersionAndEnableTime {
                 }("");
                 require(sent2, "ETH: SE2");
             } else {
-                token.safeTransfer(user, challengeUserAmount);
-                token.safeTransfer(result.winner, challengerAmount);
-
-                (bool sent3, ) = payable(result.winner).call{
-                    value: ConstantsLib.MIN_CHALLENGE_DEPOSIT_AMOUNT +
-                        challengeInfo.challengerVerifyTransactionFee +
-                        challengeInfo.freezeAmount1
-                }("");
-                require(sent3, "ETH: SE3");
+                require(false, "NI");
             }
         } else if (_compareChallengerStatement(challengeInfo, challengeInfoWinner) == true) {
             (bool sent4, ) = payable(challenger).call{
